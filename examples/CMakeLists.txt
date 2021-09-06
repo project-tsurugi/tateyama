@@ -1,0 +1,1 @@
+add_subdirectory(task_scheduler_cli)

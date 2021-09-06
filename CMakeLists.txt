@@ -37,7 +37,25 @@ option(ENABLE_CACHE_ALIGN "enable optional cache align requirement" OFF)
 option(MC_QUEUE "use moody-camel queue" OFF)
 option(TRACY_ENABLE "enable tracy profiler" OFF)
 
+if(NOT DEFINED SHARKSFIN_IMPLEMENTATION)
+    set(
+            SHARKSFIN_IMPLEMENTATION "memory"
+            CACHE STRING
+            "sharksfin target name to link"
+            FORCE
+    )
+endif()
+set(jogasaki_package "jogasaki-${SHARKSFIN_IMPLEMENTATION}")
+set(jogasaki_target "${jogasaki_package}-engine")
+
 find_package(takatori REQUIRED)
+find_package(${jogasaki_package} REQUIRED) # temporary
+find_package(yugawara REQUIRED)  # temporary
+find_package(mizugaki REQUIRED) # temporary
+find_package(shakujo REQUIRED) # temporary
+find_package(sharksfin REQUIRED) # temporary
+find_package(fpdecimal REQUIRED) # temporary
+find_package(tsl-hopscotch-map 2.2 REQUIRED) # temporary
 find_package(moodycamel REQUIRED)
 find_package(Doxygen)
 find_package(glog REQUIRED)
@@ -48,6 +66,8 @@ find_package(Boost
         REQUIRED
         )
 find_package(TBB REQUIRED)
+find_package(Protobuf REQUIRED) # temporary
+find_package(msgpack REQUIRED) # temporary
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 include(CompileOptions)
@@ -67,7 +87,8 @@ add_library(api INTERFACE)
 target_include_directories(api
     INTERFACE
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/tateyama)
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/tateyama>
+)
 
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Config.cmake.in
@@ -98,7 +119,9 @@ install(
     EXPORT_LINK_INTERFACE_LIBRARIES
 )
 
+add_subdirectory(protos) # temporary
 add_subdirectory(src)
+add_subdirectory(mock)
 if(BUILD_TESTS)
     add_subdirectory(test)
 endif()

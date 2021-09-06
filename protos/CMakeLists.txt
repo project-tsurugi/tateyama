@@ -1,0 +1,11 @@
+file(GLOB ProtoFiles
+        "../third_party/jogasaki/third_party/tsubakuro/modules/common/src/main/protos/*.proto"
+        )
+
+PROTOBUF_GENERATE_CPP(ProtobufSources ProtobufHeaders ${ProtoFiles})
+
+set(GENERATED_PROTO_SRCS ${ProtobufSources} PARENT_SCOPE)
+
+add_custom_target(build_protos
+        DEPENDS ${ProtobufSources}
+)
