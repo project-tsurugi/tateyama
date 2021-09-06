@@ -1,6 +1,6 @@
 file(GLOB SOURCES
         "tateyama/*.cpp"
-        "tateyama/endpoint/impl/*.cpp"
+#        "tateyama/endpoint/impl/*.cpp"
         "tateyama/task_scheduler/*.cpp"
 )
 

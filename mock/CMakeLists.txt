@@ -2,11 +2,22 @@ file(GLOB SOURCES
         "tateyama/api/endpoint/mock/*.cpp"
 )
 
+set_source_files_properties(
+        ${GENERATED_PROTO_SRCS}
+        PROPERTIES
+        GENERATED TRUE
+        COMPILE_FLAGS -Wno-unused-parameter
+)
 add_library(tateyama-mock
         ${SOURCES}
+        ${GENERATED_PROTO_SRCS}
 )
+add_dependencies(tateyama-mock
+        build_protos
+        )
 
 target_include_directories(tateyama-mock
+        PRIVATE ${CMAKE_BINARY_DIR}/protos
         PRIVATE .
 )
 
@@ -40,6 +51,7 @@ endif()
 add_library(tateyama-mock-impl INTERFACE)
 
 target_include_directories(tateyama-mock-impl
+        INTERFACE ${CMAKE_BINARY_DIR}/protos
         INTERFACE .
         )
 
@@ -54,4 +66,5 @@ target_link_libraries(tateyama-mock-impl
         INTERFACE Boost::thread
         INTERFACE Boost::container
         INTERFACE glog::glog
+        INTERFACE protobuf::libprotobuf # temporary
         )
