@@ -1,0 +1,25 @@
+# CMake
+/build*
+
+# MS Office
+~*
+
+# Mac
+.DS_Store
+
+# VSCode
+/.vscode
+
+# CLion
+cmake-build-*
+.idea
+*.tokens
+
+# work in progress files
+*.wip
+
+#GLOBAL
+GPATH
+GRTAGS
+GTAGS
+HTML/
