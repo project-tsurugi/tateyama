@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <tateyama/task_scheduler/thread_control.h>
+#include <tateyama/api/task_scheduler/impl/thread_control.h>
 
 #include <regex>
 #include <gtest/gtest.h>

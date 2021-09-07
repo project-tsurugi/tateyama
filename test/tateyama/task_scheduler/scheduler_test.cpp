@@ -75,7 +75,7 @@ public:
 };
 
 TEST_F(scheduler_test, multiple_task_impls) {
-    using task = basic_task<test_task, test_task2>;
+    using task = tateyama::task_scheduler::basic_task<test_task, test_task2>;
     task_scheduler_cfg cfg{};
     cfg.thread_count(1);
     scheduler<task> sched{cfg};

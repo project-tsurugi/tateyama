@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "core_affinity.h"
+#include <tateyama/api/task_scheduler/impl/core_affinity.h>
 
 #include <boost/thread/thread.hpp>
 

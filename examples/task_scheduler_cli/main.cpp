@@ -22,7 +22,7 @@
 #include <tateyama/api/task_scheduler/basic_task.h>
 #include <tateyama/api/task_scheduler/scheduler.h>
 #include <tateyama/api/task_scheduler/task_scheduler_cfg.h>
-#include <tateyama/task_scheduler/queue.h>
+#include <tateyama/api/task_scheduler/impl/queue.h>
 #include "utils.h"
 
 DEFINE_int64(duration, 5000, "Run duration in milli-seconds");  //NOLINT
@@ -44,7 +44,7 @@ using clock = std::chrono::high_resolution_clock;
 
 class test_task;
 class test_task2;
-using task = tateyama::api::task_scheduler::basic_task<test_task, test_task2>;
+using task = tateyama::task_scheduler::basic_task<test_task, test_task2>;
 
 class cache_align test_task2 {
 public:

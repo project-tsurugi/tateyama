@@ -16,10 +16,10 @@
 #pragma once
 
 #include "task_scheduler_cfg.h"
-#include <tateyama/task_scheduler/worker.h>
-#include <tateyama/task_scheduler/queue.h>
-#include <tateyama/task_scheduler/thread_control.h>
-#include <tateyama/task_scheduler/cache_align.h>
+#include <tateyama/api/task_scheduler/impl/worker.h>
+#include <tateyama/api/task_scheduler/impl/queue.h>
+#include <tateyama/api/task_scheduler/impl/thread_control.h>
+#include <tateyama/api/task_scheduler/impl/cache_align.h>
 
 namespace tateyama::api::task_scheduler {
 

@@ -15,10 +15,11 @@
  */
 #pragma once
 
-#include "context.h"
-#include <tateyama/task_scheduler/core_affinity.h>
+#include <tateyama/api/task_scheduler/context.h>
+#include <tateyama/api/task_scheduler/impl/core_affinity.h>
+#include <tateyama/api/task_scheduler/impl/cache_align.h>
 
-namespace tateyama::api::task_scheduler {
+namespace tateyama::task_scheduler {
 
 /**
  * @brief basic task interface
@@ -68,7 +69,7 @@ public:
      * @brief execute the task
      * @param ctx the context information on the worker that is running the task
      */
-    void operator()(context& ctx) {
+    void operator()(api::task_scheduler::context& ctx) {
         std::visit([&](auto&& arg){
             arg(ctx);
         }, entity_);

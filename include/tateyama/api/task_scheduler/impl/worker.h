@@ -25,11 +25,11 @@
 
 #include <tateyama/common.h>
 #include <tateyama/api/task_scheduler/context.h>
-#include <tateyama/task_scheduler/queue.h>
-#include <tateyama/task_scheduler/thread_control.h>
+#include <tateyama/api/task_scheduler/impl/queue.h>
+#include <tateyama/api/task_scheduler/impl/thread_control.h>
 #include <tateyama/api/task_scheduler/task_scheduler_cfg.h>
-#include <tateyama/task_scheduler/core_affinity.h>
-#include <tateyama/task_scheduler/utils.h>
+#include <tateyama/api/task_scheduler/impl/core_affinity.h>
+#include <tateyama/api/task_scheduler/impl/utils.h>
 
 namespace tateyama::task_scheduler {
 

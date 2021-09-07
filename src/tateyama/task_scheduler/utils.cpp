@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "utils.h"
+#include <tateyama/api/task_scheduler/impl/utils.h>
 
 #include <ostream>
 #include <cassert>
 
-#include <tateyama/task_scheduler/queue.h>
+#include <tateyama/api/task_scheduler/impl/queue.h>
 
 #include <emmintrin.h>
 
