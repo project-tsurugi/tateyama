@@ -56,7 +56,7 @@ target_include_directories(tateyama-mock-impl
         )
 
 target_link_libraries(tateyama-mock-impl
-        INTERFACE tateyama
+        INTERFACE engine
         INTERFACE takatori
         INTERFACE tbb
         INTERFACE numa

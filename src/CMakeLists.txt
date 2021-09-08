@@ -1,6 +1,5 @@
 file(GLOB SOURCES
         "tateyama/*.cpp"
-#        "tateyama/endpoint/impl/*.cpp"
         "tateyama/task_scheduler/*.cpp"
 )
 
@@ -17,25 +16,25 @@ set_source_files_properties(
         GENERATED TRUE
         COMPILE_FLAGS -Wno-unused-parameter
 )
-add_library(tateyama
+add_library(engine
         ${SOURCES}
         ${GENERATED_PROTO_SRCS}
 )
 
-add_dependencies(tateyama
+add_dependencies(engine
         build_protos
         )
 
-set_target_properties(tateyama PROPERTIES
+set_target_properties(engine PROPERTIES
         OUTPUT_NAME ${export_name}
         )
 
-target_include_directories(tateyama
+target_include_directories(engine
         PRIVATE ${CMAKE_BINARY_DIR}/protos
         PRIVATE .
 )
 
-target_link_libraries(tateyama
+target_link_libraries(engine
         PUBLIC api
         PRIVATE takatori
         PRIVATE yugawara # temporary
@@ -53,16 +52,16 @@ target_link_libraries(tateyama
 )
 
 if(MC_QUEUE)
-    target_compile_definitions(tateyama PUBLIC MC_QUEUE)
+    target_compile_definitions(engine PUBLIC MC_QUEUE)
 endif()
 
 # Boost.Thread doesn't seem to allow multiple versions to coexist.
 # This version definition should be shared with caller at least.
-target_compile_definitions(tateyama PUBLIC BOOST_THREAD_VERSION=4)
+target_compile_definitions(engine PUBLIC BOOST_THREAD_VERSION=4)
 
-set_compile_options(tateyama)
+set_compile_options(engine)
 
-install_custom(tateyama ${export_name})
+install_custom(engine ${export_name})
 
 # for tests
 add_library(tateyama-impl INTERFACE)
@@ -71,9 +70,8 @@ target_include_directories(tateyama-impl
         INTERFACE .
         )
 
-message ("jogasaki : ${jogasaki}")
 target_link_libraries(tateyama-impl
-        INTERFACE tateyama
+        INTERFACE engine
         INTERFACE ${jogasaki_target} # temporary
         INTERFACE takatori
         INTERFACE yugawara # temporary
