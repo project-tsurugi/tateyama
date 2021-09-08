@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "endpoint_impls.h"
+#include <tateyama/api/endpoint/mock/endpoint_impls.h>
 
 #include <memory>
 #include <regex>

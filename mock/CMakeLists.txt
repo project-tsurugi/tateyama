@@ -8,25 +8,37 @@ set_source_files_properties(
         GENERATED TRUE
         COMPILE_FLAGS -Wno-unused-parameter
 )
-add_library(tateyama-mock
+
+
+add_library(mock-api INTERFACE)
+
+target_include_directories(mock-api
+        INTERFACE
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/tateyama>
+        )
+
+install_custom(mock-api ${export_name})
+
+add_library(mock
         ${SOURCES}
         ${GENERATED_PROTO_SRCS}
 )
-add_dependencies(tateyama-mock
+add_dependencies(mock
         build_protos
         )
 
-target_include_directories(tateyama-mock
+target_include_directories(mock
         PRIVATE ${CMAKE_BINARY_DIR}/protos
-        PRIVATE .
+        PRIVATE include
 )
 
 # avoid name conflict with mock sharksfin implementation
-set_target_properties(tateyama-mock PROPERTIES
+set_target_properties(mock PROPERTIES
         OUTPUT_NAME tateyama-mock-utils
         )
 
-target_link_libraries(tateyama-mock
+target_link_libraries(mock
         PRIVATE tateyama-impl
         PRIVATE Boost::boost
         PRIVATE Boost::filesystem
@@ -38,24 +50,24 @@ target_link_libraries(tateyama-mock
 
 # Boost.Thread doesn't seem to allow multiple versions to coexist.
 # This version definition should be shared with caller at least.
-target_compile_definitions(tateyama-mock PUBLIC BOOST_THREAD_VERSION=4)
+target_compile_definitions(mock PUBLIC BOOST_THREAD_VERSION=4)
 
-set_compile_options(tateyama-mock)
+set_compile_options(mock)
 
 # mock library needs install only when examples are used
-if(INSTALL_EXAMPLES)
-    install_custom(tateyama-mock ${export_name})
+if(INSTALL_MOCK)
+    install_custom(mock ${export_name})
 endif()
 
 # for tests
-add_library(tateyama-mock-impl INTERFACE)
+add_library(mock-impl INTERFACE)
 
-target_include_directories(tateyama-mock-impl
+target_include_directories(mock-impl
         INTERFACE ${CMAKE_BINARY_DIR}/protos
-        INTERFACE .
+        INTERFACE include
         )
 
-target_link_libraries(tateyama-mock-impl
+target_link_libraries(mock-impl
         INTERFACE engine
         INTERFACE takatori
         INTERFACE tbb
