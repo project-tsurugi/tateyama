@@ -47,7 +47,8 @@ if(NOT DEFINED SHARKSFIN_IMPLEMENTATION)
     )
 endif()
 set(jogasaki_package "jogasaki-${SHARKSFIN_IMPLEMENTATION}")
-set(jogasaki_target "${jogasaki_package}-engine")
+set(jogasaki_engine "${jogasaki_package}-engine")
+set(ENGINE "engine")
 
 find_package(takatori REQUIRED)
 find_package(${jogasaki_package} REQUIRED) # temporary
@@ -80,8 +81,8 @@ if (BUILD_TESTS OR BUILD_EXAMPLES)
     enable_testing()
 endif()
 
-set(export_name "tateyama")
-set(package_name "tateyama")
+set(export_name "tateyama-${SHARKSFIN_IMPLEMENTATION}")
+set(package_name "tateyama-${SHARKSFIN_IMPLEMENTATION}")
 
 add_library(api INTERFACE)
 

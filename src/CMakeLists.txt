@@ -16,25 +16,26 @@ set_source_files_properties(
         GENERATED TRUE
         COMPILE_FLAGS -Wno-unused-parameter
 )
-add_library(engine
+
+add_library(${ENGINE}
         ${SOURCES}
         ${GENERATED_PROTO_SRCS}
 )
 
-add_dependencies(engine
+add_dependencies(${ENGINE}
         build_protos
         )
 
-set_target_properties(engine PROPERTIES
+set_target_properties(${ENGINE} PROPERTIES
         OUTPUT_NAME ${export_name}
         )
 
-target_include_directories(engine
+target_include_directories(${ENGINE}
         PRIVATE ${CMAKE_BINARY_DIR}/protos
         PRIVATE .
 )
 
-target_link_libraries(engine
+target_link_libraries(${ENGINE}
         PUBLIC api
         PRIVATE takatori
         PRIVATE yugawara # temporary
@@ -52,16 +53,16 @@ target_link_libraries(engine
 )
 
 if(MC_QUEUE)
-    target_compile_definitions(engine PUBLIC MC_QUEUE)
+    target_compile_definitions(${ENGINE} PUBLIC MC_QUEUE)
 endif()
 
 # Boost.Thread doesn't seem to allow multiple versions to coexist.
 # This version definition should be shared with caller at least.
-target_compile_definitions(engine PUBLIC BOOST_THREAD_VERSION=4)
+target_compile_definitions(${ENGINE} PUBLIC BOOST_THREAD_VERSION=4)
 
-set_compile_options(engine)
+set_compile_options(${ENGINE})
 
-install_custom(engine ${export_name})
+install_custom(${ENGINE} ${export_name})
 
 # for tests
 add_library(tateyama-impl INTERFACE)
@@ -71,7 +72,7 @@ target_include_directories(tateyama-impl
         )
 
 target_link_libraries(tateyama-impl
-        INTERFACE engine
+        INTERFACE ${ENGINE}
         INTERFACE ${jogasaki_target} # temporary
         INTERFACE takatori
         INTERFACE yugawara # temporary
