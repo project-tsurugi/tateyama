@@ -5,6 +5,7 @@
 * CMake `>= 3.10`
 * C++ Compiler `>= C++17`
 * access to installed dependent modules: 
+  * jogasaki
   * takatori (for takatori::util functionalities)
 * and see *Dockerfile* section
 
@@ -29,7 +30,16 @@ optional packages:
 
 ## How to build
 
+Install jogasaki header files first, and then build tateyama as below.
+
 ```sh
+cd third_party/jogasaki
+mkdir -p build_install
+cd build_install
+cmake -DCMAKE_BUILD_TYPE=Release ..
+cmake --build . --target install
+cd ../../..
+
 mkdir -p build
 cd build
 cmake -G Ninja -DCMAKE_BUILD_TYPE=Release ..
