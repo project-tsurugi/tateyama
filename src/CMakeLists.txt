@@ -1,6 +1,9 @@
 file(GLOB SOURCES
         "tateyama/*.cpp"
         "tateyama/task_scheduler/*.cpp"
+        "tateyama/endpoint/service/*.cpp"
+        "tateyama/endpoint/service/impl/*.cpp"
+        "tateyama/endpoint/ipc/*.cpp"
 )
 
 if(TRACY_ENABLE)
@@ -39,7 +42,7 @@ target_link_libraries(${ENGINE}
         PUBLIC api
         PRIVATE takatori
         PRIVATE yugawara # temporary
-        PRIVATE ${jogasaki_target} # temporary
+        PRIVATE ${jogasaki_engine} # temporary
         PRIVATE tbb
         PRIVATE numa
         PRIVATE Boost::boost
@@ -73,7 +76,7 @@ target_include_directories(tateyama-impl
 
 target_link_libraries(tateyama-impl
         INTERFACE ${ENGINE}
-        INTERFACE ${jogasaki_target} # temporary
+        INTERFACE ${jogasaki_engine} # temporary
         INTERFACE takatori
         INTERFACE yugawara # temporary
         INTERFACE tbb
