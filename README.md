@@ -36,7 +36,7 @@ Install jogasaki header files first, and then build tateyama as below.
 cd third_party/jogasaki
 mkdir -p build_install
 cd build_install
-cmake -DCMAKE_BUILD_TYPE=Release ..
+cmake -DCMAKE_BUILD_TYPE=Release -DINSTALL_API_ONLY=ON ..
 cmake --build . --target install
 cd ../../..
 
