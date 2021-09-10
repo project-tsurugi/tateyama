@@ -25,6 +25,12 @@ namespace tateyama::task_scheduler {
 using namespace std::literals::string_literals;
 
 class queue_test : public ::testing::Test {
+public:
+    struct test_task {
+        std::size_t count_;
+        std::size_t count() { return count_; }
+    };
+
 
 };
 
@@ -45,11 +51,6 @@ TEST_F(queue_test, mc_queue) {
     ASSERT_TRUE(q.try_pop(item));
     ASSERT_EQ(1, item);
 }
-
-struct test_task {
-    std::size_t count_;
-    std::size_t count() { return count_; }
-};
 
 TEST_F(queue_test, basic) {
     basic_queue<test_task> q{};

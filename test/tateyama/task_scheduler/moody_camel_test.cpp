@@ -25,22 +25,23 @@ namespace tateyama::task_scheduler {
 using namespace std::literals::string_literals;
 
 class moody_camel_test : public ::testing::Test {
+public:
+
+    class test_task {
+    public:
+        test_task() = default;
+
+        explicit test_task(std::size_t id) : id_(id) {}
+
+        void operator()(api::task_scheduler::context& ctx) {
+            (void)ctx;
+        }
+        std::size_t id_{};
+    };
 
 };
 
 using namespace std::string_view_literals;
-
-class test_task {
-public:
-    test_task() = default;
-
-    explicit test_task(std::size_t id) : id_(id) {}
-
-    void operator()(api::task_scheduler::context& ctx) {
-        (void)ctx;
-    }
-    std::size_t id_{};
-};
 
 TEST_F(moody_camel_test, basic) {
     ::moodycamel::ConcurrentQueue<test_task> q;
