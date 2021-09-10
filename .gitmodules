@@ -7,3 +7,12 @@
 [submodule "third_party/jogasaki"]
 	path = third_party/jogasaki
 	url = git@github.com:project-tsurugi/jogasaki.git
+[submodule ".github/actions/tsurugi-annotations-action"]
+	path = .github/actions/tsurugi-annotations-action
+	url = git@github.com:project-tsurugi/tsurugi-annotations-action.git
+[submodule ".github/actions/tsurugi-slack-action"]
+	path = .github/actions/tsurugi-slack-action
+	url = git@github.com:project-tsurugi/tsurugi-slack-action.git
+[submodule "third_party/concurrentqueue"]
+	path = third_party/concurrentqueue
+	url = https://github.com/cameron314/concurrentqueue.git

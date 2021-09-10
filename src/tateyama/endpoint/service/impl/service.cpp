@@ -37,8 +37,6 @@
 
 namespace tateyama::api::endpoint::impl {
 
-using takatori::util::fail;
-
 std::unique_ptr<service> create_service(jogasaki::api::database& db) {
     return std::make_unique<impl::service>(db);
 }
