@@ -33,6 +33,8 @@ public:
         virtual ~resultset_wires_container() = 0;
         virtual shm_resultset_wire* acquire() = 0;
         virtual bool is_closed() = 0;
+        resultset_wires_container& operator = (resultset_wires_container const&) = default;
+        resultset_wires_container& operator = (resultset_wires_container&&) = default;
     };
     using resultset_deleter_type = void(*)(resultset_wires_container*);
     using unq_p_resultset_wires_conteiner = std::unique_ptr<resultset_wires_container, resultset_deleter_type>;
@@ -48,7 +50,7 @@ public:
     virtual garbage_collector* get_garbage_collector() = 0;
     virtual void close_session() = 0;
 };
-inline server_wire_container::resultset_wires_container::~resultset_wires_container() {};
+inline server_wire_container::resultset_wires_container::~resultset_wires_container() = default;
 
 using resultset_wires = server_wire_container::resultset_wires_container;
 using resultset_wire = shm_resultset_wire;

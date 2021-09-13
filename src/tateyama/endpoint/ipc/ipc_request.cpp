@@ -26,7 +26,7 @@ ipc_request::get_server_wire_container() {
 
 std::string_view
 ipc_request::payload() const {
-    VLOG(1) << __func__ << std::endl;
+    VLOG(1) << __func__ << std::endl;  //NOLINT
 
     auto address = server_wire_.get_request_wire()->payload(length_);
     return std::string_view(address, length_);
@@ -34,7 +34,7 @@ ipc_request::payload() const {
 
 void
 ipc_request::dispose() {
-    VLOG(1) << __func__ << std::endl;
+    VLOG(1) << __func__ << std::endl;  //NOLINT
 
     server_wire_.get_request_wire()->dispose(read_point);
 }

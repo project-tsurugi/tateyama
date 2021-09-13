@@ -46,8 +46,8 @@ public:
         std::memcpy(&length_, buffer + sizeof(index_type), sizeof(length_type));
     }
 
-    length_type get_length() const { return length_; }
-    index_type get_idx() const { return idx_; }
+    [[nodiscard]] length_type get_length() const { return length_; }
+    [[nodiscard]] index_type get_idx() const { return idx_; }
     char* get_buffer() {
         std::memcpy(buffer_, &idx_, sizeof(index_type));
         std::memcpy(buffer_ + sizeof(index_type), &length_, sizeof(length_type));
@@ -55,9 +55,9 @@ public:
     };
 
 private:
-    index_type idx_;
-    length_type length_;
-    char buffer_[size];
+    index_type idx_{};
+    length_type length_{};
+    char buffer_[size]{};
 };
 
 /**
@@ -77,15 +77,15 @@ public:
         std::memcpy(&length_, buffer, sizeof(length_type));
     }
 
-    length_type get_length() const { return length_; }
+    [[nodiscard]] length_type get_length() const { return length_; }
     char* get_buffer() {
         std::memcpy(buffer_, &length_, sizeof(length_type));
         return buffer_;
     };
 
 private:
-    length_type length_;
-    char buffer_[size];
+    length_type length_{};
+    char buffer_[size]{};
 };
 
 
@@ -116,6 +116,8 @@ public:
         buffer_handle_ = 0;
         capacity_ = 0;
     }
+
+    ~simple_wire() = default;
 
     /**
      * @brief Copy and move constructers are delete.

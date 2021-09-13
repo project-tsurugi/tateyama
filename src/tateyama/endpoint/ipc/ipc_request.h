@@ -34,7 +34,7 @@ public:
 
     ipc_request() = delete;
 
-    std::string_view payload() const;
+    [[nodiscard]] std::string_view payload() const override;
     server_wire_container& get_server_wire_container();
     void dispose();
 

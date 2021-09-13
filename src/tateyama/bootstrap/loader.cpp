@@ -86,8 +86,8 @@ loader& get_loader() {
 
 std::shared_ptr<jogasaki::api::database> create_database(jogasaki::configuration* cfg) {
     auto& ldr = details::get_loader();
-    jogasaki::api::database* (*creater)(jogasaki::configuration*);
-    void (*deleter)(jogasaki::api::database*);
+    jogasaki::api::database* (*creater)(jogasaki::configuration*){};
+    void (*deleter)(jogasaki::api::database*){};
     try {
         creater = reinterpret_cast<decltype(creater)>(ldr.lookup("new_database"));  //NOLINT
         deleter = reinterpret_cast<decltype(deleter)> (ldr.lookup("delete_database"));  //NOLINT
@@ -100,8 +100,8 @@ std::shared_ptr<jogasaki::api::database> create_database(jogasaki::configuration
 
 std::shared_ptr<jogasaki::api::environment> create_environment() {
     auto& ldr = details::get_loader();
-    jogasaki::api::environment* (*creater)();
-    void (*deleter)(jogasaki::api::environment*);
+    jogasaki::api::environment* (*creater)(){};
+    void (*deleter)(jogasaki::api::environment*){};
     try {
         creater = reinterpret_cast<decltype(creater)>(ldr.lookup("new_environment"));  //NOLINT
         deleter = reinterpret_cast<decltype(deleter)> (ldr.lookup("delete_environment"));  //NOLINT
