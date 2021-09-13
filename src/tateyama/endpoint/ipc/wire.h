@@ -43,21 +43,21 @@ public:
     message_header() : message_header(0, 0) {}
     explicit message_header(const char* buffer) {
         std::memcpy(&idx_, buffer, sizeof(index_type));
-        std::memcpy(&length_, buffer + sizeof(index_type), sizeof(length_type));
+        std::memcpy(&length_, static_cast<char*>(buffer_) + sizeof(index_type), sizeof(length_type));
     }
 
     [[nodiscard]] length_type get_length() const { return length_; }
     [[nodiscard]] index_type get_idx() const { return idx_; }
     char* get_buffer() {
-        std::memcpy(buffer_, &idx_, sizeof(index_type));
-        std::memcpy(buffer_ + sizeof(index_type), &length_, sizeof(length_type));
-        return buffer_;
+        std::memcpy(static_cast<char*>(buffer_), &idx_, sizeof(index_type));
+        std::memcpy(static_cast<char*>(buffer_) + sizeof(index_type), &length_, sizeof(length_type));
+        return static_cast<char*>(buffer_);
     };
 
 private:
     index_type idx_{};
     length_type length_{};
-    char buffer_[size]{};
+    char buffer_[size]{};  //NOLINT
 };
 
 /**
@@ -79,8 +79,8 @@ public:
 
     [[nodiscard]] length_type get_length() const { return length_; }
     char* get_buffer() {
-        std::memcpy(buffer_, &length_, sizeof(length_type));
-        return buffer_;
+        std::memcpy(static_cast<char*>(buffer_), &length_, sizeof(length_type));
+        return static_cast<char*>(buffer_);
     };
 
 private:
@@ -151,9 +151,9 @@ public:
         }
         char buf[sizeof(T)];  // in case for ring buffer full
         std::size_t first_part = capacity_ - index(poped_);
-        memcpy(buf, read_address(base), first_part);
-        memcpy(buf + first_part, base, sizeof(T) - first_part);
-        T header(buf);
+        memcpy(static_cast<char*>(buf), read_address(base), first_part);
+        memcpy(static_cast<char*>(buf) + first_part, base, sizeof(T) - first_part);
+        T header(static_cast<char*>(buf));
         return header;
     }
     T peep(bool wait_flag = false) {
@@ -168,15 +168,15 @@ public:
     }
 
     // for ipc_request
-    std::size_t read_point() const { return poped_; }
+    [[nodiscard]] std::size_t read_point() const { return poped_; }
 
 protected:
-    std::size_t stored() const { return (pushed_ - poped_); }
-    std::size_t room() const { return capacity_ - stored(); }
-    std::size_t index(std::size_t n) const { return n %  capacity_; }
-    char* buffer_address(char* base, std::size_t n) { return base + index(n); }
-    const char* read_address(const char* base, std::size_t offset) const { return base + index(poped_ + offset); }
-    const char* read_address(const char* base) const { return base + index(poped_); }
+    std::size_t stored() const { return (pushed_ - poped_); }  //NOLINT
+    std::size_t room() const { return capacity_ - stored(); }  //NOLINT
+    std::size_t index(std::size_t n) const { return n %  capacity_; }  //NOLINT
+    char* buffer_address(char* base, std::size_t n) { return base + index(n); }  //NOLINT
+    const char* read_address(const char* base, std::size_t offset) const { return base + index(poped_ + offset); }  //NOLINT
+    const char* read_address(const char* base) const { return base + index(poped_); }  //NOLINT
     void wait_to_write(std::size_t length) {
         boost::interprocess::scoped_lock lock(m_mutex_);
         wait_for_write_ = true;
@@ -185,34 +185,34 @@ protected:
         wait_for_write_ = false;
     }
     void write_in_buffer(char *base, char* to, const char* from, std::size_t length) {
-        if((base + capacity_) >= (to + length)) {
+        if((base + capacity_) >= (to + length)) {  //NOLINT
             memcpy(to, from, length);
         } else {
             std::size_t first_part = capacity_ - (to - base);
             memcpy(to, from, first_part);
-            memcpy(base, from + first_part, length - first_part);
+            memcpy(base, from + first_part, length - first_part);  //NOLINT
         }
     }
     void read_from_buffer(char* to, const char *base, const char* from, std::size_t length) const {
-        if((base + capacity_) >= (from + length)) {
+        if((base + capacity_) >= (from + length)) {  //NOLINT
             memcpy(to, from, length);
         } else {
             std::size_t first_part = capacity_ - (from - base);
             memcpy(to, from, first_part);
-            memcpy(to + first_part, base, length - first_part);
+            memcpy(to + first_part, base, length - first_part);  //NOLINT
         }
     }
 
-    boost::interprocess::managed_shared_memory::handle_t buffer_handle_{};
-    std::size_t capacity_;
+    boost::interprocess::managed_shared_memory::handle_t buffer_handle_{};  //NOLINT
+    std::size_t capacity_;  //NOLINT
 
-    std::size_t pushed_{0};
-    std::size_t poped_{0};
+    std::size_t pushed_{0};  //NOLINT
+    std::size_t poped_{0};  //NOLINT
 
-    std::atomic_bool wait_for_write_{};
-    std::atomic_bool wait_for_read_{};
+    std::atomic_bool wait_for_write_{};  //NOLINT
+    std::atomic_bool wait_for_read_{};  //NOLINT
 
-    boost::interprocess::interprocess_mutex m_mutex_{};
+    boost::interprocess::interprocess_mutex m_mutex_{};  //NOLINT
     boost::interprocess::interprocess_condition c_empty_{};
     boost::interprocess::interprocess_condition c_full_{};
 };
