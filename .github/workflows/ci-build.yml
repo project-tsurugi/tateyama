@@ -163,6 +163,7 @@ jobs:
           GTEST_OUTPUT: xml
           ASAN_OPTIONS: detect_stack_use_after_return=true
         run: |
+          export LD_LIBRARY_PATH="${GITHUB_WORKSPACE}/.local/lib"
           cd build
           ctest --verbose -j 100
 
@@ -181,6 +182,7 @@ jobs:
           GTEST_OUTPUT: xml
           ASAN_OPTIONS: detect_stack_use_after_return=true
         run: |
+          export LD_LIBRARY_PATH="${GITHUB_WORKSPACE}/.local/lib"
           cd build-shirakami
           ctest --verbose -j 100
 

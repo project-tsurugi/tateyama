@@ -1,5 +1,6 @@
 file(GLOB SOURCES
         "tateyama/*.cpp"
+        "tateyama/bootstrap/*.cpp"
         "tateyama/task_scheduler/*.cpp"
         "tateyama/endpoint/service/*.cpp"
         "tateyama/endpoint/service/impl/*.cpp"
@@ -63,6 +64,8 @@ endif()
 # This version definition should be shared with caller at least.
 target_compile_definitions(${ENGINE} PUBLIC BOOST_THREAD_VERSION=4)
 
+target_compile_definitions(${ENGINE} PUBLIC JOGASAKI_LIBRARY_NAME=${jogasaki_library_name})
+
 set_compile_options(${ENGINE})
 
 install_custom(${ENGINE} ${export_name})
@@ -93,3 +96,6 @@ target_link_libraries(tateyama-impl
 if(MC_QUEUE)
     target_compile_definitions(tateyama-impl INTERFACE MC_QUEUE)
 endif()
+
+target_compile_definitions(tateyama-impl INTERFACE JOGASAKI_LIBRARY_NAME=${jogasaki_library_name})
+

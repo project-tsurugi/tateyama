@@ -33,6 +33,7 @@ file(GLOB SRCS
         "tateyama/*.cpp"
         "tateyama/endpoint/*.cpp"
         "tateyama/task_scheduler/*.cpp"
+        "tateyama/bootstrap/*.cpp"
         )
 
 foreach(file ${SRCS})

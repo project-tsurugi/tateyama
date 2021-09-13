@@ -72,6 +72,12 @@ cmake --build . --target install
 
 ### run tests
 
+(optional) If you run test with ASAN, you need to provide LD_LIBRARY_PATH before running the test driver. (see also "Use of Address Sanitizer (ASAN)" section)
+```
+export LD_LIBRARY_PATH=<installation directory>/lib
+```
+
+Execute the test as below:
 ```sh
 ctest -V
 ```
@@ -81,6 +87,12 @@ ctest -V
 ```sh
 cmake --build . --target doxygen
 ```
+
+### Use of Address Sanitizer (ASAN)
+
+Due to the [ASAN compatibility issue with dlopen rpath handling](https://bugs.llvm.org/show_bug.cgi?id=27790), you need to specify LD_LIBRARY_PATH the path to installed libraries: `<installation directory>/lib`. 
+Otherwise jogasaki library will not be found on initialization and errors are reported as below: 
+> "libjogasaki-memory.so: cannot open shared object file: No such file or directory"
 
 ### Customize logging setting 
 You can customize logging in the same way as sharksfin. See sharksfin [README.md](https://github.com/project-tsurugi/sharksfin/blob/master/README.md#customize-logging-setting) for more details.

@@ -49,6 +49,7 @@ endif()
 set(jogasaki_package "jogasaki-${SHARKSFIN_IMPLEMENTATION}")
 set(jogasaki_engine "${jogasaki_package}-engine")
 set(jogasaki_api "${jogasaki_package}-api")
+set(jogasaki_library_name "lib${jogasaki_package}.so")
 set(ENGINE "engine")
 
 find_package(takatori REQUIRED)
