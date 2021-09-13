@@ -35,7 +35,7 @@
 #include "response.pb.h"
 #include "common.pb.h"
 
-namespace tateyama::api::endpoint::impl {
+namespace tateyama::api::endpoint {
 
 std::unique_ptr<service> create_service(jogasaki::api::database& db) {
     return std::make_unique<impl::service>(db);
