@@ -43,15 +43,15 @@ public:
     message_header() : message_header(0, 0) {}
     explicit message_header(const char* buffer) {
         std::memcpy(&idx_, buffer, sizeof(index_type));
-        std::memcpy(&length_, static_cast<char*>(buffer_) + sizeof(index_type), sizeof(length_type));
+        std::memcpy(&length_, buffer + sizeof(index_type), sizeof(length_type));
     }
 
     [[nodiscard]] length_type get_length() const { return length_; }
     [[nodiscard]] index_type get_idx() const { return idx_; }
     char* get_buffer() {
-        std::memcpy(static_cast<char*>(buffer_), &idx_, sizeof(index_type));
-        std::memcpy(static_cast<char*>(buffer_) + sizeof(index_type), &length_, sizeof(length_type));
-        return static_cast<char*>(buffer_);
+        std::memcpy(buffer_, &idx_, sizeof(index_type));
+        std::memcpy(buffer_ + sizeof(index_type), &length_, sizeof(length_type));
+        return buffer_;        
     };
 
 private:
@@ -79,8 +79,8 @@ public:
 
     [[nodiscard]] length_type get_length() const { return length_; }
     char* get_buffer() {
-        std::memcpy(static_cast<char*>(buffer_), &length_, sizeof(length_type));
-        return static_cast<char*>(buffer_);
+        std::memcpy(buffer_, &length_, sizeof(length_type));
+        return buffer_;
     };
 
 private:
