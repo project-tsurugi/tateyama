@@ -20,7 +20,7 @@
 
 #include "ipc_response.h"
 
-namespace tsubakuro::common::wire {
+namespace tateyama::common::wire {
 
 
 // class ipc_response
@@ -131,4 +131,4 @@ tateyama::status ipc_writer::commit() {
     return tateyama::status::ok;
 }
 
-}  // tsubakuro::common::wire
+}  // tateyama::common::wire

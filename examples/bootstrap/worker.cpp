@@ -21,8 +21,8 @@ void Worker::run()
 {
     while(true) {
         auto h = request_wire_container_->peep(true);
-        auto request = std::make_shared<tsubakuro::common::wire::ipc_request>(*wire_, h);
-        auto response = std::make_shared<tsubakuro::common::wire::ipc_response>(*request, h.get_idx());
+        auto request = std::make_shared<tateyama::common::wire::ipc_request>(*wire_, h);
+        auto response = std::make_shared<tateyama::common::wire::ipc_response>(*request, h.get_idx());
         service_(static_cast<std::shared_ptr<tateyama::api::endpoint::request const>>(std::move(request)),
                  static_cast<std::shared_ptr<tateyama::api::endpoint::response>>(std::move(response)));
         if (wire_->is_session_closed()) { break; }

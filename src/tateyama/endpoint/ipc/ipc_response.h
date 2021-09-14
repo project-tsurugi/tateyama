@@ -23,7 +23,7 @@
 #include "server_wires.h"
 #include "ipc_request.h"
 
-namespace tsubakuro::common::wire {
+namespace tateyama::common::wire {
 
 template<class T>
 struct pointer_comp {
@@ -123,7 +123,7 @@ private:
     ipc_request& ipc_request_;
     server_wire_container& server_wire_;
     response_box::response& response_box_;
-    tsubakuro::common::wire::garbage_collector* garbage_collector_;
+    tateyama::common::wire::garbage_collector* garbage_collector_;
 
     tateyama::api::endpoint::response_code response_code_{};
     std::string message_{};
@@ -132,4 +132,4 @@ private:
     bool acquire_channel_or_complete_{};
 };
 
-}  // tsubakuro::common::wire
+}  // tateyama::common::wire

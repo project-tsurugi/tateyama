@@ -17,7 +17,7 @@
 
 #include "ipc_request.h"
 
-namespace tsubakuro::common::wire {
+namespace tateyama::common::wire {
 
 server_wire_container&
 ipc_request::get_server_wire_container() {
@@ -39,4 +39,4 @@ ipc_request::dispose() {
     server_wire_.get_request_wire()->dispose(read_point);
 }
 
-}  // tsubakuro::common::wire
+}  // tateyama::common::wire

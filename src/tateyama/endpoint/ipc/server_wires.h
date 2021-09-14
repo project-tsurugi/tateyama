@@ -17,7 +17,7 @@
 
 #include "wire.h"
 
-namespace tsubakuro::common::wire {
+namespace tateyama::common::wire {
 
 class server_wire_container
 {
@@ -59,4 +59,4 @@ using resultset_wires = server_wire_container::resultset_wires_container;
 using resultset_wire = shm_resultset_wire;
 using garbage_collector = server_wire_container::garbage_collector;
 
-};  // namespace tsubakuro::common
+};  // namespace tateyama::common

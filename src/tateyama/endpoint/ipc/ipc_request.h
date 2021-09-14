@@ -21,7 +21,7 @@
 
 #include "server_wires.h"
 
-namespace tsubakuro::common::wire {
+namespace tateyama::common::wire {
 
 /**
  * @brief request object for ipc_endpoint
@@ -44,4 +44,4 @@ private:
     const std::size_t read_point;
 };
 
-}  // tsubakuro::common::wire
+}  // tateyama::common::wire

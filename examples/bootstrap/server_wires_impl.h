@@ -23,7 +23,7 @@
 
 #include "server_wires.h"
 
-namespace tsubakuro::common::wire {
+namespace tateyama::common::wire {
 
 class server_wire_container_impl : public server_wire_container
 {
@@ -274,4 +274,4 @@ private:
     connection_queue* connection_queue_;
 };
 
-};  // namespace tsubakuro::common
+};  // namespace tateyama::common::wire

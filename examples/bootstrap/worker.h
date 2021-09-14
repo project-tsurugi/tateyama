@@ -33,9 +33,9 @@ namespace tateyama::server {
 
 class Worker {
  public:
-    Worker(tateyama::api::endpoint::service& service, std::size_t session_id, std::unique_ptr<tsubakuro::common::wire::server_wire_container_impl> wire)
+    Worker(tateyama::api::endpoint::service& service, std::size_t session_id, std::unique_ptr<tateyama::common::wire::server_wire_container_impl> wire)
         : service_(service), wire_(std::move(wire)),
-          request_wire_container_(static_cast<tsubakuro::common::wire::server_wire_container_impl::wire_container_impl*>(wire_->get_request_wire())),
+          request_wire_container_(static_cast<tateyama::common::wire::server_wire_container_impl::wire_container_impl*>(wire_->get_request_wire())),
           session_id_(session_id) {
     }
     ~Worker() {
@@ -46,8 +46,8 @@ class Worker {
 
  private:
     tateyama::api::endpoint::service& service_;
-    std::unique_ptr<tsubakuro::common::wire::server_wire_container_impl> wire_;
-    tsubakuro::common::wire::server_wire_container_impl::wire_container_impl* request_wire_container_;
+    std::unique_ptr<tateyama::common::wire::server_wire_container_impl> wire_;
+    tateyama::common::wire::server_wire_container_impl::wire_container_impl* request_wire_container_;
     std::size_t session_id_;
 
     // for future
