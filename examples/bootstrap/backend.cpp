@@ -53,7 +53,7 @@ void signal_handler([[maybe_unused]]int signal)
 
 int backend_main(int argc, char **argv) {
     google::InitGoogleLogging("tateyama database server");
-    
+
     // command arguments
     gflags::SetUsageMessage("tateyama database server");
     gflags::ParseCommandLineFlags(&argc, &argv, true);
