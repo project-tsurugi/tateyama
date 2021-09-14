@@ -32,17 +32,22 @@ struct pointer_comp {
     // pairs of types we need to know how to compare: it turns
     // everything into a pointer, and then uses `std::less<T*>`
     // to do the comparison:
-    struct helper {
+    class helper {
         T* ptr;
+    public:
         helper():ptr(nullptr) {}
         helper(helper const&) = default;
-        helper(T* p):ptr(p) {}
+        helper(helper&&) noexcept = default;
+        helper& operator = (helper const&) = default;
+        helper& operator = (helper&&) noexcept = default;
+        helper(T* const p):ptr(p) {}  //NOLINT
+        template<class U>
+        helper( std::shared_ptr<U> const& sp ):ptr(sp.get()) {}  //NOLINT
         template<class U, class...Ts>
-        helper( std::shared_ptr<U,Ts...> const& sp ):ptr(sp.get()) {}
-        template<class U, class...Ts>
-        helper( std::unique_ptr<U, Ts...> const& up ):ptr(up.get()) {}
+        helper( std::unique_ptr<U, Ts...> const& up ):ptr(up.get()) {}  //NOLINT
+        ~helper() = default;
         // && optional: enforces rvalue use only
-        bool operator<( helper o ) const {
+        bool operator<( helper const o ) const {
             return std::less<T*>()( ptr, o.ptr );
         }
     };
@@ -61,10 +66,10 @@ struct pointer_comp {
  */
 class ipc_writer : public tateyama::api::endpoint::writer {
 public:
-    ipc_writer(resultset_wire* wire) : resultset_wire_(wire) {}
+    explicit ipc_writer(resultset_wire* wire) : resultset_wire_(wire) {}
 
-    tateyama::status write(char const* data, std::size_t length);
-    tateyama::status commit();
+    tateyama::status write(char const* data, std::size_t length) override;
+    tateyama::status commit() override;
 
 private:
     resultset_wire* resultset_wire_;
@@ -75,12 +80,12 @@ private:
  */
 class ipc_data_channel : public tateyama::api::endpoint::data_channel {
 public:
-    ipc_data_channel(server_wire_container::unq_p_resultset_wires_conteiner data_channel)
+    explicit ipc_data_channel(server_wire_container::unq_p_resultset_wires_conteiner data_channel)
         : data_channel_(std::move(data_channel)) {
     }
 
-    tateyama::status acquire(tateyama::api::endpoint::writer*& wrt);
-    tateyama::status release(tateyama::api::endpoint::writer& wrt);
+    tateyama::status acquire(tateyama::api::endpoint::writer*& wrt) override;
+    tateyama::status release(tateyama::api::endpoint::writer& wrt) override;
     bool is_closed() { return data_channel_->is_closed(); }
     server_wire_container::unq_p_resultset_wires_conteiner get_resultset_wires() { return std::move(data_channel_); }
 
@@ -106,13 +111,13 @@ public:
 
     ipc_response() = delete;
 
-    void code(tateyama::api::endpoint::response_code code);
-    void message(std::string_view msg);
-    tateyama::status complete();
-    tateyama::status body(std::string_view body);
-    tateyama::status acquire_channel(std::string_view name, tateyama::api::endpoint::data_channel*& ch);
-    tateyama::status release_channel(tateyama::api::endpoint::data_channel& ch);
-    tateyama::status close_session();
+    void code(tateyama::api::endpoint::response_code code) override;
+    void message(std::string_view msg) override;
+    tateyama::status complete() override;
+    tateyama::status body(std::string_view body) override;
+    tateyama::status acquire_channel(std::string_view name, tateyama::api::endpoint::data_channel*& ch) override;
+    tateyama::status release_channel(tateyama::api::endpoint::data_channel& ch) override;
+    tateyama::status close_session() override;
 
 private:
     ipc_request& ipc_request_;

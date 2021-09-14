@@ -56,6 +56,14 @@ public:
             }
         }
 
+        /**
+         * @brief Copy and move constructers are delete.
+         */
+        resultset_wires_container_impl(resultset_wires_container_impl const&) = delete;
+        resultset_wires_container_impl(resultset_wires_container_impl&&) = delete;
+        resultset_wires_container_impl& operator = (resultset_wires_container_impl const&) = delete;
+        resultset_wires_container_impl& operator = (resultset_wires_container_impl&&) = delete;
+
         shm_resultset_wire* acquire() {
             try {
                 return shm_resultset_wires_->acquire();

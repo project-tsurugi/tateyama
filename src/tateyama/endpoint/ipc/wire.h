@@ -43,15 +43,15 @@ public:
     message_header() : message_header(0, 0) {}
     explicit message_header(const char* buffer) {
         std::memcpy(&idx_, buffer, sizeof(index_type));
-        std::memcpy(&length_, buffer + sizeof(index_type), sizeof(length_type));
+        std::memcpy(&length_, buffer + sizeof(index_type), sizeof(length_type));  //NOLINT
     }
 
     [[nodiscard]] length_type get_length() const { return length_; }
     [[nodiscard]] index_type get_idx() const { return idx_; }
     char* get_buffer() {
-        std::memcpy(buffer_, &idx_, sizeof(index_type));
-        std::memcpy(buffer_ + sizeof(index_type), &length_, sizeof(length_type));
-        return buffer_;        
+        std::memcpy(buffer_, &idx_, sizeof(index_type));  //NOLINT
+        std::memcpy(buffer_ + sizeof(index_type), &length_, sizeof(length_type));  //NOLINT
+        return static_cast<char*>(buffer_);
     };
 
 private:
@@ -79,13 +79,13 @@ public:
 
     [[nodiscard]] length_type get_length() const { return length_; }
     char* get_buffer() {
-        std::memcpy(buffer_, &length_, sizeof(length_type));
-        return buffer_;
+        std::memcpy(buffer_, &length_, sizeof(length_type));  //NOLINT
+        return static_cast<char*>(buffer_);
     };
 
 private:
     length_type length_{};
-    char buffer_[size]{};
+    char buffer_[size]{};  //NOLINT
 };
 
 
@@ -145,14 +145,14 @@ public:
                 if (stored() < T::size) { return T(); }
             }
         }
-        if ((base + capacity_) >= (read_address(base) + sizeof(T))) {
+        if ((base + capacity_) >= (read_address(base) + sizeof(T))) {  //NOLINT
             T header(read_address(base));  // normal case
             return header;
         }
-        char buf[sizeof(T)];  // in case for ring buffer full
+        char buf[sizeof(T)];  // in case for ring buffer full  //NOLINT
         std::size_t first_part = capacity_ - index(poped_);
-        memcpy(static_cast<char*>(buf), read_address(base), first_part);
-        memcpy(static_cast<char*>(buf) + first_part, base, sizeof(T) - first_part);
+        memcpy(buf, read_address(base), first_part);  //NOLINT
+        memcpy(buf + first_part, base, sizeof(T) - first_part);  //NOLINT
         T header(static_cast<char*>(buf));
         return header;
     }
@@ -213,8 +213,8 @@ protected:
     std::atomic_bool wait_for_read_{};  //NOLINT
 
     boost::interprocess::interprocess_mutex m_mutex_{};  //NOLINT
-    boost::interprocess::interprocess_condition c_empty_{};
-    boost::interprocess::interprocess_condition c_full_{};
+    boost::interprocess::interprocess_condition c_empty_{};  //NOLINT
+    boost::interprocess::interprocess_condition c_full_{};  //NOLINT
 };
 
 
@@ -246,9 +246,10 @@ public:
         if (index(poped_ + message_header::size) < index(poped_ + message_header::size + length)) {
             return read_address(base, message_header::size);
         }
-        copy_of_payload_ = static_cast<char*>(malloc(length));
-        read_from_buffer(copy_of_payload_, base, read_address(base, message_header::size), length);
-        return copy_of_payload_;  // ring buffer wrap around case
+        copy_of_payload_ = std::make_unique<char[]>(length);  //NOLINT
+        auto address = static_cast<char*>(copy_of_payload_.get());
+        read_from_buffer(address, base, read_address(base, message_header::size), length);
+        return address;  // ring buffer wrap around case
     }
 
     /**
@@ -271,8 +272,7 @@ public:
     void dispose(const char* base, const std::size_t read_point) {
         if (poped_ == read_point) {
             poped_ += (peep(base).get_length() + message_header::size);
-            if (copy_of_payload_ != nullptr) {
-                free(copy_of_payload_);
+            if (copy_of_payload_) {
                 copy_of_payload_ = nullptr;
             }
             return;
@@ -281,7 +281,7 @@ public:
     }
 
 private:
-    char *copy_of_payload_{};  // in case of ring buffer wrap around
+    std::unique_ptr<char[]> copy_of_payload_{};  // in case of ring buffer wrap around  //NOLINT
 };
 
 
@@ -294,6 +294,7 @@ public:
         static constexpr std::size_t max_response_message_length = 256;
 
         response() : nstored_(0) {};
+        ~response() = default;
 
         /**
          * @brief Copy and move constructers are deleted.
@@ -305,12 +306,12 @@ public:
 
         std::pair<char*, std::size_t> recv() {
             nstored_.wait();
-            return std::pair<char*, std::size_t>(buffer_, length_);
+            return std::pair<char*, std::size_t>(static_cast<char*>(buffer_), length_);
         }
         void set_inuse() {
             inuse_ = true;
         }
-        bool is_inuse() { return inuse_; }
+        [[nodiscard]] bool is_inuse() const { return inuse_; }
         void dispose() {
             length_ = 0;
             inuse_ = false;
@@ -318,7 +319,7 @@ public:
         char* get_buffer(std::size_t length) {
             length_ = length;
             if (length <= max_response_message_length) {
-                return buffer_;
+                return static_cast<char*>(buffer_);
             }
             std::abort();  //  FIXME (Processing when a message located later is discarded first)
         }
@@ -329,10 +330,9 @@ public:
     private:
         std::size_t length_{};
         bool inuse_{};
-        bool waiter_{};
 
         boost::interprocess::interprocess_semaphore nstored_;
-        char buffer_[max_response_message_length];
+        char buffer_[max_response_message_length]{};  //NOLINT
     };
 
     /**
@@ -340,6 +340,7 @@ public:
      */
     explicit response_box(size_t aSize, boost::interprocess::managed_shared_memory* managed_shm_ptr) : boxes_(aSize, managed_shm_ptr->get_segment_manager()) {}
     response_box() = delete;
+    ~response_box() = default;
 
     /**
      * @brief Copy and move constructers are deleted.
@@ -360,7 +361,8 @@ private:
 // for resultset
 class unidirectional_simple_wire : public simple_wire<length_header> {
 public:
-    unidirectional_simple_wire() : simple_wire<length_header>() {}
+    unidirectional_simple_wire() = default;
+    ~unidirectional_simple_wire() = default;
     // used by server only
      void set_managed_shared_memory(boost::interprocess::managed_shared_memory* managed_shm_ptr) {
         managed_shm_ptr_ = managed_shm_ptr;
@@ -423,7 +425,7 @@ public:
     bool has_record() {
         return n_records_ > 0;
     }
-    bool is_eor() { return eor_; }
+    [[nodiscard]] bool is_eor() const { return eor_; }
 
     void attach_buffer(boost::interprocess::managed_shared_memory::handle_t handle, std::size_t capacity) {
         buffer_handle_ = handle;
@@ -468,7 +470,7 @@ private:
     std::size_t chunk_resume_{0};
     bool eor_{false};
 
-    boost::interprocess::managed_shared_memory* managed_shm_ptr_;  // used by server only
+    boost::interprocess::managed_shared_memory* managed_shm_ptr_{};  // used by server only
     std::atomic_bool wait_for_record_{};
     boost::interprocess::interprocess_mutex r_mutex_{};
     boost::interprocess::interprocess_condition r_condition_{};
@@ -478,7 +480,7 @@ using shm_resultset_wire = unidirectional_simple_wire;
 
 class unidirectional_simple_wires {
 public:
-    static constexpr std::size_t wire_size = (1<<16);  // 64K bytes (tentative)
+    static constexpr std::size_t wire_size = (1<<16);  // 64K bytes (tentative)  //NOLINT
     static constexpr std::size_t Alignment = 64;
     using allocator = boost::interprocess::allocator<shm_resultset_wire, boost::interprocess::managed_shared_memory::segment_manager>;
 
@@ -501,6 +503,14 @@ public:
         }
     }
 
+    /**
+     * @brief Copy and move constructers are delete.
+     */
+    unidirectional_simple_wires(unidirectional_simple_wires const&) = delete;
+    unidirectional_simple_wires(unidirectional_simple_wires&&) = delete;
+    unidirectional_simple_wires& operator = (unidirectional_simple_wires const&) = delete;
+    unidirectional_simple_wires& operator = (unidirectional_simple_wires&&) = delete;
+
     shm_resultset_wire* acquire() {
         if (count_using_ == 0) {
             count_using_ = next_index_ = 1;
@@ -510,7 +520,7 @@ public:
             return &unidirectional_simple_wires_.at(0);
         }
 
-        char* buffer;
+        char* buffer{};
         if (reserved_ != nullptr) {
             buffer = reserved_;
             reserved_ = nullptr;
@@ -531,7 +541,6 @@ public:
             managed_shm_ptr_->deallocate(buffer);
         }
         count_using_--;
-        return;
     }
     shm_resultset_wire* search() {
         if (only_one_buffer_) {
@@ -545,7 +554,7 @@ public:
         return nullptr;
     }
     void set_closed() { closed_ = true; }
-    bool is_closed() { return closed_; }
+    [[nodiscard]] bool is_closed() const { return closed_; }
 
 private:
     std::size_t search_free_wire() {
@@ -585,6 +594,7 @@ public:
      * @brief Construct a new object.
      */
     connection_queue() = default;
+    ~connection_queue() = default;
 
     /**
      * @brief Copy and move constructers are deleted.
@@ -595,9 +605,8 @@ public:
     connection_queue& operator = (connection_queue&&) = delete;
 
     std::size_t request() {
-        std::size_t rv;
+        std::size_t rv = ++requested_;
 
-        rv = ++requested_;
         std::atomic_thread_fence(std::memory_order_acq_rel);
         if (wait_for_request_) {
             boost::interprocess::scoped_lock lock(m_mutex_);
@@ -608,7 +617,8 @@ public:
     bool check(std::size_t n, bool wait = false) {
         if (!wait) {
             return accepted_ >= n;
-        } else if (accepted_ >= n) {
+        }
+        if (accepted_ >= n) {
             return true;
         }
         {
@@ -646,9 +656,8 @@ public:
                     c_accepted_.notify_all();
                 }
                 return;
-            } else {
-                throw std::runtime_error("Received an session id that was not requested for connection");
             }
+            throw std::runtime_error("Received an session id that was not requested for connection");
         }
         throw std::runtime_error("The session id is not sequential");
     }

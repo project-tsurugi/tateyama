@@ -30,11 +30,14 @@ public:
     };
     class resultset_wires_container {
     public:
+        resultset_wires_container() = default;
         virtual ~resultset_wires_container() = 0;
         virtual shm_resultset_wire* acquire() = 0;
         virtual bool is_closed() = 0;
-        resultset_wires_container& operator = (resultset_wires_container const&) = default;
-        resultset_wires_container& operator = (resultset_wires_container&&) = default;
+        constexpr resultset_wires_container(resultset_wires_container const&) = delete;
+        constexpr resultset_wires_container(resultset_wires_container&&) = delete;
+        resultset_wires_container& operator = (resultset_wires_container const&) = delete;
+        resultset_wires_container& operator = (resultset_wires_container&&) = delete;
     };
     using resultset_deleter_type = void(*)(resultset_wires_container*);
     using unq_p_resultset_wires_conteiner = std::unique_ptr<resultset_wires_container, resultset_deleter_type>;

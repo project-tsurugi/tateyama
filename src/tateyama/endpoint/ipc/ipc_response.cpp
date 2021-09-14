@@ -25,7 +25,7 @@ namespace tsubakuro::common::wire {
 
 // class ipc_response
 tateyama::status ipc_response::body(std::string_view body) {
-    VLOG(1) << __func__ << std::endl;
+    VLOG(1) << __func__ << std::endl;  //NOLINT
 
     if(body.length() > response_box::response::max_response_message_length) {
         return tateyama::status::unknown;
@@ -35,7 +35,7 @@ tateyama::status ipc_response::body(std::string_view body) {
 }
 
 tateyama::status ipc_response::complete() {
-    VLOG(1) << __func__ << std::endl;
+    VLOG(1) << __func__ << std::endl;  //NOLINT
 
     ipc_request_.dispose();
     if (response_code_ == tateyama::api::endpoint::response_code::success || acquire_channel_or_complete_) {
@@ -47,23 +47,22 @@ tateyama::status ipc_response::complete() {
 }
 
 void ipc_response::code(tateyama::api::endpoint::response_code code) {
-    VLOG(1) << __func__ << std::endl;
+    VLOG(1) << __func__ << std::endl;  //NOLINT
 
     response_code_ = code;
 }
 
 void ipc_response::message(std::string_view msg) {
-    VLOG(1) << __func__ << std::endl;
+    VLOG(1) << __func__ << std::endl;  //NOLINT
 
     message_ = msg;
 }
 
 tateyama::status ipc_response::acquire_channel(std::string_view name, tateyama::api::endpoint::data_channel*& ch) {
-    VLOG(1) << __func__ << std::endl;
+    VLOG(1) << __func__ << std::endl;  //NOLINT
 
     data_channel_ = std::make_unique<ipc_data_channel>(server_wire_.create_resultset_wires(name));
-    if (data_channel_.get() != nullptr) {
-        ch = data_channel_.get();
+    if (ch = data_channel_.get(); ch != nullptr) {
         if (acquire_channel_or_complete_) {
             response_box_.flush();
         } else {
@@ -75,9 +74,9 @@ tateyama::status ipc_response::acquire_channel(std::string_view name, tateyama::
 }
 
 tateyama::status ipc_response::release_channel(tateyama::api::endpoint::data_channel& ch) {
-    VLOG(1) << __func__ << std::endl;
+    VLOG(1) << __func__ << std::endl;  //NOLINT
 
-    if (data_channel_.get() == static_cast<ipc_data_channel*>(&ch)) {
+    if (data_channel_.get() == dynamic_cast<ipc_data_channel*>(&ch)) {
         if (!data_channel_->is_closed()) {
             garbage_collector_->put(data_channel_->get_resultset_wires());
         }
@@ -88,7 +87,7 @@ tateyama::status ipc_response::release_channel(tateyama::api::endpoint::data_cha
 }
 
 tateyama::status ipc_response::close_session() {
-    VLOG(1) << __func__ << std::endl;
+    VLOG(1) << __func__ << std::endl;  //NOLINT
 
     server_wire_.close_session();
     return tateyama::status::ok;
@@ -96,9 +95,9 @@ tateyama::status ipc_response::close_session() {
 
 // class ipc_data_channel
 tateyama::status ipc_data_channel::acquire(tateyama::api::endpoint::writer*& wrt) {
-    VLOG(1) << __func__ << std::endl;
+    VLOG(1) << __func__ << std::endl;  //NOLINT
 
-    if (auto ipc_wrt = std::make_unique<ipc_writer>(data_channel_->acquire()); ipc_wrt.get() != nullptr) {
+    if (auto ipc_wrt = std::make_unique<ipc_writer>(data_channel_->acquire()); ipc_wrt != nullptr) {
         wrt = ipc_wrt.get();
         data_writers_.emplace(std::move(ipc_wrt));
         return tateyama::status::ok;
@@ -107,10 +106,10 @@ tateyama::status ipc_data_channel::acquire(tateyama::api::endpoint::writer*& wrt
 }
 
 tateyama::status ipc_data_channel::release(tateyama::api::endpoint::writer& wrt) {
-    VLOG(1) << __func__ << std::endl;
+    VLOG(1) << __func__ << std::endl;  //NOLINT
 
     wrt.commit();
-    if (auto itr = data_writers_.find(static_cast<ipc_writer*>(&wrt)); itr != data_writers_.end()) {
+    if (auto itr = data_writers_.find(dynamic_cast<ipc_writer*>(&wrt)); itr != data_writers_.end()) {
         data_writers_.erase(itr);
         return tateyama::status::ok;
     }
@@ -119,14 +118,14 @@ tateyama::status ipc_data_channel::release(tateyama::api::endpoint::writer& wrt)
 
 // class writer
 tateyama::status ipc_writer::write(char const* data, std::size_t length) {
-    VLOG(1) << __func__ << std::endl;
+    VLOG(1) << __func__ << std::endl;  //NOLINT
 
     resultset_wire_->write(data, length);
     return tateyama::status::ok;
 }
 
 tateyama::status ipc_writer::commit() {
-    VLOG(1) << __func__ << std::endl;
+    VLOG(1) << __func__ << std::endl;  //NOLINT
 
     resultset_wire_->commit();
     return tateyama::status::ok;
