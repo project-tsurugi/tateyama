@@ -443,7 +443,6 @@ private:
         pushed_ += length;
     }
 
-    std::size_t chunk_start_{0};
     std::size_t chunk_end_{0};
     std::atomic_bool eor_{false};
 
