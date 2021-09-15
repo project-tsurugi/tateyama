@@ -61,10 +61,14 @@ struct pointer_comp {
     }
 };
 
+class ipc_data_channel;
+
 /**
  * @brief writer object for ipc_endpoint
  */
 class ipc_writer : public tateyama::api::endpoint::writer {
+    friend ipc_data_channel;
+
 public:
     explicit ipc_writer(resultset_wire* wire) : resultset_wire_(wire) {}
 

@@ -41,10 +41,7 @@ class result_set_test : public ::testing::Test {
 public:
     static constexpr std::string_view request_test_message_ = "abcdefgh";
     static constexpr tateyama::common::wire::message_header::index_type index_ = 1;
-    static constexpr std::string_view r11_ = "row_11_data";
-    static constexpr std::string_view r12_ = "row_12_data";
-    static constexpr std::string_view r21_ = "row_21_data";
-    static constexpr std::string_view r22_ = "row_22_data";
+    static constexpr std::string_view r_ = "row_data";
 
     std::unique_ptr<tateyama::common::wire::server_wire_container_impl> wire_;
 
@@ -65,12 +62,7 @@ public:
             tateyama::api::endpoint::writer* w;
             EXPECT_EQ(dc->acquire(w), tateyama::status::ok);
 
-            w->write(r11_.data(), r11_.length());
-            w->write(r12_.data(), r12_.length());
-            w->commit();
-            w->write(r21_.data(), r21_.length());
-            w->write(r22_.data(), r22_.length());
-            w->commit();
+            w->write(r_.data(), r_.length());
             w->commit();
 
             res->code(tateyama::api::endpoint::response_code::success);
@@ -111,20 +103,13 @@ TEST_F(result_set_test, normal) {
     auto resultset_wires =
         wire_->create_resultset_wires_for_client(std::string_view(r_msg.first, r_msg.second));
 
-    auto chunk_1 = resultset_wires->get_chunk();
-    std::string r1(r11_);
-    r1 += r12_;
-    EXPECT_EQ(r1, std::string_view(chunk_1.first, chunk_1.second));
-    resultset_wires->dispose(r1.length());
+    auto chunk = resultset_wires->get_chunk();
+    std::string r(r_);
+    EXPECT_EQ(r, std::string_view(chunk.first, chunk.second));
+    resultset_wires->dispose(r.length());
 
-    auto chunk_2 = resultset_wires->get_chunk();
-    std::string r2(r21_);
-    r2 += r22_;
-    EXPECT_EQ(r2, std::string_view(chunk_2.first, chunk_2.second));
-    resultset_wires->dispose(r2.length());
-
-    auto chunk_3 = resultset_wires->get_chunk();
-    EXPECT_EQ(chunk_3.second, 0);
+    auto chunk_e = resultset_wires->get_chunk();
+    EXPECT_EQ(chunk_e.second, 0);
     EXPECT_TRUE(resultset_wires->is_eor());
 }
 
