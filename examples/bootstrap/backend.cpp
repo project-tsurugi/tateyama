@@ -30,18 +30,17 @@
 
 #include "worker.h"
 #include "server.h"
-
-namespace tateyama::server {
+#include "utils.h"
 
 DEFINE_string(dbname, "tateyama", "database name");  // NOLINT
 DEFINE_string(location, "./db", "database location on file system");  // NOLINT
 DEFINE_uint32(threads, 5, "thread pool size");  //NOLINT
 DEFINE_bool(remove_shm, false, "remove the shared memory prior to the execution");  // NOLINT
-DEFINE_int32(read_batch_size,  256, "Batch size for dump");  //NOLINT
-DEFINE_int32(write_batch_size, 256, "Batch size for load");  //NOLINT
+DEFINE_bool(load, false, "Database contents are loaded from the location just after boot");  //NOLINT
+DEFINE_int32(dump_batch_size,  0, "Batch size for dump");  //NOLINT
+DEFINE_int32(load_batch_size,  1, "Batch size for load");  //NOLINT
 
-static constexpr std::string_view KEY_LOCATION { "location" };  //NOLINT
-
+namespace tateyama::server {
 
 jmp_buf buf;
 
@@ -67,6 +66,20 @@ int backend_main(int argc, char **argv) {
     db->start();
     DBCloser dbcloser{db};
     VLOG(1) << "database started" << std::endl;
+
+    // load tpc-c tables
+    if (FLAGS_load) {
+        VLOG(1) << "TPC-C data load begin" << std::endl;
+        std::cout << "TPC-C data load begin" << std::endl;
+        try {
+            tateyama::server::tpcc::load(*db, FLAGS_location);
+        } catch (std::exception& e) {
+            std::cerr << "[" << __FILE__ << ":" <<  __LINE__ << "] " << e.what() << std::endl;
+            std::abort();
+        }
+        VLOG(1) << "TPC-C data load end" << std::endl;
+        std::cout << "TPC-C data load end" << std::endl;
+    }
 
     // connection channel
     auto container = std::make_unique<tateyama::common::wire::connection_container>(FLAGS_dbname);
