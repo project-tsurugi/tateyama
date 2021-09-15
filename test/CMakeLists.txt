@@ -16,6 +16,7 @@ target_link_libraries(${test_target}
         PRIVATE takatori
         PRIVATE atomic
         PRIVATE moodycamel
+        PRIVATE rt
         )
 
 function (add_test_executable source_file)

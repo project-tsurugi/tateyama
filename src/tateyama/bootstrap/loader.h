@@ -36,7 +36,12 @@ class loader {
 public:
     explicit loader(std::string_view filename, int flags);
     loader(loader const& src) = delete;
+    loader(loader&&) = delete;
     ~loader();
+
+    loader& operator = (loader const&) = delete;
+    loader& operator = (loader&&) = delete;
+
     void* lookup(std::string_view symbol);
 
 private:
@@ -47,7 +52,7 @@ private:
 
     void open();
     void close() noexcept;
-    void throw_exception(const char* errorStr);
+    void throw_exception(const char* msg);
 };
 
 }
