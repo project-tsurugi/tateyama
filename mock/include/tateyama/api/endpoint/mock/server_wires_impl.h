@@ -77,7 +77,7 @@ public:
         }
         void dispose(std::size_t length) {
             if (current_wire_ != nullptr) {
-                current_wire_->dispose(current_wire_->get_bip_address(managed_shm_ptr_), length);
+                current_wire_->dispose(length);
                 current_wire_ = nullptr;
                 return;
             }

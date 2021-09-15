@@ -83,25 +83,6 @@ public:
             }
             std::abort();  //  FIXME
         }
-        void dispose(std::size_t length) {
-            if (current_wire_ != nullptr) {
-                current_wire_->dispose(current_wire_->get_bip_address(managed_shm_ptr_), length);
-                current_wire_ = nullptr;
-                return;
-            }
-            std::abort();  //  FIXME
-        }
-        bool is_eor() {
-            if (current_wire_ == nullptr) {
-                current_wire_ = search();
-            }
-            if (current_wire_ != nullptr) {
-                auto rv = current_wire_->is_eor();
-                current_wire_ = nullptr;
-                return rv;
-            }
-            std::abort();  //  FIXME
-        }
         bool is_closed() {
             return shm_resultset_wires_->is_closed();
         }

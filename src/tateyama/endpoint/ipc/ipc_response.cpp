@@ -108,7 +108,7 @@ tateyama::status ipc_data_channel::acquire(tateyama::api::endpoint::writer*& wrt
 tateyama::status ipc_data_channel::release(tateyama::api::endpoint::writer& wrt) {
     VLOG(1) << __func__ << std::endl;  //NOLINT
 
-    wrt.commit();
+    dynamic_cast<ipc_writer*>(std::addressof(wrt))->resultset_wire_->eor();
     if (auto itr = data_writers_.find(dynamic_cast<ipc_writer*>(&wrt)); itr != data_writers_.end()) {
         data_writers_.erase(itr);
         return tateyama::status::ok;
@@ -127,7 +127,6 @@ tateyama::status ipc_writer::write(char const* data, std::size_t length) {
 tateyama::status ipc_writer::commit() {
     VLOG(1) << __func__ << std::endl;  //NOLINT
 
-    resultset_wire_->commit();
     return tateyama::status::ok;
 }
 
