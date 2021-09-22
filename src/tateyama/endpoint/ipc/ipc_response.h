@@ -129,7 +129,7 @@ private:
     response_box::response& response_box_;
     tateyama::common::wire::garbage_collector* garbage_collector_;
 
-    tateyama::api::endpoint::response_code response_code_{};
+    tateyama::api::endpoint::response_code response_code_{tateyama::api::endpoint::response_code::started};
     std::string message_{};
 
     std::unique_ptr<ipc_data_channel> data_channel_{};
