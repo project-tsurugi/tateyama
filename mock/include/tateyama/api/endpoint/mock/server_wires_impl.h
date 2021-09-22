@@ -66,12 +66,12 @@ public:
             }
         }
 
-        std::pair<char*, std::size_t> get_chunk(bool wait_flag = false) {
+        std::pair<char*, std::size_t> get_chunk() {
             if (current_wire_ == nullptr) {
                 current_wire_ = search();
             }
             if (current_wire_ != nullptr) {
-                return current_wire_->get_chunk(current_wire_->get_bip_address(managed_shm_ptr_), wait_flag);
+                return current_wire_->get_chunk(current_wire_->get_bip_address(managed_shm_ptr_));
             }
             std::abort();  //  FIXME
         }
