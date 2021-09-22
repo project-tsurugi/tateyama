@@ -6,6 +6,8 @@
 
 2021-08-17 kurosawa bufferからwriterベースに変更
 
+2021-09-22 service関数の非同期性を削除
+
 ## この文書について
 
 Tateyama AP基盤においてServer EndpointとServer APの境界となるAPI設計について記述する
@@ -37,18 +39,27 @@ tateyamaはAP基盤であり、そのAPIはAPに特有のデータ構造に依�
 
 ### service 
 
-Server Endpoint APIはリクエストとレスポンスの実装、およびそれを受け取るAP基盤の関数`service`によって実現される。
+Server Endpoint APIはリクエストとレスポンスの実装、およびそれを受け取るAP基盤の関数(以下サービス関数と呼ぶ)によって実現される:
 
 ```
-status service(
+status operator()(
   std::shared_ptr<request const> req, 
   std::shared_ptr<response> res
 );
 ```
 
-- Endpointがrequestとresponseを実装しservice関数を呼び出す
+- Endpointがrequestとresponseを実装しサービス関数を呼び出す
 - AP基盤はrequestのヘッダ情報をもとに適切なサーバーAPにこれらを転送する
-- `service`関数は通知後にすぐ戻る。呼出側はresponseオブジェクトのcomplete()関数による完了通知を待ち、戻された情報にアクセスする。どのタイミングでアクセス可能になるかについては下記responseセクションを参照。
+- サービス関数によって開始される処理内容は同期的な処理部分と非同期的な処理部分に分かれる。例えばjogasakiを対象APとした場合は下記のようになる。
+  - 同期部分: 
+    - begin/end/commit/rollbackなど
+    - prepared statementの作成
+    - クエリ実行のうち、コンパイル部分
+  - 非同期部分:
+    - クエリ実行のうち、ラインタイム実行部分(結果セットをチャネル経由で出力)
+- サービス関数は同期部分の処理を行ったのちに呼出側に制御を戻す。呼び出し側はその制御が戻るまでにresponseにコールバックで、初期レスポンス結果(initial response)情報を得る事ができる。
+  - 非同期部分処理がある場合はinitial response以降もresponseに対して追加で情報が戻される事もある事に注意
+    - クエリ実行中の演算エラーなど
 - AP基盤とAP(実行エンジンなど)はrequestのコマンドに応じた内容を実行し、responseのメンバ関数を呼出して結果を戻す
 - Endpoint/AP基盤間でownership管理の手間を軽減するためにrequest/responseはshared_ptrによって保持する
 
@@ -88,7 +99,7 @@ virtual class `response`によってIFが定義される
   - headerはtateyamaのレイヤでAP基盤がrouting等に使用するためのプロパティ群をさす
   - status codeとerror message以外はQEX-4以降に使用予定でありQEX-3では未実装
   - header/bodyが確定するタイミングはoutput channelを持つケースとそうでない場合で異なる
-    - output channelを持たない場合、response::complete()呼出し時点でheaderの値は確定する
+    - output channelを持たない場合、サービス関数の呼出しが返った時点でheaderの値は確定する
     - output channelを持つ場合、responseから取得されたdata_channelの全てがrelease_channel()された時点でheaderの値が確定する。
       - それまではエラーによってヘッダやボディの内容が変更される可能性がある
       - それまではstatus codeには一時的な状態を表すコード"started"が戻される
@@ -168,5 +179,4 @@ status commit();
 
 ## その他・考慮点
 
-- 現状のprotocol.RecordMetaメッセージをprotocol.ExecuteQueryメッセージ内に移動する予定。クエリの実行時にresponse bodyとしてRecordMetaを入手可能とするため。
 - ORDER BY句のように出力結果の順序が問題になるさいは単一writerによって結果が書かれることを想定している。複数writerの結果を順序付けるような機能は現時点ではない。
