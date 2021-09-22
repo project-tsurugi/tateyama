@@ -38,7 +38,7 @@ tateyama::status ipc_response::complete() {
     VLOG(1) << __func__ << std::endl;  //NOLINT
 
     ipc_request_.dispose();
-    if (response_code_ == tateyama::api::endpoint::response_code::success || acquire_channel_or_complete_) {
+    if (response_code_ != tateyama::api::endpoint::response_code::started || acquire_channel_or_complete_) {
         response_box_.flush();
         return tateyama::status::ok;
     }
