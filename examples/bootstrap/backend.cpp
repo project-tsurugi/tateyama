@@ -67,6 +67,37 @@ int backend_main(int argc, char **argv) {
     db->start();
     DBCloser dbcloser{db};
     VLOG(1) << "database started";
+<<<<<<< HEAD
+=======
+
+    // load tpc-c tables
+    if (FLAGS_load) {
+        VLOG(1) << "TPC-C data load begin";
+        LOG(INFO) << "TPC-C data load begin";
+        try {
+            tateyama::server::tpcc::load(*db, FLAGS_location);
+        } catch (std::exception& e) {
+            std::cerr << "[" << __FILE__ << ":" <<  __LINE__ << "] " << e.what();
+            std::abort();
+        }
+        VLOG(1) << "TPC-C data load end";
+        LOG(INFO) << "TPC-C data load end";
+    }
+
+    // load tpc-c tables
+    if (FLAGS_load) {
+        VLOG(1) << "TPC-C data load begin" << std::endl;
+        std::cout << "TPC-C data load begin" << std::endl;
+        try {
+            tateyama::server::tpcc::load(*db, FLAGS_location);
+        } catch (std::exception& e) {
+            std::cerr << "[" << __FILE__ << ":" <<  __LINE__ << "] " << e.what() << std::endl;
+            std::abort();
+        }
+        VLOG(1) << "TPC-C data load end" << std::endl;
+        std::cout << "TPC-C data load end" << std::endl;
+    }
+>>>>>>> 484c14476a095440c16ef611519c804980c7b6eb
 
     // connection channel
     auto container = std::make_unique<tateyama::common::wire::connection_container>(FLAGS_dbname);
