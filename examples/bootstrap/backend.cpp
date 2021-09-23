@@ -68,6 +68,9 @@ int backend_main(int argc, char **argv) {
     DBCloser dbcloser{db};
     VLOG(1) << "database started";
 
+    // connection channel
+    auto container = std::make_unique<tateyama::common::wire::connection_container>(FLAGS_dbname);
+
     // load tpc-c tables
     if (FLAGS_load) {
         VLOG(1) << "TPC-C data load begin";
@@ -81,9 +84,6 @@ int backend_main(int argc, char **argv) {
         VLOG(1) << "TPC-C data load end";
         LOG(INFO) << "TPC-C data load end";
     }
-
-    // connection channel
-    auto container = std::make_unique<tateyama::common::wire::connection_container>(FLAGS_dbname);
 
     // worker objects
     std::vector<std::unique_ptr<Worker>> workers;
