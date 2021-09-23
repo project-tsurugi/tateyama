@@ -85,20 +85,6 @@ int backend_main(int argc, char **argv) {
         std::cout << "TPC-C data load end" << std::endl;
     }
 
-    // load tpc-c tables
-    if (FLAGS_load) {
-        VLOG(1) << "TPC-C data load begin";
-        LOG(INFO) << "TPC-C data load begin";
-        try {
-            tateyama::server::tpcc::load(*db, FLAGS_location);
-        } catch (std::exception& e) {
-            std::cerr << "[" << __FILE__ << ":" <<  __LINE__ << "] " << e.what();
-            std::abort();
-        }
-        VLOG(1) << "TPC-C data load end";
-        LOG(INFO) << "TPC-C data load end";
-    }
-
     // worker objects
     std::vector<std::unique_ptr<Worker>> workers;
     workers.reserve(FLAGS_threads);
