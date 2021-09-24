@@ -1,6 +1,7 @@
 file(GLOB SOURCES
         "tateyama/*.cpp"
         "tateyama/bootstrap/*.cpp"
+        "tateyama/server/*.cpp"
         "tateyama/task_scheduler/*.cpp"
         "tateyama/endpoint/service/*.cpp"
         "tateyama/endpoint/service/impl/*.cpp"
