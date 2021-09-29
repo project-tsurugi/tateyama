@@ -15,6 +15,9 @@
  */
 #pragma once
 
+#include <string_view>
+#include <memory>
+
 namespace tateyama::api::endpoint {
 class request;
 }
