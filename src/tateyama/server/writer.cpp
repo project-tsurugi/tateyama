@@ -15,9 +15,27 @@
  */
 #include <tateyama/api/server/writer.h>
 
+#include <tateyama/api/endpoint/writer.h>
+
 #include <cstddef>
 #include <tateyama/status.h>
 
 namespace tateyama::api::server {
+
+writer::writer(endpoint::writer& origin) :
+    origin_(std::addressof(origin))
+{}
+
+status writer::write(char const* data, std::size_t length) {
+    return origin_->write(data, length);
+}
+
+status writer::commit() {
+    return origin_->commit();
+}
+
+api::endpoint::writer* writer::origin() const noexcept {
+    return origin_;
+}
 
 }

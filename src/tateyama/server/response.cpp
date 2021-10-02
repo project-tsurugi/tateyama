@@ -15,9 +15,39 @@
  */
 #include <tateyama/api/server/response.h>
 
-#include "data_channel.h"
-#include "response_code.h"
+#include <tateyama/api/endpoint/response.h>
 
 namespace tateyama::api::server {
+
+std::shared_ptr<api::endpoint::response> const& response::origin() const noexcept {
+    return origin_;
+}
+
+void response::code(response_code code) {
+    origin_->code(code);
+}
+
+status response::close_session() {
+    return origin_->close_session();
+}
+
+status response::body_head(std::string_view body_head) {
+    return origin_->body_head(body_head);
+}
+
+status response::body(std::string_view body) {
+    return origin_->body(body);
+}
+
+status response::release_channel(data_channel& ch) {
+    return origin_->release_channel(*ch.origin());
+}
+
+status response::acquire_channel(std::string_view name, std::shared_ptr<data_channel>& ch) {
+    endpoint::data_channel* c{};
+    auto ret = origin_->acquire_channel(name, c);
+    ch = std::make_shared<data_channel>(*c);
+    return ret;
+}
 
 }

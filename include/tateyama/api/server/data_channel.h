@@ -50,7 +50,7 @@ public:
     /**
      * @brief create new object
      */
-    explicit data_channel(std::shared_ptr<api::endpoint::data_channel> origin);
+    explicit data_channel(api::endpoint::data_channel& origin);
 
     /**
      * @brief acquire a new writer
@@ -64,7 +64,7 @@ public:
      * @return status::ok when successful
      * @return other status code when error occurs
      */
-    status acquire(writer*& wrt);
+    status acquire(std::shared_ptr<writer>& wrt);
 
     /**
      * @brief declare to finish using the writer and return it to channel
@@ -79,11 +79,14 @@ public:
      */
     status release(writer& wrt);
 
-    std::shared_ptr<api::endpoint::data_channel> const& origin() const noexcept;
+    /**
+     * @brief accessor to the endpoint data channel
+     * @return the endpoint data channel
+     */
+    [[nodiscard]] api::endpoint::data_channel* origin() const noexcept;
 
 private:
-    std::shared_ptr<api::endpoint::data_channel> origin_{};
-    std::vector<std::shared_ptr<writer>> writers_{};
+    api::endpoint::data_channel* origin_{};
 };
 
 }

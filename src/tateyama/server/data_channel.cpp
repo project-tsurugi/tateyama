@@ -20,16 +20,14 @@
 
 namespace tateyama::api::server {
 
-data_channel::data_channel(std::shared_ptr<api::endpoint::data_channel> origin) :
-    origin_(std::move(origin))
+data_channel::data_channel(api::endpoint::data_channel& origin) :
+    origin_(std::addressof(origin))
 {}
 
-status data_channel::acquire(writer*& wrt) {
+status data_channel::acquire(std::shared_ptr<writer>& wrt) {
     api::endpoint::writer* w{};
     auto ret = origin_->acquire(w);
-    writers_.emplace_back()
-
-    *wrt.origin()
+    wrt = std::make_shared<writer>(*w);
     return ret;
 }
 
@@ -37,7 +35,7 @@ status data_channel::release(writer& wrt) {
     return origin_->release(*wrt.origin());
 }
 
-std::shared_ptr<api::endpoint::data_channel> const& data_channel::origin() const noexcept {
+api::endpoint::data_channel* data_channel::origin() const noexcept {
     return origin_;
 }
 

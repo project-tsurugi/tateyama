@@ -16,12 +16,14 @@
 #pragma once
 
 #include "data_channel.h"
-#include "response_code.h"
 
 namespace tateyama::api::endpoint {
 class response;
+enum class response_code : std::int64_t;
 }
 namespace tateyama::api::server {
+
+using response_code = tateyama::api::endpoint::response_code;
 
 /**
  * @brief response interface
@@ -36,7 +38,7 @@ public:
     /**
      * @brief destruct the object
      */
-    virtual ~response() = default;
+    ~response() = default;
 
     response(response const& other) = default;
     response& operator=(response const& other) = default;
@@ -53,40 +55,26 @@ public:
      * the body.
      * @attention this function is not thread-safe and should be called from single thread at a time.
      */
-    virtual void code(response_code code) = 0;
+    void code(response_code code);
 
     /**
-     * @brief setter of the tateyama error message
-     * @param msg the error message
-     * @details This is the error message on the tateyama layer. If application error occurs, its detailed message is
-     * stored in the body.
-     * @attention this function is not thread-safe and should be called from single thread at a time.
-     */
-    virtual void message(std::string_view msg) = 0;
-
-    /**
-     * @brief notify completion of the initial response
-     * @detail this function is called to notify the header and response body are filled and accessible.
-     * If the response code that is set by code() function prior to this call is not response_code::started,
-     * the request is already completed (i.e. response header and body are finalized and will not change any more.)
-     * Otherwise, the application has output transferred by data channel, and the request gets completed only after
-     * all channels are released (until then, there are possible changes in headers and body, that are notified by
-     * setter functions, e.g. code()).
+     * @brief setter of the response body head
+     * @param body_head the response body head data
+     * @pre body() function of this object is not yet called
      * @return status::ok when successful
      * @return other code when error occurs
      * @attention this function is not thread-safe and should be called from single thread at a time.
      */
-    virtual status complete() = 0;
+    status body_head(std::string_view body_head);
 
     /**
      * @brief setter of the response body
      * @param body the response body data
-     * @pre complete() function of this object is not yet called
      * @return status::ok when successful
      * @return other code when error occurs
      * @attention this function is not thread-safe and should be called from single thread at a time.
      */
-    virtual status body(std::string_view body) = 0;
+    status body(std::string_view body);
 
     /**
      * @brief retrieve output data channel
@@ -97,7 +85,7 @@ public:
      * @return status::ok when successful
      * @return other code when error occurs
      */
-    virtual status acquire_channel(std::string_view name, data_channel*& ch) = 0;
+    status acquire_channel(std::string_view name, std::shared_ptr<data_channel>& ch);
 
     /**
      * @brief release the data channel
@@ -112,7 +100,7 @@ public:
      * @return status::ok when successful
      * @return other status code when error occurs
      */
-    virtual status release_channel(data_channel& ch) = 0;
+    status release_channel(data_channel& ch);
 
     /**
      * @brief notify endpoint to close the current session
@@ -123,13 +111,16 @@ public:
      * @return other code when error occurs
      * @attention this function is not thread-safe and should be called from single thread at a time.
      */
-    virtual status close_session() = 0;
+    status close_session();
 
-    std::shared_ptr<api::endpoint::writer> const& origin() const noexcept {
-        return origin_;
-    }
+    /**
+     * @brief accessor to the endpoint response
+     * @return the endpoint response
+     */
+    [[nodiscard]] std::shared_ptr<api::endpoint::response> const& origin() const noexcept;
+
 private:
-    std::shared_ptr<api::endpoint::data_channel> origin_{};
+    std::shared_ptr<api::endpoint::response> origin_{};
 };
 
 }

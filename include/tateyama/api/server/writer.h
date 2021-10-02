@@ -36,6 +36,11 @@ public:
     writer() = default;
 
     /**
+     * @brief create new object
+     */
+    explicit writer(api::endpoint::writer& origin);
+
+    /**
      * @brief destruct the object
      */
     ~writer() = default;
@@ -57,7 +62,7 @@ public:
      * @return status::ok when successful
      * @return other status code when error occurs
      */
-    status write(char const* data, std::size_t length) = 0;
+    status write(char const* data, std::size_t length);
 
     /**
      * @brief commit the written data
@@ -68,13 +73,12 @@ public:
      * @return status::ok when successful
      * @return other status code when error occurs
      */
-    status commit() = 0;
+    status commit();
 
-    std::shared_ptr<api::endpoint::writer> const& origin() const noexcept {
-        return origin_;
-    }
+    [[nodiscard]] api::endpoint::writer* origin() const noexcept;
+
 private:
-    std::shared_ptr<api::endpoint::writer> origin_{};
+    api::endpoint::writer* origin_{};
 };
 
 }

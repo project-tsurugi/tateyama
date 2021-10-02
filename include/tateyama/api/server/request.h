@@ -58,11 +58,14 @@ public:
      * @brief accessor to the payload binary data
      * @return the view to the payload
      */
-    std::string_view payload() const = 0;  //NOLINT(modernize-use-nodiscard)
+    [[nodiscard]] std::string_view payload() const;;  //NOLINT(modernize-use-nodiscard)
 
-    std::shared_ptr<api::endpoint::request> const& origin() const noexcept {
-        return origin_;
-    }
+    /**
+     * @brief accessor to the endpoint request
+     * @return the endpoint request
+     */
+    [[nodiscard]] std::shared_ptr<api::endpoint::request> const& origin() const noexcept;
+
 private:
     std::shared_ptr<api::endpoint::request> origin_{};
 };

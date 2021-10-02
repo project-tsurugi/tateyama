@@ -15,6 +15,16 @@
  */
 #include <tateyama/api/server/request.h>
 
+#include <tateyama/api/endpoint/request.h>
+
 namespace tateyama::api::server {
+
+std::string_view request::payload() const {
+    return origin_->payload();
+}
+
+std::shared_ptr<api::endpoint::request> const& request::origin() const noexcept {
+    return origin_;
+}
 
 }
