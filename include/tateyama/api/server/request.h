@@ -35,6 +35,11 @@ public:
     request() = default;
 
     /**
+     * @brief create new object
+     */
+    explicit request(std::shared_ptr<api::endpoint::request const> origin);
+
+    /**
      * @brief destruct the object
      */
     ~request() = default;
@@ -64,10 +69,10 @@ public:
      * @brief accessor to the endpoint request
      * @return the endpoint request
      */
-    [[nodiscard]] std::shared_ptr<api::endpoint::request> const& origin() const noexcept;
+    [[nodiscard]] std::shared_ptr<api::endpoint::request const> const& origin() const noexcept;
 
 private:
-    std::shared_ptr<api::endpoint::request> origin_{};
+    std::shared_ptr<api::endpoint::request const> origin_{};
 };
 
 }

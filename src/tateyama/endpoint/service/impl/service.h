@@ -23,14 +23,19 @@
 #include <takatori/util/fail.h>
 
 #include <jogasaki/api/database.h>
-#include <jogasaki/api/transaction_handle.h>
-#include <jogasaki/api/statement_handle.h>
 
 #include <tateyama/status.h>
 #include <tateyama/api/endpoint/service.h>
 #include <tateyama/api/endpoint/response.h>
 #include <tateyama/api/endpoint/writer.h>
 #include <tateyama/api/endpoint/data_channel.h>
+
+#include <tateyama/api/server/request.h>
+#include <tateyama/api/server/service.h>
+#include <tateyama/api/server/response.h>
+#include <tateyama/api/server/writer.h>
+#include <tateyama/api/server/data_channel.h>
+#include <tateyama/bootstrap/loader.h>
 
 #include "request.pb.h"
 #include "response.pb.h"
@@ -46,18 +51,22 @@ class service : public api::endpoint::service {
 public:
     service() = default;
 
-    explicit service(jogasaki::api::database& db) : db_(std::addressof(db)) {}
+    explicit service(jogasaki::api::database& db) :
+        application_(bootstrap::create_application(std::addressof(db)))
+    {}
 
     tateyama::status operator()(
         std::shared_ptr<tateyama::api::endpoint::request const> req,
         std::shared_ptr<tateyama::api::endpoint::response> res
     ) override {
-        return (*db_)(req, res);
+        return application_->operator()(
+            std::make_shared<tateyama::api::server::request>(std::move(req)),
+            std::make_shared<tateyama::api::server::response>(std::move(res))
+        );
     }
 
 private:
-
-    jogasaki::api::database* db_{};
+    std::shared_ptr<api::server::service> application_{};
 };
 
 }

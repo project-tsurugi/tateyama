@@ -112,4 +112,21 @@ std::shared_ptr<jogasaki::api::environment> create_environment() {
     }
 }
 
+std::shared_ptr<tateyama::api::server::service> create_application(jogasaki::api::database* db) {
+    auto& ldr = details::get_loader();
+    tateyama::api::server::service* (*creater)(jogasaki::api::database*){};
+    void (*deleter)(tateyama::api::server::service*){};
+    try {
+        creater = reinterpret_cast<decltype(creater)>(ldr.lookup("new_application"));  //NOLINT
+        deleter = reinterpret_cast<decltype(deleter)> (ldr.lookup("delete_application"));  //NOLINT
+        return std::shared_ptr<tateyama::api::server::service>{creater(db), [=](tateyama::api::server::service* ptr) {
+            deleter(ptr);
+        }};
+    } catch(const std::runtime_error& e) {
+        LOG(ERROR) << e.what();
+        fail();
+    }
 }
+
+}
+

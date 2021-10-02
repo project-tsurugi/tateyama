@@ -23,8 +23,12 @@ std::string_view request::payload() const {
     return origin_->payload();
 }
 
-std::shared_ptr<api::endpoint::request> const& request::origin() const noexcept {
+std::shared_ptr<api::endpoint::request const> const& request::origin() const noexcept {
     return origin_;
 }
+
+request::request(std::shared_ptr<api::endpoint::request const> origin) :
+    origin_(std::move(origin))
+{}
 
 }

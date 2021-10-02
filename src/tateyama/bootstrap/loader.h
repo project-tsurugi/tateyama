@@ -21,6 +21,7 @@
 
 #include <jogasaki/api.h>
 #include <tateyama/status.h>
+#include <tateyama/api/server/service.h>
 
 #include <cstring>
 
@@ -77,6 +78,17 @@ std::shared_ptr<jogasaki::api::environment> create_environment();
  * Specify install prefix to LD_LIBRARY_PATH when ASAN is used (e.g. on Debug build).
  */
 std::shared_ptr<jogasaki::api::database> create_database(jogasaki::configuration* cfg);
+
+/**
+ * @brief load and create application
+ * @details load necessary SQL engine libraries and create application
+ * @param db the database used by the application
+ * @return the application object
+ * @note TODO revisit when components boundary is updated
+ * @warning ASAN and dlopen has compatibility issue (https://bugs.llvm.org/show_bug.cgi?id=27790).
+ * Specify install prefix to LD_LIBRARY_PATH when ASAN is used (e.g. on Debug build).
+ */
+std::shared_ptr<tateyama::api::server::service> create_application(jogasaki::api::database* db);
 
 }
 

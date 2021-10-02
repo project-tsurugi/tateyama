@@ -50,4 +50,8 @@ status response::acquire_channel(std::string_view name, std::shared_ptr<data_cha
     return ret;
 }
 
+response::response(std::shared_ptr<api::endpoint::response> origin) :
+    origin_(std::move(origin))
+{}
+
 }

@@ -36,6 +36,11 @@ public:
     response() = default;
 
     /**
+     * @brief create new object
+     */
+    explicit response(std::shared_ptr<api::endpoint::response> origin);
+
+    /**
      * @brief destruct the object
      */
     ~response() = default;
