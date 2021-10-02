@@ -53,32 +53,18 @@ public:
     virtual void code(response_code code) = 0;
 
     /**
-     * @brief setter of the tateyama error message
-     * @param msg the error message
-     * @details This is the error message on the tateyama layer. If application error occurs, its detailed message is
-     * stored in the body.
-     * @attention this function is not thread-safe and should be called from single thread at a time.
-     */
-    virtual void message(std::string_view msg) = 0;
-
-    /**
-     * @brief notify completion of the initial response
-     * @detail this function is called to notify the header and response body are filled and accessible.
-     * If the response code that is set by code() function prior to this call is not response_code::started,
-     * the request is already completed (i.e. response header and body are finalized and will not change any more.)
-     * Otherwise, the application has output transferred by data channel, and the request gets completed only after
-     * all channels are released (until then, there are possible changes in headers and body, that are notified by
-     * setter functions, e.g. code()).
+     * @brief setter of the response body head
+     * @param body_head the response body head data
+     * @pre body() function of this object is not yet called
      * @return status::ok when successful
      * @return other code when error occurs
      * @attention this function is not thread-safe and should be called from single thread at a time.
      */
-    virtual status complete() = 0;
+    virtual status body_head(std::string_view body_head) = 0;
 
     /**
      * @brief setter of the response body
      * @param body the response body data
-     * @pre complete() function of this object is not yet called
      * @return status::ok when successful
      * @return other code when error occurs
      * @attention this function is not thread-safe and should be called from single thread at a time.

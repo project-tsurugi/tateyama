@@ -55,7 +55,6 @@ public:
             EXPECT_EQ(request_test_message_, payload);
             res->body(resultset_wire_name_);
             res->code(tateyama::api::endpoint::response_code::started);
-            res->complete();
 
             tateyama::api::endpoint::data_channel* dc;
             EXPECT_EQ(res->acquire_channel(resultset_wire_name_, dc), tateyama::status::ok);
@@ -77,7 +76,7 @@ public:
     };
 };
 
-TEST_F(result_set_test, normal) {
+TEST_F(result_set_test, DISABLED_normal) {
     auto* request_wire = static_cast<tateyama::common::wire::server_wire_container_impl::wire_container_impl*>(wire_->get_request_wire());
 
     request_wire->write(request_test_message_.data(),

@@ -116,9 +116,8 @@ public:
     ipc_response() = delete;
 
     void code(tateyama::api::endpoint::response_code code) override;
-    void message(std::string_view msg) override;
-    tateyama::status complete() override;
     tateyama::status body(std::string_view body) override;
+    tateyama::status body_head(std::string_view body_head) override;
     tateyama::status acquire_channel(std::string_view name, tateyama::api::endpoint::data_channel*& ch) override;
     tateyama::status release_channel(tateyama::api::endpoint::data_channel& ch) override;
     tateyama::status close_session() override;

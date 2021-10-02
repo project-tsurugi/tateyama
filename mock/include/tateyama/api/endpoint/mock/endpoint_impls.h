@@ -113,17 +113,13 @@ public:
         code_ = code;
     }
 
-    void message(std::string_view msg) override {
-        message_ = msg;
-    }
-
-    status complete() override {
-        completed_ = true;
+    status body(std::string_view body) override {
+        body_.assign(body);
         return status::ok;
     }
 
-    status body(std::string_view body) override {
-        body_.assign(body);
+    status body_head(std::string_view body_head) override {
+        body_head_.assign(body_head);
         return status::ok;
     }
 
@@ -147,6 +143,7 @@ public:
         return status::ok;
     };
     std::string body_{};  //NOLINT
+    std::string body_head_{};  //NOLINT
     std::unique_ptr<test_channel> channel_{};  //NOLINT
     std::string message_{};  //NOLINT
     response_code code_{response_code::unknown};  //NOLINT

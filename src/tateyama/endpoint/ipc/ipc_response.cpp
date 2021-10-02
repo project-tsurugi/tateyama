@@ -34,15 +34,9 @@ tateyama::status ipc_response::body(std::string_view body) {
     return tateyama::status::ok;
 }
 
-tateyama::status ipc_response::complete() {
+tateyama::status ipc_response::body_head(std::string_view body_head) {
     VLOG(1) << __func__ << std::endl;  //NOLINT
-
-    ipc_request_.dispose();
-    if (response_code_ != tateyama::api::endpoint::response_code::started || acquire_channel_or_complete_) {
-        response_box_.flush();
-        return tateyama::status::ok;
-    }
-    acquire_channel_or_complete_ = true;
+    (void)body_head;
     return tateyama::status::ok;
 }
 
@@ -50,12 +44,6 @@ void ipc_response::code(tateyama::api::endpoint::response_code code) {
     VLOG(1) << __func__ << std::endl;  //NOLINT
 
     response_code_ = code;
-}
-
-void ipc_response::message(std::string_view msg) {
-    VLOG(1) << __func__ << std::endl;  //NOLINT
-
-    message_ = msg;
 }
 
 tateyama::status ipc_response::acquire_channel(std::string_view name, tateyama::api::endpoint::data_channel*& ch) {
