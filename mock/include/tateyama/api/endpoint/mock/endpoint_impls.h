@@ -115,6 +115,7 @@ public:
 
     status body(std::string_view body) override {
         body_.assign(body);
+        completed_ = true;
         return status::ok;
     }
 
