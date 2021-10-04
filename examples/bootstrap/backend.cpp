@@ -30,24 +30,24 @@
 
 #include "worker.h"
 #include "server.h"
-
-namespace tateyama::server {
+#include "utils.h"
 
 DEFINE_string(dbname, "tateyama", "database name");  // NOLINT
 DEFINE_string(location, "./db", "database location on file system");  // NOLINT
 DEFINE_uint32(threads, 5, "thread pool size");  //NOLINT
 DEFINE_bool(remove_shm, false, "remove the shared memory prior to the execution");  // NOLINT
-DEFINE_int32(read_batch_size,  256, "Batch size for dump");  //NOLINT
-DEFINE_int32(write_batch_size, 256, "Batch size for load");  //NOLINT
+DEFINE_bool(load, false, "Database contents are loaded from the location just after boot");  //NOLINT
+DEFINE_int32(dump_batch_size, 1024, "Batch size for dump");  //NOLINT
+DEFINE_int32(load_batch_size, 1024, "Batch size for load");  //NOLINT
 
-static constexpr std::string_view KEY_LOCATION { "location" };  //NOLINT
-
+namespace tateyama::server {
 
 jmp_buf buf;
 
 void signal_handler([[maybe_unused]]int signal)
 {
-    VLOG(1) << "signal " << signal << " received" << std::endl;
+    VLOG(1) << sys_siglist[signal] << " signal received";
+    LOG(INFO) << sys_siglist[signal] << " signal received";
     longjmp(buf, 1);
 }
 
@@ -66,10 +66,24 @@ int backend_main(int argc, char **argv) {
     auto db = tateyama::bootstrap::create_database(cfg.get());
     db->start();
     DBCloser dbcloser{db};
-    VLOG(1) << "database started" << std::endl;
+    VLOG(1) << "database started";
 
     // connection channel
     auto container = std::make_unique<tateyama::common::wire::connection_container>(FLAGS_dbname);
+
+    // load tpc-c tables
+    if (FLAGS_load) {
+        VLOG(1) << "TPC-C data load begin" << std::endl;
+        std::cout << "TPC-C data load begin" << std::endl;
+        try {
+            tateyama::server::tpcc::load(*db, FLAGS_location);
+        } catch (std::exception& e) {
+            std::cerr << "[" << __FILE__ << ":" <<  __LINE__ << "] " << e.what() << std::endl;
+            std::abort();
+        }
+        VLOG(1) << "TPC-C data load end" << std::endl;
+        std::cout << "TPC-C data load end" << std::endl;
+    }
 
     // worker objects
     std::vector<std::unique_ptr<Worker>> workers;
@@ -80,7 +94,7 @@ int backend_main(int argc, char **argv) {
     if (setjmp(buf) != 0) {
         for (std::size_t index = 0; index < workers.size() ; index++) {
             if (auto rv = workers.at(index)->future_.wait_for(std::chrono::seconds(0)) ; rv != std::future_status::ready) {
-                VLOG(1) << "exit: remaining thread " << workers.at(index)->session_id_ << std::endl;
+                VLOG(1) << "exit: remaining thread " << workers.at(index)->session_id_;
             }
         }
         workers.clear();
@@ -90,24 +104,24 @@ int backend_main(int argc, char **argv) {
 
     // service
     auto service = tateyama::api::endpoint::create_service(*db);
-    VLOG(1) << "endpoint service created" << std::endl;
+    VLOG(1) << "endpoint service created";
 
     int return_value{0};
     auto& connection_queue = container->get_connection_queue();
     while(true) {
         auto session_id = connection_queue.listen(true);
         if (connection_queue.is_terminated()) {
-            VLOG(1) << "terminate request" << std::endl;
+            VLOG(1) << "receive terminate request";
             workers.clear();
             connection_queue.confirm_terminated();
             break;
         }
-        VLOG(1) << "connect request: " << session_id << std::endl;
+        VLOG(1) << "connect request: " << session_id;
         std::string session_name = FLAGS_dbname;
         session_name += "-";
         session_name += std::to_string(session_id);
         auto wire = std::make_unique<tateyama::common::wire::server_wire_container_impl>(session_name);
-        VLOG(1) << "created session wire: " << session_name << std::endl;
+        VLOG(1) << "created session wire: " << session_name;
         connection_queue.accept(session_id);
         std::size_t index;
         for (index = 0; index < workers.size() ; index++) {
@@ -125,7 +139,7 @@ int backend_main(int argc, char **argv) {
             worker->future_ = worker->task_.get_future();
             worker->thread_ = std::thread(std::move(worker->task_));
         } catch (std::exception &ex) {
-            std::cerr << ex.what() << std::endl;
+            LOG(ERROR) << ex.what();
             return_value = -1;
             workers.clear();
             break;

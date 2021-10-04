@@ -27,7 +27,7 @@ namespace tateyama::common::wire {
 
 class server_wire_container_impl : public server_wire_container
 {
-    static constexpr std::size_t shm_size = (1<<22);  // 4M bytes (tentative)
+    static constexpr std::size_t shm_size = (1<<21) * 104;  // 2M(64K * 8writes * 4result_sets) * 104threads bytes (tentative)
     static constexpr std::size_t request_buffer_size = (1<<12);   //  4K bytes (tentative)
     static constexpr std::size_t resultset_vector_size = (1<<12); //  4K bytes (tentative)
     static constexpr std::size_t writer_count = 8;
