@@ -21,7 +21,7 @@
 #include <takatori/util/fail.h>
 #include <takatori/util/downcast.h>
 
-#include <tateyama/utils/loader.h>
+#include "../common/utils/loader.h"
 
 #include <jogasaki/api.h>
 
@@ -48,10 +48,10 @@ class cli {
     std::shared_ptr<jogasaki::api::database> db_{};
 public:
     int run(std::string_view sql, std::shared_ptr<jogasaki::configuration> cfg) {
-        auto env = tateyama::bootstrap::create_environment();
-        db_ = tateyama::bootstrap::create_database(cfg.get());
+        auto env = tateyama::utils::create_environment();
+        db_ = tateyama::utils::create_database(cfg.get());
         db_->start();
-        auto app = tateyama::bootstrap::create_application(db_.get());
+        auto app = tateyama::utils::create_application(db_.get());
 
         jogasaki::api::statement_handle stmt{};
         auto p = db_->prepare(sql, stmt);

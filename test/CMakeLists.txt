@@ -11,6 +11,7 @@ target_include_directories(${test_target}
 target_link_libraries(${test_target}
         PRIVATE tateyama-impl
         PRIVATE mock
+        PRIVATE ${jogasaki_api}
         PUBLIC gtest
         PRIVATE tbb
         PRIVATE takatori

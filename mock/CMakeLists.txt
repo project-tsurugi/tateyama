@@ -1,15 +1,10 @@
 file(GLOB SOURCES
         "tateyama/api/endpoint/mock/*.cpp"
-        "tateyama/utils/*.cpp"
 )
 
 set(mock "mock")
 
 add_library(mock-api INTERFACE)
-
-target_link_libraries(mock-api
-        INTERFACE ${jogasaki_api}
-        )
 
 target_include_directories(mock-api
         INTERFACE
@@ -63,7 +58,6 @@ target_include_directories(mock-impl
 
 target_link_libraries(mock-impl
         INTERFACE ${ENGINE}
-        INTERFACE ${jogasaki_api}
         INTERFACE takatori
         INTERFACE yugawara
         INTERFACE tbb

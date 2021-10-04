@@ -24,7 +24,7 @@
 #include <gflags/gflags.h>
 #include <glog/logging.h>
 
-#include <tateyama/utils/loader.h>
+#include "../common/utils/loader.h"
 #include <tateyama/api/endpoint/service.h>
 #include <jogasaki/api.h>
 
@@ -63,7 +63,7 @@ int backend_main(int argc, char **argv) {
     cfg->prepare_benchmark_tables(true);
     cfg->thread_pool_size(FLAGS_threads);
 
-    auto db = tateyama::bootstrap::create_database(cfg.get());
+    auto db = tateyama::utils::create_database(cfg.get());
     db->start();
     DBCloser dbcloser{db};
     VLOG(1) << "database started";
@@ -103,7 +103,7 @@ int backend_main(int argc, char **argv) {
     }
 
     // service
-    auto app = tateyama::bootstrap::create_application(db.get());
+    auto app = tateyama::utils::create_application(db.get());
     auto service = tateyama::api::endpoint::create_service(app);
     VLOG(1) << "endpoint service created" << std::endl;
 

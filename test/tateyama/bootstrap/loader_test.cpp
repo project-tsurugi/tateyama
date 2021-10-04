@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <tateyama/utils/loader.h>
+#include "../common/utils/loader.h"
 
 #include <jogasaki/api.h>
 
@@ -31,10 +31,10 @@ class loader_test : public ::testing::Test {
 using namespace std::string_view_literals;
 
 TEST_F(loader_test, DISABLED_simple) {
-    auto env = tateyama::bootstrap::create_environment();
+    auto env = tateyama::utils::create_environment();
     env->initialize();
     auto cfg = std::make_shared<jogasaki::configuration>();
-    auto db = tateyama::bootstrap::create_database(cfg.get());
+    auto db = tateyama::utils::create_database(cfg.get());
     ASSERT_TRUE(db);
     db->start();
     db->stop();
