@@ -16,54 +16,27 @@
 #pragma once
 
 #include <string_view>
-#include <atomic>
 #include <memory>
-
-#include <takatori/util/downcast.h>
-#include <takatori/util/fail.h>
-
-#include <jogasaki/api/database.h>
 
 #include <tateyama/status.h>
 #include <tateyama/api/endpoint/service.h>
+#include <tateyama/api/endpoint/request.h>
 #include <tateyama/api/endpoint/response.h>
-#include <tateyama/api/endpoint/writer.h>
-#include <tateyama/api/endpoint/data_channel.h>
 
-#include <tateyama/api/server/request.h>
 #include <tateyama/api/server/service.h>
-#include <tateyama/api/server/response.h>
-#include <tateyama/api/server/writer.h>
-#include <tateyama/api/server/data_channel.h>
-#include <tateyama/bootstrap/loader.h>
-
-#include "request.pb.h"
-#include "response.pb.h"
-#include "common.pb.h"
-#include "common.pb.h"
 
 namespace tateyama::api::endpoint::impl {
-
-using takatori::util::unsafe_downcast;
-using takatori::util::fail;
 
 class service : public api::endpoint::service {
 public:
     service() = default;
 
-    explicit service(jogasaki::api::database& db) :
-        application_(bootstrap::create_application(std::addressof(db)))
-    {}
+    explicit service(std::shared_ptr<api::server::service> app);
 
     tateyama::status operator()(
         std::shared_ptr<tateyama::api::endpoint::request const> req,
         std::shared_ptr<tateyama::api::endpoint::response> res
-    ) override {
-        return application_->operator()(
-            std::make_shared<tateyama::api::server::request>(std::move(req)),
-            std::make_shared<tateyama::api::server::response>(std::move(res))
-        );
-    }
+    ) override;
 
 private:
     std::shared_ptr<api::server::service> application_{};

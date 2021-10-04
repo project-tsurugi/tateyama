@@ -1,17 +1,15 @@
 file(GLOB SOURCES
         "tateyama/api/endpoint/mock/*.cpp"
-)
-
-set_source_files_properties(
-        ${GENERATED_PROTO_SRCS}
-        PROPERTIES
-        GENERATED TRUE
-        COMPILE_FLAGS -Wno-unused-parameter
+        "tateyama/utils/*.cpp"
 )
 
 set(mock "mock")
 
 add_library(mock-api INTERFACE)
+
+target_link_libraries(mock-api
+        INTERFACE ${jogasaki_api}
+        )
 
 target_include_directories(mock-api
         INTERFACE
@@ -23,14 +21,9 @@ install_custom(mock-api ${export_name})
 
 add_library(${mock}
         ${SOURCES}
-        ${GENERATED_PROTO_SRCS}
 )
-add_dependencies(${mock}
-        build_protos
-        )
 
 target_include_directories(${mock}
-        PRIVATE ${CMAKE_BINARY_DIR}/protos
         PRIVATE include
 )
 
@@ -40,6 +33,7 @@ set_target_properties(${mock} PROPERTIES
         )
 
 target_link_libraries(${mock}
+        PUBLIC mock-api
         PRIVATE tateyama-impl
         PRIVATE Boost::boost
         PRIVATE Boost::filesystem
@@ -64,13 +58,14 @@ endif()
 add_library(mock-impl INTERFACE)
 
 target_include_directories(mock-impl
-        INTERFACE ${CMAKE_BINARY_DIR}/protos
         INTERFACE include
         )
 
 target_link_libraries(mock-impl
         INTERFACE ${ENGINE}
+        INTERFACE ${jogasaki_api}
         INTERFACE takatori
+        INTERFACE yugawara
         INTERFACE tbb
         INTERFACE numa
         INTERFACE tsl::hopscotch_map

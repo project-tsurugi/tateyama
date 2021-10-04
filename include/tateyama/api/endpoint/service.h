@@ -19,7 +19,14 @@ namespace jogasaki::api {
 class database;
 }
 
+namespace tateyama::api::server {
+class service;
+}
+
 namespace tateyama::api::endpoint {
+
+class request;
+class response;
 
 /**
  * @brief tateyama service interface
@@ -71,6 +78,6 @@ public:
  * @return service api object
  * @return nullptr if error occurs on creation
  */
-std::unique_ptr<service> create_service(jogasaki::api::database& db);
+std::unique_ptr<service> create_service(std::shared_ptr<tateyama::api::server::service> app);
 
 }

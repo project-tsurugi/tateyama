@@ -24,7 +24,7 @@
 #include <gflags/gflags.h>
 #include <glog/logging.h>
 
-#include <tateyama/bootstrap/loader.h>
+#include <tateyama/utils/loader.h>
 #include <tateyama/api/endpoint/service.h>
 #include <jogasaki/api.h>
 
@@ -103,8 +103,9 @@ int backend_main(int argc, char **argv) {
     }
 
     // service
-    auto service = tateyama::api::endpoint::create_service(*db);
-    VLOG(1) << "endpoint service created";
+    auto app = tateyama::bootstrap::create_application(db.get());
+    auto service = tateyama::api::endpoint::create_service(app);
+    VLOG(1) << "endpoint service created" << std::endl;
 
     int return_value{0};
     auto& connection_queue = container->get_connection_queue();

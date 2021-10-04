@@ -21,11 +21,6 @@
 #include <memory>
 #include <regex>
 
-#include "request.pb.h"
-#include "response.pb.h"
-#include "common.pb.h"
-#include "schema.pb.h"
-
 namespace tateyama::api::endpoint::mock {
 
 using namespace std::literals::string_literals;
@@ -36,19 +31,11 @@ class test_writer : public writer {
 public:
     test_writer() = default;
 
-    test_writer(char* data, std::size_t capacity) :
-        data_(data), capacity_(capacity)
-    {}
+    test_writer(char* data, std::size_t capacity);
 
-    status write(char const* data, std::size_t length) override {
-        std::memcpy(data_ + size_, data, length);
-        size_ += length;
-        return status::ok;
-    }
+    status write(char const* data, std::size_t length) override;
 
-    status commit() override {
-        return status::ok;
-    }
+    status commit() override;
 
     char* data_{};  //NOLINT
     std::size_t capacity_{};  //NOLINT
@@ -71,13 +58,9 @@ class test_request : public request {
 public:
     test_request() = default;
 
-    explicit test_request(std::string_view payload) :
-        payload_(payload)
-    {}
+    explicit test_request(std::string_view payload);
 
-    [[nodiscard]] std::string_view payload() const override {
-        return payload_;
-    }
+    [[nodiscard]] std::string_view payload() const override;
 
     std::string payload_{};  //NOLINT
 };
@@ -86,22 +69,9 @@ class test_channel : public data_channel {
 public:
     test_channel() = default;
 
-    status acquire(writer*& buf) override {
-        auto& s = buffers_.emplace_back(std::make_shared<fixed_buffer_writer<100>>());
-        buf = s.get();
-        return status::ok;
-    }
+    status acquire(writer*& buf) override;
 
-    status release(writer& buf) override {
-        (void)buf;
-//        for(auto it=buffers_.begin(); it != buffers_.end(); ++it) {
-//            if (it->get() == std::addressof(buf)) {
-//                buffers_.erase(it);
-//                break;
-//            }
-//        }
-        return status::ok;
-    }
+    status release(writer& buf) override;
 
     std::vector<std::shared_ptr<test_writer>> buffers_{};  //NOLINT
 };
@@ -109,69 +79,25 @@ public:
 class test_response : public response {
 public:
 
-    void code(response_code code) override {
-        code_ = code;
-    }
+    void code(response_code code) override;
 
-    status body(std::string_view body) override {
-        body_.assign(body);
-        completed_ = true;
-        return status::ok;
-    }
+    status body(std::string_view body) override;
 
-    status body_head(std::string_view body_head) override {
-        body_head_.assign(body_head);
-        return status::ok;
-    }
+    status body_head(std::string_view body_head) override;
 
-    status acquire_channel(std::string_view name, data_channel*& ch) override {
-        (void) name;
-        channel_ = std::make_unique<test_channel>();
-        ch = channel_.get();
-        return status::ok;
-    }
+    status acquire_channel(std::string_view name, data_channel*& ch) override;
 
-    status release_channel(data_channel& ch) override {
-        (void)ch;
-        return status::ok;
-    }
+    status release_channel(data_channel& ch) override;
 
-    bool completed() {
-        return completed_;
-    }
+    bool completed();
 
-    status close_session() override {
-        return status::ok;
-    };
+    status close_session() override;;
     std::string body_{};  //NOLINT
     std::string body_head_{};  //NOLINT
     std::unique_ptr<test_channel> channel_{};  //NOLINT
     std::string message_{};  //NOLINT
     response_code code_{response_code::unknown};  //NOLINT
-    bool completed_{};
+    bool completed_{};  //NOLINT
 };
 
-class payload {
-public:
-    void begin() {
-        request_.set_allocated_begin(&begin_);
-        session_.set_handle(0);
-        request_.set_allocated_session_handle(&session_);
-    }
-
-    std::string_view build() {
-        if (!request_.SerializeToString(&str_)) {
-            std::abort();
-        }
-        request_.release_begin();
-        request_.release_session_handle();
-        return str_;
-    }
-
-    std::string str_{};
-    ::request::Request request_{};
-    ::request::Begin begin_{};
-    ::common::Session session_{};
-
-};
 }

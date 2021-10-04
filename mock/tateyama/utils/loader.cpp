@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "loader.h"
+#include <tateyama/utils/loader.h>
 
 #include <string_view>
 #include <memory>

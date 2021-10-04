@@ -43,8 +43,6 @@ target_include_directories(${ENGINE}
 target_link_libraries(${ENGINE}
         PUBLIC api
         PRIVATE takatori
-        PRIVATE yugawara # temporary
-        PRIVATE ${jogasaki_api} # temporary
         PRIVATE tbb
         PRIVATE numa
         PRIVATE Boost::boost
@@ -80,9 +78,7 @@ target_include_directories(tateyama-impl
 
 target_link_libraries(tateyama-impl
         INTERFACE ${ENGINE}
-        INTERFACE ${jogasaki_api} # temporary
         INTERFACE takatori
-        INTERFACE yugawara # temporary
         INTERFACE tbb
         INTERFACE numa
         INTERFACE moodycamel

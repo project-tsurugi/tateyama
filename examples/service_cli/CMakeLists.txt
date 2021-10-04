@@ -17,6 +17,7 @@ target_include_directories(service-cli
 
 target_link_libraries(service-cli
         PRIVATE tateyama-impl
+        PRIVATE mock
         PRIVATE takatori
         PRIVATE yugawara
         PRIVATE ${ENGINE}

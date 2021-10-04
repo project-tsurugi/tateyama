@@ -35,6 +35,7 @@ target_include_directories(server
 
 target_link_libraries(server
     PRIVATE tateyama-impl
+    PRIVATE mock
     PRIVATE takatori
     PRIVATE yugawara
     PRIVATE ${ENGINE}

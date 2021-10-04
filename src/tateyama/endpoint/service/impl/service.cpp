@@ -18,27 +18,27 @@
 #include <string_view>
 #include <memory>
 
-#include <msgpack.hpp>
-#include <takatori/util/downcast.h>
-#include <takatori/util/fail.h>
-
-#include <jogasaki/status.h>
-#include <jogasaki/api/database.h>
-#include <jogasaki/configuration.h>
-#include <jogasaki/api/statement_handle.h>
-
 #include <tateyama/api/endpoint/request.h>
 #include <tateyama/api/endpoint/response.h>
 
-#include "schema.pb.h"
-#include "request.pb.h"
-#include "response.pb.h"
-#include "common.pb.h"
-
 namespace tateyama::api::endpoint {
 
-std::unique_ptr<service> create_service(jogasaki::api::database& db) {
-    return std::make_unique<impl::service>(db);
+std::unique_ptr<service> create_service(std::shared_ptr<tateyama::api::server::service> svc) {
+    return std::make_unique<impl::service>(std::move(svc));
+}
+
+impl::service::service(std::shared_ptr<api::server::service> app) :
+    application_(std::move(app))
+{}
+
+tateyama::status impl::service::operator()(
+    std::shared_ptr<tateyama::api::endpoint::request const> req,
+    std::shared_ptr<tateyama::api::endpoint::response> res
+) {
+    return application_->operator()(
+        std::make_shared<tateyama::api::server::request>(std::move(req)),
+        std::make_shared<tateyama::api::server::response>(std::move(res))
+    );
 }
 
 }

@@ -13,7 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <tateyama/bootstrap/loader.h>
+#include <tateyama/utils/loader.h>
+
+#include <jogasaki/api.h>
 
 #include <regex>
 #include <gtest/gtest.h>

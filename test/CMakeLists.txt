@@ -10,7 +10,7 @@ target_include_directories(${test_target}
 
 target_link_libraries(${test_target}
         PRIVATE tateyama-impl
-        PRIVATE mock-impl
+        PRIVATE mock
         PUBLIC gtest
         PRIVATE tbb
         PRIVATE takatori

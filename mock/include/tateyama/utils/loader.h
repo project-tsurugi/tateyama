@@ -19,11 +19,18 @@
 #include <atomic>
 #include <memory>
 
-#include <jogasaki/api.h>
 #include <tateyama/status.h>
 #include <tateyama/api/server/service.h>
 
 #include <cstring>
+
+namespace jogasaki {
+class configuration;
+namespace api {
+class environment;
+class database;
+}
+}
 
 namespace tateyama::bootstrap {
 
