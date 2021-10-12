@@ -45,7 +45,8 @@ public:
 
     /**
      * @brief acquire a new writer
-     * @param wrt [out] the pointer to the acquired writer. The returned value is valid only when the call finishes with status code status::ok.
+     * @param wrt [out] the pointer to the acquired writer. The returned value is valid only when the function finishes
+     * with status code status::ok.
      * @details the caller can use the acquired writer freely to write the data. Once it finishes using the writer,
      * the writer must be returned by calling the `release` function.
      * @note when multiple writers are acquired from a single channel, the order of the data written by those writers
@@ -60,10 +61,11 @@ public:
     /**
      * @brief declare to finish using the writer and return it to channel
      * @param wrt the writer to release
-     * @details by releasing the writer, the caller declares to finish using the writer and passes it back.
+     * @details by releasing the writer, the caller declares to finish using the writer and passes it back to channel.
      * The caller must not call any of the writer function any more.
-     * @warning if writer::commit() has not been called after some data is written by writer::write(), it's not ensured
-     * that the uncommitted data is consumed by or visible to others. So writer::commit() should be appropriately called before releasing the writer.
+     * @warning if writer::commit() has not been called after some data is written by writer::write(), it's not assured
+     * that the uncommitted data is consumed by or visible to others. So writer::commit() should be appropriately
+     * called before releasing the writer.
      * @note this function is thread-safe and multiple threads can invoke simultaneously.
      * @return status::ok when successful
      * @return other status code when error occurs

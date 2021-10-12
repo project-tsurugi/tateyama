@@ -53,8 +53,11 @@ public:
     virtual void code(response_code code) = 0;
 
     /**
-     * @brief setter of the response body head
+     * @brief notifies the response body head
      * @param body_head the response body head data
+     * @details body head provides information for the client to start receiving application output.
+     * This function transitions from `initial` to `ready` state, indicating the server sent the information that
+     * makes client ready to read application output.
      * @pre body() function of this object is not yet called
      * @return status::ok when successful
      * @return other code when error occurs
@@ -63,8 +66,13 @@ public:
     virtual status body_head(std::string_view body_head) = 0;
 
     /**
-     * @brief setter of the response body
+     * @brief notifies the response body
      * @param body the response body data
+     * @details body provides information about the final result of the request processing.
+     * This function transitions to `completed` state, indicating the response and application output transmission
+     * are completed.
+     * @pre code() function of this object is already called
+     * @pre acquired data channels from this object and acquired writers from those channels are already released
      * @return status::ok when successful
      * @return other code when error occurs
      * @attention this function is not thread-safe and should be called from single thread at a time.
@@ -86,11 +94,9 @@ public:
      * @brief release the data channel
      * @param ch the data channel to stage
      * mark the data channel staged and return its ownership
-     * @details releasing the channel declares finishing using the channel and transfer the channel together with its
-     * writers. This function automatically calls data_channel::release() for all the writers that belong to this channel.
-     * Uncommitted data on each writer can possibly be discarded. To make release writers gracefully, it's recommended
-     * to call data_channel::release() for each writer rather than releasing in bulk with this function.
+     * @details releasing the channel declares finishing using the channel and return it to caller.
      * The caller must not call any of the `ch` member functions any more.
+     * @pre acquired writers are already released
      * @note this function is thread-safe and multiple threads can invoke simultaneously.
      * @return status::ok when successful
      * @return other status code when error occurs
