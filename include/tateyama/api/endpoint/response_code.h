@@ -30,14 +30,11 @@ enum class response_code : std::int64_t {
     /// @brief successful completion
     success = 0,
 
-    /// @brief temporary response notifying the request processing started
-    started = 1,
-
     /// @brief error occurred in the application domain
-    application_error = 2,
+    application_error = 1,
 
     /// @brief error occurred input/output processing on tateyama
-    io_error = 3,
+    io_error = 2,
 };
 
 /**
@@ -50,7 +47,6 @@ enum class response_code : std::int64_t {
     switch (value) {
         case response_code::unknown: return "unknown"sv;
         case response_code::success: return "success"sv;
-        case response_code::started: return "started"sv;
         case response_code::application_error: return "application_error"sv;
         case response_code::io_error: return "io_error"sv;
     }

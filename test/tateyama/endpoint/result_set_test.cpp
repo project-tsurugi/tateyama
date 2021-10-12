@@ -54,7 +54,7 @@ public:
             auto payload = req->payload();
             EXPECT_EQ(request_test_message_, payload);
             res->body(resultset_wire_name_);
-            res->code(tateyama::api::endpoint::response_code::started);
+            res->code(tateyama::api::endpoint::response_code::unknown);
 
             tateyama::api::endpoint::data_channel* dc;
             EXPECT_EQ(res->acquire_channel(resultset_wire_name_, dc), tateyama::status::ok);
