@@ -1,2 +1,1 @@
 add_subdirectory(task_scheduler_cli)
-add_subdirectory(service_cli)
