@@ -33,6 +33,7 @@ public:
         resultset_wires_container() = default;
         virtual ~resultset_wires_container() = 0;
         virtual shm_resultset_wire* acquire() = 0;
+        virtual void set_eor() = 0;
         virtual bool is_closed() = 0;
         constexpr resultset_wires_container(resultset_wires_container const&) = delete;
         constexpr resultset_wires_container(resultset_wires_container&&) = delete;

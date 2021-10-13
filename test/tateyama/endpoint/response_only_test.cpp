@@ -61,7 +61,7 @@ public:
 
 };
 
-TEST_F(response_only_test, DISABLED_normal) {
+TEST_F(response_only_test, normal) {
     auto* request_wire = static_cast<tateyama::common::wire::server_wire_container_impl::wire_container_impl*>(wire_->get_request_wire());
 
     request_wire->write(request_test_message_.data(),
@@ -84,6 +84,7 @@ TEST_F(response_only_test, DISABLED_normal) {
 
     auto& r_box = wire_->get_response(h.get_idx());
     auto r_msg = r_box.recv();
+    r_box.dispose();
     EXPECT_EQ(std::string_view(r_msg.first, r_msg.second), response_test_message_);
 }
 
