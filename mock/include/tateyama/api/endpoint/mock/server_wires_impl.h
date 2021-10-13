@@ -68,12 +68,12 @@ public:
 
         std::pair<char*, std::size_t> get_chunk() {
             if (current_wire_ == nullptr) {
-                current_wire_ = search();
+                current_wire_ = active_wire();
             }
             if (current_wire_ != nullptr) {
                 return current_wire_->get_chunk(current_wire_->get_bip_address(managed_shm_ptr_));
             }
-            std::abort();  //  FIXME
+            return std::pair<char*, std::size_t>(nullptr, 0);
         }
         void dispose(std::size_t length) {
             if (current_wire_ != nullptr) {
@@ -83,24 +83,19 @@ public:
             }
             std::abort();  //  FIXME
         }
-        bool is_eor() {
-            if (current_wire_ == nullptr) {
-                current_wire_ = search();
-            }
-            if (current_wire_ != nullptr) {
-                auto rv = current_wire_->is_eor();
-                current_wire_ = nullptr;
-                return rv;
-            }
-            std::abort();  //  FIXME
+        void set_eor() {
+            shm_resultset_wires_->set_eor();
         }
         bool is_closed() {
             return shm_resultset_wires_->is_closed();
         }
+        bool is_eor() {
+            return shm_resultset_wires_->is_eor();
+        }
 
     private:
-        shm_resultset_wire* search() {
-            return shm_resultset_wires_->search();
+        shm_resultset_wire* active_wire() {
+            return shm_resultset_wires_->active_wire();
         }
 
         boost::interprocess::managed_shared_memory* managed_shm_ptr_;

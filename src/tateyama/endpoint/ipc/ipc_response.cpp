@@ -27,16 +27,17 @@ namespace tateyama::common::wire {
 tateyama::status ipc_response::body(std::string_view body) {
     VLOG(1) << __func__ << std::endl;  //NOLINT
 
-    if(body.length() > response_box::response::max_response_message_length) {
-        return tateyama::status::unknown;
-    }
     memcpy(response_box_.get_buffer(body.length()), body.data(), body.length());
+    response_box_.flush();
     return tateyama::status::ok;
 }
 
 tateyama::status ipc_response::body_head(std::string_view body_head) {
     VLOG(1) << __func__ << std::endl;  //NOLINT
-    (void)body_head;
+
+    memcpy(response_box_.get_buffer(body_head.length()), body_head.data(), body_head.length());
+    response_box_.set_query_mode();
+    response_box_.flush();
     return tateyama::status::ok;
 }
 
@@ -51,11 +52,6 @@ tateyama::status ipc_response::acquire_channel(std::string_view name, tateyama::
 
     data_channel_ = std::make_unique<ipc_data_channel>(server_wire_.create_resultset_wires(name));
     if (ch = data_channel_.get(); ch != nullptr) {
-        if (acquire_channel_or_complete_) {
-            response_box_.flush();
-        } else {
-            acquire_channel_or_complete_ = true;
-        }
         return tateyama::status::ok;
     }
     return tateyama::status::unknown;
@@ -64,6 +60,7 @@ tateyama::status ipc_response::acquire_channel(std::string_view name, tateyama::
 tateyama::status ipc_response::release_channel(tateyama::api::endpoint::data_channel& ch) {
     VLOG(1) << __func__ << std::endl;  //NOLINT
 
+    data_channel_->set_eor();
     if (data_channel_.get() == dynamic_cast<ipc_data_channel*>(&ch)) {
         if (!data_channel_->is_closed()) {
             garbage_collector_->put(data_channel_->get_resultset_wires());
@@ -96,7 +93,6 @@ tateyama::status ipc_data_channel::acquire(tateyama::api::endpoint::writer*& wrt
 tateyama::status ipc_data_channel::release(tateyama::api::endpoint::writer& wrt) {
     VLOG(1) << __func__ << std::endl;  //NOLINT
 
-    dynamic_cast<ipc_writer*>(std::addressof(wrt))->resultset_wire_->eor();
     if (auto itr = data_writers_.find(dynamic_cast<ipc_writer*>(&wrt)); itr != data_writers_.end()) {
         data_writers_.erase(itr);
         return tateyama::status::ok;

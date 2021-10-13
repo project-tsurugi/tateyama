@@ -90,6 +90,7 @@ public:
 
     tateyama::status acquire(tateyama::api::endpoint::writer*& wrt) override;
     tateyama::status release(tateyama::api::endpoint::writer& wrt) override;
+    void set_eor() { return data_channel_->set_eor(); }
     bool is_closed() { return data_channel_->is_closed(); }
     server_wire_container::unq_p_resultset_wires_conteiner get_resultset_wires() { return std::move(data_channel_); }
 
@@ -132,7 +133,6 @@ private:
     std::string message_{};
 
     std::unique_ptr<ipc_data_channel> data_channel_{};
-    bool acquire_channel_or_complete_{};
 };
 
 }  // tateyama::common::wire

@@ -40,6 +40,8 @@ class result_set_test : public ::testing::Test {
 
 public:
     static constexpr std::string_view request_test_message_ = "abcdefgh";
+    static constexpr std::string_view response_test_message_ = "opqrstuvwxyz";
+    static constexpr std::string_view resultset_wire_name_ = "resultset_1";
     static constexpr tateyama::common::wire::message_header::index_type index_ = 1;
     static constexpr std::string_view r_ = "row_data";
 
@@ -53,30 +55,26 @@ public:
         ) {
             auto payload = req->payload();
             EXPECT_EQ(request_test_message_, payload);
-            res->body(resultset_wire_name_);
-            res->code(tateyama::api::endpoint::response_code::unknown);
 
             tateyama::api::endpoint::data_channel* dc;
             EXPECT_EQ(res->acquire_channel(resultset_wire_name_, dc), tateyama::status::ok);
+            res->body_head(resultset_wire_name_);
+
             tateyama::api::endpoint::writer* w;
             EXPECT_EQ(dc->acquire(w), tateyama::status::ok);
-
             w->write(r_.data(), r_.length());
-            w->commit();
 
+            res->body(response_test_message_);
             res->code(tateyama::api::endpoint::response_code::success);
             EXPECT_EQ(dc->release(*w), tateyama::status::ok);
             EXPECT_EQ(res->release_channel(*dc), tateyama::status::ok);
 
             return 0;
         }
-
-    private:
-        static constexpr std::string_view resultset_wire_name_ = "resultset_1";
     };
 };
 
-TEST_F(result_set_test, DISABLED_normal) {
+TEST_F(result_set_test, normal) {
     auto* request_wire = static_cast<tateyama::common::wire::server_wire_container_impl::wire_container_impl*>(wire_->get_request_wire());
 
     request_wire->write(request_test_message_.data(),
@@ -98,9 +96,11 @@ TEST_F(result_set_test, DISABLED_normal) {
              static_cast<std::shared_ptr<tateyama::api::endpoint::response>>(response));
 
     auto& r_box = wire_->get_response(h.get_idx());
-    auto r_msg = r_box.recv();
+    auto r_name = r_box.recv();
+    r_box.dispose();
+    EXPECT_EQ(std::string_view(r_name.first, r_name.second), resultset_wire_name_);
     auto resultset_wires =
-        wire_->create_resultset_wires_for_client(std::string_view(r_msg.first, r_msg.second));
+        wire_->create_resultset_wires_for_client(std::string_view(r_name.first, r_name.second));
 
     auto chunk = resultset_wires->get_chunk();
     std::string r(r_);
@@ -110,6 +110,10 @@ TEST_F(result_set_test, DISABLED_normal) {
     auto chunk_e = resultset_wires->get_chunk();
     EXPECT_EQ(chunk_e.second, 0);
     EXPECT_TRUE(resultset_wires->is_eor());
+
+    auto r_msg = r_box.recv();
+    r_box.dispose();
+    EXPECT_EQ(std::string_view(r_msg.first, r_msg.second), response_test_message_);
 }
 
 }  // namespace tateyama::api::endpoint::ipc
