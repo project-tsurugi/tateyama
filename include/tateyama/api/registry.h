@@ -21,9 +21,9 @@
 #include <string_view>
 
 #define register_component(ns, cls, name, create_func) \
-    inline bool ns ## _ ## name ## _entry = ::tateyama::api::registry::registry<cls>::add(#name, (create_func))
+    inline bool ns ## _ ## name ## _entry = ::tateyama::api::registry<cls>::add(#name, (create_func))
 
-namespace tateyama::api::registry {
+namespace tateyama::api {
 
 template <typename T>
 class registry {

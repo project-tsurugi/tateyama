@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <tateyama/api/registry/environment.h>
+#include <tateyama/api/environment.h>
 
 #include <gtest/gtest.h>
 
-namespace tateyama::api::registry {
+namespace tateyama::api {
 
 using namespace std::literals::string_literals;
 

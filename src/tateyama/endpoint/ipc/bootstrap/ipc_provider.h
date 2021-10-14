@@ -25,8 +25,8 @@
 
 #include <tateyama/api/endpoint/service.h>
 #include <tateyama/api/endpoint/provider.h>
-#include <tateyama/api/registry/registry.h>
-#include <tateyama/api/registry/environment.h>
+#include <tateyama/api/registry.h>
+#include <tateyama/api/environment.h>
 
 #include "worker.h"
 
@@ -34,7 +34,7 @@ namespace tateyama::server {
 
 class ipc_provider : public tateyama::api::endpoint::provider {
 public:
-    status initialize(api::registry::environment& env, void* context) override {
+    status initialize(api::environment& env, void* context) override {
         auto& options = *reinterpret_cast<std::unordered_map<std::string, std::string>*>(context);  //NOLINT
         // connection channel
         container_ = std::make_unique<tateyama::common::wire::connection_container>(options["dbname"]);

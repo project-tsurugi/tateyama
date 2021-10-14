@@ -17,7 +17,7 @@
 
 #include <tateyama/api/server/request.h>
 #include <tateyama/api/server/response.h>
-#include <tateyama/api/registry/environment.h>
+#include <tateyama/api/environment.h>
 
 namespace jogasaki::api {
 class database;
@@ -71,7 +71,7 @@ public:
      * @brief initialize application
      * @param context the configuration context to initialize the application
      */
-    virtual tateyama::status initialize(tateyama::api::registry::environment& env, void* context) = 0;
+    virtual tateyama::status initialize(tateyama::api::environment& env, void* context) = 0;
 
     /**
      * @brief shutdown application

@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <tateyama/api/registry/environment.h>
+#include <tateyama/api/environment.h>
 
 #include <tateyama/api/server/service.h>
 #include <tateyama/api/endpoint/provider.h>
 #include <tateyama/api/endpoint/service.h>
 
-namespace tateyama::api::registry {
+namespace tateyama::api {
 
 using takatori::util::sequence_view;
 

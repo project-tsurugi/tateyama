@@ -28,7 +28,7 @@ class service;
 
 }
 
-namespace tateyama::api::registry {
+namespace tateyama::api {
 
 using takatori::util::sequence_view;
 
