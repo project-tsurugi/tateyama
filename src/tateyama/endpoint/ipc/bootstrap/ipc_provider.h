@@ -105,4 +105,4 @@ private:
 
 }  // tateyama::server
 
-register_component(provider, tateyama::api::endpoint::provider, ipc_endpoint, tateyama::server::ipc_provider::create);
+register_component(endpoint, tateyama::api::endpoint::provider, ipc_endpoint, tateyama::server::ipc_provider::create);  //NOLINT
