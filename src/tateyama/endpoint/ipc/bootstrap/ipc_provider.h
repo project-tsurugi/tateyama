@@ -32,6 +32,10 @@
 
 namespace tateyama::server {
 
+/**
+ * @brief ipc endpoint provider
+ * @details
+ */
 class ipc_provider : public tateyama::api::endpoint::provider {
 public:
     status initialize(api::environment& env, void* context) override {
@@ -105,4 +109,3 @@ private:
 
 }  // tateyama::server
 
-register_component(endpoint, tateyama::api::endpoint::provider, ipc_endpoint, tateyama::server::ipc_provider::create);  //NOLINT

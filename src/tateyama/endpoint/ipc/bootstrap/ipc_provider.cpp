@@ -14,3 +14,10 @@
  * limitations under the License.
  */
 #include "ipc_provider.h"
+
+/**
+ * @brief add ipc endpoint to the component registry
+ * @note This should be done in .cpp file. In the header file,
+ * the initialization of inline variable is sometimes omitted by optimization.
+ */
+register_component(endpoint, tateyama::api::endpoint::provider, ipc_endpoint, tateyama::server::ipc_provider::create);  //NOLINT
