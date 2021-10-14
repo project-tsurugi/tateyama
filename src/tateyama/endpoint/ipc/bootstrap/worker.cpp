@@ -15,6 +15,9 @@
  */
 #include "worker.h"
 
+#include <tateyama/endpoint/ipc/ipc_request.h>
+#include <tateyama/endpoint/ipc/ipc_response.h>
+
 namespace tateyama::server {
 
 void Worker::run()

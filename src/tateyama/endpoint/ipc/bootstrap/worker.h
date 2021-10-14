@@ -23,11 +23,12 @@
 #include <tateyama/api/endpoint/response.h>
 #include <tateyama/api/endpoint/service.h>
 #include <tateyama/api/endpoint/service.h>
-#include <jogasaki/api.h>
 
-#include "ipc_request.h"
-#include "ipc_response.h"
 #include "server_wires_impl.h"
+
+namespace tateyama::bootstrap {
+class ipc_provider;
+}
 
 namespace tateyama::server {
 
@@ -42,7 +43,7 @@ class Worker {
         if(thread_.joinable()) thread_.join();
     }
     void run();
-    friend int backend_main(int, char **);
+    friend class ipc_provider;
 
  private:
     tateyama::api::endpoint::service& service_;

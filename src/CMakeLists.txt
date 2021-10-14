@@ -3,9 +3,11 @@ file(GLOB SOURCES
         "tateyama/bootstrap/*.cpp"
         "tateyama/server/*.cpp"
         "tateyama/task_scheduler/*.cpp"
+        "tateyama/registry/*.cpp"
         "tateyama/endpoint/service/*.cpp"
         "tateyama/endpoint/service/impl/*.cpp"
         "tateyama/endpoint/ipc/*.cpp"
+        "tateyama/endpoint/ipc/bootstrap/*.cpp"
 )
 
 if(TRACY_ENABLE)
