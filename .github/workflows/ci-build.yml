@@ -30,92 +30,14 @@ jobs:
           submodules: recursive
           token: ${{ secrets.GHA_PAT }}
 
-      - id: Install_shirakami
-        name: Install_shirakami
-        run: |
-          cd third_party/jogasaki/third_party/sharksfin/third_party/shirakami
-          mkdir -p build
-          cd build
-          cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_SANITIZER=ON -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/.local ..
-          cmake --build . --target install --clean-first -- -j
-
-      - id: Install_sharksfin
-        name: Install_sharksfin
-        run: |
-          cd third_party/jogasaki/third_party/sharksfin
-          mkdir -p build
-          cd build
-          cmake -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTS=OFF -DBUILD_DOCUMENTS=OFF -DBUILD_EXAMPLES=OFF -DFORCE_INSTALL_RPATH=ON -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/.local ..
-          cmake --build . --target install --clean-first -- -j
-
-      - id: Install_fpdecimal
-        name: Install_fpdecimal
-        run: |
-          cd third_party/jogasaki/third_party/mizugaki/third_party/yugawara/third_party/takatori/third_party/fpdecimal
-          mkdir -p build
-          cd build
-          rm -f CMakeCache.txt
-          cmake -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTS=OFF -DBUILD_DOCUMENTS=OFF -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/.local ..
-          cmake --build . --target install --clean-first -- -j
-
       - id: Install_takatori
         name: Install_takatori
         run: |
-          cd third_party/jogasaki/third_party/mizugaki/third_party/yugawara/third_party/takatori
+          cd third_party/takatori
           mkdir -p build
           cd build
           rm -f CMakeCache.txt
           cmake -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTS=OFF -DBUILD_DOCUMENTS=OFF -DFORCE_INSTALL_RPATH=ON -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/.local ..
-          cmake --build . --target install --clean-first -- -j
-
-      - id: Install_hopscotch-map
-        name: Install_hopscotch-map
-        run: |
-          cd third_party/jogasaki/third_party/mizugaki/third_party/hopscotch-map
-          mkdir -p ../../build-hopscotch-map
-          cd ../../build-hopscotch-map
-          rm -f CMakeCache.txt
-          cmake -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/.local ../third_party/hopscotch-map
-          cmake --build . --target install -- -j
-
-      - id: Install_yugawara
-        name: Install_yugawara
-        run: |
-          cd third_party/jogasaki/third_party/mizugaki/third_party/yugawara
-          mkdir -p build
-          cd build
-          rm -f CMakeCache.txt
-          cmake -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTS=OFF -DBUILD_DOCUMENTS=OFF -DFORCE_INSTALL_RPATH=ON -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/.local ..
-          cmake --build . --target install --clean-first -- -j
-
-      - id: Install_shakujo
-        name: Install_shakujo
-        run: |
-          cd third_party/jogasaki/third_party/mizugaki/third_party/shakujo
-          mkdir -p build
-          cd build
-          rm -f CMakeCache.txt
-          cmake -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTS=OFF -DBUILD_DOCUMENTS=OFF -DBUILD_EXAMPLES=OFF -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/.local ..
-          cmake --build . --target install --clean-first -- -j
-
-      - id: Install_mizugaki
-        name: Install_mizugaki
-        run: |
-          cd third_party/jogasaki/third_party/mizugaki
-          mkdir -p build
-          cd build
-          rm -f CMakeCache.txt
-          cmake -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTS=OFF -DBUILD_DOCUMENTS=OFF -DFORCE_INSTALL_RPATH=ON -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/.local -DCMAKE_PREFIX_PATH="${{ matrix.additional_prefix_path }};${GITHUB_WORKSPACE}/.local" ..
-          cmake --build . --target install --clean-first -- -j
-
-      - id: Install_performance_tools
-        name: Install_performance_tools
-        run: |
-          cd third_party/jogasaki/third_party/performance-tools
-          mkdir -p build
-          cd build
-          rm -f CMakeCache.txt
-          cmake -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTS=OFF -DBUILD_DOCUMENTS=OFF -DBUILD_EXAMPLES=OFF -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/.local ..
           cmake --build . --target install --clean-first -- -j
 
       - id: Install_moodycamel_concurrentqueue
@@ -127,26 +49,6 @@ jobs:
           rm -f CMakeCache.txt
           cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/.local ..
           cmake --build . --target install --clean-first
-
-      - id: Install_jogasaki_api_memory
-        name: Install_jogasaki_api_memory
-        run: |
-          cd third_party/jogasaki
-          mkdir -p build
-          cd build
-          rm -f CMakeCache.txt
-          cmake -DCMAKE_BUILD_TYPE=Debug -DSHARKSFIN_IMPLEMENTATION=memory -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/.local -DCMAKE_PREFIX_PATH=${GITHUB_WORKSPACE}/.local -DINSTALL_API_ONLY=ON ..
-          cmake --build . --target install --clean-first -- -j
-
-      - id: Install_jogasaki_api_shirakami
-        name: Install_jogasaki_api_shirakami
-        run: |
-          cd third_party/jogasaki
-          mkdir -p build
-          cd build
-          rm -f CMakeCache.txt
-          cmake -DCMAKE_BUILD_TYPE=Debug -DSHARKSFIN_IMPLEMENTATION=shirakami -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/.local -DCMAKE_PREFIX_PATH=${GITHUB_WORKSPACE}/.local -DINSTALL_API_ONLY=ON ..
-          cmake --build . --target install --clean-first -- -j
 
       - id: CMake_Build_sharksfin_memory
         name: CMake_Build_sharksfin_memory

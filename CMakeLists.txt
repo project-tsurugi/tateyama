@@ -49,12 +49,8 @@ endif()
 set(ENGINE "engine")
 
 find_package(takatori REQUIRED)
-find_package(yugawara REQUIRED)  # temporary
-find_package(mizugaki REQUIRED) # temporary
-find_package(shakujo REQUIRED) # temporary
-find_package(sharksfin REQUIRED) # temporary
+#find_package(sharksfin REQUIRED) # temporary
 find_package(fpdecimal REQUIRED) # temporary
-find_package(tsl-hopscotch-map 2.2 REQUIRED) # temporary
 find_package(moodycamel REQUIRED)
 find_package(Doxygen)
 find_package(glog REQUIRED)
