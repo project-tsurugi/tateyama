@@ -65,6 +65,17 @@ public:
         std::shared_ptr<tateyama::api::server::request const> req,
         std::shared_ptr<tateyama::api::server::response> res
     ) = 0;
+
+    /**
+     * @brief initialize application
+     * @param context the configuration context to initialize the application
+     */
+    virtual tateyama::status initialize(void* context) = 0;
+
+    /**
+     * @brief shutdown application
+     */
+    virtual tateyama::status shutdown() = 0;
 };
 
 /**
