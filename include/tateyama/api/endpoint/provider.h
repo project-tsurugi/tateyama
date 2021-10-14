@@ -16,6 +16,7 @@
 #pragma once
 
 #include <tateyama/status.h>
+#include <tateyama/api/registry/environment.h>
 
 namespace tateyama::api::endpoint {
 
@@ -45,7 +46,7 @@ public:
      * @brief initialize endpoint
      * @param context the configuration context to initialize the endpoint
      */
-    virtual tateyama::status initialize(void* context) = 0;
+    virtual tateyama::status initialize(registry::environment& env, void* context) = 0;
 
     /**
      * @brief shutdown endpoint

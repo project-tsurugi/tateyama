@@ -15,6 +15,8 @@
  */
 #pragma once
 
+#include <tateyama/status.h>
+
 namespace jogasaki::api {
 class database;
 }
