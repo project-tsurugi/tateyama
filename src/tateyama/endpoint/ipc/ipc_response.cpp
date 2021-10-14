@@ -43,6 +43,7 @@ tateyama::status ipc_response::body_head(std::string_view body_head) {
 void ipc_response::code(tateyama::api::endpoint::response_code code) {
     VLOG(1) << __func__ << std::endl;  //NOLINT
 
+    ipc_request_.dispose();
     response_code_ = code;
 }
 
