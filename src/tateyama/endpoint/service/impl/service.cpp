@@ -18,13 +18,17 @@
 #include <string_view>
 #include <memory>
 
+#include <takatori/util/assertion.h>
+
 #include <tateyama/api/endpoint/request.h>
 #include <tateyama/api/endpoint/response.h>
 
 namespace tateyama::api::endpoint {
 
-std::unique_ptr<service> create_service(std::shared_ptr<tateyama::api::server::service> svc) {
-    return std::make_unique<impl::service>(std::move(svc));
+std::shared_ptr<service> create_service(tateyama::api::environment& env) {
+    // assuming only one application exists
+    BOOST_ASSERT(env.applications().size() > 0);  //NOLINT
+    return std::make_shared<impl::service>(env.applications()[0]);
 }
 
 impl::service::service(std::shared_ptr<api::server::service> app) :
