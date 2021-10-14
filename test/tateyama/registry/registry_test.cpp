@@ -32,20 +32,20 @@ class registry_test : public ::testing::Test {
 using namespace std::string_view_literals;
 
 TEST_F(registry_test, basic) {
-    auto impl1 = tateyama::api::registry::registry<component1>::create("1_1");
+    auto impl1 = tateyama::api::registry::registry<common::component1>::create("1_1");
     EXPECT_EQ("test_component11", impl1->run());
-    auto impl2 = tateyama::api::registry::registry<component1>::create("1_2");
+    auto impl2 = tateyama::api::registry::registry<common::component1>::create("1_2");
     EXPECT_EQ("test_component12", impl2->run());
 }
 
 TEST_F(registry_test, multiple) {
-    auto impl11 = tateyama::api::registry::registry<component1>::create("1_1");
+    auto impl11 = tateyama::api::registry::registry<common::component1>::create("1_1");
     EXPECT_EQ("test_component11", impl11->run());
-    auto impl12 = tateyama::api::registry::registry<component1>::create("1_2");
+    auto impl12 = tateyama::api::registry::registry<common::component1>::create("1_2");
     EXPECT_EQ("test_component12", impl12->run());
-    auto impl21 = tateyama::api::registry::registry<component2>::create("2_1");
+    auto impl21 = tateyama::api::registry::registry<common::component2>::create("2_1");
     EXPECT_EQ(21, impl21->run());
-    auto impl22 = tateyama::api::registry::registry<component2>::create("2_2");
+    auto impl22 = tateyama::api::registry::registry<common::component2>::create("2_2");
     EXPECT_EQ(22, impl22->run());
 }
 }

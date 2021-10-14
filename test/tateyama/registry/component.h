@@ -15,6 +15,8 @@
  */
 #pragma once
 
+namespace common {
+
 class component1 {
 public:
     virtual std::string run() = 0;
@@ -24,3 +26,5 @@ class component2 {
 public:
     virtual int run() = 0;
 };
+
+}

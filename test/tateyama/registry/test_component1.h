@@ -18,7 +18,9 @@
 #include <memory>
 #include "component.h"
 
-class test_component11 : public component1 {
+namespace ns1 {
+
+class test_component11 : public common::component1 {
 public:
     std::string run() override {
         return "test_component11";
@@ -29,9 +31,9 @@ public:
     }
 };
 
-register_component(component1, 1_1, test_component11::create);
+register_component(ns1, common::component1, 1_1, ns1::test_component11::create);
 
-class test_component12 : public component1 {
+class test_component12 : public common::component1 {
 public:
     std::string run() override {
         return "test_component12";
@@ -42,4 +44,6 @@ public:
     }
 };
 
-register_component(component1, 1_2, test_component12::create);
+}
+
+register_component(ns1, common::component1, 1_2, ns1::test_component12::create);
