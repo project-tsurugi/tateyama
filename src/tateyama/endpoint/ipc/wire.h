@@ -350,7 +350,7 @@ public:
                 }
                 annex_ = allocate_buffer(length);
                 annex_length_ = length;
-                static_cast<char*>(managed_shm_ptr_->get_address_from_handle(annex_));
+                (void)static_cast<char*>(managed_shm_ptr_->get_address_from_handle(annex_));
             } else {
                 if (second_length_ <= (max_response_message_length - length_)) {
                     second_length_ = length;
@@ -358,7 +358,7 @@ public:
                 }
                 second_annex_ = allocate_buffer(length);
                 second_annex_length_ = length;
-                static_cast<char*>(managed_shm_ptr_->get_address_from_handle(second_annex_));
+                (void)static_cast<char*>(managed_shm_ptr_->get_address_from_handle(second_annex_));
             }
             std::abort();  //  FIXME (Processing when a message located later is discarded first)
         }
