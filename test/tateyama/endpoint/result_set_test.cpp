@@ -79,6 +79,7 @@ TEST_F(result_set_test, normal) {
 
     request_wire->write(request_test_message_.data(),
                        tateyama::common::wire::message_header(index_, request_test_message_.length()));
+    wire_->get_response(index_).set_query_mode();
 
     auto h = request_wire->peep(true);
     EXPECT_EQ(index_, h.get_idx());
