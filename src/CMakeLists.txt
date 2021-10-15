@@ -55,6 +55,7 @@ target_link_libraries(${ENGINE}
         PRIVATE atomic
         PRIVATE moodycamel
         PRIVATE protobuf::libprotobuf # temporary
+        PRIVATE rt # for shm
 )
 
 if(MC_QUEUE)
