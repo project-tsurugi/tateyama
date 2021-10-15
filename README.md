@@ -5,7 +5,6 @@
 * CMake `>= 3.10`
 * C++ Compiler `>= C++17`
 * access to installed dependent modules: 
-  * jogasaki
   * takatori (for takatori::util functionalities)
 * and see *Dockerfile* section
 
@@ -30,16 +29,7 @@ optional packages:
 
 ## How to build
 
-Install jogasaki header files first, and then build tateyama as below.
-
 ```sh
-cd third_party/jogasaki
-mkdir -p build_install
-cd build_install
-cmake -DCMAKE_BUILD_TYPE=Release -DINSTALL_API_ONLY=ON ..
-cmake --build . --target install
-cd ../../..
-
 mkdir -p build
 cd build
 cmake -G Ninja -DCMAKE_BUILD_TYPE=Release ..
@@ -87,12 +77,6 @@ ctest -V
 ```sh
 cmake --build . --target doxygen
 ```
-
-### Use of Address Sanitizer (ASAN)
-
-Due to the [ASAN compatibility issue with dlopen rpath handling](https://bugs.llvm.org/show_bug.cgi?id=27790), you need to specify LD_LIBRARY_PATH the path to installed libraries: `<installation directory>/lib`. 
-Otherwise jogasaki library will not be found on initialization and errors are reported as below: 
-> "libjogasaki-memory.so: cannot open shared object file: No such file or directory"
 
 ### Customize logging setting 
 You can customize logging in the same way as sharksfin. See sharksfin [README.md](https://github.com/project-tsurugi/sharksfin/blob/master/README.md#customize-logging-setting) for more details.
