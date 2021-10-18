@@ -26,22 +26,28 @@
 
 #include "server_wires_impl.h"
 
-namespace tateyama::bootstrap {
-class ipc_provider;
-}
-
 namespace tateyama::server {
+class ipc_provider;
 
 class Worker {
  public:
     Worker(tateyama::api::endpoint::service& service, std::size_t session_id, std::unique_ptr<tateyama::common::wire::server_wire_container_impl> wire)
         : service_(service), wire_(std::move(wire)),
-          request_wire_container_(static_cast<tateyama::common::wire::server_wire_container_impl::wire_container_impl*>(wire_->get_request_wire())),
+          request_wire_container_(dynamic_cast<tateyama::common::wire::server_wire_container_impl::wire_container_impl*>(wire_->get_request_wire())),
           session_id_(session_id) {
     }
     ~Worker() {
         if(thread_.joinable()) thread_.join();
     }
+
+    /**
+     * @brief Copy and move constructers are delete.
+     */
+    Worker(Worker const&) = delete;
+    Worker(Worker&&) = delete;
+    Worker& operator = (Worker const&) = delete;
+    Worker& operator = (Worker&&) = delete;
+
     void run();
     friend class ipc_provider;
 

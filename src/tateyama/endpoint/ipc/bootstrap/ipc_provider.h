@@ -63,8 +63,8 @@ public:
             auto wire = std::make_unique<tateyama::common::wire::server_wire_container_impl>(session_name);
             VLOG(1) << "created session wire: " << session_name;
             connection_queue.accept(session_id);
-            std::size_t index;
-            for (index = 0; index < workers_.size() ; index++) {
+            std::size_t index = 0;
+            for (; index < workers_.size() ; index++) {
                 if (auto rv = workers_.at(index)->future_.wait_for(std::chrono::seconds(0)) ; rv == std::future_status::ready) {
                     break;
                 }
@@ -89,9 +89,9 @@ public:
     }
 
     status shutdown() override {
-        for (std::size_t index = 0; index < workers_.size() ; index++) {
-            if (auto rv = workers_.at(index)->future_.wait_for(std::chrono::seconds(0)) ; rv != std::future_status::ready) {
-                VLOG(1) << "exit: remaining thread " << workers_.at(index)->session_id_;
+        for (auto & worker : workers_) {
+            if (auto rv = worker->future_.wait_for(std::chrono::seconds(0)) ; rv != std::future_status::ready) {
+                VLOG(1) << "exit: remaining thread " << worker->session_id_;
             }
         }
         workers_.clear();

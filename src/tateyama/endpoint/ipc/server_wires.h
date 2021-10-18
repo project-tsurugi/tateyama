@@ -24,6 +24,13 @@ class server_wire_container
 public:
     class wire_container {
     public:
+        wire_container() = default;
+        virtual ~wire_container() = 0;
+        constexpr wire_container(wire_container const&) = delete;
+        constexpr wire_container(wire_container&&) = delete;
+        wire_container& operator = (wire_container const&) = default;
+        wire_container& operator = (wire_container&&) = default;
+
         virtual std::size_t read_point() = 0;
         virtual const char* payload(std::size_t) = 0;
         virtual void dispose(std::size_t) = 0;
@@ -32,21 +39,37 @@ public:
     public:
         resultset_wires_container() = default;
         virtual ~resultset_wires_container() = 0;
-        virtual shm_resultset_wire* acquire() = 0;
-        virtual void set_eor() = 0;
-        virtual bool is_closed() = 0;
         constexpr resultset_wires_container(resultset_wires_container const&) = delete;
         constexpr resultset_wires_container(resultset_wires_container&&) = delete;
         resultset_wires_container& operator = (resultset_wires_container const&) = delete;
         resultset_wires_container& operator = (resultset_wires_container&&) = delete;
+
+        virtual shm_resultset_wire* acquire() = 0;
+        virtual void set_eor() = 0;
+        virtual bool is_closed() = 0;
     };
     using resultset_deleter_type = void(*)(resultset_wires_container*);
     using unq_p_resultset_wires_conteiner = std::unique_ptr<resultset_wires_container, resultset_deleter_type>;
     class garbage_collector {
     public:
+        garbage_collector() = default;
+        virtual ~garbage_collector() = 0;
+        garbage_collector(garbage_collector const&) = delete;
+        garbage_collector(garbage_collector&&) = delete;
+        garbage_collector& operator = (garbage_collector const&) = delete;
+        garbage_collector& operator = (garbage_collector&&) = delete;
+
         virtual void dump() = 0;
         virtual void put(unq_p_resultset_wires_conteiner) = 0;
     };
+
+    server_wire_container() = default;
+    virtual ~server_wire_container() = 0;
+    constexpr server_wire_container(server_wire_container const&) = delete;
+    constexpr server_wire_container(server_wire_container&&) = delete;
+    server_wire_container& operator = (server_wire_container const&) = delete;
+    server_wire_container& operator = (server_wire_container&&) = delete;
+
     virtual wire_container* get_request_wire() = 0;
     virtual response_box::response& get_response(std::size_t) = 0;
     virtual unq_p_resultset_wires_conteiner create_resultset_wires(std::string_view) = 0;
@@ -54,7 +77,10 @@ public:
     virtual garbage_collector* get_garbage_collector() = 0;
     virtual void close_session() = 0;
 };
+inline server_wire_container::~server_wire_container() = default;
+inline server_wire_container::wire_container::~wire_container() = default;
 inline server_wire_container::resultset_wires_container::~resultset_wires_container() = default;
+inline server_wire_container::garbage_collector::~garbage_collector() = default;
 
 using resultset_wires = server_wire_container::resultset_wires_container;
 using resultset_wire = shm_resultset_wire;
