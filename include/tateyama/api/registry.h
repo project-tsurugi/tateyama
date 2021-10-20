@@ -20,8 +20,8 @@
 #include <unordered_map>
 #include <string_view>
 
-#define register_component(ns, cls, name, create_func) \
-    inline bool ns ## _ ## name ## _entry = ::tateyama::api::registry<cls>::add(#name, (create_func))  // NOLINT
+// long line in order to NOLINT with macro
+#define register_component(ns, cls, name, create_func) inline bool ns ## _ ## name ## _entry = ::tateyama::api::registry<cls>::add(#name, (create_func))  // NOLINT
 
 namespace tateyama::api {
 
