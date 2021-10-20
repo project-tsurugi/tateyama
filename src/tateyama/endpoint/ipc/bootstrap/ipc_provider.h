@@ -32,6 +32,12 @@
 
 namespace tateyama::server {
 
+// should be in sync one in bootstrap
+struct ipc_endpoint_context {
+    std::unordered_map<std::string, std::string> options_{};
+    std::function<void()> database_initialize_{};
+};
+
 /**
  * @brief ipc endpoint provider
  * @details
@@ -39,9 +45,15 @@ namespace tateyama::server {
 class ipc_provider : public tateyama::api::endpoint::provider {
 public:
     status initialize(api::environment& env, void* context) override {
-        auto& options = *reinterpret_cast<std::unordered_map<std::string, std::string>*>(context);  //NOLINT
+        auto& ctx = *reinterpret_cast<ipc_endpoint_context*>(context);  //NOLINT
+        auto& options = ctx.options_;
+        auto& dbinit = ctx.database_initialize_;
+
         // connection channel
         container_ = std::make_unique<tateyama::common::wire::connection_container>(options["dbname"]);
+
+        // callbak jogasaki to load data
+        dbinit();
 
         // worker objects
         workers_.reserve(std::stol(options["threads"]));
