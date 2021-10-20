@@ -27,7 +27,7 @@ namespace tateyama::common::wire {
 
 template<class T>
 struct pointer_comp {
-    typedef std::true_type is_transparent;
+    using is_transparent = std::true_type;
     // helper does some magic in order to reduce the number of
     // pairs of types we need to know how to compare: it turns
     // everything into a pointer, and then uses `std::less<T*>`
