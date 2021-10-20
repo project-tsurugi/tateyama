@@ -45,6 +45,9 @@ public:
     /**
      * @brief initialize endpoint
      * @param context the configuration context to initialize the endpoint
+     * @note Currently context is type erased by void* on this api so that caller (bootstrap) and endpoint
+     * implementations can exchange necessary information. The knowledge on its content must be shared between
+     * caller and endpoint.
      */
     virtual tateyama::status initialize(environment& env, void* context) = 0;
 
