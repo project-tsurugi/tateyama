@@ -23,6 +23,8 @@
 #include <tateyama/api/endpoint/request.h>
 #include <tateyama/api/endpoint/response.h>
 
+#include <tateyama/common.h>
+
 namespace tateyama::api::endpoint {
 
 std::shared_ptr<service> create_service(tateyama::api::environment& env) {

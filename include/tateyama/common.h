@@ -16,8 +16,8 @@
 #pragma once
 
 #ifdef TRACY_ENABLE
-#include "../third_party/tracy/Tracy.hpp"
-#include "../third_party/tracy/common/TracySystem.hpp"
+#include "../../third_party/tracy/Tracy.hpp"
+#include "../../third_party/tracy/common/TracySystem.hpp"
 #define trace_scope ZoneScoped
 #define trace_scope_name(name) ZoneScopedN(name)
 
