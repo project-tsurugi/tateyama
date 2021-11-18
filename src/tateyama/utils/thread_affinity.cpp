@@ -33,7 +33,8 @@ bool set_thread_affinity(std::size_t id, affinity_profile const& prof) {
         return 0 == numa_run_on_node(static_cast<int>(id % nodes));
     }
     if(prof.numa_node_ != affinity_profile::npos) {
-        return 0 == numa_run_on_node(prof.numa_node_ % nodes); // round down if specified larger than nodes
+        // round down if specified value is larger than nodes
+        return 0 == numa_run_on_node(static_cast<int>(prof.numa_node_ % nodes));
     }
     cpu_set_t cpuset{};
     CPU_ZERO(&cpuset);
