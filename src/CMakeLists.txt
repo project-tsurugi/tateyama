@@ -8,6 +8,7 @@ file(GLOB SOURCES
         "tateyama/endpoint/service/impl/*.cpp"
         "tateyama/endpoint/ipc/*.cpp"
         "tateyama/endpoint/ipc/bootstrap/*.cpp"
+        "tateyama/utils/*.cpp"
 )
 
 if(TRACY_ENABLE)

@@ -16,7 +16,6 @@
 #pragma once
 
 #include <tateyama/api/task_scheduler/context.h>
-#include <tateyama/api/task_scheduler/impl/core_affinity.h>
 #include <tateyama/api/task_scheduler/impl/cache_align.h>
 
 namespace tateyama::task_scheduler {

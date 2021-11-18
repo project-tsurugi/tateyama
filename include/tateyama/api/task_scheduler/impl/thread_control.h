@@ -24,7 +24,7 @@
 #include <numa.h>
 
 #include <tateyama/api/task_scheduler/task_scheduler_cfg.h>
-#include "core_affinity.h"
+#include <tateyama/utils/thread_affinity.h>
 #include "cache_align.h"
 #include "utils.h"
 #include <tateyama/common.h>
@@ -96,6 +96,27 @@ private:
 
     // thread must come last since the construction starts new thread, which accesses the member variables above.
     boost::thread origin_{};
+
+    bool setup_core_affinity(std::size_t id, api::task_scheduler::task_scheduler_cfg const* cfg) {
+        if (! cfg) return false;
+        utils::affinity_profile prof{};
+        if(cfg->force_numa_node() != task_scheduler_cfg::numa_node_unspecified) {
+            prof = utils::affinity_profile{
+                utils::affinity_tag<utils::affinity_kind::numa_affinity>,
+                cfg->force_numa_node()
+            };
+        } else if (cfg->assign_numa_nodes_uniformly()) {
+            prof = utils::affinity_profile{
+                utils::affinity_tag<utils::affinity_kind::numa_affinity>
+            };
+        } else if(cfg->core_affinity()) {
+            prof = utils::affinity_profile{
+                utils::affinity_tag<utils::affinity_kind::core_affinity>,
+                cfg->initial_core()
+            };
+        }
+        return utils::set_thread_affinity(id, prof);
+    }
 
     template <class F, class ...Args, class = std::enable_if_t<std::is_invocable_v<F, Args...>>>
     auto create_thread_body(std::size_t thread_id, task_scheduler_cfg const* cfg, F&& callable, Args&&...args) {
