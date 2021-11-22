@@ -27,6 +27,7 @@
 #include <tateyama/api/endpoint/provider.h>
 #include <tateyama/api/registry.h>
 #include <tateyama/api/environment.h>
+#include <tateyama/utils/thread_affinity.h>
 
 #include "worker.h"
 
@@ -55,6 +56,13 @@ private:
         }
 
         void operator()() {
+            auto prof = setup_affinity(
+                std::stol(options["core_affinity"]) == 1,
+                std::stol(options["assign_numa_nodes_uniformly"]) == 1,
+                std::stoul(options["numa_node"]),
+                std::stoul(options["initial_core"])
+            );
+
             auto& connection_queue = container_->get_connection_queue();
 
             while(true) {
@@ -89,7 +97,10 @@ private:
                 try {
                     std::unique_ptr<Worker> &worker = workers_.at(index);
                     worker = std::make_unique<Worker>(*env_.endpoint_service(), session_id, std::move(wire));
-                    worker->task_ = std::packaged_task<void()>([&]{worker->run();});
+                    worker->task_ = std::packaged_task<void()>([&, prof]{
+                        utils::set_thread_affinity(index, prof);
+                        worker->run();
+                    });
                     worker->future_ = worker->task_.get_future();
                     worker->thread_ = std::thread(std::move(worker->task_));
                 } catch (std::exception &ex) {
@@ -138,6 +149,30 @@ public:
         return std::make_shared<ipc_provider>();
     }
 
+    utils::affinity_profile setup_affinity(
+        bool set_core_affinity,
+        bool assign_numa_nodes_uniformly,
+        std::size_t numa_node,
+        std::size_t initial_core
+    ) {
+        utils::affinity_profile prof{};
+        if(numa_node != utils::affinity_profile::npos) {
+            prof = utils::affinity_profile{
+                utils::affinity_tag<utils::affinity_kind::numa_affinity>,
+                numa_node
+            };
+        } else if (assign_numa_nodes_uniformly) {
+            prof = utils::affinity_profile{
+                utils::affinity_tag<utils::affinity_kind::numa_affinity>
+            };
+        } else if(set_core_affinity) {
+            prof = utils::affinity_profile{
+                utils::affinity_tag<utils::affinity_kind::core_affinity>,
+                initial_core
+            };
+        }
+        return prof;
+    }
 private:
     std::unique_ptr<listener> listener_;
     std::thread listener_thread_;
