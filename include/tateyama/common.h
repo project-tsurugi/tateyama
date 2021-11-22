@@ -18,8 +18,9 @@
 #ifdef TRACY_ENABLE
 #include "../../third_party/tracy/Tracy.hpp"
 #include "../../third_party/tracy/common/TracySystem.hpp"
-#define trace_scope ZoneScoped
-#define trace_scope_name(name) ZoneScopedN(name)
+#define TRACY_SCOPED_ZONE TracyConcat(___tracy_scoped_zone_, __LINE__)
+#define trace_scope ZoneNamed(TRACY_SCOPED_ZONE, true)
+#define trace_scope_name(name) ZoneNamedN(TRACY_SCOPED_ZONE, name, true)
 
 #else
 #define trace_scope
