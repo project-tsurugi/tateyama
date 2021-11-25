@@ -46,7 +46,7 @@ class ipc_provider : public tateyama::api::endpoint::provider {
 private:
     class listener {
     public:
-        listener(api::environment& env, std::size_t size, std::string name) : env_(env), base_name_(name) {
+        listener(api::environment& env, std::size_t size, std::string& name) : env_(env), base_name_(name) {
             // connection channel
             container_ = std::make_unique<tateyama::common::wire::connection_container>(name);
 
