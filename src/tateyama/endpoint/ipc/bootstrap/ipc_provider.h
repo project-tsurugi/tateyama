@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2019 tsurugi project.
+ * Copyright 2019-2021 tsurugi project.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,7 +43,7 @@ struct ipc_endpoint_context {
  * @details
  */
 class ipc_provider : public tateyama::api::endpoint::provider {
-public:
+private:
     class listener {
     public:
         listener(api::environment& env, std::size_t size, std::string name) : env_(env), base_name_(name) {
@@ -111,6 +111,7 @@ public:
         std::string base_name_;
     };
 
+public:
     status initialize(api::environment& env, void* context) override {
         auto& ctx = *reinterpret_cast<ipc_endpoint_context*>(context);  //NOLINT
         auto& options = ctx.options_;
