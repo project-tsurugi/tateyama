@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2019 tsurugi project.
+ * Copyright 2019-2021 tsurugi project.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,70 +43,94 @@ struct ipc_endpoint_context {
  * @details
  */
 class ipc_provider : public tateyama::api::endpoint::provider {
+private:
+    class listener {
+    public:
+        listener(api::environment& env, std::size_t size, std::string& name) : env_(env), base_name_(name) {
+            // connection channel
+            container_ = std::make_unique<tateyama::common::wire::connection_container>(name);
+
+            // worker objects
+            workers_.reserve(size);
+        }
+
+        void operator()() {
+            auto& connection_queue = container_->get_connection_queue();
+
+            while(true) {
+                auto session_id = connection_queue.listen(true);
+                if (connection_queue.is_terminated()) {
+                    VLOG(1) << "receive terminate request";
+                    for (auto & worker : workers_) {
+                        if (auto rv = worker->future_.wait_for(std::chrono::seconds(0)) ; rv != std::future_status::ready) {
+                            VLOG(1) << "exit: remaining thread " << worker->session_id_;
+                        }
+                    }
+                    workers_.clear();
+                    connection_queue.confirm_terminated();
+                    break;
+                }
+                VLOG(1) << "connect request: " << session_id;
+                std::string session_name = base_name_;
+                session_name += "-";
+                session_name += std::to_string(session_id);
+                auto wire = std::make_unique<tateyama::common::wire::server_wire_container_impl>(session_name);
+                VLOG(1) << "created session wire: " << session_name;
+                connection_queue.accept(session_id);
+                std::size_t index = 0;
+                for (; index < workers_.size() ; index++) {
+                    if (auto rv = workers_.at(index)->future_.wait_for(std::chrono::seconds(0)) ; rv == std::future_status::ready) {
+                        break;
+                    }
+                }
+                if (workers_.size() < (index + 1)) {
+                    workers_.resize(index + 1);
+                }
+                try {
+                    std::unique_ptr<Worker> &worker = workers_.at(index);
+                    worker = std::make_unique<Worker>(*env_.endpoint_service(), session_id, std::move(wire));
+                    worker->task_ = std::packaged_task<void()>([&]{worker->run();});
+                    worker->future_ = worker->task_.get_future();
+                    worker->thread_ = std::thread(std::move(worker->task_));
+                } catch (std::exception &ex) {
+                    LOG(ERROR) << ex.what();
+                    workers_.clear();
+                    break;
+                }
+            }
+        }
+
+        void terminate() {
+            container_->get_connection_queue().request_terminate();
+        }
+
+    private:
+        api::environment& env_;
+        std::unique_ptr<tateyama::common::wire::connection_container> container_{};
+        std::vector<std::unique_ptr<Worker>> workers_{};
+        std::string base_name_;
+    };
+
 public:
     status initialize(api::environment& env, void* context) override {
         auto& ctx = *reinterpret_cast<ipc_endpoint_context*>(context);  //NOLINT
         auto& options = ctx.options_;
         auto& dbinit = ctx.database_initialize_;
 
-        // connection channel
-        container_ = std::make_unique<tateyama::common::wire::connection_container>(options["dbname"]);
+        // create listener object
+        listener_ = std::make_unique<listener>(env, std::stol(options["threads"]), options["dbname"]);
 
         // callbak jogasaki to load data
         dbinit();
 
-        // worker objects
-        workers_.reserve(std::stol(options["threads"]));
+        listener_thread_ = std::thread(std::ref(*listener_));
 
-        status return_value{};
-        auto& connection_queue = container_->get_connection_queue();
-        while(true) {
-            auto session_id = connection_queue.listen(true);
-            if (connection_queue.is_terminated()) {
-                VLOG(1) << "receive terminate request";
-                workers_.clear();
-                connection_queue.confirm_terminated();
-                break;
-            }
-            VLOG(1) << "connect request: " << session_id;
-            std::string session_name = options["dbname"];
-            session_name += "-";
-            session_name += std::to_string(session_id);
-            auto wire = std::make_unique<tateyama::common::wire::server_wire_container_impl>(session_name);
-            VLOG(1) << "created session wire: " << session_name;
-            connection_queue.accept(session_id);
-            std::size_t index = 0;
-            for (; index < workers_.size() ; index++) {
-                if (auto rv = workers_.at(index)->future_.wait_for(std::chrono::seconds(0)) ; rv == std::future_status::ready) {
-                    break;
-                }
-            }
-            if (workers_.size() < (index + 1)) {
-                workers_.resize(index + 1);
-            }
-            try {
-                std::unique_ptr<Worker> &worker = workers_.at(index);
-                worker = std::make_unique<Worker>(*env.endpoint_service(), session_id, std::move(wire));
-                worker->task_ = std::packaged_task<void()>([&]{worker->run();});
-                worker->future_ = worker->task_.get_future();
-                worker->thread_ = std::thread(std::move(worker->task_));
-            } catch (std::exception &ex) {
-                LOG(ERROR) << ex.what();
-                return_value = status::unknown;  //TODO add appropriate status code
-                workers_.clear();
-                break;
-            }
-        }
-        return return_value;
+        return status::ok;
     }
 
     status shutdown() override {
-        for (auto & worker : workers_) {
-            if (auto rv = worker->future_.wait_for(std::chrono::seconds(0)) ; rv != std::future_status::ready) {
-                VLOG(1) << "exit: remaining thread " << worker->session_id_;
-            }
-        }
-        workers_.clear();
+        listener_->terminate();
+        listener_thread_.join();
         return status::ok;
     }
 
@@ -115,9 +139,8 @@ public:
     }
 
 private:
-    std::unique_ptr<tateyama::common::wire::connection_container> container_{};
-    std::vector<std::unique_ptr<Worker>> workers_{};
+    std::unique_ptr<listener> listener_;
+    std::thread listener_thread_;
 };
 
 }  // tateyama::server
-
