@@ -47,7 +47,11 @@ class ipc_provider : public tateyama::api::endpoint::provider {
 private:
     class listener {
     public:
-        listener(api::environment& env, std::size_t size, std::string& name) : env_(env), base_name_(name) {
+        listener(api::environment& env, std::size_t size, std::string& name, utils::affinity_profile profile) :
+            env_(env),
+            base_name_(name),
+            profile_(std::move(profile))
+        {
             // connection channel
             container_ = std::make_unique<tateyama::common::wire::connection_container>(name);
 
@@ -56,13 +60,6 @@ private:
         }
 
         void operator()() {
-            auto prof = setup_affinity(
-                std::stol(options["core_affinity"]) == 1,
-                std::stol(options["assign_numa_nodes_uniformly"]) == 1,
-                std::stoul(options["numa_node"]),
-                std::stoul(options["initial_core"])
-            );
-
             auto& connection_queue = container_->get_connection_queue();
 
             while(true) {
@@ -97,8 +94,8 @@ private:
                 try {
                     std::unique_ptr<Worker> &worker = workers_.at(index);
                     worker = std::make_unique<Worker>(*env_.endpoint_service(), session_id, std::move(wire));
-                    worker->task_ = std::packaged_task<void()>([&, prof]{
-                        utils::set_thread_affinity(index, prof);
+                    worker->task_ = std::packaged_task<void()>([&]{
+                        utils::set_thread_affinity(index, profile_);
                         worker->run();
                     });
                     worker->future_ = worker->task_.get_future();
@@ -120,6 +117,7 @@ private:
         std::unique_ptr<tateyama::common::wire::connection_container> container_{};
         std::vector<std::unique_ptr<Worker>> workers_{};
         std::string base_name_;
+        utils::affinity_profile profile_{};
     };
 
 public:
@@ -129,7 +127,17 @@ public:
         auto& dbinit = ctx.database_initialize_;
 
         // create listener object
-        listener_ = std::make_unique<listener>(env, std::stol(options["threads"]), options["dbname"]);
+        listener_ = std::make_unique<listener>(
+            env,
+            std::stol(options["threads"]),
+            options["dbname"],
+            setup_affinity(
+                std::stol(options["core_affinity"]) == 1,
+                std::stol(options["assign_numa_nodes_uniformly"]) == 1,
+                std::stoul(options["numa_node"]),
+                std::stoul(options["initial_core"])
+            )
+        );
 
         // callbak jogasaki to load data
         dbinit();
