@@ -76,8 +76,6 @@ public:
         boost::interprocess::managed_shared_memory* managed_shm_ptr_;
         std::string rsw_name_;
         shm_resultset_wires* shm_resultset_wires_{};
-        //   for client
-        shm_resultset_wire* current_wire_{};
         bool server_;
     };
     static void resultset_deleter_impl(resultset_wires_container* resultset) {
