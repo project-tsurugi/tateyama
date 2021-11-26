@@ -41,14 +41,6 @@ public:
             managed_shm_ptr_->destroy<shm_resultset_wires>(rsw_name_.c_str());
             shm_resultset_wires_ = managed_shm_ptr_->construct<shm_resultset_wires>(rsw_name_.c_str())(managed_shm_ptr_, count);
         }
-        //   for client (test purpose)
-        resultset_wires_container_impl(boost::interprocess::managed_shared_memory* managed_shm_ptr, std::string_view name)
-            : managed_shm_ptr_(managed_shm_ptr), rsw_name_(name), server_(false) {
-            shm_resultset_wires_ = managed_shm_ptr_->find<shm_resultset_wires>(rsw_name_.c_str()).first;
-            if (shm_resultset_wires_ == nullptr) {
-                throw std::runtime_error("cannot find the resultset wire");
-            }
-        }
         ~resultset_wires_container_impl() override {
             if (server_) {
                 managed_shm_ptr_->destroy<shm_resultset_wires>(rsw_name_.c_str());
@@ -73,15 +65,6 @@ public:
             }
         }
 
-        std::pair<char*, std::size_t> get_chunk() {
-            if (current_wire_ == nullptr) {
-                current_wire_ = active_wire();
-            }
-            if (current_wire_ != nullptr) {
-                return current_wire_->get_chunk(current_wire_->get_bip_address(managed_shm_ptr_));
-            }
-            return std::pair<char*, std::size_t>(nullptr, 0);
-        }
         void set_eor() override {
             shm_resultset_wires_->set_eor();
         }
@@ -90,10 +73,6 @@ public:
         }
 
     private:
-        shm_resultset_wire* active_wire() {
-            return shm_resultset_wires_->active_wire();
-        }
-
         boost::interprocess::managed_shared_memory* managed_shm_ptr_;
         std::string rsw_name_;
         shm_resultset_wires* shm_resultset_wires_{};
@@ -218,9 +197,6 @@ public:
     }
     void close_session() override { session_closed_ = true; }
 
-    std::unique_ptr<resultset_wires_container_impl> create_resultset_wires_for_client(std::string_view name) {
-        return std::make_unique<resultset_wires_container_impl>(managed_shared_memory_.get(), name);
-    }
     [[nodiscard]] bool is_session_closed() const { return session_closed_; }
 
 private:
