@@ -32,7 +32,6 @@ option(BUILD_TESTS "Build test programs" ON)
 option(BUILD_EXAMPLES "Build example programs" ON)
 option(BUILD_DOCUMENTS "build documents" ON)
 option(INSTALL_EXAMPLES "install examples" OFF)
-option(INSTALL_MOCK "install mock" ON)
 option(BUILD_SHARED_LIBS "build shared libraries instead of static" ON)
 option(ENABLE_CACHE_ALIGN "enable optional cache align requirement" OFF)
 option(MC_QUEUE "use moody-camel queue" OFF)
@@ -116,7 +115,6 @@ install(
 
 add_subdirectory(protos) # temporary
 add_subdirectory(src)
-add_subdirectory(mock)
 if(BUILD_TESTS)
     add_subdirectory(test)
 endif()
