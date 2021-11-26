@@ -19,17 +19,16 @@
 
 #include <glog/logging.h>
 
-#include "tateyama/endpoint/ipc/wire.h"
-
-#include "tateyama/endpoint/ipc/server_wires.h"
+#include <tateyama/endpoint/ipc/wire.h>
+#include <tateyama/endpoint/ipc/server_wires.h>
 
 namespace tateyama::common::wire {
 
 class server_wire_container_impl : public server_wire_container
 {
-    static constexpr std::size_t shm_size = (1<<22);  // 4M bytes (tentative)
-    static constexpr std::size_t request_buffer_size = (1<<12);   //  4K bytes (tentative)
-    static constexpr std::size_t resultset_vector_size = (1<<12); //  4K bytes (tentative)
+    static constexpr std::size_t shm_size = (1<<21) * 104;  // 2M(64K * 8writes * 4result_sets) * 104threads bytes (tentative)  NOLINT
+    static constexpr std::size_t request_buffer_size = (1<<12);   //  4K bytes (tentative)  NOLINT
+    static constexpr std::size_t resultset_vector_size = (1<<12); //  4K bytes (tentative)  NOLINT
     static constexpr std::size_t writer_count = 8;
 
 public:
@@ -50,13 +49,21 @@ public:
                 throw std::runtime_error("cannot find the resultset wire");
             }
         }
-        ~resultset_wires_container_impl() {
+        ~resultset_wires_container_impl() override {
             if (server_) {
                 managed_shm_ptr_->destroy<shm_resultset_wires>(rsw_name_.c_str());
             }
         }
 
-        shm_resultset_wire* acquire() {
+        /**
+         * @brief Copy and move constructers are delete.
+         */
+        resultset_wires_container_impl(resultset_wires_container_impl const&) = delete;
+        resultset_wires_container_impl(resultset_wires_container_impl&&) = delete;
+        resultset_wires_container_impl& operator = (resultset_wires_container_impl const&) = delete;
+        resultset_wires_container_impl& operator = (resultset_wires_container_impl&&) = delete;
+
+        shm_resultset_wire* acquire() override {
             try {
                 return shm_resultset_wires_->acquire();
             }
@@ -83,10 +90,10 @@ public:
             }
             std::abort();  //  FIXME
         }
-        void set_eor() {
+        void set_eor() override {
             shm_resultset_wires_->set_eor();
         }
-        bool is_closed() {
+        bool is_closed() override {
             return shm_resultset_wires_->is_closed();
         }
         bool is_eor() {
@@ -106,22 +113,30 @@ public:
         bool server_;
     };
     static void resultset_deleter_impl(resultset_wires_container* resultset) {
-        delete static_cast<resultset_wires_container_impl*>(resultset);
+        delete dynamic_cast<resultset_wires_container_impl*>(resultset);  // NOLINT
     }
 
     class garbage_collector_impl : public garbage_collector
     {
     public:
-        garbage_collector_impl() {}
-        ~garbage_collector_impl() {
+        garbage_collector_impl() = default;
+        ~garbage_collector_impl() override {
             resultset_wires_set_.clear();
         }
 
-        void put(unq_p_resultset_wires_conteiner wires) {
+        /**
+         * @brief Copy and move constructers are delete.
+         */
+        garbage_collector_impl(garbage_collector_impl const&) = delete;
+        garbage_collector_impl(garbage_collector_impl&&) = delete;
+        garbage_collector_impl& operator = (garbage_collector_impl const&) = delete;
+        garbage_collector_impl& operator = (garbage_collector_impl&&) = delete;
+
+        void put(unq_p_resultset_wires_conteiner wires) override {
             resultset_wires_set_.emplace(std::move(wires));
         }
-        void dump() {
-            std::set<unq_p_resultset_wires_conteiner>::iterator it = resultset_wires_set_.begin();
+        void dump() override {
+            auto it = resultset_wires_set_.begin();
             while (it != resultset_wires_set_.end()) {
                 if ((*it)->is_closed()) {
                     resultset_wires_set_.erase(it++);
@@ -140,27 +155,33 @@ public:
     public:
         wire_container_impl() = default;
         wire_container_impl(unidirectional_message_wire* wire, char* bip_buffer) : wire_(wire), bip_buffer_(bip_buffer) {};
+        ~wire_container_impl() override = default;
+        wire_container_impl(wire_container_impl const&) = delete;
+        wire_container_impl(wire_container_impl&&) = delete;
+        wire_container_impl& operator = (wire_container_impl const&) = default;
+        wire_container_impl& operator = (wire_container_impl&&) = default;
+
         message_header peep(bool wait = false) {
             return wire_->peep(bip_buffer_, wait);
         }
-        const char* payload(std::size_t length) {
+        const char* payload(std::size_t length) override {
             return wire_->payload(bip_buffer_, length);
         }
         void write(const char* from, message_header&& header) {
-            wire_->write(bip_buffer_, from, std::move(header));
+            wire_->write(bip_buffer_, from, std::move(header));  // NOLINT
         }
         void read(char* to, std::size_t msg_len) {
             wire_->read(to, bip_buffer_, msg_len);
         }
-        std::size_t read_point() { return wire_->read_point(); }
-        void dispose(const std::size_t rp) { wire_->dispose(bip_buffer_, rp); }
+        std::size_t read_point() override { return wire_->read_point(); }
+        void dispose(const std::size_t rp) override { wire_->dispose(bip_buffer_, rp); }
 
     private:
-        unidirectional_message_wire* wire_;
-        char* bip_buffer_;
+        unidirectional_message_wire* wire_{};
+        char* bip_buffer_{};
     };
 
-    server_wire_container_impl(std::string_view name) : name_(name), garbage_collector_impl_(std::make_unique<garbage_collector_impl>()) {
+    explicit server_wire_container_impl(std::string_view name) : name_(name), garbage_collector_impl_(std::make_unique<garbage_collector_impl>()) {
         boost::interprocess::shared_memory_object::remove(name_.c_str());
         try {
             managed_shared_memory_ =
@@ -183,14 +204,14 @@ public:
     server_wire_container_impl& operator = (server_wire_container_impl const&) = delete;
     server_wire_container_impl& operator = (server_wire_container_impl&&) = delete;
 
-    ~server_wire_container_impl() {
+    ~server_wire_container_impl() override {
         boost::interprocess::shared_memory_object::remove(name_.c_str());
     }
 
-    wire_container* get_request_wire() { return &request_wire_; }
-    response_box::response& get_response(std::size_t idx) { return responses_->at(idx); }
+    wire_container* get_request_wire() override { return &request_wire_; }
+    response_box::response& get_response(std::size_t idx) override { return responses_->at(idx); }
 
-    unq_p_resultset_wires_conteiner create_resultset_wires(std::string_view name, std::size_t count) {
+    unq_p_resultset_wires_conteiner create_resultset_wires(std::string_view name, std::size_t count) override {
         try {
             return std::unique_ptr<resultset_wires_container_impl, resultset_deleter_type>{
                 new resultset_wires_container_impl{managed_shared_memory_.get(), name, count}, resultset_deleter_impl };
@@ -200,18 +221,18 @@ public:
             pthread_exit(nullptr);  // FIXME
         }
     }
-    unq_p_resultset_wires_conteiner create_resultset_wires(std::string_view name) {
+    unq_p_resultset_wires_conteiner create_resultset_wires(std::string_view name) override {
         return create_resultset_wires(name, writer_count);
     }
-    garbage_collector* get_garbage_collector() {
+    garbage_collector* get_garbage_collector() override {
         return garbage_collector_impl_.get();
     }
-    void close_session() { session_closed_ = true; }
+    void close_session() override { session_closed_ = true; }
 
     std::unique_ptr<resultset_wires_container_impl> create_resultset_wires_for_client(std::string_view name) {
         return std::make_unique<resultset_wires_container_impl>(managed_shared_memory_.get(), name);
     }
-    bool is_session_closed() { return session_closed_; }
+    [[nodiscard]] bool is_session_closed() const { return session_closed_; }
 
 private:
     std::string name_;
@@ -224,10 +245,10 @@ private:
 
 class connection_container
 {
-    static constexpr std::size_t request_queue_size = (1<<12);  // 4K bytes (tentative)
+    static constexpr std::size_t request_queue_size = (1<<12);  // 4K bytes (tentative)  NOLINT
 
 public:
-    connection_container(std::string_view name) : name_(name) {
+    explicit connection_container(std::string_view name) : name_(name) {
         boost::interprocess::shared_memory_object::remove(name_.c_str());
         try {
             managed_shared_memory_ =

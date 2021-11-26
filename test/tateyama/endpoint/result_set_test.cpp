@@ -21,7 +21,7 @@
 #include "tateyama/endpoint/ipc/ipc_request.h"
 #include "tateyama/endpoint/ipc/ipc_response.h"
 
-#include "tateyama/api/endpoint/mock/server_wires_impl.h"
+#include "server_wires_impl.h"
 
 #include <gtest/gtest.h>
 
