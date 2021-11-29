@@ -52,6 +52,11 @@ public:
     virtual tateyama::status initialize(environment& env, void* context) = 0;
 
     /**
+     * @brief start endpoint
+     */
+    virtual tateyama::status start() = 0;
+
+    /**
      * @brief shutdown endpoint
      */
     virtual tateyama::status shutdown() = 0;
