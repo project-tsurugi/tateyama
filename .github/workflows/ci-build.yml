@@ -34,9 +34,9 @@ jobs:
         name: Install_fpdecimal
         run: |
           cd third_party/takatori/third_party/fpdecimal
+          rm -rf build
           mkdir -p build
           cd build
-          rm -f CMakeCache.txt
           cmake -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTS=OFF -DBUILD_DOCUMENTS=OFF -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/.local ..
           cmake --build . --target install --clean-first -- -j
 
@@ -44,9 +44,9 @@ jobs:
         name: Install_takatori
         run: |
           cd third_party/takatori
+          rm -rf build
           mkdir -p build
           cd build
-          rm -f CMakeCache.txt
           cmake -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTS=OFF -DBUILD_DOCUMENTS=OFF -DFORCE_INSTALL_RPATH=ON -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/.local ..
           cmake --build . --target install --clean-first -- -j
 
@@ -54,9 +54,9 @@ jobs:
         name: Install_moodycamel_concurrentqueue
         run: |
           cd third_party/concurrentqueue
+          rm -rf build_debug
           mkdir -p build_debug
           cd build_debug
-          rm -f CMakeCache.txt
           cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/.local ..
           cmake --build . --target install --clean-first
 
