@@ -23,6 +23,7 @@
 #include <gflags/gflags.h>
 #include <glog/logging.h>
 
+#include <tateyama/logging.h>
 #include <tateyama/api/endpoint/service.h>
 #include <tateyama/api/endpoint/provider.h>
 #include <tateyama/api/registry.h>
@@ -59,22 +60,22 @@ private:
             while(true) {
                 auto session_id = connection_queue.listen(true);
                 if (connection_queue.is_terminated()) {
-                    VLOG(1) << "receive terminate request";
+                    VLOG(log_debug) << "receive terminate request";
                     for (auto & worker : workers_) {
                         if (auto rv = worker->future_.wait_for(std::chrono::seconds(0)) ; rv != std::future_status::ready) {
-                            VLOG(1) << "exit: remaining thread " << worker->session_id_;
+                            VLOG(log_debug) << "exit: remaining thread " << worker->session_id_;
                         }
                     }
                     workers_.clear();
                     connection_queue.confirm_terminated();
                     break;
                 }
-                VLOG(1) << "connect request: " << session_id;
+                VLOG(log_debug) << "connect request: " << session_id;
                 std::string session_name = base_name_;
                 session_name += "-";
                 session_name += std::to_string(session_id);
                 auto wire = std::make_unique<tateyama::common::wire::server_wire_container_impl>(session_name);
-                VLOG(1) << "created session wire: " << session_name;
+                VLOG(log_debug) << "created session wire: " << session_name;
                 connection_queue.accept(session_id);
                 std::size_t index = 0;
                 for (; index < workers_.size() ; index++) {
