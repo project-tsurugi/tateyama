@@ -38,12 +38,6 @@ if (WITH_OGAWAYAMA)
     )
 endif()
 
-if (WITH_OGAWAYAMA)
-    target_link_libraries(server
-            PRIVATE ogawayama-bridge
-    )
-endif()
-
 target_link_libraries(server
     PRIVATE engine
     PRIVATE jogasaki-${SHARKSFIN_IMPLEMENTATION}-engine
