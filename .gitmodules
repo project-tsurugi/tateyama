@@ -19,3 +19,6 @@
 [submodule "third_party/tracy"]
 	path = third_party/tracy
 	url = https://github.com/wolfpld/tracy.git
+[submodule "third_party/ogawayama"]
+	path = third_party/ogawayama
+	url = git@github.com:project-tsurugi/ogawayama.git
