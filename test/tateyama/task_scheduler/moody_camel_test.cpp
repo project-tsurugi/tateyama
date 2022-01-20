@@ -36,6 +36,9 @@ public:
         void operator()(api::task_scheduler::context& ctx) {
             (void)ctx;
         }
+        [[nodiscard]] bool sticky() {
+            return false;
+        }
         std::size_t id_{};
     };
 

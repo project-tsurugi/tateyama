@@ -75,10 +75,13 @@ public:
 
     /**
      * @brief construct new object
+     * @param cfg the configuration for this task scheduler
+     * @param empty_thread true avoids creating threads and scheduler is driven by process_next() calls for testing.
      */
-    explicit scheduler(task_scheduler_cfg cfg = {}) :
+    explicit scheduler(task_scheduler_cfg cfg = {}, bool empty_thread = false) :
         cfg_(cfg),
-        size_(cfg_.thread_count())
+        size_(cfg_.thread_count()),
+        empty_thread_(empty_thread)
     {
         prepare();
     }
@@ -119,6 +122,11 @@ public:
             s.emplace_back(std::move(t));
             return;
         }
+        if(t.sticky()) {
+            auto& q = sticky_task_queues_[index];
+            q.push(std::move(t));
+            return;
+        }
         auto& q = queues_[index];
         q.push(std::move(t));
     }
@@ -142,6 +150,9 @@ public:
      */
     void stop() {
         for(auto&& q : queues_) {
+            q.deactivate();
+        }
+        for(auto&& q : sticky_task_queues_) {
             q.deactivate();
         }
         for(auto&& t : threads_) {
@@ -168,16 +179,31 @@ public:
 
     /**
      * @brief accessor to the local queue for testing purpose
-     * @note this function is thread-safe. Multiple threads can safely call this function concurrently.
      */
-    [[nodiscard]] std::vector<queue> const& queues() const noexcept {
+    [[nodiscard]] std::vector<queue>& queues() noexcept {
         return queues_;
+    }
+
+    /**
+     * @brief accessor to the sticky task queue for testing purpose
+     */
+    [[nodiscard]] std::vector<queue>& sticky_task_queues() noexcept {
+        return sticky_task_queues_;
+    }
+
+    /**
+     * @brief accessor to the workers for testing purpose
+     * @return the workers list
+     */
+    [[nodiscard]] std::vector<worker>& workers() noexcept {
+        return workers_;
     }
 
 private:
     task_scheduler_cfg cfg_{};
     std::size_t size_{};
     std::vector<queue> queues_{};
+    std::vector<queue> sticky_task_queues_{};
     std::vector<worker> workers_{};
     std::vector<tateyama::task_scheduler::thread_control> threads_{};
     std::vector<tateyama::task_scheduler::worker_stat> worker_stats_{};
@@ -185,10 +211,12 @@ private:
     std::atomic_size_t current_index_{};
     std::vector<std::vector<task>> initial_tasks_{};
     std::atomic_bool started_{false};
+    bool empty_thread_{false};
 
     void prepare() {
         auto sz = cfg_.thread_count();
         queues_.resize(sz);
+        sticky_task_queues_.resize(sz);
         worker_stats_.resize(sz);
         initial_tasks_.resize(sz);
         contexts_.reserve(sz);
@@ -196,8 +224,11 @@ private:
         threads_.reserve(sz);
         for(std::size_t i = 0; i < sz; ++i) {
             auto& ctx = contexts_.emplace_back(i);
-            auto& worker = workers_.emplace_back(queues_, initial_tasks_, worker_stats_[i], std::addressof(cfg_));
-            threads_.emplace_back(i, std::addressof(cfg_), worker, ctx);
+            auto& worker = workers_.emplace_back(
+                queues_, sticky_task_queues_, initial_tasks_, worker_stats_[i], std::addressof(cfg_));
+            if (! empty_thread_) {
+                threads_.emplace_back(i, std::addressof(cfg_), worker, ctx);
+            }
         }
     }
 

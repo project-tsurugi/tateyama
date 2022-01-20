@@ -55,8 +55,25 @@ public:
         return index_;
     }
 
+    /**
+     * @brief accessor to the last steal worker index
+     * @return the 0-origin index of the worker, where the worker stole tasks from.
+     */
+    [[nodiscard]] std::size_t last_steal_from() const noexcept {
+        return last_steal_from_;
+    }
+
+    /**
+     * @brief setter to the last steal worker index
+     * @param the 0-origin index of the worker, where the worker stole tasks from.
+     */
+    void last_steal_from(std::size_t arg) noexcept {
+        last_steal_from_ = arg;
+    }
+
 private:
     std::size_t index_{};
+    std::size_t last_steal_from_{};
 };
 
 }

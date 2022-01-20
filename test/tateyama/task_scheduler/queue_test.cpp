@@ -29,9 +29,10 @@ public:
     struct test_task {
         std::size_t count_;
         std::size_t count() { return count_; }
+        [[nodiscard]] bool sticky() {
+            return false;
+        }
     };
-
-
 };
 
 using namespace std::string_view_literals;
@@ -96,6 +97,9 @@ public:
 
     explicit mo_task(std::size_t value) : value_(value) {}
     std::size_t value_{};
+    [[nodiscard]] bool sticky() {
+        return false;
+    }
 };
 
 TEST_F(queue_test, move_only_type) {

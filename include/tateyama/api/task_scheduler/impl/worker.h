@@ -62,12 +62,14 @@ public:
      */
     worker(
         std::vector<basic_queue<task>>& queues,
+        std::vector<basic_queue<task>>& sticky_task_queues,
         std::vector<std::vector<task>>& initial_tasks,
         worker_stat& stat,
         task_scheduler_cfg const* cfg = nullptr
     ) noexcept:
         cfg_(cfg),
         queues_(std::addressof(queues)),
+        sticky_task_queues_(std::addressof(sticky_task_queues)),
         initial_tasks_(std::addressof(initial_tasks)),
         stat_(std::addressof(stat))
     {}
@@ -80,14 +82,44 @@ public:
         // reconstruct the queues so that they are on each numa node
         auto index = thread_id;
         (*queues_)[index].reconstruct();
+        (*sticky_task_queues_)[index].reconstruct();
         auto& q = (*queues_)[index];
+        auto& sq = (*sticky_task_queues_)[index];
         auto& s = (*initial_tasks_)[index];
         for(auto&& t : s) {
+            if(t.sticky()) {
+                sq.push(std::move(t));
+                continue;
+            }
             q.push(std::move(t));
         }
         s.clear();
     }
 
+    bool process_next(
+        api::task_scheduler::context& ctx,
+        basic_queue<task>& q,
+        basic_queue<task>& sq
+    ) {
+        task t{};
+        if (sq.active() && sq.try_pop(t)) {
+            t(ctx);
+            ++stat_->count_;
+            return true;
+        }
+        if (q.active() && q.try_pop(t)) {
+            t(ctx);
+            ++stat_->count_;
+            return true;
+        }
+        if (cfg_ && cfg_->stealing_enabled()) {
+            bool stolen = steal_and_execute(ctx);
+            if(stolen) {
+                return true;
+            }
+        }
+        return false;
+    }
     /**
      * @brief the worker body
      * @param ctx the worker context information
@@ -95,19 +127,10 @@ public:
     void operator()(api::task_scheduler::context& ctx) {
         auto index = ctx.index();
         auto& q = (*queues_)[index];
-        std::size_t last_stolen = index;
-        task t{};
-        while(q.active()) {
-            if (q.try_pop(t)) {
-                t(ctx);
-                ++stat_->count_;
-                continue;
-            }
-            bool stolen = false;
-            if (cfg_ && cfg_->stealing_enabled()) {
-                stolen = steal_and_execute(ctx, last_stolen);
-            }
-            if (! stolen) {
+        auto& sq = (*sticky_task_queues_)[index];
+        ctx.last_steal_from(index);
+        while(sq.active() || q.active()) {
+            if(! process_next(ctx, q, sq)) {
                 _mm_pause();
             }
         }
@@ -116,6 +139,7 @@ public:
 private:
     task_scheduler_cfg const* cfg_{};
     std::vector<basic_queue<task>>* queues_{};
+    std::vector<basic_queue<task>>* sticky_task_queues_{};
     std::vector<std::vector<task>>* initial_tasks_{};
     worker_stat* stat_{};
 
@@ -128,15 +152,15 @@ private:
         return current + 1;
     }
 
-    bool steal_and_execute(api::task_scheduler::context& ctx, std::size_t& last_stolen) {
+    bool steal_and_execute(api::task_scheduler::context& ctx) {
         auto index = ctx.index();
-        std::size_t from = last_stolen;
+        std::size_t from = ctx.last_steal_from();
         task t{};
         for(auto idx = next(from, from); idx != from; idx = next(idx, from)) {
             auto& tgt = (*queues_)[idx];
             if(tgt.try_pop(t)) {
                 ++stat_->stolen_;
-                last_stolen = idx;
+                ctx.last_steal_from(idx);
                 DLOG(INFO) << "task stolen from queue " << idx << " to " << index;
                 t(ctx);
                 ++stat_->count_;

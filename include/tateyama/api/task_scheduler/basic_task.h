@@ -74,6 +74,14 @@ public:
         }, entity_);
     }
 
+    [[nodiscard]] bool sticky() {
+        bool ret{};
+        std::visit([&](auto&& arg){
+            ret = arg.sticky();
+        }, entity_);
+        return ret;
+    }
+
     //temporarily keep this public for testing // FIXME
     std::variant<Impls...> entity_{};  //NOLINT
 };

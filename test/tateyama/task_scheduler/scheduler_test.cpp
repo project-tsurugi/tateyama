@@ -44,6 +44,9 @@ public:
     void operator()(context& ctx) {
         return body_(ctx);
     }
+    [[nodiscard]] bool sticky() {
+        return false;
+    }
     std::function<void(context&)> body_{};
 };
 
@@ -71,6 +74,9 @@ public:
     void operator()(context& ctx) {
         return body_(ctx);
     }
+    [[nodiscard]] bool sticky() {
+        return false;
+    }
     std::function<void(context&)> body_{};
 };
 
@@ -95,6 +101,98 @@ TEST_F(scheduler_test, multiple_task_impls) {
     sched.stop();
     ASSERT_TRUE(executed);
     ASSERT_TRUE(executed2);
+}
+
+class test_task_sticky {
+public:
+    test_task_sticky() = default;
+
+    explicit test_task_sticky(std::function<void(context&)> body) : body_(std::move(body)) {}
+    void operator()(context& ctx) {
+        return body_(ctx);
+    }
+    [[nodiscard]] bool sticky() {
+        return true;
+    }
+    std::function<void(context&)> body_{};
+};
+
+TEST_F(scheduler_test, sticky_task_simple) {
+    // sticky tasks are process first, then local queue tasks
+    using task = tateyama::task_scheduler::basic_task<test_task, test_task_sticky>;
+    task_scheduler_cfg cfg{};
+    cfg.thread_count(1);
+    cfg.stealing_enabled(true);
+    scheduler<task> sched{cfg, true};
+
+    auto& w0 = sched.workers()[0];
+    auto& lq0 = sched.queues()[0];
+    auto& sq0 = sched.sticky_task_queues()[0];
+    bool executed00 = false;
+    bool executed01 = false;
+    bool executed02 = false;
+    bool executed03 = false;
+    sched.schedule_at(task{test_task{[&](context& t) {
+        executed02 = true;
+    }}}, 0);
+    sched.schedule_at(task{test_task{[&](context& t) {
+        executed03 = true;
+    }}}, 0);
+    sched.schedule_at(task{test_task_sticky{[&](context& t) {
+        executed00 = true;
+    }}}, 0);
+    sched.schedule_at(task{test_task_sticky{[&](context& t) {
+        executed01 = true;
+    }}}, 0);
+    w0.init(0);
+
+    context ctx0{0};
+    w0.process_next(ctx0, lq0, sq0);
+    EXPECT_TRUE(executed00);
+    w0.process_next(ctx0, lq0, sq0);
+    EXPECT_TRUE(executed01);
+    w0.process_next(ctx0, lq0, sq0);
+    EXPECT_TRUE(executed02);
+    w0.process_next(ctx0, lq0, sq0);
+    EXPECT_TRUE(executed03);
+}
+
+TEST_F(scheduler_test, sticky_task_stealing) {
+    using task = tateyama::task_scheduler::basic_task<test_task, test_task_sticky>;
+    task_scheduler_cfg cfg{};
+    cfg.thread_count(2);
+    cfg.stealing_enabled(true);
+    scheduler<task> sched{cfg, true};
+
+    auto& w0 = sched.workers()[0];
+    auto& w1 = sched.workers()[1];
+    auto& lq0 = sched.queues()[0];
+    auto& lq1 = sched.queues()[1];
+    auto& sq0 = sched.sticky_task_queues()[0];
+    auto& sq1 = sched.sticky_task_queues()[1];
+    bool executed00 = false;
+    bool executed10 = false;
+    bool executed11 = false;
+    sched.schedule_at(task{test_task{[&](context& t) {
+        executed00 = true;
+    }}}, 0);
+    sched.schedule_at(task{test_task{[&](context& t) {
+        executed11 = true;
+    }}}, 1);
+    sched.schedule_at(task{test_task_sticky{[&](context& t) {
+        executed10 = true;
+    }}}, 1);
+    w0.init(0);
+    w1.init(1);
+
+    context ctx0{0};
+    context ctx1{1};
+    w0.process_next(ctx0, lq0, sq0);
+    EXPECT_TRUE(executed00);
+    w1.process_next(ctx1, lq1, sq1);
+    EXPECT_TRUE(executed10);
+    w0.process_next(ctx0, lq0, sq0);
+    EXPECT_TRUE(executed11);
 }
 
 }
