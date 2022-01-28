@@ -15,11 +15,14 @@
  */
 #pragma once
 
-#include "task_scheduler_cfg.h"
+#include <sched.h>
+
+#include <tateyama/logging.h>
 #include <tateyama/api/task_scheduler/impl/worker.h>
 #include <tateyama/api/task_scheduler/impl/queue.h>
 #include <tateyama/api/task_scheduler/impl/thread_control.h>
 #include <tateyama/api/task_scheduler/impl/cache_align.h>
+#include "task_scheduler_cfg.h"
 
 namespace tateyama::api::task_scheduler {
 
@@ -86,11 +89,18 @@ public:
         prepare();
     }
 
+    /**
+     * @brief accessor for the preferred worker id
+     * @details scheduler has the preference on worker id determined by the caller's thread. This function exposes
+     * one to the caller.
+     * @note this function is thread-safe. Multiple threads can safely call this function concurrently.
+     */
     std::size_t preferred_worker_for_current_thread() {
         constexpr static auto undefined = static_cast<std::size_t>(-1);
         thread_local std::size_t index_for_this_thread = undefined;
         if (index_for_this_thread == undefined) {
             index_for_this_thread = increment(current_index_, size_);
+            DVLOG(log_debug) << "worker " << index_for_this_thread << " assigned for thread on core " << sched_getcpu();
         }
         return index_for_this_thread;
     }
