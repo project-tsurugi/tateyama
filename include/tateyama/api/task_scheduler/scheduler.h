@@ -89,18 +89,19 @@ public:
         prepare();
     }
 
+    constexpr static auto undefined = static_cast<std::size_t>(-1);
     /**
      * @brief accessor for the preferred worker id
      * @details scheduler has the preference on worker id determined by the caller's thread. This function exposes
      * one to the caller.
      * @note this function is thread-safe. Multiple threads can safely call this function concurrently.
      */
-    std::size_t preferred_worker_for_current_thread() {
-        constexpr static auto undefined = static_cast<std::size_t>(-1);
+    std::size_t preferred_worker_for_current_thread(std::size_t overwrite = undefined) {
         thread_local std::size_t index_for_this_thread = undefined;
-        if (index_for_this_thread == undefined) {
-            index_for_this_thread = increment(current_index_, size_);
+        if (overwrite != undefined || index_for_this_thread == undefined) {
+            index_for_this_thread = overwrite != undefined ? overwrite : increment(current_index_, size_);
             DVLOG(log_debug) << "worker " << index_for_this_thread << " assigned for thread on core " << sched_getcpu();
+            return index_for_this_thread;
         }
         return index_for_this_thread;
     }
@@ -237,7 +238,14 @@ private:
         for(std::size_t i = 0; i < sz; ++i) {
             auto& ctx = contexts_.emplace_back(i);
             auto& worker = workers_.emplace_back(
-                queues_, sticky_task_queues_, initial_tasks_, worker_stats_[i], std::addressof(cfg_));
+                queues_,
+                sticky_task_queues_,
+                initial_tasks_,
+                worker_stats_[i],
+                [this](std::size_t worker_id) {
+                    this->preferred_worker_for_current_thread(worker_id);
+                },
+                std::addressof(cfg_));
             if (! empty_thread_) {
                 threads_.emplace_back(i, std::addressof(cfg_), worker, ctx);
             }

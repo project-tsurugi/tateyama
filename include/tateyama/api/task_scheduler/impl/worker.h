@@ -49,6 +49,8 @@ class cache_align worker {
 public:
     using task = T;
 
+    using initialize_function_type = std::function<void(std::size_t)>;
+
     /**
      * @brief create empty object
      */
@@ -65,13 +67,15 @@ public:
         std::vector<basic_queue<task>>& sticky_task_queues,
         std::vector<std::vector<task>>& initial_tasks,
         worker_stat& stat,
+        initialize_function_type init_fn,
         task_scheduler_cfg const* cfg = nullptr
     ) noexcept:
         cfg_(cfg),
         queues_(std::addressof(queues)),
         sticky_task_queues_(std::addressof(sticky_task_queues)),
         initial_tasks_(std::addressof(initial_tasks)),
-        stat_(std::addressof(stat))
+        stat_(std::addressof(stat)),
+        init_fn_(std::move(init_fn))
     {}
 
     /**
@@ -94,6 +98,10 @@ public:
             q.push(std::move(t));
         }
         s.clear();
+
+        if(init_fn_) {
+            init_fn_(thread_id);
+        }
     }
 
     bool process_next(
@@ -142,6 +150,7 @@ private:
     std::vector<basic_queue<task>>* sticky_task_queues_{};
     std::vector<std::vector<task>>* initial_tasks_{};
     worker_stat* stat_{};
+    initialize_function_type init_fn_{};
 
     std::size_t next(std::size_t current, std::size_t initial) {
         (void)initial;
