@@ -24,10 +24,11 @@
 
 namespace tateyama::common::stream {
 
+class stream_request;
 
 // class stream_response
 stream_response::stream_response(stream_request& request, unsigned char index, std::size_t session_id)
-    : stream_request_(request), session_socket_(request.get_session_socket()), index_(index), session_id_(session_id) {
+    : session_socket_(request.get_session_socket()), index_(index), session_id_(session_id) {
 }
 
 tateyama::status stream_response::body(std::string_view body) {

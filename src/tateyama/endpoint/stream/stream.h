@@ -41,7 +41,7 @@ public:
     };
 
     explicit stream_socket(connection_socket* server_socket, int socket)
-        : server_socket_(server_socket), socket_(socket), data_buffer_(buffer_) {
+        : server_socket_(server_socket), socket_(socket), data_buffer_(&buffer_[0]) {
         unsigned char info{};
         std::string_view data;
         if (!recv(info, data)) {
@@ -53,13 +53,18 @@ public:
 
     ~stream_socket() { close(socket_); }
 
+    stream_socket(stream_socket const& other) = delete;
+    stream_socket& operator=(stream_socket const& other) = delete;
+    stream_socket(stream_socket&& other) noexcept = delete;
+    stream_socket& operator=(stream_socket&& other) noexcept = delete;
+
     bool await(unsigned char& info) {
         fd_set fds;
-        FD_ZERO(&fds);
-        FD_SET(socket_, &fds);
-        select(socket_ + 1, &fds, NULL, NULL, NULL);
+        FD_ZERO(&fds);  // NOLINT
+        FD_SET(socket_, &fds);  // NOLINT
+        select(socket_ + 1, &fds, nullptr, nullptr, nullptr);
 
-        if (FD_ISSET(socket_, &fds)) {
+        if (FD_ISSET(socket_, &fds)) {  // NOLINT
             auto size_i = ::recv(socket_, &info, 1, 0);
             if (size_i == 0) {
                 return false;
@@ -68,22 +73,22 @@ public:
         return true;
     }
     void recv(std::string_view& payload) {
-        auto size_l = ::recv(socket_, buffer_, sizeof(int), 0);
-        while (size_l < static_cast<long int>(sizeof(int))) {
-            size_l += ::recv(socket_, buffer_ + size_l, sizeof(int) - size_l, 0);
+        std::int64_t size_l = ::recv(socket_, &buffer_[0], sizeof(int), 0);
+        while (size_l < static_cast<std::int64_t>(sizeof(int))) {
+            size_l += ::recv(socket_, &buffer_[size_l], sizeof(int) - size_l, 0);  // NOLINT
         }
-        int length = (buffer_[3] << 24) | (buffer_[2] << 16) | (buffer_[1] << 8) | buffer_[0];
+        unsigned int length = (buffer_[3] << 24) | (buffer_[2] << 16) | (buffer_[1] << 8) | buffer_[0];  // NOLINT
 
         if (length > 0) {
             if (length > BUFFER_SIZE) {
-                if (data_buffer_ != buffer_) {
+                if (data_buffer_ != &buffer_[0]) {
                     delete data_buffer_;
                 }
-                data_buffer_ = new char[length];
+                data_buffer_ = new char[length];  // NOLINT
             }
             auto size_v = ::recv(socket_, data_buffer_, length, 0);
             while (size_v < length) {
-                size_v += ::recv(socket_, data_buffer_ + size_v, length - size_v, 0);
+                size_v += ::recv(socket_, data_buffer_ + size_v, length - size_v, 0);  // NOLINT
             }
             payload = std::string_view(data_buffer_, length);
         }
@@ -100,14 +105,14 @@ public:
 
         unsigned int length = payload.length();
         for(std::size_t i = 0 ; i < sizeof(length); i++) {
-            buffer_[i] = (length << (i * 8)) & 0xff;
+            buffer_[i] = (length << (i * 8)) & 0xff;  // NOLINT
         }
-        ::send(socket_, buffer_, sizeof(length), 0);
+        ::send(socket_, &buffer_[0], sizeof(length), 0);
         ::send(socket_, payload.data(), length, 0);
     }
-    stream_type get_type() const { return type_; }
-    std::string_view get_name() const { return name_; }
-    connection_socket& get_connection_socket() const { return *server_socket_; }
+    [[nodiscard]] stream_type get_type() const { return type_; }
+    [[nodiscard]] std::string_view get_name() const { return name_; }
+    [[nodiscard]] connection_socket& get_connection_socket() const { return *server_socket_; }
 
 // for session stream
     void close_session() { session_closed_ = true; }
@@ -118,7 +123,7 @@ private:
     int socket_;
     stream_type type_;
     std::string name_;
-    char buffer_[BUFFER_SIZE]{};
+    char buffer_[BUFFER_SIZE]{};  // NOLINT
     char *data_buffer_{};
     bool session_closed_{false};
 };
@@ -131,16 +136,16 @@ public:
      * @brief Construct a new object.
      */
     connection_socket() = delete;
-    explicit connection_socket(unsigned long port) {
+    explicit connection_socket(std::uint32_t port) {
         // ソケット作成
         socket_ = ::socket(AF_INET, SOCK_STREAM, 0);
 
         // ソケットにアドレスとポートをマッピングする
-        struct sockaddr_in socket_address;
+        struct sockaddr_in socket_address{};
         socket_address.sin_family = AF_INET;
         socket_address.sin_port = htons(port);
         socket_address.sin_addr.s_addr = INADDR_ANY;
-        bind(socket_, (struct sockaddr *) &socket_address, sizeof(socket_address));
+        bind(socket_, (struct sockaddr *) &socket_address, sizeof(socket_address));  // NOLINT
 
         // ポートをListenする
         listen(socket_, SOMAXCONN);
@@ -157,21 +162,21 @@ public:
 
     std::unique_ptr<stream_socket> accept([[maybe_unused]] bool wait = false) {
         fd_set fds;
-        FD_ZERO(&fds);
-        FD_SET(socket_, &fds);
-        select(socket_ + 1, &fds, NULL, NULL, NULL);
+        FD_ZERO(&fds);  // NOLINT
+        FD_SET(socket_, &fds);  // NOLINT
+        select(socket_ + 1, &fds, nullptr, nullptr, nullptr);
 
-        if (FD_ISSET(socket_, &fds)) {
+        if (FD_ISSET(socket_, &fds)) {  // NOLINT
             // 接続要求を受け付ける
-            struct sockaddr_in address;
+            struct sockaddr_in address{};
             unsigned int len = sizeof(address);
-            int ts = ::accept(socket_, (struct sockaddr *)&address, &len);
+            int ts = ::accept(socket_, (struct sockaddr *)&address, &len);  // NOLINT
             return std::make_unique<stream_socket>(this, ts);
         }
         return nullptr;
     }
 
-    void register_resultset(std::string name, stream_data_channel* data_channel) {
+    void register_resultset(const std::string& name, stream_data_channel* data_channel) {
         resultset_relations_.emplace(name, data_channel);
     }
     stream_data_channel* search_resultset(std::string_view name) {
@@ -183,7 +188,7 @@ public:
         return itr->second;
     }
     
-    void close() {
+    void close() const {
         ::close(socket_);
     }
 

@@ -115,7 +115,6 @@ public:
     tateyama::status close_session() override;
 
 private:
-    stream_request& stream_request_;
     stream_socket& session_socket_;
     unsigned char index_;
     std::size_t session_id_;

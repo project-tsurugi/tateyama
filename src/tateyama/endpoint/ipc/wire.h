@@ -307,7 +307,7 @@ public:
         response& operator = (response const&) = delete;
         response& operator = (response&&) = delete;
 
-        std::pair<char*, std::size_t> recv(long timeout = 0) {
+        std::pair<char*, std::size_t> recv(std::int64_t timeout = 0) {
             if (!(written_ > read_)) {
                 if (timeout == 0) {
                     boost::interprocess::scoped_lock lock(m_restored_);
@@ -499,7 +499,7 @@ public:
         /**
          * @brief provide the current chunk to MsgPack.
          */
-        std::pair<char*, std::size_t> get_chunk(char* base, long timeout = 0) {
+        std::pair<char*, std::size_t> get_chunk(char* base, std::int64_t timeout = 0) {
             if (chunk_end_ < poped_) {
                 chunk_end_ = poped_;
             }
@@ -669,7 +669,7 @@ public:
         count_using_--;
     }
 
-    unidirectional_simple_wire* active_wire(long timeout = 0) {
+    unidirectional_simple_wire* active_wire(std::int64_t timeout = 0) {
         do {
             for (auto&& wire: unidirectional_simple_wires_) {
                 if(wire.has_record()) {
@@ -829,7 +829,7 @@ public:
         }
         return rv;
     }
-    bool check(std::size_t n, bool wait = false, long timeout = 0) {
+    bool check(std::size_t n, bool wait = false, std::int64_t timeout = 0) {
         if (!wait) {
             return accepted_ >= n;
         }

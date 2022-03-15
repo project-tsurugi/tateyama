@@ -47,7 +47,7 @@ class stream_provider : public tateyama::api::endpoint::provider {
 private:
     class listener {
     public:
-        listener(api::environment& env, std::size_t size, unsigned long port) : env_(env), port_(port) {
+        listener(api::environment& env, std::size_t size, std::uint32_t port) : env_(env) {
             // connection stream
             connection_socket_ = std::make_unique<tateyama::common::stream::connection_socket>(port);
 
@@ -57,6 +57,12 @@ private:
         ~listener() {
             connection_socket_->close();
         }
+
+        listener(listener const& other) = delete;
+        listener& operator=(listener const& other) = delete;
+        listener(listener&& other) noexcept = delete;
+        listener& operator=(listener&& other) noexcept = delete;
+        
         void operator()() {
             std::size_t session_id = 0;
 
@@ -105,7 +111,6 @@ private:
         api::environment& env_;
         std::unique_ptr<tateyama::common::stream::connection_socket> connection_socket_{};
         std::vector<std::unique_ptr<stream_worker>> workers_{};
-        unsigned long port_;
     };
 
 public:
