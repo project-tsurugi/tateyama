@@ -39,6 +39,8 @@ public:
         session = 1,
         resultset = 2,
     };
+    static constexpr unsigned char STATUS_OK = 0;
+    static constexpr unsigned char STATUS_NG = 1;
 
     explicit stream_socket(connection_socket* server_socket, int socket)
         : server_socket_(server_socket), socket_(socket), data_buffer_(&buffer_[0]) {
@@ -110,6 +112,15 @@ public:
         ::send(socket_, &buffer_[0], sizeof(length), 0);
         ::send(socket_, payload.data(), length, 0);
     }
+    void send(unsigned char info) {
+        ::send(socket_, &info, 1, 0);
+
+        unsigned int length = 0;
+        for(std::size_t i = 0 ; i < sizeof(length); i++) {
+            buffer_[i] = (length << (i * 8)) & 0xff;  // NOLINT
+        }
+        ::send(socket_, &buffer_[0], sizeof(length), 0);
+    }
     [[nodiscard]] stream_type get_type() const { return type_; }
     [[nodiscard]] std::string_view get_name() const { return name_; }
     [[nodiscard]] connection_socket& get_connection_socket() const { return *server_socket_; }
@@ -137,6 +148,11 @@ public:
      */
     connection_socket() = delete;
     explicit connection_socket(std::uint32_t port) {
+        // パイプ作成
+        if (pipe(pair_) != 0) {
+            std::abort();
+        }
+
         // ソケット作成
         socket_ = ::socket(AF_INET, SOCK_STREAM, 0);
 
@@ -164,7 +180,8 @@ public:
         fd_set fds;
         FD_ZERO(&fds);  // NOLINT
         FD_SET(socket_, &fds);  // NOLINT
-        select(socket_ + 1, &fds, nullptr, nullptr, nullptr);
+        FD_SET(pair_[0], &fds);
+        select(((pair_[0] > socket_) ? pair_[0] : socket_) + 1, &fds, nullptr, nullptr, nullptr);
 
         if (FD_ISSET(socket_, &fds)) {  // NOLINT
             // 接続要求を受け付ける
@@ -173,7 +190,14 @@ public:
             int ts = ::accept(socket_, (struct sockaddr *)&address, &len);  // NOLINT
             return std::make_unique<stream_socket>(this, ts);
         }
-        return nullptr;
+        if (FD_ISSET(pair_[0], &fds)) {  // notified of end
+            char trash[1];
+            if (read(pair_[0], trash, sizeof(trash)) <= 0) {
+                std::abort();
+            }
+            return nullptr;
+        }
+        std::abort();
     }
 
     void register_resultset(const std::string& name, stream_data_channel* data_channel) {
@@ -184,16 +208,24 @@ public:
         if (itr == resultset_relations_.end()) {
             return nullptr;
         }
+        auto* rv = itr->second;
         resultset_relations_.erase(itr);
-        return itr->second;
+        return rv;
     }
     
+    void request_terminate() {
+        if (write(pair_[1], "q", 1) <= 0) {
+            std::abort();
+        }
+    }
+
     void close() const {
         ::close(socket_);
     }
 
 private:
     int socket_;
+    int pair_[2];
     std::unordered_map<std::string, stream_data_channel*> resultset_relations_{};
 };
 

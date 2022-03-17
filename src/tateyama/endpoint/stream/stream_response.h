@@ -17,6 +17,8 @@
 
 #include <set>
 #include <string_view>
+#include <mutex>
+#include <condition_variable>
 
 #include <tateyama/api/endpoint/response.h>
 
@@ -97,6 +99,8 @@ private:
     std::unique_ptr<stream_socket> data_stream_{};
     std::set<std::unique_ptr<stream_writer>, pointer_comp<stream_writer>> data_writers_{};
     unsigned char index_{};
+    std::mutex mutex_{};
+    std::condition_variable condition_{};
 };
 
 /**

@@ -86,6 +86,13 @@ tateyama::status stream_response::close_session() {
 tateyama::status stream_data_channel::acquire(tateyama::api::endpoint::writer*& wrt) {
     VLOG(log_trace) << __func__ << std::endl;  //NOLINT
 
+    {
+        std::unique_lock lock{mutex_};
+        if (!data_stream_) {
+            condition_.wait(lock, [&](){ return (data_stream_ ? true : false); });
+        }
+    }
+
     if (auto stream_wrt = std::make_unique<stream_writer>(data_stream_.get(), index_); stream_wrt != nullptr) {
         wrt = stream_wrt.get();
         data_writers_.emplace(std::move(stream_wrt));
@@ -106,7 +113,11 @@ tateyama::status stream_data_channel::release(tateyama::api::endpoint::writer& w
 }
 
 void stream_data_channel::install_stream(std::unique_ptr<stream_socket> stream) {
-    data_stream_ = std::move(stream);    
+    {
+        std::unique_lock lock{mutex_};
+        data_stream_ = std::move(stream);
+    }
+    condition_.notify_one();
 }
 
 // class writer
