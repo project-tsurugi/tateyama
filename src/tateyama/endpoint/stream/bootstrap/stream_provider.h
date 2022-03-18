@@ -40,7 +40,7 @@ struct stream_endpoint_context {
 };
 
 /**
- * @brief ipc endpoint provider
+ * @brief stream endpoint provider
  * @details
  */
 class stream_provider : public tateyama::api::endpoint::provider {

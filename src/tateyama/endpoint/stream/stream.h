@@ -148,22 +148,22 @@ public:
      */
     connection_socket() = delete;
     explicit connection_socket(std::uint32_t port) {
-        // パイプ作成
-        if (pipe(pair_) != 0) {
+        // create a pipe
+        if (pipe(&pair_[0]) != 0) {
             std::abort();
         }
 
-        // ソケット作成
+        // create a socket
         socket_ = ::socket(AF_INET, SOCK_STREAM, 0);
 
-        // ソケットにアドレスとポートをマッピングする
+        // Map the address and the port to the socket
         struct sockaddr_in socket_address{};
         socket_address.sin_family = AF_INET;
         socket_address.sin_port = htons(port);
         socket_address.sin_addr.s_addr = INADDR_ANY;
         bind(socket_, (struct sockaddr *) &socket_address, sizeof(socket_address));  // NOLINT
 
-        // ポートをListenする
+        // listen the port
         listen(socket_, SOMAXCONN);
     }
     ~connection_socket() = default;
@@ -180,19 +180,19 @@ public:
         fd_set fds;
         FD_ZERO(&fds);  // NOLINT
         FD_SET(socket_, &fds);  // NOLINT
-        FD_SET(pair_[0], &fds);
+        FD_SET(pair_[0], &fds);  // NOLINT
         select(((pair_[0] > socket_) ? pair_[0] : socket_) + 1, &fds, nullptr, nullptr, nullptr);
 
         if (FD_ISSET(socket_, &fds)) {  // NOLINT
-            // 接続要求を受け付ける
+            // Accept a connection request
             struct sockaddr_in address{};
             unsigned int len = sizeof(address);
             int ts = ::accept(socket_, (struct sockaddr *)&address, &len);  // NOLINT
             return std::make_unique<stream_socket>(this, ts);
         }
-        if (FD_ISSET(pair_[0], &fds)) {  // notified of end
-            char trash[1];
-            if (read(pair_[0], trash, sizeof(trash)) <= 0) {
+        if (FD_ISSET(pair_[0], &fds)) {  //  NOLINT
+            char trash{};
+            if (read(pair_[0], &trash, sizeof(trash)) <= 0) {
                 std::abort();
             }
             return nullptr;
@@ -225,7 +225,7 @@ public:
 
 private:
     int socket_;
-    int pair_[2];
+    int pair_[2]{};  // NOLINT
     std::unordered_map<std::string, stream_data_channel*> resultset_relations_{};
 };
 

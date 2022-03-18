@@ -16,7 +16,7 @@
 #include "stream_provider.h"
 
 /**
- * @brief add ipc endpoint to the component registry
+ * @brief add stream endpoint to the component registry
  * @note This should be done in .cpp file. In the header file,
  * the initialization of inline variable is sometimes omitted by optimization.
  */

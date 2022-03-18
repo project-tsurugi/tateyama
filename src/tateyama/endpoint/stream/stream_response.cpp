@@ -89,7 +89,7 @@ tateyama::status stream_data_channel::acquire(tateyama::api::endpoint::writer*& 
     {
         std::unique_lock lock{mutex_};
         if (!data_stream_) {
-            condition_.wait(lock, [&](){ return (data_stream_ ? true : false); });
+            condition_.wait(lock, [&](){ return static_cast<bool>(data_stream_); });
         }
     }
 
