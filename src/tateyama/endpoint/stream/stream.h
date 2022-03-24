@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 #pragma once
-
+#include <iostream>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -81,9 +81,11 @@ public:
             }
             if (info == REQUEST_RESULT_SET_HELLO) {
                 recv();
-                if (search_and_setup_resultset(payload_, slot)) {
+                if (auto data_channel = search_resultset(payload_); data_channel != nullptr) {
                     send(RESPONSE_RESULT_SET_HELLO_OK, slot);
+                    setup_resultset(data_channel, slot);
                 } else {
+                    std::cerr << __func__ << ": send error " << payload_ << std::endl;
                     send(RESPONSE_RESULT_SET_HELLO_NG, slot);
                 }
             } else {
@@ -130,10 +132,20 @@ public:
     void register_resultset(const std::string& name, stream_data_channel* data_channel) {  // for REQUEST_RESULTSET_HELLO
         resultset_relations_.emplace(name, data_channel);
     }
-    bool search_and_setup_resultset(std::string_view, unsigned char);  // for REQUEST_RESULTSET_HELLO
-
+    stream_data_channel* search_resultset(std::string_view name) {  // for REQUEST_RESULTSET_HELLO
+        auto itr = resultset_relations_.find(std::string(name));
+        if (itr == resultset_relations_.end()) {
+            std::cerr << __func__ << ": can not find " << name << std::endl;
+            return nullptr;
+        }
+        auto* data_channel = itr->second;
+        resultset_relations_.erase(itr);
+        return data_channel;
+    };
+    void setup_resultset(stream_data_channel*, unsigned char);  // for REQUEST_RESULTSET_HELLO
+    
     void send(unsigned char info, unsigned char slot, std::string_view payload) {
-        std::unique_lock lock{mutex_};
+        std::unique_lock<std::mutex> lock(mutex_);
 
         ::send(socket_, &info, 1, 0);
         ::send(socket_, &slot, 1, 0);
@@ -146,12 +158,12 @@ public:
         ::send(socket_, &buffer_[0], sizeof(length), 0);
         ::send(socket_, payload.data(), length, 0);
     }
-    void send(unsigned char info, unsigned char slot, unsigned char worker, std::string_view payload) {
-        std::unique_lock lock{mutex_};
+    void send(unsigned char info, unsigned char slot, unsigned char writer, std::string_view payload) { 
+        std::unique_lock<std::mutex> lock(mutex_);
 
         ::send(socket_, &info, 1, 0);
         ::send(socket_, &slot, 1, 0);
-        ::send(socket_, &worker, 1, 0);
+        ::send(socket_, &writer, 1, 0);
 
         unsigned int length = payload.length();
         buffer_[0] = length & 0xff;  // NOLINT
@@ -162,7 +174,7 @@ public:
         ::send(socket_, payload.data(), length, 0);
     }
     void send(unsigned char info, unsigned char slot) {
-        std::unique_lock lock{mutex_};
+        std::unique_lock<std::mutex> lock(mutex_);
 
         ::send(socket_, &info, 1, 0);
         ::send(socket_, &slot, 1, 0);
@@ -214,8 +226,9 @@ public:
         socket_address.sin_family = AF_INET;
         socket_address.sin_port = htons(port);
         socket_address.sin_addr.s_addr = INADDR_ANY;
-        bind(socket_, (struct sockaddr *) &socket_address, sizeof(socket_address));  // NOLINT
-
+        if (bind(socket_, (struct sockaddr *) &socket_address, sizeof(socket_address)) != 0) {  // NOLINT
+            std::abort();
+        }
         // listen the port
         listen(socket_, SOMAXCONN);
     }

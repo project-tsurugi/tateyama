@@ -13,20 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <iostream>
+
 #include "stream.h"
 #include "stream_response.h"
 
 namespace tateyama::common::stream {
 
-bool stream_socket::search_and_setup_resultset(std::string_view name, unsigned char slot) {  // for REQUEST_RESULTSET_HELLO
-    auto itr = resultset_relations_.find(std::string(name));
-    if (itr == resultset_relations_.end()) {
-        return false;
-    }
-    auto* data_channel = itr->second;
-    resultset_relations_.erase(itr);
+void stream_socket::setup_resultset(stream_data_channel* data_channel, unsigned char slot) {  // for REQUEST_RESULTSET_HELLO
     data_channel->set_slot(slot);
-    return true;
 }
 
 };

@@ -66,8 +66,8 @@ tateyama::status stream_response::acquire_channel(std::string_view name, tateyam
 tateyama::status stream_response::release_channel(tateyama::api::endpoint::data_channel& ch) {
     VLOG(log_trace) << __func__ << std::endl;  //NOLINT
 
-    if (data_channel_.get() == dynamic_cast<stream_data_channel*>(&ch)) {
-        session_socket_.send(stream_socket::RESPONSE_RESULT_SET_PAYLOAD, index_, 0, "");
+    if (auto dc = dynamic_cast<stream_data_channel*>(&ch); data_channel_.get() == dc) {
+        session_socket_.send(stream_socket::RESPONSE_RESULT_SET_PAYLOAD, dc->get_slot(), 0, "");
         data_channel_ = nullptr;
         return tateyama::status::ok;
     }
@@ -87,15 +87,15 @@ tateyama::status stream_data_channel::acquire(tateyama::api::endpoint::writer*& 
 
     {
         std::unique_lock lock{mutex_};
-        if (!index_is_valid_) {
-            condition_.wait(lock, [&](){ return index_is_valid_; });
+        if (!slot_is_valid_) {
+            condition_.wait(lock, [&](){ return slot_is_valid_; });
         }
+        std::atomic_thread_fence(std::memory_order_acq_rel);
     }
 
-    if (auto stream_wrt = std::make_unique<stream_writer>(session_socket_, index_, writer_id_++); stream_wrt != nullptr) {
+    if (auto stream_wrt = std::make_unique<stream_writer>(session_socket_, slot_, writer_id_++); stream_wrt != nullptr) {
         wrt = stream_wrt.get();
         data_writers_.emplace(std::move(stream_wrt));
-        index_++;
         return tateyama::status::ok;
     }
     return tateyama::status::unknown;
@@ -114,8 +114,9 @@ tateyama::status stream_data_channel::release(tateyama::api::endpoint::writer& w
 void stream_data_channel::set_slot(unsigned char slot) {
     {
         std::unique_lock lock{mutex_};
-        index_ = slot;
-        index_is_valid_ = true;
+        slot_ = slot;
+        std::atomic_thread_fence(std::memory_order_acq_rel);
+        slot_is_valid_ = true;
     }
     condition_.notify_one();
 }
@@ -124,7 +125,7 @@ void stream_data_channel::set_slot(unsigned char slot) {
 tateyama::status stream_writer::write(char const* data, std::size_t length) {
     VLOG(log_trace) << __func__ << std::endl;  //NOLINT
 
-    resultset_socket_.send(stream_socket::RESPONSE_RESULT_SET_PAYLOAD, index_, writer_id_, std::string_view(data, length));
+    resultset_socket_.send(stream_socket::RESPONSE_RESULT_SET_PAYLOAD, slot_, writer_id_, std::string_view(data, length));
     return tateyama::status::ok;
 }
 
