@@ -112,7 +112,7 @@ private:
  */
 class stream_response : public tateyama::api::endpoint::response {
 public:
-    stream_response(stream_request& request, unsigned char index, std::size_t session_id);
+    stream_response(stream_request& request, unsigned char index);
     stream_response() = delete;
 
     void code(tateyama::api::endpoint::response_code code) override;
@@ -125,7 +125,6 @@ public:
 private:
     stream_socket& session_socket_;
     unsigned char index_;
-    std::size_t session_id_;
 
     tateyama::api::endpoint::response_code response_code_{tateyama::api::endpoint::response_code::unknown};
     std::string message_{};

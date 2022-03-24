@@ -47,7 +47,9 @@ public:
     static constexpr unsigned char RESPONSE_RESULT_SET_HELLO_NG = 6;
 
     explicit stream_socket(int socket) : socket_(socket), data_buffer_(&buffer_[0]) {
-        unsigned char info{}, slot{};
+        unsigned char info{};
+        unsigned char slot{};
+
         if (!recv(info, slot)) {
             std::abort();
         }
@@ -137,10 +139,10 @@ public:
         ::send(socket_, &slot, 1, 0);
 
         unsigned int length = payload.length();
-        buffer_[0] = length & 0xff;
-        buffer_[1] = (length / 0x100) & 0xff;
-        buffer_[2] = (length / 0x10000) & 0xff;
-        buffer_[3] = (length / 0x1000000) & 0xff;
+        buffer_[0] = length & 0xff;  // NOLINT
+        buffer_[1] = (length / 0x100) & 0xff;  // NOLINT
+        buffer_[2] = (length / 0x10000) & 0xff;  // NOLINT
+        buffer_[3] = (length / 0x1000000) & 0xff;  // NOLINT
         ::send(socket_, &buffer_[0], sizeof(length), 0);
         ::send(socket_, payload.data(), length, 0);
     }
@@ -152,10 +154,10 @@ public:
         ::send(socket_, &worker, 1, 0);
 
         unsigned int length = payload.length();
-        buffer_[0] = length & 0xff;
-        buffer_[1] = (length / 0x100) & 0xff;
-        buffer_[2] = (length / 0x10000) & 0xff;
-        buffer_[3] = (length / 0x1000000) & 0xff;
+        buffer_[0] = length & 0xff;  // NOLINT
+        buffer_[1] = (length / 0x100) & 0xff;  // NOLINT
+        buffer_[2] = (length / 0x10000) & 0xff;  // NOLINT
+        buffer_[3] = (length / 0x1000000) & 0xff;  // NOLINT
         ::send(socket_, &buffer_[0], sizeof(length), 0);
         ::send(socket_, payload.data(), length, 0);
     }
@@ -186,7 +188,7 @@ private:
     std::mutex mutex_{};
 
     std::size_t strip(char c) {
-        return (static_cast<std::uint32_t>(c) & 0xff);
+        return (static_cast<std::uint32_t>(c) & 0xff);  // NOLINT
     }
 };
 
