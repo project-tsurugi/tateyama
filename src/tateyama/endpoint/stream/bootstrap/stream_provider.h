@@ -68,41 +68,30 @@ private:
 
             while(true) {
                 if (auto stream = connection_socket_->accept(); stream != nullptr) {
-
-                    if (stream->get_type() == tateyama::common::stream::stream_socket::stream_type::session) {
-                        std::string session_name = std::to_string(session_id);
-                        stream->send(tateyama::common::stream::stream_socket::STATUS_OK, session_name);
-                        VLOG(log_debug) << "created session stream: " << session_name;
-                        std::size_t index = 0;
-                        for (; index < workers_.size() ; index++) {
-                            if (auto rv = workers_.at(index)->future_.wait_for(std::chrono::seconds(0)) ; rv == std::future_status::ready) {
-                                break;
-                            }
-                        }
-                        if (workers_.size() < (index + 1)) {
-                            workers_.resize(index + 1);
-                        }
-                        try {
-                            std::unique_ptr<stream_worker> &worker = workers_.at(index);
-                            worker = std::make_unique<stream_worker>(*env_.endpoint_service(), session_id, std::move(stream));
-                            worker->task_ = std::packaged_task<void()>([&]{worker->run();});
-                            worker->future_ = worker->task_.get_future();
-                            worker->thread_ = std::thread(std::move(worker->task_));
-                            session_id++;
-                        } catch (std::exception &ex) {
-                            LOG(ERROR) << ex.what();
-                            workers_.clear();
+                    std::string session_name = std::to_string(session_id);
+                    stream->send(tateyama::common::stream::stream_socket::RESPONSE_SESSION_HELLO_OK, 0, session_name);
+                    VLOG(log_debug) << "created session stream: " << session_name;
+                    std::size_t index = 0;
+                    for (; index < workers_.size() ; index++) {
+                        if (auto rv = workers_.at(index)->future_.wait_for(std::chrono::seconds(0)) ; rv == std::future_status::ready) {
                             break;
                         }
-                    } else if (stream->get_type() == tateyama::common::stream::stream_socket::stream_type::resultset) {
-                        stream->send(tateyama::common::stream::stream_socket::STATUS_OK);
-                        if (auto* data_channel = connection_socket_->search_resultset(stream->get_name()); data_channel != nullptr) {
-                            data_channel->install_stream(std::move(stream));
-                        } else {
-                            std::abort();
-                        }
                     }
-
+                    if (workers_.size() < (index + 1)) {
+                        workers_.resize(index + 1);
+                    }
+                    try {
+                        std::unique_ptr<stream_worker> &worker = workers_.at(index);
+                        worker = std::make_unique<stream_worker>(*env_.endpoint_service(), session_id, std::move(stream));
+                        worker->task_ = std::packaged_task<void()>([&]{worker->run();});
+                        worker->future_ = worker->task_.get_future();
+                        worker->thread_ = std::thread(std::move(worker->task_));
+                        session_id++;
+                    } catch (std::exception &ex) {
+                        LOG(ERROR) << ex.what();
+                        workers_.clear();
+                        break;
+                    }
                 } else {
                     break;
                 }

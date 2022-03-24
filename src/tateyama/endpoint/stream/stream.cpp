@@ -13,20 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <glog/logging.h>
-
-#include <tateyama/logging.h>
-
-#include "stream_request.h"
+#include "stream.h"
+#include "stream_response.h"
 
 namespace tateyama::common::stream {
 
-std::string_view
-stream_request::payload() const {
-    VLOG(log_trace) << __func__ << std::endl;  //NOLINT
-
-    session_socket_.recv();
-    return session_socket_.get_payload();
+bool stream_socket::search_and_setup_resultset(std::string_view name, unsigned char slot) {  // for REQUEST_RESULTSET_HELLO
+    auto itr = resultset_relations_.find(std::string(name));
+    if (itr == resultset_relations_.end()) {
+        return false;
+    }
+    auto* data_channel = itr->second;
+    resultset_relations_.erase(itr);
+    data_channel->set_slot(slot);
+    return true;
 }
 
-}  // tateyama::common::stream
+};

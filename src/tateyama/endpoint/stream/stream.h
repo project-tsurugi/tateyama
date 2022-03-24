@@ -23,6 +23,7 @@
 #include <string_view>
 #include <unordered_map>
 #include <iterator>
+#include <mutex>
 
 namespace tateyama::common::stream {
 
@@ -34,25 +35,26 @@ class stream_socket
     constexpr static int BUFFER_SIZE = 512;
 
 public:
-    enum class stream_type : unsigned char {
-        undefined = 0,
-        session = 1,
-        resultset = 2,
-    };
-    static constexpr unsigned char STATUS_OK = 0;
-    static constexpr unsigned char STATUS_NG = 1;
+    static constexpr unsigned char REQUEST_SESSION_HELLO = 1;
+    static constexpr unsigned char REQUEST_SESSION_PAYLOAD = 2;
+    static constexpr unsigned char REQUEST_RESULT_SET_HELLO = 3;
 
-    explicit stream_socket(connection_socket* server_socket, int socket)
-        : server_socket_(server_socket), socket_(socket), data_buffer_(&buffer_[0]) {
-        unsigned char info{};
-        std::string_view data;
-        if (!recv(info, data)) {
+    static constexpr unsigned char RESPONSE_SESSION_PAYLOAD = 1;
+    static constexpr unsigned char RESPONSE_RESULT_SET_PAYLOAD = 2;
+    static constexpr unsigned char RESPONSE_SESSION_HELLO_OK = 3;
+    static constexpr unsigned char RESPONSE_SESSION_HELLO_NG = 4;
+    static constexpr unsigned char RESPONSE_RESULT_SET_HELLO_OK = 5;
+    static constexpr unsigned char RESPONSE_RESULT_SET_HELLO_NG = 6;
+
+    explicit stream_socket(int socket) : socket_(socket), data_buffer_(&buffer_[0]) {
+        unsigned char info{}, slot{};
+        if (!recv(info, slot)) {
             std::abort();
         }
-        type_ = static_cast<stream_type>(info);
-        name_ = std::string(data.data(), data.length());
+        if (info != REQUEST_SESSION_HELLO) {
+            std::abort();
+        }
     }
-
     ~stream_socket() { close(socket_); }
 
     stream_socket(stream_socket const& other) = delete;
@@ -60,60 +62,108 @@ public:
     stream_socket(stream_socket&& other) noexcept = delete;
     stream_socket& operator=(stream_socket&& other) noexcept = delete;
 
-    bool await(unsigned char& info) {
-        fd_set fds;
-        FD_ZERO(&fds);  // NOLINT
-        FD_SET(socket_, &fds);  // NOLINT
-        select(socket_ + 1, &fds, nullptr, nullptr, nullptr);
+    bool await(unsigned char& info, unsigned char& slot) {
+        while (true) {
+            fd_set fds;
+            FD_ZERO(&fds);  // NOLINT
+            FD_SET(socket_, &fds);  // NOLINT
+            select(socket_ + 1, &fds, nullptr, nullptr, nullptr);
 
-        if (FD_ISSET(socket_, &fds)) {  // NOLINT
-            auto size_i = ::recv(socket_, &info, 1, 0);
-            if (size_i == 0) {
-                return false;
+            if (FD_ISSET(socket_, &fds)) {  // NOLINT
+                if (auto size_i = ::recv(socket_, &info, 1, 0); size_i == 0) {
+                    return false;
+                }
+                if (auto size_i = ::recv(socket_, &slot, 1, 0); size_i == 0) {
+                    std::abort();
+                }
+            }
+            if (info == REQUEST_RESULT_SET_HELLO) {
+                recv();
+                if (search_and_setup_resultset(payload_, slot)) {
+                    send(RESPONSE_RESULT_SET_HELLO_OK, slot);
+                } else {
+                    send(RESPONSE_RESULT_SET_HELLO_NG, slot);
+                }
+            } else {
+                return true;
             }
         }
+    }
+    bool recv(unsigned char& info, unsigned char& slot) {  // REQUEST_SESSION_PAYLOAD
+        if (!await(info, slot)) {
+            return false;
+        }
+        recv();
         return true;
     }
-    void recv(std::string_view& payload) {
+    void recv() {
         std::int64_t size_l = ::recv(socket_, &buffer_[0], sizeof(int), 0);
         while (size_l < static_cast<std::int64_t>(sizeof(int))) {
             size_l += ::recv(socket_, &buffer_[size_l], sizeof(int) - size_l, 0);  // NOLINT
         }
-        unsigned int length = (buffer_[3] << 24) | (buffer_[2] << 16) | (buffer_[1] << 8) | buffer_[0];  // NOLINT
+        unsigned int length = (strip(buffer_[3]) << 24) | (strip(buffer_[2]) << 16) | (strip(buffer_[1]) << 8) | strip(buffer_[0]);  // NOLINT
 
         if (length > 0) {
+            if (data_buffer_ != &buffer_[0]) {
+                delete data_buffer_;
+            }
             if (length > BUFFER_SIZE) {
-                if (data_buffer_ != &buffer_[0]) {
-                    delete data_buffer_;
-                }
                 data_buffer_ = new char[length];  // NOLINT
+            } else {
+                data_buffer_ = &buffer_[0];
             }
             auto size_v = ::recv(socket_, data_buffer_, length, 0);
             while (size_v < length) {
                 size_v += ::recv(socket_, data_buffer_ + size_v, length - size_v, 0);  // NOLINT
             }
-            payload = std::string_view(data_buffer_, length);
+            payload_ = std::string_view(data_buffer_, length);
+        } else {
+            payload_ = std::string_view(nullptr, 0);
         }
     }
-    bool recv(unsigned char& info, std::string_view& payload) {
-        if (!await(info)) {
-            return false;
-        }
-        recv(payload);
-        return true;
+    std::string_view get_payload() {
+        return payload_;
     }
-    void send(unsigned char info, std::string_view payload) {
+
+    void register_resultset(const std::string& name, stream_data_channel* data_channel) {  // for REQUEST_RESULTSET_HELLO
+        resultset_relations_.emplace(name, data_channel);
+    }
+    bool search_and_setup_resultset(std::string_view, unsigned char);  // for REQUEST_RESULTSET_HELLO
+
+    void send(unsigned char info, unsigned char slot, std::string_view payload) {
+        std::unique_lock lock{mutex_};
+
         ::send(socket_, &info, 1, 0);
+        ::send(socket_, &slot, 1, 0);
 
         unsigned int length = payload.length();
-        for(std::size_t i = 0 ; i < sizeof(length); i++) {
-            buffer_[i] = (length << (i * 8)) & 0xff;  // NOLINT
-        }
+        buffer_[0] = length & 0xff;
+        buffer_[1] = (length / 0x100) & 0xff;
+        buffer_[2] = (length / 0x10000) & 0xff;
+        buffer_[3] = (length / 0x1000000) & 0xff;
         ::send(socket_, &buffer_[0], sizeof(length), 0);
         ::send(socket_, payload.data(), length, 0);
     }
-    void send(unsigned char info) {
+    void send(unsigned char info, unsigned char slot, unsigned char worker, std::string_view payload) {
+        std::unique_lock lock{mutex_};
+
         ::send(socket_, &info, 1, 0);
+        ::send(socket_, &slot, 1, 0);
+        ::send(socket_, &worker, 1, 0);
+
+        unsigned int length = payload.length();
+        buffer_[0] = length & 0xff;
+        buffer_[1] = (length / 0x100) & 0xff;
+        buffer_[2] = (length / 0x10000) & 0xff;
+        buffer_[3] = (length / 0x1000000) & 0xff;
+        ::send(socket_, &buffer_[0], sizeof(length), 0);
+        ::send(socket_, payload.data(), length, 0);
+    }
+    void send(unsigned char info, unsigned char slot) {
+        std::unique_lock lock{mutex_};
+
+        ::send(socket_, &info, 1, 0);
+        ::send(socket_, &slot, 1, 0);
 
         unsigned int length = 0;
         for(std::size_t i = 0 ; i < sizeof(length); i++) {
@@ -121,22 +171,23 @@ public:
         }
         ::send(socket_, &buffer_[0], sizeof(length), 0);
     }
-    [[nodiscard]] stream_type get_type() const { return type_; }
-    [[nodiscard]] std::string_view get_name() const { return name_; }
-    [[nodiscard]] connection_socket& get_connection_socket() const { return *server_socket_; }
 
 // for session stream
     void close_session() { session_closed_ = true; }
     [[nodiscard]] bool is_session_closed() const { return session_closed_; }
 
 private:
-    connection_socket* server_socket_;
     int socket_;
-    stream_type type_;
-    std::string name_;
+    std::string_view payload_{};
     char buffer_[BUFFER_SIZE]{};  // NOLINT
     char *data_buffer_{};
     bool session_closed_{false};
+    std::unordered_map<std::string, stream_data_channel*> resultset_relations_{};
+    std::mutex mutex_{};
+
+    std::size_t strip(char c) {
+        return (static_cast<std::uint32_t>(c) & 0xff);
+    }
 };
 
 // implements connect operation
@@ -188,7 +239,7 @@ public:
             struct sockaddr_in address{};
             unsigned int len = sizeof(address);
             int ts = ::accept(socket_, (struct sockaddr *)&address, &len);  // NOLINT
-            return std::make_unique<stream_socket>(this, ts);
+            return std::make_unique<stream_socket>(ts);
         }
         if (FD_ISSET(pair_[0], &fds)) {  //  NOLINT
             char trash{};
@@ -200,19 +251,6 @@ public:
         std::abort();
     }
 
-    void register_resultset(const std::string& name, stream_data_channel* data_channel) {
-        resultset_relations_.emplace(name, data_channel);
-    }
-    stream_data_channel* search_resultset(std::string_view name) {
-        auto itr = resultset_relations_.find(std::string(name));
-        if (itr == resultset_relations_.end()) {
-            return nullptr;
-        }
-        auto* rv = itr->second;
-        resultset_relations_.erase(itr);
-        return rv;
-    }
-    
     void request_terminate() {
         if (write(pair_[1], "q", 1) <= 0) {
             std::abort();
@@ -226,7 +264,6 @@ public:
 private:
     int socket_;
     int pair_[2]{};  // NOLINT
-    std::unordered_map<std::string, stream_data_channel*> resultset_relations_{};
 };
 
 };  // namespace tateyama::common::stream
