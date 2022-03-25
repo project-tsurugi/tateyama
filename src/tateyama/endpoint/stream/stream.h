@@ -67,7 +67,7 @@ public:
     stream_socket& operator=(stream_socket&& other) noexcept = delete;
 
     bool await(unsigned char& slot) {
-        unsigned char info;
+        unsigned char info{};
         return await(info, slot);
     }
     void recv(std::string& payload) {
@@ -142,7 +142,7 @@ private:
                     send_result_set_hello_response(RESPONSE_RESULT_SET_HELLO_OK, slot);
                     setup_resultset(data_channel, slot);
                 } else {
-                    VLOG(log_error) << __func__ << ": notify client of error, result set name = " << name << std::endl;
+                    VLOG(log_error) << "notify client of error, result set name = " << name << std::endl;
                     send_result_set_hello_response(RESPONSE_RESULT_SET_HELLO_NG, slot);
                 }
             } else {
@@ -161,7 +161,7 @@ private:
     stream_data_channel* search_resultset(std::string_view name) {  // for REQUEST_RESULTSET_HELLO
         auto itr = resultset_relations_.find(std::string(name));
         if (itr == resultset_relations_.end()) {
-            VLOG(log_error) << __func__ << ": can not find " << name << std::endl;
+            VLOG(log_error) << "can not find the result set by " << name << std::endl;  // NOLINT
             return nullptr;
         }
         auto* data_channel = itr->second;
@@ -188,7 +188,7 @@ private:
         ::send(socket_, &slot, 1, 0);
         send_payload(payload);
     }
-    void send_payload(std::string_view payload) {
+    void send_payload(std::string_view payload) const {
         unsigned int length = payload.length();
         char buffer[4];  // NOLINT
         buffer[0] = length & 0xff;  // NOLINT

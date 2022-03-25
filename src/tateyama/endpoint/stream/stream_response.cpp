@@ -85,7 +85,7 @@ tateyama::status stream_response::close_session() {
 tateyama::status stream_data_channel::acquire(tateyama::api::endpoint::writer*& wrt) {
     VLOG(log_trace) << __func__ << std::endl;  //NOLINT
 
-    if (auto stream_wrt = std::make_unique<stream_writer>(session_socket_, *this, writer_id_++); stream_wrt != nullptr) {
+    if (auto stream_wrt = std::make_unique<stream_writer>(session_socket_, get_slot(), writer_id_++); stream_wrt != nullptr) {
         wrt = stream_wrt.get();
         data_writers_.emplace(std::move(stream_wrt));
         return tateyama::status::ok;
@@ -112,11 +112,9 @@ void stream_data_channel::set_slot(unsigned char slot) {
 }
 
 unsigned char stream_data_channel::get_slot() {
+    std::unique_lock lock{mutex_};
     if (slot_ == SLOT_NOT_ASSIGNED) {
-        std::unique_lock lock{mutex_};
-        if (slot_ == SLOT_NOT_ASSIGNED) {
-            condition_.wait(lock, [&](){ return slot_ != SLOT_NOT_ASSIGNED; });
-        }
+        condition_.wait(lock, [&](){ return slot_ != SLOT_NOT_ASSIGNED; });
     }
     return slot_;
 }
@@ -125,7 +123,7 @@ unsigned char stream_data_channel::get_slot() {
 tateyama::status stream_writer::write(char const* data, std::size_t length) {
     VLOG(log_trace) << __func__ << std::endl;  //NOLINT
 
-    resultset_socket_.send(data_channel_.get_slot(), writer_id_, std::string_view(data, length));
+    resultset_socket_.send(slot_, writer_id_, std::string_view(data, length));
     return tateyama::status::ok;
 }
 
