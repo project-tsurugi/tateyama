@@ -23,9 +23,8 @@ namespace tateyama::server {
 void stream_worker::run()
 {
     while(true) {
-        unsigned char info{};
         unsigned char slot{};
-        if (!session_stream_->await(info, slot)) { break; }
+        if (!session_stream_->await(slot)) { break; }
 
         auto request = std::make_shared<tateyama::common::stream::stream_request>(*session_stream_);
         auto response = std::make_shared<tateyama::common::stream::stream_response>(*request, slot);

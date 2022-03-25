@@ -90,9 +90,11 @@ private:
  * @brief data_channel object for stream_endpoint
  */
 class stream_data_channel : public tateyama::api::endpoint::data_channel {
+    constexpr static unsigned int SLOT_NOT_ASSIGNED = 0xffffffff;
+
 public:
     stream_data_channel() = delete;
-    explicit stream_data_channel(stream_socket& session_socket) : session_socket_(session_socket) {}
+    explicit stream_data_channel(stream_socket& session_socket) : session_socket_(session_socket), slot_(SLOT_NOT_ASSIGNED) {}
     tateyama::status acquire(tateyama::api::endpoint::writer*& wrt) override;
     tateyama::status release(tateyama::api::endpoint::writer& wrt) override;
     void set_slot(unsigned char);
@@ -101,10 +103,9 @@ public:
 private:
     stream_socket& session_socket_;
     std::set<std::unique_ptr<stream_writer>, pointer_comp<stream_writer>> data_writers_{};
-    unsigned char slot_{};
+    unsigned int slot_;
     std::mutex mutex_{};
     std::condition_variable condition_{};
-    bool slot_is_valid_{false};
     unsigned char writer_id_{};
 };
 

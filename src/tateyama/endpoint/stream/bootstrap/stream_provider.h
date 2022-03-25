@@ -69,7 +69,7 @@ private:
             while(true) {
                 if (auto stream = connection_socket_->accept(); stream != nullptr) {
                     std::string session_name = std::to_string(session_id);
-                    stream->send(tateyama::common::stream::stream_socket::RESPONSE_SESSION_HELLO_OK, 0, session_name);
+                    stream->send(session_name);
                     VLOG(log_debug) << "created session stream: " << session_name;
                     std::size_t index = 0;
                     for (; index < workers_.size() ; index++) {
