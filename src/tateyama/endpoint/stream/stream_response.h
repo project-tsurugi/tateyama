@@ -75,14 +75,15 @@ class stream_writer : public tateyama::api::endpoint::writer {
     friend stream_data_channel;
 
 public:
-    explicit stream_writer(stream_socket& socket, unsigned char slot, unsigned char writer_id) : resultset_socket_(socket), slot_(slot), writer_id_(writer_id) {}
+    explicit stream_writer(stream_socket& socket, stream_data_channel& data_channel, unsigned char writer_id)
+        : resultset_socket_(socket), data_channel_(data_channel), writer_id_(writer_id) {}
 
     tateyama::status write(char const* data, std::size_t length) override;
     tateyama::status commit() override;
 
 private:
     stream_socket& resultset_socket_;
-    unsigned char slot_;
+    stream_data_channel& data_channel_;
     unsigned char writer_id_;
 };
 
@@ -98,7 +99,7 @@ public:
     tateyama::status acquire(tateyama::api::endpoint::writer*& wrt) override;
     tateyama::status release(tateyama::api::endpoint::writer& wrt) override;
     void set_slot(unsigned char);
-    unsigned char get_slot() const { return slot_; }
+    unsigned char get_slot();
 
 private:
     stream_socket& session_socket_;

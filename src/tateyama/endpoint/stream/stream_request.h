@@ -38,7 +38,7 @@ public:
     
 private:
     stream_socket& session_socket_;
-    std::string payload_;
+    std::string payload_{};
 };
 
 }  // tateyama::common::stream

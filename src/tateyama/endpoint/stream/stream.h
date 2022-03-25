@@ -80,7 +80,7 @@ public:
         unsigned int length = (strip(buffer[3]) << 24) | (strip(buffer[2]) << 16) | (strip(buffer[1]) << 8) | strip(buffer[0]);  // NOLINT
 
         if (length > 0) {
-            payload = std::string(length, '\0');
+            payload.resize(length);
             char *data_buffer = payload.data();
             auto size_v = ::recv(socket_, data_buffer, length, 0);
             while (size_v < length) {
