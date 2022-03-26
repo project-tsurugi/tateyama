@@ -51,7 +51,7 @@ class stream_socket
 public:
     explicit stream_socket(int socket) : socket_(socket) {
         for (unsigned int i = 0; i < SLOT_SIZE; i++) {
-            in_use[i] = false;
+            in_use.at(i) = false;
         }
 
         unsigned char info{};
@@ -122,8 +122,8 @@ public:
 
     unsigned int look_for_slot() {
         for (unsigned int i = 0; i < SLOT_SIZE; i++) {
-            if (!in_use[i]) {
-                in_use[i] = true;
+            if (!in_use.at(i)) {
+                in_use.at(i) = true;
                 return i;
             }
         }
@@ -137,7 +137,7 @@ public:
 private:
     int socket_;
     bool session_closed_{false};
-    std::array<bool, SLOT_SIZE> in_use;
+    std::array<bool, SLOT_SIZE> in_use{};
     std::mutex mutex_{};
 
     bool await(unsigned char& info, unsigned char& slot) {
@@ -194,10 +194,10 @@ private:
     }
 
     void release_slot(unsigned int slot) {
-        if (!in_use[slot]) {
+        if (!in_use.at(slot)) {
             std::abort();
         }
-        in_use[slot] = false;
+        in_use.at(slot) = false;
         send_result_set_bye(slot);
     }
 };
