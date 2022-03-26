@@ -20,8 +20,4 @@
 
 namespace tateyama::common::stream {
 
-void stream_socket::setup_resultset(stream_data_channel* data_channel, unsigned char slot) {  // for REQUEST_RESULTSET_HELLO
-    data_channel->set_slot(slot);
-}
-
 };

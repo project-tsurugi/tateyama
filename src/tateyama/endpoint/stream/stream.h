@@ -21,7 +21,7 @@
 #include <unistd.h>
 #include <memory>
 #include <string_view>
-#include <unordered_map>
+#include <array>
 #include <iterator>
 #include <mutex>
 #include <glog/logging.h>
@@ -37,17 +37,23 @@ class stream_socket
 {
     static constexpr unsigned char REQUEST_SESSION_HELLO = 1;
     static constexpr unsigned char REQUEST_SESSION_PAYLOAD = 2;
-    static constexpr unsigned char REQUEST_RESULT_SET_HELLO = 3;
+    static constexpr unsigned char REQUEST_RESULT_SET_BYE_OK = 3;
 
     static constexpr unsigned char RESPONSE_SESSION_PAYLOAD = 1;
     static constexpr unsigned char RESPONSE_RESULT_SET_PAYLOAD = 2;
     static constexpr unsigned char RESPONSE_SESSION_HELLO_OK = 3;
     static constexpr unsigned char RESPONSE_SESSION_HELLO_NG = 4;
-    static constexpr unsigned char RESPONSE_RESULT_SET_HELLO_OK = 5;
-    static constexpr unsigned char RESPONSE_RESULT_SET_HELLO_NG = 6;
+    static constexpr unsigned char RESPONSE_RESULT_SET_HELLO = 5;
+    static constexpr unsigned char RESPONSE_RESULT_SET_BYE = 6;
+
+    static constexpr unsigned int SLOT_SIZE = 16;
 
 public:
     explicit stream_socket(int socket) : socket_(socket) {
+        for (unsigned int i = 0; i < SLOT_SIZE; i++) {
+            in_use[i] = false;
+        }
+
         unsigned char info{};
         unsigned char slot{};
         std::string dummy;
@@ -89,17 +95,21 @@ public:
         }
     }
 
-    void register_resultset(const std::string& name, stream_data_channel* data_channel) {  // for REQUEST_RESULTSET_HELLO
-        resultset_relations_.emplace(name, data_channel);
-    }
-    
     void send(std::string_view payload) {  // for RESPONSE_SESSION_HELLO_OK
         std::unique_lock<std::mutex> lock(mutex_);
-        send_session_response(RESPONSE_SESSION_HELLO_OK, 0, payload);
+        send_response(RESPONSE_SESSION_HELLO_OK, 0, payload);
     }
     void send(unsigned char slot, std::string_view payload) {  // for RESPONSE_SESSION_PAYLOAD
         std::unique_lock<std::mutex> lock(mutex_);
-        send_session_response(RESPONSE_SESSION_PAYLOAD, slot, payload);
+        send_response(RESPONSE_SESSION_PAYLOAD, slot, payload);
+    }
+    void send_result_set_hello(unsigned char slot, std::string_view name) {  // for RESPONSE_RESULT_SET_HELLO
+        std::unique_lock<std::mutex> lock(mutex_);
+        send_response(RESPONSE_RESULT_SET_HELLO, slot, name);
+    }
+    void send_result_set_bye(unsigned char slot) {  // for RESPONSE_RESULT_SET_BYE
+        std::unique_lock<std::mutex> lock(mutex_);
+        send_response(RESPONSE_RESULT_SET_BYE, slot, "");
     }
     void send(unsigned char slot, unsigned char writer, std::string_view payload) { // for RESPONSE_RESULT_SET_PAYLOAD
         std::unique_lock<std::mutex> lock(mutex_);
@@ -110,6 +120,16 @@ public:
         send_payload(payload);
     }
 
+    unsigned int look_for_slot() {
+        for (unsigned int i = 0; i < SLOT_SIZE; i++) {
+            if (!in_use[i]) {
+                in_use[i] = true;
+                return i;
+            }
+        }
+        std::abort();
+    }
+    
 // for session stream
     void close_session() { session_closed_ = true; }
     [[nodiscard]] bool is_session_closed() const { return session_closed_; }
@@ -117,7 +137,7 @@ public:
 private:
     int socket_;
     bool session_closed_{false};
-    std::unordered_map<std::string, stream_data_channel*> resultset_relations_{};
+    std::array<bool, SLOT_SIZE> in_use;
     std::mutex mutex_{};
 
     bool await(unsigned char& info, unsigned char& slot) {
@@ -135,20 +155,17 @@ private:
                     std::abort();
                 }
             }
-            if (info == REQUEST_RESULT_SET_HELLO) {
-                std::string name;
-                recv(name);
-                if (auto data_channel = search_resultset(name); data_channel != nullptr) {
-                    send_result_set_hello_response(RESPONSE_RESULT_SET_HELLO_OK, slot);
-                    setup_resultset(data_channel, slot);
-                } else {
-                    VLOG(log_error) << "notify client of error, result set name = " << name << std::endl;
-                    send_result_set_hello_response(RESPONSE_RESULT_SET_HELLO_NG, slot);
-                }
+            if (info == REQUEST_RESULT_SET_BYE_OK) {
+                std::string dummy;
+                recv(dummy);
+                release_slot(slot);
             } else {
                 return true;
             }
         }
+    }
+    std::size_t strip(char c) {
+        return (static_cast<std::uint32_t>(c) & 0xff);  // NOLINT
     }
     bool recv(unsigned char& info, unsigned char& slot, std::string& payload) {  // REQUEST_SESSION_HELLO and REQUEST_SESSION_PAYLOAD
         if (!await(info, slot)) {
@@ -158,37 +175,12 @@ private:
         return true;
     }
 
-    stream_data_channel* search_resultset(std::string_view name) {  // for REQUEST_RESULTSET_HELLO
-        auto itr = resultset_relations_.find(std::string(name));
-        if (itr == resultset_relations_.end()) {
-            VLOG(log_error) << "can not find the result set by " << name << std::endl;  // NOLINT
-            return nullptr;
-        }
-        auto* data_channel = itr->second;
-        resultset_relations_.erase(itr);
-        return data_channel;
-    };
-    void setup_resultset(stream_data_channel*, unsigned char);  // for REQUEST_RESULTSET_HELLO
-
-    void send_result_set_hello_response(unsigned char info, unsigned char slot) {  // for RESPONSE_RESULT_SET_HELLO_[OK|NG]
-        std::unique_lock<std::mutex> lock(mutex_);
-
-        ::send(socket_, &info, 1, 0);
-        ::send(socket_, &slot, 1, 0);
-
-        unsigned int length = 0;
-        char buffer[4];  // NOLINT
-        for(std::size_t i = 0 ; i < sizeof(length); i++) {
-            buffer[i] = (length << (i * 8)) & 0xff;  // NOLINT
-        }
-        ::send(socket_, &buffer[0], sizeof(length), 0);
-    }
-    void send_session_response(unsigned char info, unsigned char slot, std::string_view payload) {
+    void send_response(unsigned char info, unsigned char slot, std::string_view payload) {  // a support function, assumes caller hold lock
         ::send(socket_, &info, 1, 0);
         ::send(socket_, &slot, 1, 0);
         send_payload(payload);
     }
-    void send_payload(std::string_view payload) const {
+    void send_payload(std::string_view payload) const {  // a support function, assumes caller hold lock
         unsigned int length = payload.length();
         char buffer[4];  // NOLINT
         buffer[0] = length & 0xff;  // NOLINT
@@ -196,11 +188,17 @@ private:
         buffer[2] = (length / 0x10000) & 0xff;  // NOLINT
         buffer[3] = (length / 0x1000000) & 0xff;  // NOLINT
         ::send(socket_, &buffer[0], sizeof(length), 0);
-        ::send(socket_, payload.data(), length, 0);
+        if (length > 0) {
+            ::send(socket_, payload.data(), length, 0);
+        }
     }
 
-    std::size_t strip(char c) {
-        return (static_cast<std::uint32_t>(c) & 0xff);  // NOLINT
+    void release_slot(unsigned int slot) {
+        if (!in_use[slot]) {
+            std::abort();
+        }
+        in_use[slot] = false;
+        send_result_set_bye(slot);
     }
 };
 
