@@ -75,32 +75,39 @@ class stream_writer : public tateyama::api::endpoint::writer {
     friend stream_data_channel;
 
 public:
-    explicit stream_writer(stream_socket* socket, unsigned char index) : resultset_socket_(socket), index_(index) {}
+    explicit stream_writer(stream_socket& socket, unsigned int slot, unsigned char writer_id)
+        : resultset_socket_(socket), slot_(slot), writer_id_(writer_id) {}
 
     tateyama::status write(char const* data, std::size_t length) override;
     tateyama::status commit() override;
 
 private:
-    stream_socket* resultset_socket_;
-    unsigned char index_;
+    stream_socket& resultset_socket_;
+    unsigned char slot_;
+    unsigned char writer_id_;
 };
 
 /**
  * @brief data_channel object for stream_endpoint
  */
 class stream_data_channel : public tateyama::api::endpoint::data_channel {
+    constexpr static unsigned int SLOT_NOT_ASSIGNED = 0xffffffff;
+
 public:
-    stream_data_channel() = default;
+    stream_data_channel() = delete;
+    explicit stream_data_channel(stream_socket& session_socket) : session_socket_(session_socket), slot_(SLOT_NOT_ASSIGNED) {}
     tateyama::status acquire(tateyama::api::endpoint::writer*& wrt) override;
     tateyama::status release(tateyama::api::endpoint::writer& wrt) override;
-    void install_stream(std::unique_ptr<stream_socket>);
+    void set_slot(unsigned char);
+    unsigned char get_slot();
 
 private:
-    std::unique_ptr<stream_socket> data_stream_{};
+    stream_socket& session_socket_;
     std::set<std::unique_ptr<stream_writer>, pointer_comp<stream_writer>> data_writers_{};
-    unsigned char index_{};
+    unsigned int slot_;
     std::mutex mutex_{};
     std::condition_variable condition_{};
+    unsigned char writer_id_{};
 };
 
 /**
@@ -108,7 +115,7 @@ private:
  */
 class stream_response : public tateyama::api::endpoint::response {
 public:
-    stream_response(stream_request& request, unsigned char index, std::size_t session_id);
+    stream_response(stream_request& request, unsigned char index);
     stream_response() = delete;
 
     void code(tateyama::api::endpoint::response_code code) override;
@@ -121,7 +128,6 @@ public:
 private:
     stream_socket& session_socket_;
     unsigned char index_;
-    std::size_t session_id_;
 
     tateyama::api::endpoint::response_code response_code_{tateyama::api::endpoint::response_code::unknown};
     std::string message_{};

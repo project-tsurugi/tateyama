@@ -25,9 +25,7 @@ std::string_view
 stream_request::payload() const {
     VLOG(log_trace) << __func__ << std::endl;  //NOLINT
 
-    std::string_view payload;
-    session_socket_.recv(payload);
-    return payload;
+    return payload_;
 }
 
 }  // tateyama::common::stream

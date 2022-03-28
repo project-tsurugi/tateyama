@@ -13,32 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#pragma once
-
-#include <string_view>
-
-#include <tateyama/api/endpoint/request.h>
+#include <iostream>
 
 #include "stream.h"
+#include "stream_response.h"
 
 namespace tateyama::common::stream {
 
-/**
- * @brief request object for stream_endpoint
- */
-class stream_request : public tateyama::api::endpoint::request {
-public:
-    stream_request() = delete;
-    explicit stream_request(stream_socket& session_socket) : session_socket_(session_socket) {
-        session_socket_.recv(payload_);
-    }
+void stream_socket::setup_resultset(stream_data_channel* data_channel, unsigned char slot) {  // for REQUEST_RESULTSET_HELLO
+    data_channel->set_slot(slot);
+}
 
-    [[nodiscard]] std::string_view payload() const override;
-    stream_socket& get_session_socket() { return session_socket_; }
-    
-private:
-    stream_socket& session_socket_;
-    std::string payload_{};
 };
-
-}  // tateyama::common::stream
