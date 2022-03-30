@@ -83,7 +83,24 @@ public:
     void round_robbin(bool arg) noexcept {
         round_robbin_ = arg;
     }
-    
+
+    /**
+     * @brief accessor for lazy worker flag
+     * @return whether lazy worker is enabled to sleep frequently for less cpu consumption
+     * @note this is experimental feature and will be dropped soon
+     */
+    [[nodiscard]] bool lazy_worker() const noexcept {
+        return lazy_worker_;
+    }
+
+    /**
+     * @brief setter for lazy worker flag
+     * @note this is experimental feature and will be dropped soon
+     */
+    void lazy_worker(bool arg) noexcept {
+        lazy_worker_ = arg;
+    }
+
     friend inline std::ostream& operator<<(std::ostream& out, task_scheduler_cfg const& cfg) {
         return out << std::boolalpha <<
             "thread_count:" << cfg.thread_count() << " " <<
@@ -93,6 +110,7 @@ public:
             "force_numa_node:" << (cfg.force_numa_node() == numa_node_unspecified ? "unspecified" : std::to_string(cfg.force_numa_node())) << " " <<
             "stealing_enabled:" << cfg.stealing_enabled() << " " <<
             "round_robbin:" << cfg.round_robbin() << " " <<
+            "lazy_worker:" << cfg.lazy_worker() << " " <<
             "";
     }
     
@@ -104,6 +122,7 @@ private:
     std::size_t force_numa_node_ = numa_node_unspecified;
     bool stealing_enabled_ = false;
     bool round_robbin_ = false;
+    bool lazy_worker_ = false;
 };
 
 }

@@ -29,6 +29,7 @@
 #include <tateyama/api/task_scheduler/impl/thread_control.h>
 #include <tateyama/api/task_scheduler/task_scheduler_cfg.h>
 #include <tateyama/api/task_scheduler/impl/utils.h>
+#include <tateyama/api/task_scheduler/impl/backoff_waiter.h>
 
 namespace tateyama::task_scheduler {
 
@@ -71,7 +72,8 @@ public:
         queues_(std::addressof(queues)),
         sticky_task_queues_(std::addressof(sticky_task_queues)),
         initial_tasks_(std::addressof(initial_tasks)),
-        stat_(std::addressof(stat))
+        stat_(std::addressof(stat)),
+        waiter_(cfg->lazy_worker() ? backoff_waiter() : backoff_waiter(0))
     {}
 
     /**
@@ -132,6 +134,9 @@ public:
         while(sq.active() || q.active()) {
             if(! process_next(ctx, q, sq)) {
                 _mm_pause();
+                waiter_();
+            } else {
+                waiter_.reset();
             }
         }
     }
@@ -142,6 +147,7 @@ private:
     std::vector<basic_queue<task>>* sticky_task_queues_{};
     std::vector<std::vector<task>>* initial_tasks_{};
     worker_stat* stat_{};
+    backoff_waiter waiter_{0};
 
     std::size_t next(std::size_t current, std::size_t initial) {
         (void)initial;
