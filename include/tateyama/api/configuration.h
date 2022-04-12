@@ -21,7 +21,7 @@
 #include <unordered_map>
 #include <iterator>
 #include <sstream>
-#include <stdlib.h>
+#include <cstdlib>
 
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/ini_parser.hpp>
@@ -31,7 +31,7 @@
 #include <tateyama/logging.h>
 #include <tateyama/detail/default_configuration.h>
 
-#define reflect_configuration(cfg, tree, name, type) cfg->name( tree.get<type>( #name ) )
+#define reflect_configuration(cfg, tree, name, type) (cfg)->name( (tree).get<type>( #name ) )
 
 namespace tateyama::api::configuration {
 
@@ -74,7 +74,7 @@ inline bool section::get<bool>(std::string&& name) const {
 
 class whole {
 public:
-    static constexpr char property_flename[] = "tsurugi.ini";
+    static constexpr char property_flename[] = "tsurugi.ini";  // NOLINT
 
     explicit whole(const std::string& directory) {
         std::filesystem::path file = directory;
@@ -102,6 +102,11 @@ public:
         map_.clear();
     }
 
+    whole(whole const& other) = delete;
+    whole& operator=(whole const& other) = delete;
+    whole(whole&& other) noexcept = delete;
+    whole& operator=(whole&& other) noexcept = delete;
+    
     section& get_section(const std::string&& name) {
         VLOG(log_trace) << "property section " << name << " is requested.";
         if (auto it = map_.find(name); it != map_.end()) {
