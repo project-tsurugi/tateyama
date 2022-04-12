@@ -24,6 +24,7 @@
 
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/ini_parser.hpp>
+#include <boost/foreach.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem/path.hpp>
 
@@ -99,6 +100,20 @@ public:
             VLOG(log_info) << "cannot use " << e.filename() << ", thus we use default property file only.";
             property_file_absent_ = true;
         }
+        BOOST_FOREACH(const boost::property_tree::ptree::value_type &v, default_tree_) {
+            auto& dt = default_tree_.get_child(v.first);
+            if (!property_file_absent_) {
+                try {
+                    auto& pt = property_tree_.get_child(v.first);
+                    map_.emplace(v.first, std::make_shared<section>(pt, dt));
+                } catch (boost::property_tree::ptree_error &e) {
+                    VLOG(log_info) << "cannot use " << v.first << " section in the property file, thus we use default property only";
+                    map_.emplace(v.first, std::make_shared<section>(dt));
+                }
+            } else {
+                map_.emplace(v.first, std::make_shared<section>(dt));
+            }
+        }
     }
     whole() : whole("") {}
     ~whole() {
@@ -110,35 +125,13 @@ public:
     whole(whole&& other) noexcept = delete;
     whole& operator=(whole&& other) noexcept = delete;
 
-    bool get_section(const std::string&& name, section*& rv) {
-        VLOG(log_trace) << "property section " << name << " is requested.";
+    bool get_section(const std::string&& name, std::shared_ptr<section>& rv) {
         if (auto it = map_.find(name); it != map_.end()) {
-            rv = map_[name].get();
+            rv = map_[name];
             return true;
         }
-        try {
-            auto& dt = default_tree_.get_child(name);
-            if (!property_file_absent_) {
-                try {
-                    auto& pt = property_tree_.get_child(name);
-                    map_.emplace(name, std::make_unique<section>(pt, dt));
-                    rv = map_[name].get();
-                    return true;
-                } catch (boost::property_tree::ptree_error &e) {
-                    VLOG(log_info) << "cannot use " << name << " section in the property file, thus we use default property only";
-                    map_.emplace(name, std::make_unique<section>(dt));
-                    rv = map_[name].get();
-                    return true;
-                }
-            } else {
-                map_.emplace(name, std::make_unique<section>(dt));
-                rv = map_[name].get();
-                return true;
-            }
-        } catch (boost::property_tree::ptree_error &e) {
-            LOG(ERROR) << "cannot find " << name << " section in the default property file, thus this program aborts intentionally.";
-            return false;
-        }
+        LOG(ERROR) << "cannot find " << name << " section in the configuration.";
+        return false;
     }
 
 private:
@@ -146,7 +139,7 @@ private:
     boost::property_tree::ptree default_tree_;
     bool property_file_absent_{};
 
-    std::unordered_map<std::string, std::unique_ptr<section>> map_;
+    std::unordered_map<std::string, std::shared_ptr<section>> map_;
 };
 
 inline std::shared_ptr<whole> create_configuration(std::string& dir) {
