@@ -105,13 +105,13 @@ public:
             if (!property_file_absent_) {
                 try {
                     auto& pt = property_tree_.get_child(v.first);
-                    map_.emplace(v.first, std::make_shared<section>(pt, dt));
+                    map_.emplace(v.first, std::make_unique<section>(pt, dt));
                 } catch (boost::property_tree::ptree_error &e) {
                     VLOG(log_info) << "cannot use " << v.first << " section in the property file, thus we use default property only";
-                    map_.emplace(v.first, std::make_shared<section>(dt));
+                    map_.emplace(v.first, std::make_unique<section>(dt));
                 }
             } else {
-                map_.emplace(v.first, std::make_shared<section>(dt));
+                map_.emplace(v.first, std::make_unique<section>(dt));
             }
         }
     }
@@ -125,13 +125,12 @@ public:
     whole(whole&& other) noexcept = delete;
     whole& operator=(whole&& other) noexcept = delete;
 
-    bool get_section(const std::string&& name, std::shared_ptr<section>& rv) {
+    section* get_section(const std::string&& name) {
         if (auto it = map_.find(name); it != map_.end()) {
-            rv = map_[name];
-            return true;
+            return map_[name].get();
         }
         LOG(ERROR) << "cannot find " << name << " section in the configuration.";
-        return false;
+        return nullptr;
     }
 
 private:
@@ -139,7 +138,7 @@ private:
     boost::property_tree::ptree default_tree_;
     bool property_file_absent_{};
 
-    std::unordered_map<std::string, std::shared_ptr<section>> map_;
+    std::unordered_map<std::string, std::unique_ptr<section>> map_;
 };
 
 inline std::shared_ptr<whole> create_configuration(std::string& dir) {
