@@ -17,7 +17,6 @@
 #include <string>
 #include <cstdlib>
 #include <memory>
-// #include <filesystem>
 #include <unordered_map>
 #include <iterator>
 #include <sstream>
@@ -78,11 +77,11 @@ public:
     static constexpr char property_flename[] = "tsurugi.ini";  // NOLINT
 
     explicit whole(const std::string& directory) {
-        boost::filesystem::path file = directory;
+        boost::filesystem::path dir = directory;
         if (!directory.empty()) {
-            file = directory;
+            dir = directory;
         } else {
-            file = std::string(getenv("TGDIR"));
+            dir = std::string(getenv("TGDIR"));
         }
         try {
             std::istringstream default_iss(default_configuration);  // NOLINT
@@ -92,7 +91,7 @@ public:
             std::abort();
         }
         try {
-            boost::property_tree::read_ini((file / boost::filesystem::path(property_flename)).string(), property_tree_);
+            boost::property_tree::read_ini((dir / boost::filesystem::path(property_flename)).string(), property_tree_);  // NOLINT
         } catch (boost::property_tree::ini_parser_error &e) {
             VLOG(log_info) << "cannot use " << e.filename() << ", thus we use default property file only.";
             property_file_absent_ = true;
