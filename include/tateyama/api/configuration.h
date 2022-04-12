@@ -31,14 +31,14 @@
 #include <tateyama/logging.h>
 #include <tateyama/detail/default_configuration.h>
 
-#define reflect_configuration(cfg, tree, name, type) (cfg)->name( (tree).get<type>( #name ) )
+#define reflect_configuration(cfg, tree, name, type) (cfg)->name( (tree).get<type>( #name ) )  // NOLINT
 
 namespace tateyama::api::configuration {
 
 class section {
 public:
     section (boost::property_tree::ptree& pt, boost::property_tree::ptree& dt) : property_tree_(pt), default_tree_(dt) {}
-    section (boost::property_tree::ptree& dt) : property_tree_(dt), default_tree_(dt) {}
+    constexpr section (boost::property_tree::ptree& dt) : property_tree_(dt), default_tree_(dt) {}
     template<typename T>
     inline T get(std::string&& name) const {
         try {
@@ -78,7 +78,7 @@ public:
 
     explicit whole(const std::string& directory) {
         std::filesystem::path file = directory;
-        if (directory != "") {
+        if (!directory.empty()) {
             file = directory;
         } else {
             file = std::string(getenv("TGDIR"));
