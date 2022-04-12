@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2020 tsurugi project.
+ * Copyright 2018-2022 tsurugi project.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,10 @@ namespace endpoint {
 class provider;
 class service;
 }
+namespace configuration {
+class whole;
+class section;
+}
 
 }
 
@@ -48,10 +52,15 @@ public:
 
     [[nodiscard]] std::shared_ptr<endpoint::service> const& endpoint_service() const noexcept;
 
+    void configuration(std::shared_ptr<configuration::whole> svc) noexcept;
+
+    [[nodiscard]] std::shared_ptr<configuration::whole> const& configuration() const noexcept;
+
 private:
     std::vector<std::shared_ptr<server::service>> applications_{};
     std::vector<std::shared_ptr<endpoint::provider>> endpoints_{};
     std::shared_ptr<endpoint::service> service_{};
+    std::shared_ptr<configuration::whole> configuration_{};
 };
 
 }
