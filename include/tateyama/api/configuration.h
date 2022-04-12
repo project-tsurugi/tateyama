@@ -38,7 +38,7 @@ namespace tateyama::api::configuration {
 class section {
 public:
     section (boost::property_tree::ptree& pt, boost::property_tree::ptree& dt) : property_tree_(pt), default_tree_(dt) {}
-    constexpr section (boost::property_tree::ptree& dt) : property_tree_(dt), default_tree_(dt) {}
+    explicit section (boost::property_tree::ptree& dt) : property_tree_(dt), default_tree_(dt) {}
     template<typename T>
     inline T get(std::string&& name) const {
         try {
@@ -67,7 +67,7 @@ inline bool section::get<bool>(std::string&& name) const {
     if (iequals(str, "false") || iequals(str, "no") || str == "0") {
         return false;
     }
-    VLOG(log_error) << name << " is not boolean";
+    VLOG(log_error) << "it is not boolean";
     std::abort();
 }
 
@@ -84,7 +84,7 @@ public:
             file = std::string(getenv("TGDIR"));
         }
         try {
-            std::istringstream default_iss(default_configuration);
+            std::istringstream default_iss(default_configuration);  // NOLINT
             boost::property_tree::read_ini(default_iss, default_tree_);
         } catch (boost::property_tree::ini_parser_error &e) {
             VLOG(log_error) << "default tree: " << e.what() << ", thus this program aborts intentionally.";
