@@ -17,7 +17,7 @@
 #include <string>
 #include <cstdlib>
 #include <memory>
-#include <filesystem>
+// #include <filesystem>
 #include <unordered_map>
 #include <iterator>
 #include <sstream>
@@ -26,6 +26,7 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/ini_parser.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/filesystem/path.hpp>
 
 #include <glog/logging.h>
 #include <tateyama/logging.h>
@@ -77,7 +78,7 @@ public:
     static constexpr char property_flename[] = "tsurugi.ini";  // NOLINT
 
     explicit whole(const std::string& directory) {
-        std::filesystem::path file = directory;
+        boost::filesystem::path file = directory;
         if (!directory.empty()) {
             file = directory;
         } else {
@@ -91,7 +92,7 @@ public:
             std::abort();
         }
         try {
-            boost::property_tree::read_ini(file / std::filesystem::path(property_flename), property_tree_);
+            boost::property_tree::read_ini((file / boost::filesystem::path(property_flename)).string(), property_tree_);
         } catch (boost::property_tree::ini_parser_error &e) {
             VLOG(log_info) << "cannot use " << e.filename() << ", thus we use default property file only.";
             property_file_absent_ = true;
