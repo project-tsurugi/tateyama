@@ -31,8 +31,6 @@
 #include <tateyama/logging.h>
 #include <tateyama/detail/default_configuration.h>
 
-#define reflect_configuration(cfg, tree, name, type) (cfg)->name( (tree).get<type>( #name ) )  // NOLINT
-
 namespace tateyama::api::configuration {
 
 class section {
@@ -40,14 +38,14 @@ public:
     section (boost::property_tree::ptree& pt, boost::property_tree::ptree& dt) : property_tree_(pt), default_tree_(dt) {}
     explicit section (boost::property_tree::ptree& dt) : property_tree_(dt), default_tree_(dt) {}
     template<typename T>
-    inline T get(std::string&& name) const {
+    inline bool get(std::string&& name, T& rv) const {
         try {
-            auto rv = property_tree_.get<T>(name, default_tree_.get<T>(name));
+            rv = property_tree_.get<T>(name, default_tree_.get<T>(name));
             VLOG(log_trace) << "property " << name << " is " << rv;
-            return rv;
+            return true;
         } catch (boost::property_tree::ptree_error &e) {
-            VLOG(log_error) << "both tree: " << e.what() << ", thus this program aborts intentionally.";
-            std::abort();
+            LOG(ERROR) << "both tree: " << e.what() << ", thus this program aborts intentionally.";
+            return false;
         }
     }
 
@@ -57,18 +55,23 @@ private:
 };
 
 template<>
-inline bool section::get<bool>(std::string&& name) const {
+inline bool section::get<bool>(std::string&& name, bool& rv) const {
     using boost::algorithm::iequals;
 
-    auto str = get<std::string>(std::move(name));
+    std::string str;
+    if (!get<std::string>(std::move(name), str)) {
+        return false;
+    }
     if (iequals(str, "true") || iequals(str, "yes") || str == "1") {
+        rv = true;
         return true;
     }
     if (iequals(str, "false") || iequals(str, "no") || str == "0") {
-        return false;
+        rv = false;
+        return true;
     }
-    VLOG(log_error) << "it is not boolean";
-    std::abort();
+    LOG(ERROR) << "it is not boolean";
+    return false;
 }
 
 
@@ -87,8 +90,8 @@ public:
             std::istringstream default_iss(default_configuration);  // NOLINT
             boost::property_tree::read_ini(default_iss, default_tree_);
         } catch (boost::property_tree::ini_parser_error &e) {
-            VLOG(log_error) << "default tree: " << e.what() << ", thus this program aborts intentionally.";
-            std::abort();
+            LOG(ERROR) << "default tree: " << e.what() << ", thus this program aborts intentionally.";
+            throw e;
         }
         try {
             boost::property_tree::read_ini((dir / boost::filesystem::path(property_flename)).string(), property_tree_);  // NOLINT
@@ -106,11 +109,12 @@ public:
     whole& operator=(whole const& other) = delete;
     whole(whole&& other) noexcept = delete;
     whole& operator=(whole&& other) noexcept = delete;
-    
-    section& get_section(const std::string&& name) {
+
+    bool get_section(const std::string&& name, section*& rv) {
         VLOG(log_trace) << "property section " << name << " is requested.";
         if (auto it = map_.find(name); it != map_.end()) {
-            return *map_[name];
+            rv = map_[name].get();
+            return true;
         }
         try {
             auto& dt = default_tree_.get_child(name);
@@ -118,19 +122,22 @@ public:
                 try {
                     auto& pt = property_tree_.get_child(name);
                     map_.emplace(name, std::make_unique<section>(pt, dt));
-                    return *map_[name];
+                    rv = map_[name].get();
+                    return true;
                 } catch (boost::property_tree::ptree_error &e) {
                     VLOG(log_info) << "cannot use " << name << " section in the property file, thus we use default property only";
                     map_.emplace(name, std::make_unique<section>(dt));
-                    return *map_[name];
+                    rv = map_[name].get();
+                    return true;
                 }
             } else {
                 map_.emplace(name, std::make_unique<section>(dt));
-                return *map_[name];
+                rv = map_[name].get();
+                return true;
             }
         } catch (boost::property_tree::ptree_error &e) {
-            VLOG(log_error) << "cannot find " << name << " section in the default property file, thus this program aborts intentionally.";
-            std::abort();
+            LOG(ERROR) << "cannot find " << name << " section in the default property file, thus this program aborts intentionally.";
+            return false;
         }
     }
 
@@ -141,5 +148,13 @@ private:
 
     std::unordered_map<std::string, std::unique_ptr<section>> map_;
 };
+
+inline std::shared_ptr<whole> create_configuration(std::string& dir) {
+    try {
+        return std::make_shared<whole>(dir);
+    } catch (boost::property_tree::ini_parser_error &e) {
+        return nullptr;
+    }
+}
 
 }  // namespace tateyama::server::config
