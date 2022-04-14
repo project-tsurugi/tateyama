@@ -28,6 +28,7 @@
 #include <tateyama/api/endpoint/provider.h>
 #include <tateyama/api/registry.h>
 #include <tateyama/api/environment.h>
+#include <tateyama/api/configuration.h>
 
 #include <tateyama/endpoint/stream/stream_response.h>
 #include "stream_worker.h"
@@ -47,12 +48,27 @@ class stream_provider : public tateyama::api::endpoint::provider {
 private:
     class listener {
     public:
-        listener(api::environment& env, std::size_t size, std::uint32_t port) : env_(env) {
+        explicit listener(api::environment& env) : env_(env) {
+            auto endpoint_config = env.configuration()->get_section("stream_endpoint"); 
+            if (endpoint_config == nullptr) {
+                LOG(ERROR) << "cannot find stream_endpoint section in the configuration";
+                exit(1);
+            }
+            int port{};
+            if (!endpoint_config->get<>("port", port)) {
+                LOG(ERROR) << "cannot port at the section in the configuration";
+                exit(1);
+            }
+            std::size_t threads{};
+            if (!endpoint_config->get<>("threads", threads)) {
+                LOG(ERROR) << "cannot find thread_pool_size at the section in the configuration";
+                exit(1);
+            }
             // connection stream
             connection_socket_ = std::make_unique<tateyama::common::stream::connection_socket>(port);
 
             // worker objects
-            workers_.reserve(size);
+            workers_.reserve(threads);
         }
         ~listener() {
             connection_socket_->close();
@@ -64,7 +80,7 @@ private:
         listener& operator=(listener&& other) noexcept = delete;
         
         void operator()() {
-            std::size_t session_id = 0;
+            std::size_t session_id = 0x1000000000000000LL;
 
             while(true) {
                 if (auto stream = connection_socket_->accept(); stream != nullptr) {
@@ -109,12 +125,9 @@ private:
     };
 
 public:
-    status initialize(api::environment& env, void* context) override {
-        auto& ctx = *reinterpret_cast<stream_endpoint_context*>(context);  //NOLINT
-        auto& options = ctx.options_;
-
+    status initialize(api::environment& env, [[maybe_unused]] void* context) override {
         // create listener object
-        listener_ = std::make_unique<listener>(env, std::stol(options["threads"]), std::stol(options["port"]));
+        listener_ = std::make_unique<listener>(env);
 
         return status::ok;
     }

@@ -28,15 +28,11 @@
 #include <tateyama/api/endpoint/provider.h>
 #include <tateyama/api/registry.h>
 #include <tateyama/api/environment.h>
+#include <tateyama/api/configuration.h>
 
 #include "worker.h"
 
 namespace tateyama::server {
-
-// should be in sync one in bootstrap
-struct ipc_endpoint_context {
-    std::unordered_map<std::string, std::string> options_{};
-};
 
 /**
  * @brief ipc endpoint provider
@@ -46,12 +42,27 @@ class ipc_provider : public tateyama::api::endpoint::provider {
 private:
     class listener {
     public:
-        listener(api::environment& env, std::size_t size, std::string& name) : env_(env), base_name_(name) {
+        explicit listener(api::environment& env) : env_(env) {
+            auto endpoint_config = env.configuration()->get_section("ipc_endpoint"); 
+            if (endpoint_config == nullptr) {
+                LOG(ERROR) << "cannot find ipc_endpoint section in the configuration";
+                exit(1);
+            }
+            if (!endpoint_config->get<>("database_name", database_name_)) {
+                LOG(ERROR) << "cannot database_name at the section in the configuration";
+                exit(1);
+            }
+            std::size_t threads{};
+            if (!endpoint_config->get<>("threads", threads)) {
+                LOG(ERROR) << "cannot find thread_pool_size at the section in the configuration";
+                exit(1);
+            }
+
             // connection channel
-            container_ = std::make_unique<tateyama::common::wire::connection_container>(name);
+            container_ = std::make_unique<tateyama::common::wire::connection_container>(database_name_);
 
             // worker objects
-            workers_.reserve(size);
+            workers_.reserve(threads);
         }
 
         void operator()() {
@@ -71,7 +82,7 @@ private:
                     break;
                 }
                 VLOG(log_debug) << "connect request: " << session_id;
-                std::string session_name = base_name_;
+                std::string session_name = database_name_;
                 session_name += "-";
                 session_name += std::to_string(session_id);
                 auto wire = std::make_unique<tateyama::common::wire::server_wire_container_impl>(session_name);
@@ -108,16 +119,13 @@ private:
         api::environment& env_;
         std::unique_ptr<tateyama::common::wire::connection_container> container_{};
         std::vector<std::unique_ptr<Worker>> workers_{};
-        std::string base_name_;
+        std::string database_name_;
     };
 
 public:
-    status initialize(api::environment& env, void* context) override {
-        auto& ctx = *reinterpret_cast<ipc_endpoint_context*>(context);  //NOLINT
-        auto& options = ctx.options_;
-
+    status initialize(api::environment& env, [[maybe_unused]] void* context) override {
         // create listener object
-        listener_ = std::make_unique<listener>(env, std::stol(options["threads"]), options["dbname"]);
+        listener_ = std::make_unique<listener>(env);
 
         return status::ok;
     }

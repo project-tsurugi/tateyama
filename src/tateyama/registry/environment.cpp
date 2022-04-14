@@ -18,6 +18,7 @@
 #include <tateyama/api/server/service.h>
 #include <tateyama/api/endpoint/provider.h>
 #include <tateyama/api/endpoint/service.h>
+#include <tateyama/api/configuration.h>
 
 namespace tateyama::api {
 
@@ -45,5 +46,13 @@ void environment::endpoint_service(std::shared_ptr<endpoint::service> svc) noexc
 
 std::shared_ptr<endpoint::service> const& environment::endpoint_service() const noexcept {
     return service_;
+}
+
+void environment::configuration(std::shared_ptr<configuration::whole> svc) noexcept {
+    configuration_ = std::move(svc);
+}
+
+std::shared_ptr<configuration::whole> const& environment::configuration() const noexcept {
+    return configuration_;
 }
 }
