@@ -80,12 +80,11 @@ class whole {
 public:
     static constexpr char property_flename[] = "tsurugi.ini";  // NOLINT
 
-    explicit whole(const std::string&& directory) {
-        boost::filesystem::path dir = directory;
+    explicit whole(const std::string& directory) {
         if (!directory.empty()) {
-            dir = directory;
+            directory_ = directory;
         } else {
-            dir = std::string(getenv("TGDIR"));
+            directory_ = std::string(getenv("TGDIR"));
         }
         try {
             auto default_conf_string = std::string(default_configuration);
@@ -96,7 +95,7 @@ public:
             BOOST_PROPERTY_TREE_THROW(e);  // NOLINT
         }
         try {
-            boost::property_tree::read_ini((dir / boost::filesystem::path(property_flename)).string(), property_tree_);  // NOLINT
+            boost::property_tree::read_ini((directory_ / boost::filesystem::path(property_flename)).string(), property_tree_);  // NOLINT
         } catch (boost::property_tree::ini_parser_error &e) {
             VLOG(log_info) << "cannot find " << e.filename() << ", thus we use default property only.";
             property_file_absent_ = true;
@@ -137,10 +136,14 @@ public:
         LOG(ERROR) << "cannot find " << name << " section in the configuration.";
         return nullptr;
     }
+    boost::filesystem::path& get_directory() {
+        return directory_;
+    }
 
 private:
     boost::property_tree::ptree property_tree_;
     boost::property_tree::ptree default_tree_;
+    boost::filesystem::path directory_{};
     bool property_file_absent_{};
 
     std::unordered_map<std::string, std::unique_ptr<section>> map_;
@@ -174,7 +177,14 @@ private:
 
 inline std::shared_ptr<whole> create_configuration(std::string&& dir) {
     try {
-        return std::make_shared<whole>(std::move(dir));
+        return std::make_shared<whole>(dir);
+    } catch (boost::property_tree::ptree_error &e) {
+        return nullptr;
+    }
+}
+inline std::shared_ptr<whole> create_configuration(std::string const& dir) {
+    try {
+        return std::make_shared<whole>(dir);
     } catch (boost::property_tree::ptree_error &e) {
         return nullptr;
     }
