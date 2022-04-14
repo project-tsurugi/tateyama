@@ -80,7 +80,7 @@ class whole {
 public:
     static constexpr char property_flename[] = "tsurugi.ini";  // NOLINT
 
-    explicit whole(const std::string& directory) {
+    explicit whole(const std::string&& directory) {
         boost::filesystem::path dir = directory;
         if (!directory.empty()) {
             dir = directory;
@@ -88,7 +88,8 @@ public:
             dir = std::string(getenv("TGDIR"));
         }
         try {
-            std::istringstream default_iss(default_configuration);  // NOLINT
+            auto default_conf_string = std::string(default_configuration);
+            std::istringstream default_iss(default_conf_string);  // NOLINT
             boost::property_tree::read_ini(default_iss, default_tree_);
         } catch (boost::property_tree::ini_parser_error &e) {
             LOG(ERROR) << "default tree: " << e.what() << ", thus this program aborts intentionally.";
@@ -171,9 +172,9 @@ private:
     }
 };
 
-inline std::shared_ptr<whole> create_configuration(std::string& dir) {
+inline std::shared_ptr<whole> create_configuration(std::string&& dir) {
     try {
-        return std::make_shared<whole>(dir);
+        return std::make_shared<whole>(std::move(dir));
     } catch (boost::property_tree::ptree_error &e) {
         return nullptr;
     }
