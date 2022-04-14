@@ -10,4 +10,8 @@ inline constexpr char default_configuration[] {  // NOLINT
     "[stream_endpoint]\n"
         "port=12345\n"
         "threads=104\n"
+
+    "[ogawayama]\n"
+        "name=tateyama\n"
+        "threads=104\n"
 };

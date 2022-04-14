@@ -92,7 +92,7 @@ public:
             boost::property_tree::read_ini(default_iss, default_tree_);
         } catch (boost::property_tree::ini_parser_error &e) {
             LOG(ERROR) << "default tree: " << e.what() << ", thus this program aborts intentionally.";
-            throw e;
+            BOOST_PROPERTY_TREE_THROW(e);
         }
         try {
             boost::property_tree::read_ini((dir / boost::filesystem::path(property_flename)).string(), property_tree_);  // NOLINT
@@ -115,7 +115,7 @@ public:
             }
         }
         if (!check()) {
-            BOOST_PROPERTY_TREE_THROW(boost::property_tree::ptree_error("orphan entry error"));
+            BOOST_PROPERTY_TREE_THROW(boost::property_tree::ptree_error("orphan entry error"));  // NOLINT
         }
     }
     whole() : whole("") {}

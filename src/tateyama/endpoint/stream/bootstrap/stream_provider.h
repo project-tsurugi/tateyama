@@ -48,18 +48,18 @@ class stream_provider : public tateyama::api::endpoint::provider {
 private:
     class listener {
     public:
-        listener(api::environment& env) : env_(env) {
+        explicit listener(api::environment& env) : env_(env) {
             auto endpoint_config = env.configuration()->get_section("stream_endpoint"); 
             if (endpoint_config == nullptr) {
                 LOG(ERROR) << "cannot find stream_endpoint section in the configuration";
                 exit(1);
             }
-            int port;
+            int port{};
             if (!endpoint_config->get<>("port", port)) {
                 LOG(ERROR) << "cannot port at the section in the configuration";
                 exit(1);
             }
-            std::size_t threads;
+            std::size_t threads{};
             if (!endpoint_config->get<>("threads", threads)) {
                 LOG(ERROR) << "cannot find thread_pool_size at the section in the configuration";
                 exit(1);

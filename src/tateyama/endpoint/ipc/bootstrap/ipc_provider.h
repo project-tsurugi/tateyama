@@ -34,11 +34,6 @@
 
 namespace tateyama::server {
 
-// should be in sync one in bootstrap
-struct ipc_endpoint_context {
-    std::unordered_map<std::string, std::string> options_{};
-};
-
 /**
  * @brief ipc endpoint provider
  * @details
@@ -47,7 +42,7 @@ class ipc_provider : public tateyama::api::endpoint::provider {
 private:
     class listener {
     public:
-        listener(api::environment& env) : env_(env) {
+        explicit listener(api::environment& env) : env_(env) {
             auto endpoint_config = env.configuration()->get_section("ipc_endpoint"); 
             if (endpoint_config == nullptr) {
                 LOG(ERROR) << "cannot find ipc_endpoint section in the configuration";
@@ -57,7 +52,7 @@ private:
                 LOG(ERROR) << "cannot database_name at the section in the configuration";
                 exit(1);
             }
-            std::size_t threads;
+            std::size_t threads{};
             if (!endpoint_config->get<>("threads", threads)) {
                 LOG(ERROR) << "cannot find thread_pool_size at the section in the configuration";
                 exit(1);
