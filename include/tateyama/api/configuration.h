@@ -92,7 +92,7 @@ public:
             boost::property_tree::read_ini(default_iss, default_tree_);
         } catch (boost::property_tree::ini_parser_error &e) {
             LOG(ERROR) << "default tree: " << e.what() << ", thus this program aborts intentionally.";
-            BOOST_PROPERTY_TREE_THROW(e);
+            BOOST_PROPERTY_TREE_THROW(e);  // NOLINT
         }
         try {
             boost::property_tree::read_ini((dir / boost::filesystem::path(property_flename)).string(), property_tree_);  // NOLINT
