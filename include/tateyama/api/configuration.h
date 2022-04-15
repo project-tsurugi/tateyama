@@ -39,7 +39,7 @@ public:
     section (boost::property_tree::ptree& pt, boost::property_tree::ptree& dt) : property_tree_(pt), default_tree_(dt) {}
     explicit section (boost::property_tree::ptree& dt) : property_tree_(dt), default_tree_(dt) {}
     template<typename T>
-    inline bool get(std::string&& name, T& rv) const {
+    inline bool get(std::string const& name, T& rv) const {
         try {
             rv = property_tree_.get<T>(name, default_tree_.get<T>(name));
             VLOG(log_trace) << "property " << name << " is " << rv;
@@ -56,11 +56,11 @@ private:
 };
 
 template<>
-inline bool section::get<bool>(std::string&& name, bool& rv) const {
+inline bool section::get<bool>(std::string const& name, bool& rv) const {
     using boost::algorithm::iequals;
 
     std::string str;
-    if (!get<std::string>(std::move(name), str)) {
+    if (!get<std::string>(name, str)) {
         return false;
     }
     if (iequals(str, "true") || iequals(str, "yes") || str == "1") {
@@ -71,7 +71,7 @@ inline bool section::get<bool>(std::string&& name, bool& rv) const {
         rv = false;
         return true;
     }
-    LOG(ERROR) << "it is not boolean.";
+    LOG(ERROR) << "value of " << name << " is '" << str << "', which is not boolean";
     return false;
 }
 
@@ -80,7 +80,7 @@ class whole {
 public:
     static constexpr char property_flename[] = "tsurugi.ini";  // NOLINT
 
-    explicit whole(const std::string& directory) {
+    explicit whole(std::string const& directory) {
         if (!directory.empty()) {
             directory_ = directory;
         } else {
@@ -175,13 +175,6 @@ private:
     }
 };
 
-inline std::shared_ptr<whole> create_configuration(std::string&& dir) {
-    try {
-        return std::make_shared<whole>(dir);
-    } catch (boost::property_tree::ptree_error &e) {
-        return nullptr;
-    }
-}
 inline std::shared_ptr<whole> create_configuration(std::string const& dir) {
     try {
         return std::make_shared<whole>(dir);
