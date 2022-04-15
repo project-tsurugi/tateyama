@@ -45,7 +45,7 @@ public:
             VLOG(log_trace) << "property " << name << " is " << rv;
             return true;
         } catch (boost::property_tree::ptree_error &e) {
-            LOG(ERROR) << "both tree: " << e.what() << ", thus this program aborts intentionally.";
+            LOG(ERROR) << "both tree: " << e.what();
             return false;
         }
     }
@@ -91,7 +91,7 @@ public:
             std::istringstream default_iss(default_conf_string);  // NOLINT
             boost::property_tree::read_ini(default_iss, default_tree_);
         } catch (boost::property_tree::ini_parser_error &e) {
-            LOG(ERROR) << "default tree: " << e.what() << ", thus this program aborts intentionally.";
+            LOG(ERROR) << "default tree: " << e.what();
             BOOST_PROPERTY_TREE_THROW(e);  // NOLINT
         }
         try {
@@ -118,7 +118,6 @@ public:
             BOOST_PROPERTY_TREE_THROW(boost::property_tree::ptree_error("orphan entry error"));  // NOLINT
         }
     }
-    whole() : whole("") {}
     ~whole() {
         map_.clear();
     }
