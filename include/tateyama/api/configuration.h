@@ -81,17 +81,7 @@ public:
     static constexpr char property_flename[] = "tsurugi.ini";  // NOLINT
 
     explicit whole(std::string const& directory) {
-        if (!directory.empty()) {
-            directory_ = directory;
-        } else {
-            auto env = getenv("TGDIR");
-            if (env != nullptr) {
-                directory_ = std::string(getenv("TGDIR"));
-            } else {
-                directory_ = std::string("");
-                property_file_absent_ = true;
-            }
-        }
+        // default configuration
         try {
             auto default_conf_string = std::string(default_configuration);
             std::istringstream default_iss(default_conf_string);  // NOLINT
@@ -99,6 +89,18 @@ public:
         } catch (boost::property_tree::ini_parser_error &e) {
             LOG(ERROR) << "default tree: " << e.what();
             BOOST_PROPERTY_TREE_THROW(e);  // NOLINT
+        }
+
+        // tsurugi.ini
+        if (!directory.empty()) {
+            directory_ = directory;
+        } else {
+            if (auto env = getenv("TGDIR"); env != nullptr) {
+                directory_ = std::string(env);
+            } else {
+                directory_ = std::string("");
+                property_file_absent_ = true;
+            }
         }
         if (!property_file_absent_) {
             try {
