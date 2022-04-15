@@ -84,7 +84,13 @@ public:
         if (!directory.empty()) {
             directory_ = directory;
         } else {
-            directory_ = std::string(getenv("TGDIR"));
+            auto env = getenv("TGDIR");
+            if (env != nullptr) {
+                directory_ = std::string(getenv("TGDIR"));
+            } else {
+                directory_ = std::string("");
+                property_file_absent_ = true;
+            }
         }
         try {
             auto default_conf_string = std::string(default_configuration);
@@ -94,11 +100,13 @@ public:
             LOG(ERROR) << "default tree: " << e.what();
             BOOST_PROPERTY_TREE_THROW(e);  // NOLINT
         }
-        try {
-            boost::property_tree::read_ini((directory_ / boost::filesystem::path(property_flename)).string(), property_tree_);  // NOLINT
-        } catch (boost::property_tree::ini_parser_error &e) {
-            VLOG(log_info) << "cannot find " << e.filename() << ", thus we use default property only.";
-            property_file_absent_ = true;
+        if (!property_file_absent_) {
+            try {
+                boost::property_tree::read_ini((directory_ / boost::filesystem::path(property_flename)).string(), property_tree_);  // NOLINT
+            } catch (boost::property_tree::ini_parser_error &e) {
+                VLOG(log_info) << "cannot find " << e.filename() << ", thus we use default property only.";
+                property_file_absent_ = true;
+            }
         }
         BOOST_FOREACH(const boost::property_tree::ptree::value_type &v, default_tree_) {
             auto& dt = default_tree_.get_child(v.first);
