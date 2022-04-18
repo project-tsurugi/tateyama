@@ -19,8 +19,8 @@ NOTE: for developers
   * absent - mutex がない状態
   * unknown - mutex があるが、通信不可能
 
-[Tateyama message routing architecture]:20220412-tateyama-arch.md
-[Tateyama component 一覧]:20220415-tateyama-components.md
+[Tateyama message routing architecture]:tateyama-arch-ja.md
+[Tateyama component 一覧]:tateyama-components-ja.md
 
 ## コンセプト
 
