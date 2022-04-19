@@ -1,5 +1,5 @@
 static constexpr std::string_view default_configuration {  // NOLINT
-    "[jogasaki]\n"
+    "[sql]\n"
         "thread_pool_size=5\n"
         "lazy_worker=false\n"
 
@@ -11,7 +11,7 @@ static constexpr std::string_view default_configuration {  // NOLINT
         "port=12345\n"
         "threads=104\n"
 
-    "[ogawayama]\n"
+    "[fdw]\n"
         "name=tateyama\n"
         "threads=104\n"
 };
