@@ -24,6 +24,7 @@
 
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/ini_parser.hpp>
+#include <boost/lexical_cast.hpp>
 #include <boost/foreach.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem/path.hpp>
@@ -40,14 +41,23 @@ public:
     explicit section (boost::property_tree::ptree& dt) : property_tree_(dt), default_tree_(dt) {}
     template<typename T>
     inline bool get(std::string const& name, T& rv) const {
-        try {
-            rv = property_tree_.get<T>(name, default_tree_.get<T>(name));
-            VLOG(log_trace) << "property " << name << " is " << rv;
+        if (auto it = property_tree_.find(name) ; it != property_tree_.not_found()) {
+            rv = boost::lexical_cast<T>(it->second.data());
+            VLOG(log_trace) << "property " << name << " has found in tsurugi.ini and is " << rv;
             return true;
-        } catch (boost::property_tree::ptree_error &e) {
-            LOG(ERROR) << "both tree: " << e.what();
+        }
+        if (auto it = default_tree_.find(name) ; it != default_tree_.not_found()) {
+            auto value = it->second.data();
+            if (!value.empty()) {
+                rv = boost::lexical_cast<T>(value);
+                VLOG(log_trace) << "property " << name << " has found in default and is " << rv;
+                return true;
+            }
+            VLOG(log_trace) << "property " << name << " exists but the value is empty";
             return false;
         }
+        LOG(ERROR) << "both tree did not have such property: " << name;
+        return false;
     }
 
 private:
