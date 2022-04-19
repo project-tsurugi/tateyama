@@ -14,4 +14,7 @@ static constexpr std::string_view default_configuration {  // NOLINT
     "[fdw]\n"
         "name=tateyama\n"
         "threads=104\n"
+
+    "[data_store]\n"
+        "log_location=\n"
 };
