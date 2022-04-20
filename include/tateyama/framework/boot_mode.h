@@ -21,7 +21,10 @@
 
 namespace tateyama::framework {
 
-enum class mode : std::uint32_t {
+/**
+ * @brief framework boot-up mode
+ */
+enum class boot_mode : std::uint32_t {
     unknown = 0,
     database_server,
     maintenance_server,
@@ -33,13 +36,13 @@ enum class mode : std::uint32_t {
  * @param value the target value
  * @return the corresponded string representation
  */
-[[nodiscard]] constexpr inline std::string_view to_string_view(mode value) noexcept {
+[[nodiscard]] constexpr inline std::string_view to_string_view(boot_mode value) noexcept {
     using namespace std::string_view_literals;
     switch (value) {
-        case mode::unknown: return "unknown"sv;
-        case mode::database_server: return "database_server"sv;
-        case mode::maintenance_server: return "maintenance_server"sv;
-        case mode::maintenance_standalone: return "maintenance_standalone"sv;
+        case boot_mode::unknown: return "unknown"sv;
+        case boot_mode::database_server: return "database_server"sv;
+        case boot_mode::maintenance_server: return "maintenance_server"sv;
+        case boot_mode::maintenance_standalone: return "maintenance_standalone"sv;
     }
     std::abort();
 }
@@ -50,7 +53,7 @@ enum class mode : std::uint32_t {
  * @param value the target value
  * @return the output
  */
-inline std::ostream& operator<<(std::ostream& out, mode value) {
+inline std::ostream& operator<<(std::ostream& out, boot_mode value) {
     return out << to_string_view(value);
 }
 

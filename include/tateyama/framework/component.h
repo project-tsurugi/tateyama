@@ -21,11 +21,10 @@
 
 #include <tateyama/utils/cache_align.h>
 #include <tateyama/framework/component.h>
-#include <tateyama/api/environment.h>
 
 namespace tateyama::framework {
 
-using tateyama::api::environment;
+class environment;
 
 /**
  * @brief base class for tateyama components whose life-cycle is managed by the framework

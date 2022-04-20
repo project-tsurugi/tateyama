@@ -23,7 +23,7 @@
 #include <tateyama/framework/repository.h>
 #include <tateyama/api/server/request.h>
 #include <tateyama/api/server/response.h>
-#include <tateyama/api/environment.h>
+#include <tateyama/framework/environment.h>
 
 namespace tateyama::framework {
 
@@ -42,11 +42,11 @@ public:
     }
 
     void setup(environment& env) override {
-//        services_ = std::addressof(env.service_repository());
+        services_ = std::addressof(env.service_repository());
     }
 
     void start(environment&) override {
-
+        //no-op
     }
 
     void shutdown(environment&) override {

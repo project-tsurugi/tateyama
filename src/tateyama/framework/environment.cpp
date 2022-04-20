@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2020 tsurugi project.
+ * Copyright 2018-2022 tsurugi project.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,34 +13,38 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <tateyama/framework/component.h>
+#include <tateyama/framework/environment.h>
+
 #include <tateyama/framework/repository.h>
+#include <tateyama/framework/component.h>
 #include <tateyama/framework/resource.h>
 #include <tateyama/framework/service.h>
 #include <tateyama/framework/endpoint.h>
-#include <tateyama/framework/router.h>
-#include <tateyama/framework/server.h>
-#include <tateyama/framework/environment.h>
-
-#include <gtest/gtest.h>
+#include <tateyama/framework/endpoint.h>
+#include <tateyama/api/configuration.h>
+#include <tateyama/framework/boot_mode.h>
 
 namespace tateyama::framework {
 
-using namespace std::literals::string_literals;
+boot_mode tateyama::framework::environment::mode() {
+    return mode_;
+}
 
-class framework_test : public ::testing::Test {
+api::configuration::whole const& environment::configuration() {
+    return *configuration_;
+}
 
-};
+repository<resource>& environment::resource_repository() {
+    return resource_repository_;
+}
 
-using namespace std::string_view_literals;
+repository<service>& environment::service_repository() {
+    return service_repository_;
+}
 
-TEST_F(framework_test, server_api) {
-    environment env{};
-    env.initialize();
-    server sv{env.configuration(), boot_mode::database_server};
-    //register_components(server);
-    sv.start();
-    sv.shutdown();
+repository<endpoint>& environment::endpoint_repository() {
+    return endpoint_repository_;
 }
 
 }
+

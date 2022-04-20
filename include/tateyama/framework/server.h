@@ -23,7 +23,7 @@
 #include <tateyama/framework/resource.h>
 #include <tateyama/framework/service.h>
 #include <tateyama/framework/endpoint.h>
-#include <tateyama/framework/mode.h>
+#include <tateyama/framework/boot_mode.h>
 #include <tateyama/api/configuration.h>
 
 namespace tateyama::framework {
@@ -37,7 +37,7 @@ public:
     server(server&& other) noexcept = delete;
     server& operator=(server&& other) noexcept = delete;
 
-    explicit server(api::configuration::whole&& conf, framework::mode) {
+    explicit server(api::configuration::whole const& conf, framework::boot_mode) {
         //TODO
     }
 
@@ -51,10 +51,11 @@ public:
         //TODO
     }
 
-    resource* get_resource_by_id(component::id_type) {
+    std::shared_ptr<resource> get_resource_by_id(component::id_type) {
         return nullptr;
     }
-    template<class T> resource* get_resource() {
+
+    template<class T> std::shared_ptr<resource> get_resource() {
         return nullptr;
     }
 
