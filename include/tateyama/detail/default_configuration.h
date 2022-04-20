@@ -1,3 +1,5 @@
+#pragma once
+
 static constexpr std::string_view default_configuration {  // NOLINT
     "[sql]\n"
         "thread_pool_size=5\n"
