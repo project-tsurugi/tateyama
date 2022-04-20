@@ -19,6 +19,7 @@
 #include <memory>
 #include <type_traits>
 
+#include <tateyama/framework/environment.h>
 #include <tateyama/framework/component.h>
 #include <tateyama/framework/resource.h>
 #include <tateyama/framework/service.h>
@@ -28,45 +29,87 @@
 
 namespace tateyama::framework {
 
+/**
+ * @brief interface for tateyama components life cycle management
+ */
 class server {
 public:
+    /**
+     * @brief create new object
+     */
     server() = default;
+
+    /**
+     * @brief destruct object
+     */
+    ~server() = default;
 
     server(server const& other) = delete;
     server& operator=(server const& other) = delete;
     server(server&& other) noexcept = delete;
     server& operator=(server&& other) noexcept = delete;
 
-    explicit server(api::configuration::whole const& conf, framework::boot_mode) {
-        //TODO
-    }
+    /**
+     * @brief create new object with environment
+     * @param env the environment for the server to acted upon
+     */
+    explicit server(std::shared_ptr<environment> env);
 
-    void add_resource(std::shared_ptr<resource>) {
-        //TODO
-    }
-    void add_service(std::shared_ptr<service>) {
-        //TODO
-    }
-    void add_endpoint(std::shared_ptr<endpoint>) {
-        //TODO
-    }
+    /**
+     * @brief add new resource to manage life cycle
+     * @details the priority between resource objects are determined by the order of addition.
+     * The objects added earlier have higher priority.
+     * @param arg tateyama resource
+     */
+    void add_resource(std::shared_ptr<resource> arg);
 
-    std::shared_ptr<resource> get_resource_by_id(component::id_type) {
-        return nullptr;
-    }
+    /**
+     * @brief add new service to manage life cycle
+     * @details the priority between service objects are determined by the order of addition.
+     * The objects added earlier have higher priority.
+     * @param arg tateyama service
+     */
+    void add_service(std::shared_ptr<service> arg);
 
+    /**
+     * @brief add new endpoint to manage life cycle
+     * @details the priority between endpoint objects are determined by the order of addition.
+     * The objects added earlier have higher priority.
+     * @param arg tateyama endpoint
+     */
+    void add_endpoint(std::shared_ptr<endpoint> arg);
+
+    /**
+     * @brief find the resource by resource id
+     * @return the found resource
+     * @return nullptr if not found
+     */
+    std::shared_ptr<resource> get_resource_by_id(component::id_type id);
+
+    /**
+     * @brief find the resource for the given type
+     * @return the found resource
+     * @return nullptr if not found
+     */
     template<class T> std::shared_ptr<resource> get_resource() {
-        return nullptr;
+        BOOST_ASSERT(environment_); //NOLINT
+        return environment_->resource_repository().find<T>();
     }
 
-    void start() {
-        //TODO
-        // call .setup(), .start() for each components
-    }
-    void shutdown() {
-        //TODO
-        // call .shutdown() for each components
-    }
+    /**
+     * @brief start the server
+     * @details setup and start all resource, service and endpoint appropriately.
+     */
+    void start();
+
+    /**
+     * @brief shutdown the server
+     * @details shutdown all resource, service and endpoint appropriately.
+     */
+    void shutdown();
+
+private:
+    std::shared_ptr<environment> environment_{std::make_shared<environment>()};
 };
 
 }

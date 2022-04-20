@@ -21,6 +21,8 @@
 
 #include <tateyama/utils/cache_align.h>
 #include <tateyama/framework/component.h>
+#include <tateyama/framework/resource.h>
+#include <tateyama/framework/service.h>
 
 namespace tateyama::framework {
 
@@ -30,19 +32,35 @@ public:
     /**
      * @brief iterate over added components
      */
-    void each(std::function<void(T&)>);
+    void each(std::function<void(T&)> consumer) {
+        for(auto&& e : entity_) {
+            consumer(*e);
+        }
+    }
 
     /**
      * @brief add new component
      */
-    void add(std::shared_ptr<T>);
+    void add(std::shared_ptr<T> arg) {
+        entity_.emplace_back(std::move(arg));
+    }
 
     /**
      * @brief find component by id
      * @return the found component
      * @return nullptr if not found
      */
-    [[nodiscard]] std::shared_ptr<T> find_by_id(component::id_type);
+    [[nodiscard]]
+//    std::enable_if_t<std::is_same_v<T, resource> || std::is_same_v<T, service>, std::shared_ptr<T>>
+    std::shared_ptr<T>
+        find_by_id(component::id_type id) {
+        for(auto&& x : entity_) {
+            if(x->id() == id) {
+                return x;
+            }
+        }
+        return {};
+    }
 
     /**
      * @brief find component by the tag for the given class
@@ -55,6 +73,9 @@ public:
         auto* c = find_by_id(U::tag);
         return static_cast<U*>(c);
     }
+
+private:
+    std::vector<std::shared_ptr<T>> entity_{};
 };
 
 }

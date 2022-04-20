@@ -34,11 +34,48 @@ class framework_test : public ::testing::Test {
 
 using namespace std::string_view_literals;
 
+class test_resource : public resource {
+public:
+    static constexpr id_type tag = 0;
+    test_resource() = default;
+    [[nodiscard]] id_type id() const noexcept override {
+        return tag;
+    }
+    void setup(environment&) override {}
+    void start(environment&) override {}
+    void shutdown(environment&) override {}
+};
+
+class test_service : public service {
+public:
+    static constexpr id_type tag = 0;
+
+    test_service() = default;
+
+    [[nodiscard]] id_type id() const noexcept override {
+        return tag;
+    }
+
+    void operator()(
+        std::shared_ptr<request> req,
+        std::shared_ptr<response> res) override {
+        (void)req;
+        (void)res;
+    }
+    void setup(environment&) override {}
+    void start(environment&) override {}
+    void shutdown(environment&) override {}
+};
+
 TEST_F(framework_test, server_api) {
-    environment env{};
-    env.initialize();
-    server sv{env.configuration(), boot_mode::database_server};
+    auto cfg = api::configuration::create_configuration("");
+    auto env = std::make_shared<environment>();
+    env->initialize(boot_mode::database_server, cfg);
+    server sv{env};
     //register_components(server);
+    sv.add_resource(std::make_shared<test_resource>());
+    sv.add_service(std::make_shared<test_service>());
+
     sv.start();
     sv.shutdown();
 }

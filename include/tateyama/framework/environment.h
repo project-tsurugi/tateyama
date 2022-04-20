@@ -44,11 +44,9 @@ public:
 
     /**
      * @brief initialize environment with configuration file
-     * @param config_dir directory path where configuration file is placed. Specify empty if no config file is provided.
-     * @return true when successful
-     * @return false when initialization failed
+     * @param cfg configuration for the environment. Specify nullptr to use default.
      */
-    bool initialize(std::string_view config_dir = {});
+    void initialize(boot_mode mode, std::shared_ptr<api::configuration::whole> cfg = {});
 
     /**
      * @brief accessor to the framework boot mode
@@ -61,7 +59,7 @@ public:
      * @return reference to the configuration created by initialize()
      * @pre initialize() has been called successfully
      */
-    api::configuration::whole const& configuration();
+    std::shared_ptr<api::configuration::whole> const& configuration();
 
     /**
      * @brief accessor to the resource component repository

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#pragma once
+#include <tateyama/framework/router.h>
 
 #include <functional>
 #include <memory>
@@ -31,28 +31,41 @@ namespace tateyama::framework {
 using tateyama::api::server::request;
 using tateyama::api::server::response;
 
-/**
- * @brief the routing service to dispatch the requests to appropriate service
- */
-class routing_service : public service {
-public:
-    static constexpr id_type tag = service_id_routing;
+component::id_type routing_service::id() const noexcept {
+    return tag;
+}
 
-    [[nodiscard]] id_type id() const noexcept override;
+void routing_service::setup(environment& env) {
+    services_ = std::addressof(env.service_repository());
+}
 
-    void setup(environment& env) override;
+void routing_service::start(environment&) {
+    //no-op
+}
 
-    void start(environment&) override;
+void routing_service::shutdown(environment&) {
+    services_ = {};
+}
 
-    void shutdown(environment&) override;
+void routing_service::operator()(std::shared_ptr<request> req, std::shared_ptr<response> res) {
+//        if (req->service_id() == tag) {
+//            throw ...;
+//        }
 
-    void operator()(
-        std::shared_ptr<request> req,
-        std::shared_ptr<response> res) override;
+    auto* svc = services_;
+    if (svc == nullptr) {
+        //
+    }
 
-private:
-    repository<service>* services_{};
-};
+    id_type id{};
+    if (auto destination = svc->find_by_id(id); destination != nullptr) {
+        destination->operator()(std::move(req), std::move(res));
+        return;
+    }
 
+    // wrong address
+//
+//        res->...;
+}
 }
 

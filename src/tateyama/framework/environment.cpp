@@ -30,9 +30,8 @@ boot_mode tateyama::framework::environment::mode() {
     return mode_;
 }
 
-api::configuration::whole const& environment::configuration() {
-    BOOST_ASSERT(configuration_ != nullptr); //NOLINT
-    return *configuration_;
+std::shared_ptr<api::configuration::whole> const& environment::configuration() {
+    return configuration_;
 }
 
 repository<resource>& environment::resource_repository() {
@@ -47,13 +46,12 @@ repository<endpoint>& environment::endpoint_repository() {
     return endpoint_repository_;
 }
 
-bool environment::initialize(std::string_view config_dir) {
-    configuration_ = api::configuration::create_configuration(config_dir);
-    if(configuration_ == nullptr) {
-        LOG(ERROR) << "environment initialization failed.";
-        return false;
+void environment::initialize(boot_mode mode, std::shared_ptr<api::configuration::whole> cfg) {
+    mode_ = mode;
+    if(cfg == nullptr) {
+        cfg = std::make_shared<api::configuration::whole>("");
     }
-    return true;
+    configuration_ = std::move(cfg);
 }
 
 }
