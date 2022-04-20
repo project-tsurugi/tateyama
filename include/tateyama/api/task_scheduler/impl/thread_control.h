@@ -25,7 +25,7 @@
 
 #include <tateyama/api/task_scheduler/task_scheduler_cfg.h>
 #include <tateyama/utils/thread_affinity.h>
-#include "cache_align.h"
+#include <tateyama/utils/cache_align.h>
 #include "utils.h"
 #include <tateyama/common.h>
 

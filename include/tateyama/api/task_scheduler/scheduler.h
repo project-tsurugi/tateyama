@@ -21,7 +21,7 @@
 #include <tateyama/api/task_scheduler/impl/worker.h>
 #include <tateyama/api/task_scheduler/impl/queue.h>
 #include <tateyama/api/task_scheduler/impl/thread_control.h>
-#include <tateyama/api/task_scheduler/impl/cache_align.h>
+#include <tateyama/utils/cache_align.h>
 #include "task_scheduler_cfg.h"
 
 namespace tateyama::api::task_scheduler {

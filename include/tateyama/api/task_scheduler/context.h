@@ -22,7 +22,7 @@
 
 #include <glog/logging.h>
 #include <tateyama/api/task_scheduler/impl/thread_control.h>
-#include <tateyama/api/task_scheduler/impl/cache_align.h>
+#include <tateyama/utils/cache_align.h>
 
 namespace tateyama::api::task_scheduler {
 

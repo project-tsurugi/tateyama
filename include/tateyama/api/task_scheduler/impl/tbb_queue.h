@@ -23,7 +23,7 @@
 #include <tbb/concurrent_queue.h>
 #include <glog/logging.h>
 
-#include "cache_align.h"
+#include <tateyama/utils/cache_align.h>
 
 namespace tateyama::task_scheduler {
 

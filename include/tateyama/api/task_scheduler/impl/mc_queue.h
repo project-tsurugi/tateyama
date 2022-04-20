@@ -24,7 +24,7 @@
 
 #include <concurrentqueue/concurrentqueue.h>
 
-#include "cache_align.h"
+#include <tateyama/utils/cache_align.h>
 
 namespace tateyama::task_scheduler {
 

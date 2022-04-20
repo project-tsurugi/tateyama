@@ -17,7 +17,7 @@
 
 #include "tbb_queue.h"
 #include "mc_queue.h"
-#include "cache_align.h"
+#include <tateyama/utils/cache_align.h>
 
 namespace tateyama::task_scheduler {
 
