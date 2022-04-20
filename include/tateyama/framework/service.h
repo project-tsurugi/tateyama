@@ -31,7 +31,7 @@ using tateyama::api::server::response;
 class service: public component {
 public:
 
-    virtual id_type id() const noexcept = 0;
+    [[nodiscard]] virtual id_type id() const noexcept = 0;
 
     virtual void operator()(
         std::shared_ptr<request> req,

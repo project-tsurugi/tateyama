@@ -31,6 +31,7 @@ boot_mode tateyama::framework::environment::mode() {
 }
 
 api::configuration::whole const& environment::configuration() {
+    BOOST_ASSERT(configuration_ != nullptr); //NOLINT
     return *configuration_;
 }
 
@@ -44,6 +45,15 @@ repository<service>& environment::service_repository() {
 
 repository<endpoint>& environment::endpoint_repository() {
     return endpoint_repository_;
+}
+
+bool environment::initialize(std::string_view config_dir) {
+    configuration_ = api::configuration::create_configuration(config_dir);
+    if(configuration_ == nullptr) {
+        LOG(ERROR) << "environment initialization failed.";
+        return false;
+    }
+    return true;
 }
 
 }

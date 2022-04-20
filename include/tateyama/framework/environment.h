@@ -27,24 +27,55 @@ namespace tateyama::framework {
 
 class environment {
 public:
+    /**
+     * @brief create new object
+     */
     environment() = default;
+
+    /**
+     * @brief destruct the object
+     */
     ~environment() = default;
+
     environment(environment const& other) = default;
     environment& operator=(environment const& other) = default;
     environment(environment&& other) noexcept = default;
     environment& operator=(environment&& other) noexcept = default;
 
-    void initialize(std::string_view config_dir = {}) {
-        configuration_ = api::configuration::create_configuration(config_dir);
-        if(configuration_ == nullptr) {
-            configuration_ = std::make_shared<api::configuration::whole>("");
-        }
-    }
+    /**
+     * @brief initialize environment with configuration file
+     * @param config_dir directory path where configuration file is placed. Specify empty if no config file is provided.
+     * @return true when successful
+     * @return false when initialization failed
+     */
+    bool initialize(std::string_view config_dir = {});
 
+    /**
+     * @brief accessor to the framework boot mode
+     * @return the framework boot mode
+     */
     boot_mode mode();
+
+    /**
+     * @brief accessor to the configuration
+     * @return reference to the configuration created by initialize()
+     * @pre initialize() has been called successfully
+     */
     api::configuration::whole const& configuration();
+
+    /**
+     * @brief accessor to the resource component repository
+     */
     repository<resource>& resource_repository();
+
+    /**
+     * @brief accessor to the service component repository
+     */
     repository<service>& service_repository();
+
+    /**
+     * @brief accessor to the endpoint component repository
+     */
     repository<endpoint>& endpoint_repository();
 
 private:
