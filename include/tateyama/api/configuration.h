@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#pragma once
 
 #include <string>
 #include <cstdlib>
@@ -41,7 +40,8 @@ public:
     section (boost::property_tree::ptree& pt, boost::property_tree::ptree& dt) : property_tree_(pt), default_tree_(dt) {}
     explicit section (boost::property_tree::ptree& dt) : property_tree_(dt), default_tree_(dt) {}
     template<typename T>
-    inline bool get(std::string const& name, T& rv) const {
+    inline bool get(std::string_view n, T& rv) const {
+        auto name = std::string(n);
         if (auto it = property_tree_.find(name) ; it != property_tree_.not_found()) {
             rv = boost::lexical_cast<T>(it->second.data());
             VLOG(log_trace) << "property " << name << " has found in tsurugi.ini and is " << rv;
@@ -67,7 +67,7 @@ private:
 };
 
 template<>
-inline bool section::get<bool>(std::string const& name, bool& rv) const {
+inline bool section::get<bool>(std::string_view name, bool& rv) const {
     using boost::algorithm::iequals;
 
     std::string str;
@@ -91,7 +91,8 @@ class whole {
 public:
     static constexpr char property_flename[] = "tsurugi.ini";  // NOLINT
 
-    explicit whole(std::string const& directory) {
+    explicit whole(std::string_view d) {
+        auto directory = std::string(d);
         // default configuration
         try {
             auto default_conf_string = std::string(default_configuration);
@@ -148,7 +149,8 @@ public:
     whole(whole&& other) noexcept = delete;
     whole& operator=(whole&& other) noexcept = delete;
 
-    section* get_section(const std::string&& name) {
+    section* get_section(std::string_view n) {
+        auto name = std::string(n);
         if (auto it = map_.find(name); it != map_.end()) {
             VLOG(log_trace) << "configurateion of section " << name << " will be used.";
             return map_[name].get();
@@ -195,7 +197,7 @@ private:
     }
 };
 
-inline std::shared_ptr<whole> create_configuration(std::string const& dir) {
+inline std::shared_ptr<whole> create_configuration(std::string_view dir) {
     try {
         return std::make_shared<whole>(dir);
     } catch (boost::property_tree::ptree_error &e) {
