@@ -27,13 +27,30 @@ namespace tateyama::framework {
 template<class T>
 class cache_align repository {
 public:
+    /**
+     * @brief iterate over added components
+     */
     void each(std::function<void(T&)>);
-    void add(std::shared_ptr<T>);
-    T* find_by_id(component::id_type);
 
-    //TODO use shared_ptr
+    /**
+     * @brief add new component
+     */
+    void add(std::shared_ptr<T>);
+
+    /**
+     * @brief find component by id
+     * @return the found component
+     * @return nullptr if not found
+     */
+    [[nodiscard]] std::shared_ptr<T> find_by_id(component::id_type);
+
+    /**
+     * @brief find component by the tag for the given class
+     * @return the found component
+     * @return nullptr if not found
+     */
     template<class U>
-    U* find() {
+    std::shared_ptr<U> find() {
         static_assert(std::is_same_v<decltype(U::tag), component::id_type>);
         auto* c = find_by_id(U::tag);
         return static_cast<U*>(c);

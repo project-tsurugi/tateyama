@@ -27,22 +27,57 @@ namespace tateyama::framework {
 
 using tateyama::api::environment;
 
+/**
+ * @brief base class for tateyama components whose life-cycle is managed by the framework
+ */
 class component {
 public:
+    /**
+     * @brief type to identify components
+     * @details the id must be unique among each categories of components (e.g. resource, service)
+     * Users custom module should use one larger than `max_system_reserved_id`.
+     */
     using id_type = std::uint32_t;
 
+    /**
+     * @brief maximum id reserved for built-in system resources/services
+     */
     static constexpr id_type max_system_reserved_id = 255;
 
+    /**
+     * @brief construct new object
+     */
     component() = default;
 
-    virtual void setup(environment&) = 0; // -> ready
+    component(component const& other) = delete;
+    component& operator=(component const& other) = delete;
+    component(component&& other) noexcept = delete;
+    component& operator=(component&& other) noexcept = delete;
 
-    virtual void start(environment&) = 0; // -> activated
+    /**
+     * @brief setup the component (the state will be `ready`)
+     */
+    virtual void setup(environment&) = 0;
 
-    virtual void shutdown(environment&) = 0; // -> deactivated
+    /**
+     * @brief start the component (the state will be `activated`)
+     */
+    virtual void start(environment&) = 0;
 
-    virtual ~component() = default; // -> disposed
+    /**
+     * @brief shutdown the component (the state will be `deactivated`)
+     */
+    virtual void shutdown(environment&) = 0;
 
+    /**
+     * @brief destruct the object (the state will be `disposed`)
+     */
+    virtual ~component() = default;
+
+    /**
+     * @brief list the section names in the config. file that this component is affected
+     * @return the list of section name
+     */
     virtual std::vector<std::string> configuration_sections() = 0;
 };
 

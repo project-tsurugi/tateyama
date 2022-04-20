@@ -24,28 +24,48 @@
 #include <tateyama/framework/service.h>
 #include <tateyama/framework/endpoint.h>
 #include <tateyama/framework/mode.h>
-#include <tateyama/api/server/request.h>
-#include <tateyama/api/server/response.h>
 #include <tateyama/api/configuration.h>
 
 namespace tateyama::framework {
 
-using tateyama::api::server::request;
-using tateyama::api::server::response;
-
 class server {
 public:
-    explicit server(api::configuration::whole&& conf, framework::mode);
+    server() = default;
 
-    void add_resource(std::shared_ptr<resource>);
-    void add_service(std::shared_ptr<service>);
-    void add_endpoint(std::shared_ptr<endpoint>);
+    server(server const& other) = delete;
+    server& operator=(server const& other) = delete;
+    server(server&& other) noexcept = delete;
+    server& operator=(server&& other) noexcept = delete;
 
-    resource& get_resource_by_id(component::id_type); // throws not_found
-    template<class T> resource& get_resource(); // throws not_found
+    explicit server(api::configuration::whole&& conf, framework::mode) {
+        //TODO
+    }
 
-    void start(); // call .setup(), .start() for each components
-    void shutdown(); // call .shutdown() for each components
+    void add_resource(std::shared_ptr<resource>) {
+        //TODO
+    }
+    void add_service(std::shared_ptr<service>) {
+        //TODO
+    }
+    void add_endpoint(std::shared_ptr<endpoint>) {
+        //TODO
+    }
+
+    resource* get_resource_by_id(component::id_type) {
+        return nullptr;
+    }
+    template<class T> resource* get_resource() {
+        return nullptr;
+    }
+
+    void start() {
+        //TODO
+        // call .setup(), .start() for each components
+    }
+    void shutdown() {
+        //TODO
+        // call .shutdown() for each components
+    }
 };
 
 }

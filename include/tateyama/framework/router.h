@@ -30,11 +30,12 @@ namespace tateyama::framework {
 using tateyama::api::server::request;
 using tateyama::api::server::response;
 
+/**
+ * @brief the routing service to dispatch the requests to appropriate service
+ */
 class routing_service : public service {
 public:
-    using id_type = component::id_type;
-
-    static constexpr id_type tag = 100; //TODO
+    static constexpr id_type tag = 1;
 
     id_type id() const noexcept override {
         return tag;
@@ -44,7 +45,9 @@ public:
 //        services_ = std::addressof(env.service_repository());
     }
 
-    void start(environment&) override {}
+    void start(environment&) override {
+
+    }
 
     void shutdown(environment&) override {
         services_ = {};
@@ -63,8 +66,7 @@ public:
         }
 
         id_type id{};
-        if (auto* destination = svc->find_by_id(id);
-            destination != nullptr) {
+        if (auto destination = svc->find_by_id(id); destination != nullptr) {
             destination->operator()(std::move(req), std::move(res));
             return;
         }

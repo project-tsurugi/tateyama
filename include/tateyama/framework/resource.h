@@ -15,17 +15,16 @@
  */
 #pragma once
 
-#include <functional>
-#include <memory>
-#include <type_traits>
-
 #include <tateyama/framework/component.h>
 
 namespace tateyama::framework {
 
+/**
+ * @brief resource component
+ */
 class resource : public component {
 public:
-    virtual id_type id() const noexcept = 0;
+    [[nodiscard]] virtual id_type id() const noexcept = 0;
 };
 
 }

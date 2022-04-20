@@ -17,6 +17,9 @@
 #include <tateyama/framework/repository.h>
 #include <tateyama/framework/resource.h>
 #include <tateyama/framework/service.h>
+#include <tateyama/framework/endpoint.h>
+#include <tateyama/framework/router.h>
+#include <tateyama/framework/server.h>
 
 #include <gtest/gtest.h>
 
@@ -31,7 +34,7 @@ class framework_test : public ::testing::Test {
 using namespace std::string_view_literals;
 
 TEST_F(framework_test, basic) {
-
+    server sv{};
 }
 
 }

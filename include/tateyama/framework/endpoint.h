@@ -15,19 +15,13 @@
  */
 #pragma once
 
-#include <functional>
-#include <memory>
-#include <type_traits>
-
 #include <tateyama/framework/component.h>
-#include <tateyama/api/server/request.h>
-#include <tateyama/api/server/response.h>
 
 namespace tateyama::framework {
 
-using tateyama::api::server::request;
-using tateyama::api::server::response;
-
+/**
+ * @brief endpoint component
+ */
 class endpoint : public component {
     // intentionally blank
 };
