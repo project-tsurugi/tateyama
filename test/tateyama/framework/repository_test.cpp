@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <tateyama/framework/component.h>
 #include <tateyama/framework/repository.h>
+
 #include <tateyama/framework/resource.h>
 #include <tateyama/framework/service.h>
 #include <tateyama/framework/endpoint.h>
@@ -28,16 +28,16 @@ namespace tateyama::framework {
 
 using namespace std::literals::string_literals;
 
-class framework_test : public ::testing::Test {
+class repository_test : public ::testing::Test {
 
 };
 
 using namespace std::string_view_literals;
 
-class test_resource : public resource {
+class test_resource0 : public resource {
 public:
     static constexpr id_type tag = 0;
-    test_resource() = default;
+    test_resource0() = default;
     [[nodiscard]] id_type id() const noexcept override {
         return tag;
     }
@@ -46,37 +46,34 @@ public:
     void shutdown(environment&) override {}
 };
 
-class test_service : public service {
+class test_resource1 : public resource {
 public:
-    static constexpr id_type tag = 0;
-
-    test_service() = default;
-
+    static constexpr id_type tag = 1;
+    test_resource1() = default;
     [[nodiscard]] id_type id() const noexcept override {
         return tag;
-    }
-
-    void operator()(
-        std::shared_ptr<request> req,
-        std::shared_ptr<response> res) override {
-        (void)req;
-        (void)res;
     }
     void setup(environment&) override {}
     void start(environment&) override {}
     void shutdown(environment&) override {}
 };
 
-TEST_F(framework_test, server_api) {
-    auto cfg = api::configuration::create_configuration("");
-    server sv{boot_mode::database_server, cfg};
-    //register_components(server);
-    sv.add_resource(std::make_shared<test_resource>());
-    sv.add_service(std::make_shared<test_service>());
+TEST_F(repository_test, basic) {
+    repository<resource> rep{};
+    auto res0 = std::make_shared<test_resource0>();
+    auto res1 = std::make_shared<test_resource1>();
+    rep.add(res0);
+    rep.add(res1);
+    int cnt = 0;
+    rep.each([&](resource& res){
+        ASSERT_EQ(cnt, res.id());
+        ++cnt;
+    });
 
-    sv.start();
-    sv.shutdown();
+    EXPECT_EQ(res1, rep.find_by_id(1));
+    EXPECT_EQ(res0, rep.find_by_id(0));
+    EXPECT_EQ(res0, rep.find<test_resource0>());
+    EXPECT_EQ(res1, rep.find<test_resource1>());
 }
-
 
 }

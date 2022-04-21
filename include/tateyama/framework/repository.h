@@ -50,10 +50,7 @@ public:
      * @return the found component
      * @return nullptr if not found
      */
-    [[nodiscard]]
-//    std::enable_if_t<std::is_same_v<T, resource> || std::is_same_v<T, service>, std::shared_ptr<T>>
-    std::shared_ptr<T>
-        find_by_id(component::id_type id) {
+    [[nodiscard]] std::shared_ptr<T> find_by_id(component::id_type id) {
         for(auto&& x : entity_) {
             if(x->id() == id) {
                 return x;
@@ -69,9 +66,9 @@ public:
      */
     template<class U>
     std::shared_ptr<U> find() {
-        static_assert(std::is_same_v<decltype(U::tag), component::id_type>);
-        auto* c = find_by_id(U::tag);
-        return static_cast<U*>(c);
+        static_assert(std::is_same_v<std::remove_const_t<decltype(U::tag)>, component::id_type>);
+        auto c = find_by_id(U::tag);
+        return std::static_pointer_cast<U>(c);
     }
 
 private:
