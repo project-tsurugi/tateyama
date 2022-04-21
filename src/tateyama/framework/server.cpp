@@ -29,27 +29,22 @@
 namespace tateyama::framework {
 
 void server::add_resource(std::shared_ptr<resource> arg) {
-    BOOST_ASSERT(environment_); //NOLINT
     environment_->resource_repository().add(std::move(arg));
 }
 
 void server::add_service(std::shared_ptr<service> arg) {
-    BOOST_ASSERT(environment_); //NOLINT
     environment_->service_repository().add(std::move(arg));
 }
 
 void server::add_endpoint(std::shared_ptr<endpoint> arg) {
-    BOOST_ASSERT(environment_); //NOLINT
     environment_->endpoint_repository().add(std::move(arg));
 }
 
 std::shared_ptr<resource> server::find_resource_by_id(component::id_type id) {
-    BOOST_ASSERT(environment_); //NOLINT
     return environment_->resource_repository().find_by_id(id);
 }
 
 void server::start() {
-    BOOST_ASSERT(environment_); //NOLINT
     environment_->resource_repository().each([=](resource& arg){
         arg.setup(*environment_);
     });
@@ -72,7 +67,6 @@ void server::start() {
 }
 
 void server::shutdown() {
-    BOOST_ASSERT(environment_); //NOLINT
     environment_->endpoint_repository().each([=](endpoint& arg){
         arg.shutdown(*environment_);
     });
@@ -82,6 +76,10 @@ void server::shutdown() {
     environment_->resource_repository().each([=](resource& arg){
         arg.shutdown(*environment_);
     });
+}
+
+std::shared_ptr<service> server::find_service_by_id(component::id_type id) {
+    return environment_->service_repository().find_by_id(id);
 }
 }
 

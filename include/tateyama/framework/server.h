@@ -94,9 +94,24 @@ public:
      * @return the found resource
      * @return nullptr if not found
      */
-    template<class T> std::shared_ptr<resource> get_resource() {
-        BOOST_ASSERT(environment_); //NOLINT
+    template<class T> std::shared_ptr<resource> find_resource() {
         return environment_->resource_repository().find<T>();
+    }
+
+    /**
+     * @brief find the service by service id
+     * @return the found service
+     * @return nullptr if not found
+     */
+    std::shared_ptr<service> find_service_by_id(component::id_type id);
+
+    /**
+     * @brief find the service for the given type
+     * @return the found service
+     * @return nullptr if not found
+     */
+    template<class T> std::shared_ptr<service> find_service() {
+        return environment_->service_repository().find<T>();
     }
 
     /**
