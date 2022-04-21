@@ -69,9 +69,7 @@ public:
 
 TEST_F(framework_test, server_api) {
     auto cfg = api::configuration::create_configuration("");
-    auto env = std::make_shared<environment>();
-    env->initialize(boot_mode::database_server, cfg);
-    server sv{env};
+    server sv{boot_mode::database_server, cfg};
     //register_components(server);
     sv.add_resource(std::make_shared<test_resource>());
     sv.add_service(std::make_shared<test_service>());

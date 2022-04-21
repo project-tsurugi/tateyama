@@ -28,10 +28,6 @@
 
 namespace tateyama::framework {
 
-server::server(std::shared_ptr<environment> env) :
-    environment_(std::move(env))
-{}
-
 void server::add_resource(std::shared_ptr<resource> arg) {
     BOOST_ASSERT(environment_); //NOLINT
     environment_->resource_repository().add(std::move(arg));
@@ -47,7 +43,7 @@ void server::add_endpoint(std::shared_ptr<endpoint> arg) {
     environment_->endpoint_repository().add(std::move(arg));
 }
 
-std::shared_ptr<resource> server::get_resource_by_id(component::id_type id) {
+std::shared_ptr<resource> server::find_resource_by_id(component::id_type id) {
     BOOST_ASSERT(environment_); //NOLINT
     return environment_->resource_repository().find_by_id(id);
 }

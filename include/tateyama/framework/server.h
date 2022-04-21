@@ -51,9 +51,12 @@ public:
 
     /**
      * @brief create new object with environment
-     * @param env the environment for the server to acted upon
+     * @param mode framework boot mode on this environment
+     * @param cfg configuration for the environment.
      */
-    explicit server(std::shared_ptr<environment> env);
+    explicit server(framework::boot_mode mode, std::shared_ptr<api::configuration::whole> cfg) :
+        environment_(std::make_shared<environment>(mode, std::move(cfg)))
+    {}
 
     /**
      * @brief add new resource to manage life cycle
@@ -84,7 +87,7 @@ public:
      * @return the found resource
      * @return nullptr if not found
      */
-    std::shared_ptr<resource> get_resource_by_id(component::id_type id);
+    std::shared_ptr<resource> find_resource_by_id(component::id_type id);
 
     /**
      * @brief find the resource for the given type

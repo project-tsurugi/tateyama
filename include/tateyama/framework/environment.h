@@ -27,10 +27,18 @@ namespace tateyama::framework {
 
 class environment {
 public:
+
     /**
-     * @brief create new object
+     * @brief create empty object
      */
-    environment() = default;
+     environment() = default;
+
+    /**
+     * @brief initialize environment with configuration file
+     * @param mode framework boot mode on this environment
+     * @param cfg configuration for the environment.
+     */
+    environment(boot_mode mode, std::shared_ptr<api::configuration::whole> cfg);
 
     /**
      * @brief destruct the object
@@ -41,12 +49,6 @@ public:
     environment& operator=(environment const& other) = default;
     environment(environment&& other) noexcept = default;
     environment& operator=(environment&& other) noexcept = default;
-
-    /**
-     * @brief initialize environment with configuration file
-     * @param cfg configuration for the environment. Specify nullptr to use default.
-     */
-    void initialize(boot_mode mode, std::shared_ptr<api::configuration::whole> cfg = {});
 
     /**
      * @brief accessor to the framework boot mode

@@ -46,13 +46,10 @@ repository<endpoint>& environment::endpoint_repository() {
     return endpoint_repository_;
 }
 
-void environment::initialize(boot_mode mode, std::shared_ptr<api::configuration::whole> cfg) {
-    mode_ = mode;
-    if(cfg == nullptr) {
-        cfg = std::make_shared<api::configuration::whole>("");
-    }
-    configuration_ = std::move(cfg);
-}
+environment::environment(boot_mode mode, std::shared_ptr<api::configuration::whole> cfg) :
+    mode_(mode),
+    configuration_(std::move(cfg))
+{}
 
 }
 
