@@ -562,6 +562,8 @@ public:
         bool equal(boost::interprocess::managed_shared_memory::handle_t handle) {
             return handle == buffer_handle_;
         }
+        void reset_handle() { buffer_handle_ = 0; }
+        [[nodiscard]] boost::interprocess::managed_shared_memory::handle_t get_handle() const { return buffer_handle_; }
 
     private:
         void write(char* base, const char* from, std::size_t length) {
@@ -661,6 +663,7 @@ public:
     void release(unidirectional_simple_wire* wire) {
         char* buffer = wire->get_bip_address(managed_shm_ptr_);
 
+        unidirectional_simple_wires_.at(search_wire(wire)).reset_handle();
         if (reserved_ == nullptr) {
             reserved_ = buffer;
         } else {
@@ -760,6 +763,14 @@ private:
         for (std::size_t index = 0; index < next_index_; index++) {
             if (unidirectional_simple_wires_.at(index).equal(0)) {
                 count_using_++;
+                return index;
+            }
+        }
+        std::abort();  // FIXME
+    }
+    std::size_t search_wire(unidirectional_simple_wire* wire) {
+        for (std::size_t index = 0; index < next_index_; index++) {
+            if (unidirectional_simple_wires_.at(index).equal(wire->get_handle())) {
                 return index;
             }
         }
