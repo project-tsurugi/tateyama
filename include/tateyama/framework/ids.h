@@ -30,7 +30,7 @@ static constexpr component::id_type resource_id_sql = 2;
 
 // service
 static constexpr component::id_type service_id_routing = 0;
-static constexpr component::id_type service_id_backup = 1;
+static constexpr component::id_type service_id_datastore = 1;
 static constexpr component::id_type service_id_sql = 2;
 
 }
