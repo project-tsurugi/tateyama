@@ -1,3 +1,16 @@
+#file(GLOB ProtoFiles
+#        "tateyama/proto/*.proto"
+#        "tateyama/proto/framework/*.proto"
+#        )
+file(GLOB_RECURSE ProtoFiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "*.proto")
+
+# By default, PROTOBUF_GENERATE_CPP generates file path for .pb.cc as if they are in the same directory.
+# Work-around this with PROTOBUF_GENERATE_CPP_APPEND_PATH
+set(PROTOBUF_GENERATE_CPP_APPEND_PATH OFF)
+PROTOBUF_GENERATE_CPP(GENERATED_PROTO_SRCS GENERATED_PROTO_HDRS ${ProtoFiles})
+add_custom_target(build_protos DEPENDS ${GENERATED_PROTO_SRCS})
+set(GENERATED_PROTO_SRCS ${GENERATED_PROTO_SRCS} PARENT_SCOPE)
+
 file(GLOB SOURCES
         "tateyama/*.cpp"
         "tateyama/bootstrap/*.cpp"
@@ -42,7 +55,8 @@ set_target_properties(${ENGINE} PROPERTIES
         )
 
 target_include_directories(${ENGINE}
-        PRIVATE ${CMAKE_BINARY_DIR}/protos
+        PRIVATE
+        PRIVATE ${CMAKE_BINARY_DIR}/src
         PRIVATE .
 )
 

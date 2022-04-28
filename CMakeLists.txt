@@ -113,7 +113,6 @@ install(
     EXPORT_LINK_INTERFACE_LIBRARIES
 )
 
-add_subdirectory(protos)
 add_subdirectory(src)
 if(BUILD_TESTS)
     add_subdirectory(test)

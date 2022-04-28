@@ -23,8 +23,8 @@
 #include <tateyama/framework/environment.h>
 
 #include <gtest/gtest.h>
-#include "framework/request.pb.h"
-#include "framework/response.pb.h"
+#include <tateyama/proto/framework/request.pb.h>
+#include <tateyama/proto/framework/response.pb.h>
 
 namespace tateyama::framework {
 
