@@ -60,8 +60,8 @@ find_package(Boost
         REQUIRED
         )
 find_package(TBB REQUIRED)
-find_package(Protobuf REQUIRED) # temporary
-find_package(msgpack REQUIRED) # temporary
+find_package(Protobuf REQUIRED)
+find_package(msgpack REQUIRED)
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 include(CompileOptions)
@@ -113,7 +113,7 @@ install(
     EXPORT_LINK_INTERFACE_LIBRARIES
 )
 
-add_subdirectory(protos) # temporary
+add_subdirectory(protos)
 add_subdirectory(src)
 if(BUILD_TESTS)
     add_subdirectory(test)

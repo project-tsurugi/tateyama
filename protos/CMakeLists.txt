@@ -1,11 +1,18 @@
 file(GLOB ProtoFiles
-        "../third_party/tsubakuro/modules/proto/src/main/protos/*.proto"
+        "*.proto"
+        "framework/*.proto"
         )
 
 PROTOBUF_GENERATE_CPP(ProtobufSources ProtobufHeaders ${ProtoFiles})
 
-set(GENERATED_PROTO_SRCS ${ProtobufSources} PARENT_SCOPE)
+# PROTOBUF_GENERATE_CPP has limitation and can handle proto files only one single directory
+# To work-around, hard-code generated file paths.
+list(APPEND SRCS
+        ${CMAKE_BINARY_DIR}/protos/diagnostics.pb.cc
+        ${CMAKE_BINARY_DIR}/protos/framework/request.pb.cc
+        ${CMAKE_BINARY_DIR}/protos/framework/response.pb.cc
+        )
 
-add_custom_target(build_protos
-        DEPENDS ${ProtobufSources}
-)
+set(GENERATED_PROTO_SRCS ${SRCS} PARENT_SCOPE)
+
+add_custom_target(build_protos DEPENDS ${ProtobufSources})

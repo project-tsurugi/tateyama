@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package tateyama.proto.framework.request;
+package tateyama.proto.framework.response;
 
 option java_package = "com.nautilus_technologies.tateyama.proto";
 option java_outer_classname = "FrameworkResponseProtos";
@@ -8,7 +8,7 @@ option java_outer_classname = "FrameworkResponseProtos";
 // common response header for client to receive
 message Header {
   // the request message version.
-  uint32 message_version = 1;
+  uint64 message_version = 1;
 
   // reserved for system use
   reserved 2 to 10;
@@ -26,7 +26,7 @@ message Header {
   };
 
   // session ID.
-  uint32 session_id = 11;
+  uint64 session_id = 11;
 
   // the response payload type.
   PayloadType payload_type = 12;

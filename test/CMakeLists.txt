@@ -1,11 +1,24 @@
 set(test_target tateyama-test)
 
+set_source_files_properties(
+        ${GENERATED_PROTO_SRCS}
+        PROPERTIES
+        GENERATED TRUE
+        COMPILE_FLAGS -Wno-unused-parameter
+)
+
 add_executable(${test_target}
         main.cpp
+        ${GENERATED_PROTO_SRCS}
+        )
+
+add_dependencies(${test_target}
+        build_protos
         )
 
 target_include_directories(${test_target}
         PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
+        PRIVATE ${CMAKE_BINARY_DIR}/protos
         )
 
 target_link_libraries(${test_target}
