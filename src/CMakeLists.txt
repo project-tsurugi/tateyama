@@ -9,10 +9,7 @@ set(GENERATED_PROTO_SRCS ${GENERATED_PROTO_SRCS} PARENT_SCOPE)
 
 file(GLOB SOURCES
         "tateyama/*.cpp"
-        "tateyama/bootstrap/*.cpp"
-        "tateyama/server/*.cpp"
-        "tateyama/task_scheduler/*.cpp"
-        "tateyama/registry/*.cpp"
+        "tateyama/datastore/*.cpp"
         "tateyama/endpoint/service/*.cpp"
         "tateyama/endpoint/service/impl/*.cpp"
         "tateyama/endpoint/ipc/*.cpp"
@@ -20,7 +17,10 @@ file(GLOB SOURCES
         "tateyama/endpoint/stream/*.cpp"
         "tateyama/endpoint/stream/bootstrap/*.cpp"
         "tateyama/framework/*.cpp"
+        "tateyama/server/*.cpp"
+        "tateyama/task_scheduler/*.cpp"
         "tateyama/utils/*.cpp"
+        "tateyama/registry/*.cpp"
 )
 
 if(TRACY_ENABLE)

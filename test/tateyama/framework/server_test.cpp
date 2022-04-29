@@ -21,6 +21,8 @@
 #include <tateyama/framework/routing_service.h>
 #include <tateyama/framework/server.h>
 #include <tateyama/framework/environment.h>
+#include <tateyama/framework/task_scheduler_resource.h>
+#include <tateyama/framework/transactional_kvs_resource.h>
 
 #include <gtest/gtest.h>
 
@@ -118,6 +120,10 @@ TEST_F(server_test, install_core_components) {
 
     auto router = sv.find_service<routing_service>();
     ASSERT_TRUE(router);
+    auto sched = sv.find_resource<task_scheduler_resource>();
+    ASSERT_TRUE(sched);
+    auto kvs = sv.find_resource<transactional_kvs_resource>();
+    ASSERT_TRUE(kvs);
     sv.start();
     sv.shutdown();
 }

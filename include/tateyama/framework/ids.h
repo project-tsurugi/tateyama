@@ -23,7 +23,7 @@ namespace tateyama::framework {
 static constexpr component::id_type resource_id_task_scheduler = 0;
 static constexpr component::id_type resource_id_transactional_kvs = 1;
 static constexpr component::id_type resource_id_sql = 2;
-//static constexpr component::id_type resource_id_datastore = 3;
+static constexpr component::id_type resource_id_datastore = 3;
 //static constexpr component::id_type resource_id_session = 4;
 //static constexpr component::id_type resource_id_status = 5;
 //static constexpr component::id_type resource_id_mutex = 6;
