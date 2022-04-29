@@ -120,12 +120,18 @@ TEST_F(server_test, install_core_components) {
 
     auto router = sv.find_service<routing_service>();
     ASSERT_TRUE(router);
-    auto sched = sv.find_resource<task_scheduler_resource>();
-    ASSERT_TRUE(sched);
     auto kvs = sv.find_resource<transactional_kvs_resource>();
     ASSERT_TRUE(kvs);
     sv.start();
     sv.shutdown();
 }
 
+TEST_F(server_test, add_task_scheduler) {
+    auto cfg = api::configuration::create_configuration("");
+    server sv{boot_mode::database_server, cfg};
+    struct task {};
+    sv.add_resource(std::make_shared<task_scheduler_resource<task>>());
+    auto sched = sv.find_resource<task_scheduler_resource<task>>();
+    ASSERT_TRUE(sched);
+}
 }

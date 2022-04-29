@@ -90,7 +90,6 @@ std::shared_ptr<service> server::find_service_by_id(component::id_type id) {
 }
 
 void install_core_components(server& svr) {
-    svr.add_resource(std::make_shared<framework::task_scheduler_resource>());
     svr.add_resource(std::make_shared<framework::transactional_kvs_resource>());
     svr.add_resource(std::make_shared<datastore::datastore_resource>());
 

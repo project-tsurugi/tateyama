@@ -15,34 +15,49 @@
  */
 #pragma once
 
+#include <memory>
+
 #include <tateyama/framework/ids.h>
 #include <tateyama/framework/resource.h>
+#include <tateyama/api/task_scheduler/scheduler.h>
 
 namespace tateyama::framework {
 
 /**
  * @brief resource component
  */
+template <class T>
 class task_scheduler_resource : public resource {
 public:
     static constexpr id_type tag = resource_id_task_scheduler;
 
-    [[nodiscard]] id_type id() const noexcept override;
+    [[nodiscard]] id_type id() const noexcept override {
+        return tag;
+    }
 
     /**
      * @brief setup the component (the state will be `ready`)
      */
-    void setup(environment&) override;
+    void setup(environment&) override {
+        // no-op
+    }
 
     /**
      * @brief start the component (the state will be `activated`)
      */
-    void start(environment&) override;
+    void start(environment&) override {
+        scheduler_->start();
+    }
 
     /**
      * @brief shutdown the component (the state will be `deactivated`)
      */
-    void shutdown(environment&) override;
+    void shutdown(environment&) override {
+        scheduler_->stop();
+    }
+
+private:
+    std::unique_ptr<api::task_scheduler::scheduler<T>> scheduler_{};
 };
 
 }
