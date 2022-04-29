@@ -18,7 +18,7 @@
 #include <tateyama/framework/resource.h>
 #include <tateyama/framework/service.h>
 #include <tateyama/framework/endpoint.h>
-#include <tateyama/framework/router.h>
+#include <tateyama/framework/routing_service.h>
 #include <tateyama/framework/server.h>
 #include <tateyama/framework/environment.h>
 
@@ -83,6 +83,7 @@ public:
     void start(environment&) override {}
     void shutdown(environment&) override {}
 };
+
 TEST_F(server_test, basic) {
     auto cfg = api::configuration::create_configuration("");
     server sv{boot_mode::database_server, cfg};
@@ -104,6 +105,21 @@ TEST_F(server_test, basic) {
     EXPECT_EQ(svc1, sv.find_service_by_id(1));
     EXPECT_EQ(svc0, sv.find_service<test_service0>());
     EXPECT_EQ(svc1, sv.find_service<test_service1>());
+
+    sv.start();
+    sv.shutdown();
+}
+
+TEST_F(server_test, install_core_components) {
+    auto cfg = api::configuration::create_configuration("");
+    server sv{boot_mode::database_server, cfg};
+    auto res0 = std::make_shared<test_resource0>();
+    install_core_components(sv);
+
+    auto router = sv.find_service<routing_service>();
+    ASSERT_TRUE(router);
+    sv.start();
+    sv.shutdown();
 }
 
 }

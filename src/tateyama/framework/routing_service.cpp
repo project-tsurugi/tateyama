@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <tateyama/framework/router.h>
+#include <tateyama/framework/routing_service.h>
 
 #include <functional>
 #include <memory>

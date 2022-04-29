@@ -25,6 +25,7 @@
 #include <tateyama/framework/endpoint.h>
 #include <tateyama/framework/boot_mode.h>
 #include <tateyama/api/configuration.h>
+#include <tateyama/framework/routing_service.h>
 
 namespace tateyama::framework {
 
@@ -45,35 +46,35 @@ std::shared_ptr<resource> server::find_resource_by_id(component::id_type id) {
 }
 
 void server::start() {
-    environment_->resource_repository().each([=](resource& arg){
+    environment_->resource_repository().each([this](resource& arg){
         arg.setup(*environment_);
     });
-    environment_->service_repository().each([=](service& arg){
+    environment_->service_repository().each([this](service& arg){
         arg.setup(*environment_);
     });
-    environment_->endpoint_repository().each([=](endpoint& arg){
+    environment_->endpoint_repository().each([this](endpoint& arg){
         arg.setup(*environment_);
     });
 
-    environment_->resource_repository().each([=](resource& arg){
+    environment_->resource_repository().each([this](resource& arg){
         arg.start(*environment_);
     });
-    environment_->service_repository().each([=](service& arg){
+    environment_->service_repository().each([this](service& arg){
         arg.start(*environment_);
     });
-    environment_->endpoint_repository().each([=](endpoint& arg){
+    environment_->endpoint_repository().each([this](endpoint& arg){
         arg.start(*environment_);
     });
 }
 
 void server::shutdown() {
-    environment_->endpoint_repository().each([=](endpoint& arg){
+    environment_->endpoint_repository().each([this](endpoint& arg){
         arg.shutdown(*environment_);
     });
-    environment_->service_repository().each([=](service& arg){
+    environment_->service_repository().each([this](service& arg){
         arg.shutdown(*environment_);
     });
-    environment_->resource_repository().each([=](resource& arg){
+    environment_->resource_repository().each([this](resource& arg){
         arg.shutdown(*environment_);
     });
 }
@@ -81,5 +82,10 @@ void server::shutdown() {
 std::shared_ptr<service> server::find_service_by_id(component::id_type id) {
     return environment_->service_repository().find_by_id(id);
 }
+
+void install_core_components(server& svr) {
+    svr.add_service(std::make_shared<framework::routing_service>());
+}
+
 }
 

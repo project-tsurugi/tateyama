@@ -130,5 +130,13 @@ private:
     std::shared_ptr<environment> environment_{std::make_shared<environment>()};
 };
 
+/**
+ * @brief install tateyama core components
+ * @param svr the server to add comopnents to
+ * @details This function add core components such as router, endpoint,
+ * that are built-in part of tateyama infrastructure.
+ */
+void install_core_components(server& svr);
+
 }
 
