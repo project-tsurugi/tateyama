@@ -1,7 +1,3 @@
-#file(GLOB ProtoFiles
-#        "tateyama/proto/*.proto"
-#        "tateyama/proto/framework/*.proto"
-#        )
 file(GLOB_RECURSE ProtoFiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "*.proto")
 
 # By default, PROTOBUF_GENERATE_CPP generates file path for .pb.cc as if they are in the same directory.
