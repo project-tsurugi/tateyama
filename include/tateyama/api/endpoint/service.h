@@ -17,6 +17,7 @@
 
 #include <tateyama/status.h>
 #include <tateyama/api/environment.h>
+#include <tateyama/framework/endpoint_broker.h>
 
 namespace tateyama::api::server {
 class service;
@@ -31,7 +32,7 @@ class response;
  * @brief tateyama service interface
  * @details this object provides access to send request and receive response to/from tateyama server application
  */
-class service {
+class service : public tateyama::framework::endpoint_broker {
 public:
     /**
      * @brief create empty object
@@ -68,6 +69,12 @@ public:
         std::shared_ptr<tateyama::api::endpoint::request const> req,
         std::shared_ptr<tateyama::api::endpoint::response> res
     ) = 0;
+
+    void setup(framework::environment&) override {}
+
+    void start(framework::environment&) override {}
+
+    void shutdown(framework::environment&) override {}
 };
 
 /**

@@ -28,7 +28,7 @@
 #include <tateyama/framework/routing_service.h>
 #include <tateyama/framework/task_scheduler_resource.h>
 #include <tateyama/framework/transactional_kvs_resource.h>
-#include <tateyama/framework/ipc_endpoint.h>
+#include <tateyama/endpoint/ipc/bootstrap/ipc_endpoint.h>
 #include <tateyama/framework/stream_endpoint.h>
 #include <tateyama/datastore/datastore_service.h>
 #include <tateyama/datastore/datastore_resource.h>

@@ -16,6 +16,8 @@
 #pragma once
 
 #include <tateyama/framework/endpoint.h>
+#include <tateyama/framework/environment.h>
+#include "listener.h"
 
 namespace tateyama::framework {
 
@@ -23,20 +25,37 @@ namespace tateyama::framework {
  * @brief ipc endpoint component
  */
 class ipc_endpoint : public endpoint {
+public:
+
     /**
      * @brief setup the component (the state will be `ready`)
      */
-    void setup(environment&) override;
+    void setup(environment& env) override {
+        // create listener object
+        listener_ = std::make_unique<tateyama::server::listener>(
+            env.configuration(),
+            env.service_repository().find<framework::endpoint_broker>()
+        );
+    }
 
     /**
      * @brief start the component (the state will be `activated`)
      */
-    void start(environment&) override;
+    void start(environment&) override {
+        listener_thread_ = std::thread(std::ref(*listener_));
+    }
 
     /**
      * @brief shutdown the component (the state will be `deactivated`)
      */
-    void shutdown(environment&) override;
+    void shutdown(environment&) override {
+        listener_->terminate();
+        listener_thread_.join();
+    }
+
+private:
+    std::unique_ptr<tateyama::server::listener> listener_;
+    std::thread listener_thread_;
 };
 
 }

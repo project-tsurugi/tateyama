@@ -13,21 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <tateyama/framework/ipc_endpoint.h>
+#include <tateyama/endpoint/ipc/bootstrap/ipc_endpoint.h>
 
 namespace tateyama::framework {
-
-void ipc_endpoint::setup(environment&) {
-    //TODO
-}
-
-void ipc_endpoint::start(environment&) {
-    //TODO
-}
-
-void ipc_endpoint::shutdown(environment&) {
-    //TODO
-}
 
 }
 

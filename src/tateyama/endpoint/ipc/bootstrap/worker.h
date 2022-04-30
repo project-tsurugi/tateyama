@@ -31,7 +31,7 @@ class ipc_provider;
 
 class Worker {
  public:
-    Worker(tateyama::api::endpoint::service& service, std::size_t session_id, std::unique_ptr<tateyama::common::wire::server_wire_container_impl> wire)
+    Worker(tateyama::framework::endpoint_broker& service, std::size_t session_id, std::unique_ptr<tateyama::common::wire::server_wire_container_impl> wire)
         : service_(service), wire_(std::move(wire)),
           request_wire_container_(dynamic_cast<tateyama::common::wire::server_wire_container_impl::wire_container_impl*>(wire_->get_request_wire())),
           session_id_(session_id) {
@@ -49,10 +49,11 @@ class Worker {
     Worker& operator = (Worker&&) = delete;
 
     void run();
+    friend class listener;
     friend class ipc_provider;
 
  private:
-    tateyama::api::endpoint::service& service_;
+    tateyama::framework::endpoint_broker& service_;
     std::unique_ptr<tateyama::common::wire::server_wire_container_impl> wire_;
     tateyama::common::wire::server_wire_container_impl::wire_container_impl* request_wire_container_;
     std::size_t session_id_;
