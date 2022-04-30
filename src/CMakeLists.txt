@@ -1,3 +1,7 @@
+if(NOT TARGET sharksfin-${SHARKSFIN_IMPLEMENTATION})
+    message(FATAL_ERROR "sharksfin implementation \"sharksfin-${SHARKSFIN_IMPLEMENTATION}\" not found")
+endif()
+
 file(GLOB_RECURSE ProtoFiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "*.proto")
 
 # By default, PROTOBUF_GENERATE_CPP generates file path for .pb.cc as if they are in the same directory.
@@ -58,6 +62,7 @@ target_include_directories(${ENGINE}
 
 target_link_libraries(${ENGINE}
         PUBLIC api
+        PUBLIC sharksfin-${SHARKSFIN_IMPLEMENTATION}
         PRIVATE takatori
         PRIVATE tbb
         PRIVATE numa

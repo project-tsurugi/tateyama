@@ -120,8 +120,9 @@ TEST_F(server_test, install_core_components) {
 
     auto router = sv.find_service<routing_service>();
     ASSERT_TRUE(router);
-    auto kvs = sv.find_resource<transactional_kvs_resource>();
+    auto kvs = std::static_pointer_cast<transactional_kvs_resource>(sv.find_resource<transactional_kvs_resource>());
     ASSERT_TRUE(kvs);
+    kvs->handle();
     sv.start();
     sv.shutdown();
 }

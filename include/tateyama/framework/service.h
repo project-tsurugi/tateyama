@@ -31,8 +31,15 @@ using tateyama::api::server::response;
 class service: public component {
 public:
 
+    /**
+     * @brief retrieve id
+     * @return the component id of this service. Unique among services.
+     */
     [[nodiscard]] virtual id_type id() const noexcept = 0;
 
+    /**
+     * @brief interface to exchange request and response
+     */
     virtual void operator()(
         std::shared_ptr<request> req,
         std::shared_ptr<response> res) = 0;

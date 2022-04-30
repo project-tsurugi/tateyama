@@ -24,6 +24,10 @@ namespace tateyama::framework {
  */
 class resource : public component {
 public:
+    /**
+     * @brief retrieve id
+     * @return the component id of this resource. Unique among resources.
+     */
     [[nodiscard]] virtual id_type id() const noexcept = 0;
 };
 

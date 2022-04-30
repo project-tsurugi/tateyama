@@ -15,6 +15,8 @@
  */
 #pragma once
 
+#include <sharksfin/api.h>
+
 #include <tateyama/framework/ids.h>
 #include <tateyama/framework/resource.h>
 
@@ -27,6 +29,25 @@ class transactional_kvs_resource : public resource {
 public:
     static constexpr id_type tag = resource_id_transactional_kvs;
 
+    /**
+     * @brief create empty object
+     */
+    transactional_kvs_resource() = default;
+
+    transactional_kvs_resource(transactional_kvs_resource const& other) = delete;
+    transactional_kvs_resource& operator=(transactional_kvs_resource const& other) = delete;
+    transactional_kvs_resource(transactional_kvs_resource&& other) noexcept = delete;
+    transactional_kvs_resource& operator=(transactional_kvs_resource&& other) noexcept = delete;
+
+    /**
+     * @brief create new object
+     */
+    explicit transactional_kvs_resource(sharksfin::DatabaseHandle handle) noexcept;
+
+    /**
+     * @brief retrieve id
+     * @return the component id of this resource. Unique among resources.
+     */
     [[nodiscard]] id_type id() const noexcept override;
 
     /**
@@ -43,6 +64,14 @@ public:
      * @brief shutdown the component (the state will be `deactivated`)
      */
     void shutdown(environment&) override;
+
+    /**
+     * @brief accessor to the native handle
+     */
+    [[nodiscard]] sharksfin::DatabaseHandle handle() const noexcept;
+
+private:
+    sharksfin::DatabaseHandle database_handle_{};
 };
 
 }

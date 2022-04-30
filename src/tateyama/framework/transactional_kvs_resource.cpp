@@ -35,5 +35,13 @@ void transactional_kvs_resource::shutdown(environment&) {
 component::id_type transactional_kvs_resource::id() const noexcept {
     return tag;
 }
+
+sharksfin::DatabaseHandle transactional_kvs_resource::handle() const noexcept {
+    return database_handle_;
+}
+
+transactional_kvs_resource::transactional_kvs_resource(sharksfin::DatabaseHandle handle) noexcept:
+    database_handle_(handle)
+{}
 }
 
