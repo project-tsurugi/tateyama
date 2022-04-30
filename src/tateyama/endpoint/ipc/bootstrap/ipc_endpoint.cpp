@@ -13,21 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <tateyama/framework/stream_endpoint.h>
+#include "ipc_endpoint.h"
 
 namespace tateyama::framework {
-
-void stream_endpoint::setup(environment&) {
-    //TODO
-}
-
-void stream_endpoint::start(environment&) {
-    //TODO
-}
-
-void stream_endpoint::shutdown(environment&) {
-    //TODO
-}
 
 }
 

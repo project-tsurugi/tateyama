@@ -49,7 +49,7 @@ class Worker {
     Worker& operator = (Worker&&) = delete;
 
     void run();
-    friend class listener;
+    friend class ipc_listener;
     friend class ipc_provider;
 
  private:

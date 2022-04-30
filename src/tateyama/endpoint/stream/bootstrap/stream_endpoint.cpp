@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <tateyama/endpoint/ipc/bootstrap/ipc_endpoint.h>
+#include "stream_endpoint.h"
 
 namespace tateyama::framework {
 

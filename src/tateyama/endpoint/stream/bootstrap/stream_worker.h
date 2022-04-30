@@ -31,7 +31,7 @@ class stream_provider;
 
 class stream_worker {
  public:
-    stream_worker(tateyama::api::endpoint::service& service, std::size_t session_id, std::unique_ptr<tateyama::common::stream::stream_socket> stream)
+    stream_worker(tateyama::framework::endpoint_broker& service, std::size_t session_id, std::unique_ptr<tateyama::common::stream::stream_socket> stream)
         : service_(service), session_stream_(std::move(stream)), session_id_(session_id) {
     }
     ~stream_worker() {
@@ -47,10 +47,11 @@ class stream_worker {
     stream_worker& operator = (stream_worker&&) = delete;
 
     void run();
+    friend class stream_listener;
     friend class stream_provider;
 
  private:
-    tateyama::api::endpoint::service& service_;
+    tateyama::framework::endpoint_broker& service_;
     std::unique_ptr<tateyama::common::stream::stream_socket> session_stream_;
     std::size_t session_id_;
 

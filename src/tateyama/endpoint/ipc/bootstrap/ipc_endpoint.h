@@ -17,7 +17,7 @@
 
 #include <tateyama/framework/endpoint.h>
 #include <tateyama/framework/environment.h>
-#include "listener.h"
+#include "ipc_listener.h"
 
 namespace tateyama::framework {
 
@@ -32,7 +32,7 @@ public:
      */
     void setup(environment& env) override {
         // create listener object
-        listener_ = std::make_unique<tateyama::server::listener>(
+        listener_ = std::make_unique<tateyama::server::ipc_listener>(
             env.configuration(),
             env.service_repository().find<framework::endpoint_broker>()
         );
@@ -54,7 +54,7 @@ public:
     }
 
 private:
-    std::unique_ptr<tateyama::server::listener> listener_;
+    std::unique_ptr<tateyama::server::ipc_listener> listener_;
     std::thread listener_thread_;
 };
 
