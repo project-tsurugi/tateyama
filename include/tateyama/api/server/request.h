@@ -52,12 +52,12 @@ public:
     /**
      * @brief accessor to session identifier
      */
-//    virtual std::size_t session_id() const = 0;
+    [[nodiscard]] std::size_t session_id() const;
 
     /**
-     * @brief accessor to target application identifier
+     * @brief accessor to target service identifier
      */
-//    virtual std::size_t application_id() const = 0;
+    [[nodiscard]] std::size_t service_id() const;
 
     /**
      * @brief accessor to the payload binary data
@@ -71,8 +71,20 @@ public:
      */
     [[nodiscard]] std::shared_ptr<api::endpoint::request const> const& origin() const noexcept;
 
+    /**
+     * @brief create new object
+     */
+    friend std::shared_ptr<api::server::request> create_request(std::shared_ptr<api::endpoint::request const> origin);
+
 private:
     std::shared_ptr<api::endpoint::request const> origin_{};
+    std::size_t session_id_{};
+    std::size_t service_id_{};
+    std::string_view payload_{};
+
+    bool init();
 };
+
+std::shared_ptr<api::server::request> create_request(std::shared_ptr<api::endpoint::request const> origin);
 
 }

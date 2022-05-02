@@ -49,6 +49,8 @@ file(GLOB SRCS
         "tateyama/registry/*.cpp"
         "tateyama/common/*.cpp"
         "tateyama/framework/*.cpp"
+        "tateyama/server/*.cpp"
+        "tateyama/utils/*.cpp"
         )
 
 foreach(file ${SRCS})

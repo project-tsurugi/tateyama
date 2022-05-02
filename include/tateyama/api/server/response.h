@@ -50,8 +50,14 @@ public:
     response(response&& other) noexcept = default;
     response& operator=(response&& other) noexcept = default;
 
-    //    virtual void session_id(std::size_t session) = 0;
-    //    virtual void requester_id(std::size_t id) = 0;
+    /**
+     * @brief setter of the session id
+     * @param id the session id
+     * @attention this function is not thread-safe and should be called from single thread at a time.
+     */
+    void session_id(std::size_t id) {
+        session_id_ = id;
+    }
 
     /**
      * @brief setter of the tateyama response status
@@ -126,6 +132,7 @@ public:
 
 private:
     std::shared_ptr<api::endpoint::response> origin_{};
+    std::size_t session_id_{};
 };
 
 }

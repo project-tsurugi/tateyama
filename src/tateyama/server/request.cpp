@@ -15,12 +15,16 @@
  */
 #include <tateyama/api/server/request.h>
 
+#include <google/protobuf/message_lite.h>
+
 #include <tateyama/api/endpoint/request.h>
+#include <tateyama/utils/protobuf_utils.h>
+#include <tateyama/proto/framework/request.pb.h>
 
 namespace tateyama::api::server {
 
 std::string_view request::payload() const {
-    return origin_->payload();
+    return payload_;
 }
 
 std::shared_ptr<api::endpoint::request const> const& request::origin() const noexcept {
@@ -30,5 +34,36 @@ std::shared_ptr<api::endpoint::request const> const& request::origin() const noe
 request::request(std::shared_ptr<api::endpoint::request const> origin) :
     origin_(std::move(origin))
 {}
+
+bool request::init() {
+    ::tateyama::proto::framework::request::Header hdr{};
+    auto pl = origin_->payload();
+    google::protobuf::io::ArrayInputStream in{pl.data(), static_cast<int>(pl.size())};
+    if(auto res = utils::ParseDelimitedFromZeroCopyStream(std::addressof(hdr), std::addressof(in), nullptr); ! res) {
+        return false;
+    }
+    session_id_ = hdr.session_id();
+    service_id_ = hdr.service_id();
+    if(auto res = utils::GetDelimitedBodyFromZeroCopyStream(std::addressof(in), nullptr, payload_); ! res) {
+        return false;
+    }
+    return true;
+}
+
+std::size_t request::session_id() const {
+    return session_id_;
+}
+
+std::size_t request::service_id() const {
+    return service_id_;
+}
+
+std::shared_ptr<api::server::request> create_request(std::shared_ptr<api::endpoint::request const> origin) {
+    auto ret = std::make_shared<api::server::request>(std::move(origin));
+    if(auto res = ret->init(); ! res) {
+        return {};
+    }
+    return ret;
+}
 
 }

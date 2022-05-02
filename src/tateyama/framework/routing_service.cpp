@@ -19,6 +19,8 @@
 #include <memory>
 #include <type_traits>
 
+#include <takatori/util/fail.h>
+
 #include <tateyama/framework/service.h>
 #include <tateyama/framework/repository.h>
 #include <tateyama/api/server/request.h>
@@ -30,6 +32,7 @@ namespace tateyama::framework {
 
 using tateyama::api::server::request;
 using tateyama::api::server::response;
+using takatori::util::fail;
 
 component::id_type routing_service::id() const noexcept {
     return tag;
@@ -48,24 +51,22 @@ void routing_service::shutdown(environment&) {
 }
 
 void routing_service::operator()(std::shared_ptr<request> req, std::shared_ptr<response> res) {
-//        if (req->service_id() == tag) {
-//            throw ...;
-//        }
+    if (req->service_id() == tag) {
+        fail();
+    }
 
-    auto* svc = services_;
-    if (svc == nullptr) {
-        //
+    if (services_ == nullptr) {
+        fail();
     }
 
     id_type id{};
-    if (auto destination = svc->find_by_id(id); destination != nullptr) {
+    if (auto destination = services_->find_by_id(id); destination != nullptr) {
         destination->operator()(std::move(req), std::move(res));
         return;
     }
 
     // wrong address
-//
-//        res->...;
+    fail();
 }
 }
 
