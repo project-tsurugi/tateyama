@@ -160,6 +160,32 @@ bool GetDelimitedBodyFromZeroCopyStream(
     return GetDelimitedBodyFromCodedStream(&coded_input, clean_eof, out);
 }
 
+bool PutDelimitedBodyToOstream(std::string_view in, std::ostream* output) {
+    google::protobuf::io::OstreamOutputStream zero_copy_output(output);
+    if (!PutDelimitedBodyToZeroCopyStream(in, &zero_copy_output)) {
+        return false;
+    }
+    return output->good();
+
+}
+
+bool PutDelimitedBodyToZeroCopyStream(std::string_view in, google::protobuf::io::ZeroCopyOutputStream* output) {
+    google::protobuf::io::CodedOutputStream coded_output(output);
+    return PutDelimitedBodyToCodedStream(in, &coded_output);
+}
+
+bool PutDelimitedBodyToCodedStream(std::string_view in, google::protobuf::io::CodedOutputStream* output) {
+    // Write the size.
+    size_t size = in.size();
+    if (size > INT_MAX) return false;
+
+    output->WriteVarint32(size);
+
+    // Write the content.
+    output->WriteRaw(in.data(), size);
+    return true;
+}
+
 
 }
 

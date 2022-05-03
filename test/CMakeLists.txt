@@ -1,7 +1,24 @@
 set(test_target tateyama-test)
 
+file(GLOB_RECURSE ProtoFiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "*.proto")
+# By default, PROTOBUF_GENERATE_CPP generates file path for .pb.cc as if they are in the same directory.
+# Work-around this with PROTOBUF_GENERATE_CPP_APPEND_PATH
+set(PROTOBUF_GENERATE_CPP_APPEND_PATH OFF)
+PROTOBUF_GENERATE_CPP(TEST_PROTO_SRCS TEST_PROTO_HDRS ${ProtoFiles})
+add_custom_target(build_test_protos DEPENDS ${TEST_PROTO_SRCS})
+#set(TEST_PROTO_SRCS ${GENERATED_PROTO_SRCS} PARENT_SCOPE)
+
+message("TEST_PROTO_SRC" ${TEST_PROTO_SRCS})
+
 set_source_files_properties(
         ${GENERATED_PROTO_SRCS}
+        PROPERTIES
+        GENERATED TRUE
+        COMPILE_FLAGS -Wno-unused-parameter
+)
+
+set_source_files_properties(
+        ${TEST_PROTO_SRCS}
         PROPERTIES
         GENERATED TRUE
         COMPILE_FLAGS -Wno-unused-parameter
@@ -10,15 +27,18 @@ set_source_files_properties(
 add_executable(${test_target}
         main.cpp
         ${GENERATED_PROTO_SRCS}
+        ${TEST_PROTO_SRCS}
         )
 
 add_dependencies(${test_target}
         build_protos
+        build_test_protos
         )
 
 target_include_directories(${test_target}
         PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
         PRIVATE ${CMAKE_BINARY_DIR}/src
+        PRIVATE ${CMAKE_BINARY_DIR}/test
         )
 
 target_link_libraries(${test_target}

@@ -30,6 +30,9 @@ using response_code = tateyama::api::endpoint::response_code;
  */
 class response {
 public:
+    ///@brief unknown session id
+    constexpr static std::size_t unknown = static_cast<std::size_t>(-1);
+
     /**
      * @brief create empty object
      */
@@ -55,9 +58,7 @@ public:
      * @param id the session id
      * @attention this function is not thread-safe and should be called from single thread at a time.
      */
-    void session_id(std::size_t id) {
-        session_id_ = id;
-    }
+    void session_id(std::size_t id);
 
     /**
      * @brief setter of the tateyama response status
@@ -132,7 +133,9 @@ public:
 
 private:
     std::shared_ptr<api::endpoint::response> origin_{};
-    std::size_t session_id_{};
+    std::size_t session_id_{unknown};
+
+    bool append_header(std::stringstream& ss, std::string_view body) const;
 };
 
 }

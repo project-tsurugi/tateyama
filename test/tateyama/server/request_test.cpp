@@ -18,6 +18,7 @@
 #include <tateyama/api/endpoint/request.h>
 #include <tateyama/api/server/request.h>
 #include <tateyama/proto/framework/request.pb.h>
+#include <tateyama/proto/test.pb.h>
 #include <tateyama/utils/protobuf_utils.h>
 
 #include <gtest/gtest.h>
@@ -55,15 +56,12 @@ TEST_F(server_request_test, basic) {
         ::tateyama::proto::framework::request::Header hdr100{};
         hdr100.set_service_id(100);
         hdr100.set_session_id(101);
-        if (!utils::SerializeDelimitedToOstream(hdr100, &ss)) {
-            FAIL();
-        }
+        ASSERT_TRUE(utils::SerializeDelimitedToOstream(hdr100, &ss));
     }
     {
-        ::tateyama::proto::framework::request::Header hdr200{};
-        hdr200.set_service_id(200);
-        hdr200.set_session_id(201);
-        if (!utils::SerializeDelimitedToOstream(hdr200, &ss)) {
+        ::tateyama::proto::test::TestMsg msg{};
+        msg.set_id(999);
+        if (!utils::SerializeDelimitedToOstream(msg, &ss)) {
             FAIL();
         }
     }
@@ -77,10 +75,9 @@ TEST_F(server_request_test, basic) {
     EXPECT_EQ(100, svrreq->service_id());
     EXPECT_EQ(101, svrreq->session_id());
     auto pl = svrreq->payload();
-    ::tateyama::proto::framework::request::Header out{};
+    ::tateyama::proto::test::TestMsg out{};
     ASSERT_TRUE(out.ParseFromArray(pl.data(), pl.size()));
-    EXPECT_EQ(200, out.service_id());
-    EXPECT_EQ(201, out.session_id());
+    EXPECT_EQ(999, out.id());
 }
 
 }

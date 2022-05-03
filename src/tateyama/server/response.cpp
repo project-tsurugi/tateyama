@@ -15,7 +15,13 @@
  */
 #include <tateyama/api/server/response.h>
 
+#include <takatori/util/assertion.h>
+
+#include <tateyama/logging.h>
 #include <tateyama/api/endpoint/response.h>
+#include <tateyama/utils/protobuf_utils.h>
+#include <tateyama/proto/framework/response.pb.h>
+#include <glog/logging.h>
 
 namespace tateyama::api::server {
 
@@ -35,8 +41,33 @@ status response::body_head(std::string_view body_head) {
     return origin_->body_head(body_head);
 }
 
+bool response::append_header(std::stringstream& ss, std::string_view body) const {
+    ::tateyama::proto::framework::response::Header hdr{};
+    BOOST_ASSERT(session_id_ != unknown); //NOLINT
+    hdr.set_session_id(session_id_);
+    if(auto res = utils::SerializeDelimitedToOstream(hdr, std::addressof(ss)); ! res) {
+        return false;
+    }
+
+    if(auto res = utils::PutDelimitedBodyToOstream(body, std::addressof(ss)); ! res) {
+        return false;
+    }
+    return true;
+}
+
 status response::body(std::string_view body) {
-    return origin_->body(body);
+    if(session_id_ == unknown) {
+        // legacy implementation
+        // TODO remove
+        return origin_->body(body);
+    }
+    std::stringstream ss{};
+    if(auto res = append_header(ss, body); ! res) {
+        VLOG(log_error) << "error formatting response message";
+        return status::unknown;
+    }
+    auto s = ss.str();
+    return origin_->body(s);
 }
 
 status response::release_channel(data_channel& ch) {
@@ -53,5 +84,9 @@ status response::acquire_channel(std::string_view name, std::shared_ptr<data_cha
 response::response(std::shared_ptr<api::endpoint::response> origin) :
     origin_(std::move(origin))
 {}
+
+void response::session_id(std::size_t id) {
+    session_id_ = id;
+}
 
 }

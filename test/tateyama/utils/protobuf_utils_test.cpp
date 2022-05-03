@@ -18,7 +18,7 @@
 #include <gtest/gtest.h>
 #include <google/protobuf/io/zero_copy_stream.h>
 
-#include <tateyama/proto/framework/request.pb.h>
+#include <tateyama/proto/test.pb.h>
 
 namespace tateyama::api {
 
@@ -32,30 +32,21 @@ TEST_F(protobuf_utils_test, delimited_stream) {
     using namespace std::string_view_literals;
     std::stringstream ss{};
     {
-        ::tateyama::proto::framework::request::Header hdr100{};
-        hdr100.set_service_id(100);
-        hdr100.set_session_id(101);
-        if (!utils::SerializeDelimitedToOstream(hdr100, &ss)) {
-            FAIL();
-        }
+        ::tateyama::proto::test::TestMsg msg{};
+        msg.set_id(100);
+        ASSERT_TRUE(utils::SerializeDelimitedToOstream(msg, &ss));
     }
     {
-        ::tateyama::proto::framework::request::Header hdr200{};
-        hdr200.set_service_id(200);
-        hdr200.set_session_id(201);
-        if (!utils::SerializeDelimitedToOstream(hdr200, &ss)) {
-            FAIL();
-        }
+        ::tateyama::proto::test::TestMsg msg{};
+        msg.set_id(200);
+        ASSERT_TRUE(utils::SerializeDelimitedToOstream(msg, &ss));
     }
     {
-        ::tateyama::proto::framework::request::Header hdr300{};
-        hdr300.set_service_id(300);
-        hdr300.set_session_id(301);
-        if (!utils::SerializeDelimitedToOstream(hdr300, &ss)) {
-            FAIL();
-        }
+        ::tateyama::proto::test::TestMsg msg{};
+        msg.set_id(300);
+        ASSERT_TRUE(utils::SerializeDelimitedToOstream(msg, &ss));
     }
-    ::tateyama::proto::framework::request::Header out100{}, out200{}, out300{}, etc{};
+    ::tateyama::proto::test::TestMsg out100{}, out200{}, out300{}, etc{};
     bool clean_eof{false};
     google::protobuf::io::IstreamInputStream in{&ss};
     EXPECT_TRUE(utils::ParseDelimitedFromZeroCopyStream(&out100, &in, &clean_eof));
@@ -66,12 +57,9 @@ TEST_F(protobuf_utils_test, delimited_stream) {
     EXPECT_FALSE(clean_eof);
     EXPECT_FALSE(utils::ParseDelimitedFromZeroCopyStream(&etc, &in, &clean_eof));
     EXPECT_TRUE(clean_eof);
-    EXPECT_EQ(100, out100.service_id());
-    EXPECT_EQ(101, out100.session_id());
-    EXPECT_EQ(200, out200.service_id());
-    EXPECT_EQ(201, out200.session_id());
-    EXPECT_EQ(300, out300.service_id());
-    EXPECT_EQ(301, out300.session_id());
+    EXPECT_EQ(100, out100.id());
+    EXPECT_EQ(200, out200.id());
+    EXPECT_EQ(300, out300.id());
 
 }
 
@@ -79,22 +67,16 @@ TEST_F(protobuf_utils_test, get_delimited_body) {
     using namespace std::string_view_literals;
     std::stringstream ss{};
     {
-        ::tateyama::proto::framework::request::Header hdr100{};
-        hdr100.set_service_id(100);
-        hdr100.set_session_id(101);
-        if (!utils::SerializeDelimitedToOstream(hdr100, &ss)) {
-            FAIL();
-        }
+        ::tateyama::proto::test::TestMsg msg{};
+        msg.set_id(100);
+        ASSERT_TRUE(utils::SerializeDelimitedToOstream(msg, &ss));
     }
     {
-        ::tateyama::proto::framework::request::Header hdr200{};
-        hdr200.set_service_id(200);
-        hdr200.set_session_id(201);
-        if (!utils::SerializeDelimitedToOstream(hdr200, &ss)) {
-            FAIL();
-        }
+        ::tateyama::proto::test::TestMsg msg{};
+        msg.set_id(200);
+        ASSERT_TRUE(utils::SerializeDelimitedToOstream(msg, &ss));
     }
-    ::tateyama::proto::framework::request::Header out100{}, out200{}, etc{};
+    ::tateyama::proto::test::TestMsg out100{}, out200{}, etc{};
     bool clean_eof{false};
 
     std::string str = ss.str();
@@ -109,10 +91,46 @@ TEST_F(protobuf_utils_test, get_delimited_body) {
     EXPECT_TRUE(clean_eof);
     EXPECT_TRUE(out200.ParseFromArray(out.data(), out.size()));
 
-    EXPECT_EQ(100, out100.service_id());
-    EXPECT_EQ(101, out100.session_id());
-    EXPECT_EQ(200, out200.service_id());
-    EXPECT_EQ(201, out200.session_id());
+    EXPECT_EQ(100, out100.id());
+    EXPECT_EQ(200, out200.id());
 
 }
+
+TEST_F(protobuf_utils_test, put_delimited_body) {
+    using namespace std::string_view_literals;
+    std::stringstream ss{};
+    std::string buf{};
+    {
+        ::tateyama::proto::test::TestMsg msg{};
+        msg.set_id(100);
+        ASSERT_TRUE(msg.SerializeToString(&buf));
+        ASSERT_TRUE(utils::PutDelimitedBodyToOstream(buf, &ss));
+    }
+    {
+        ::tateyama::proto::test::TestMsg msg{};
+        msg.set_id(200);
+        ASSERT_TRUE(msg.SerializeToString(&buf));
+        ASSERT_TRUE(utils::PutDelimitedBodyToOstream(buf, &ss));
+    }
+    ::tateyama::proto::test::TestMsg out100{}, out200{}, etc{};
+    bool clean_eof{false};
+
+    std::string str = ss.str();
+    google::protobuf::io::ArrayInputStream in{str.data(), static_cast<int>(str.size())};
+
+    EXPECT_TRUE(utils::ParseDelimitedFromZeroCopyStream(&out100, &in, &clean_eof));
+    EXPECT_FALSE(clean_eof);
+    std::string_view out{};
+    EXPECT_TRUE(utils::GetDelimitedBodyFromZeroCopyStream(&in, &clean_eof, out));
+    EXPECT_FALSE(clean_eof);
+
+    EXPECT_FALSE(utils::ParseDelimitedFromZeroCopyStream(&etc, &in, &clean_eof));
+    EXPECT_TRUE(clean_eof);
+    EXPECT_TRUE(out200.ParseFromArray(out.data(), out.size()));
+
+    EXPECT_EQ(100, out100.id());
+    EXPECT_EQ(200, out200.id());
+
+}
+
 }
