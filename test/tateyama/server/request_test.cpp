@@ -17,6 +17,7 @@
 
 #include <tateyama/api/endpoint/request.h>
 #include <tateyama/api/server/request.h>
+#include <tateyama/server/impl/request.h>
 #include <tateyama/proto/framework/request.pb.h>
 #include <tateyama/proto/test.pb.h>
 #include <tateyama/utils/protobuf_utils.h>
@@ -61,15 +62,13 @@ TEST_F(server_request_test, basic) {
     {
         ::tateyama::proto::test::TestMsg msg{};
         msg.set_id(999);
-        if (!utils::SerializeDelimitedToOstream(msg, &ss)) {
-            FAIL();
-        }
+        ASSERT_TRUE(utils::SerializeDelimitedToOstream(msg, &ss));
     }
 
     auto str = ss.str();
     auto epreq = std::make_shared<test_request>(str);
 
-    auto svrreq = server::create_request(epreq);
+    auto svrreq = server::impl::create_request(epreq);
 
     ASSERT_TRUE(svrreq);
     EXPECT_EQ(100, svrreq->service_id());

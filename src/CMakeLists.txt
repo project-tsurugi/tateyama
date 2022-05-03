@@ -22,6 +22,7 @@ file(GLOB SOURCES
         "tateyama/endpoint/stream/bootstrap/*.cpp"
         "tateyama/framework/*.cpp"
         "tateyama/server/*.cpp"
+        "tateyama/server/impl/*.cpp"
         "tateyama/task_scheduler/*.cpp"
         "tateyama/utils/*.cpp"
         "tateyama/registry/*.cpp"

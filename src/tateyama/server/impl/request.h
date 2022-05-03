@@ -15,6 +15,8 @@
  */
 #pragma once
 
+#include <tateyama/api/server/request.h>
+
 #include <string_view>
 #include <memory>
 
@@ -22,12 +24,12 @@ namespace tateyama::api::endpoint {
 class request;
 }
 
-namespace tateyama::api::server {
+namespace tateyama::api::server::impl {
 
 /**
  * @brief request interface
  */
-class request {
+class request : public server::request {
 public:
     /**
      * @brief create empty object
@@ -35,9 +37,9 @@ public:
     request() = default;
 
     /**
-     * @brief destruct the object
+     * @brief create new object
      */
-    virtual ~request() = default;
+    explicit request(std::shared_ptr<api::endpoint::request const> origin);
 
     request(request const& other) = default;
     request& operator=(request const& other) = default;
@@ -47,19 +49,39 @@ public:
     /**
      * @brief accessor to session identifier
      */
-    [[nodiscard]] virtual std::size_t session_id() const = 0;
+    [[nodiscard]] std::size_t session_id() const override;
 
     /**
      * @brief accessor to target service identifier
      */
-    [[nodiscard]] virtual std::size_t service_id() const = 0;
+    [[nodiscard]] std::size_t service_id() const override;
 
     /**
      * @brief accessor to the payload binary data
      * @return the view to the payload
      */
-    [[nodiscard]] virtual std::string_view payload() const = 0;  //NOLINT(modernize-use-nodiscard)
+    [[nodiscard]] std::string_view payload() const override;  //NOLINT(modernize-use-nodiscard)
 
+    /**
+     * @brief accessor to the endpoint request
+     * @return the endpoint request
+     */
+    [[nodiscard]] std::shared_ptr<api::endpoint::request const> const& origin() const noexcept;
+
+    /**
+     * @brief create new object
+     */
+    friend std::shared_ptr<api::server::request> create_request(std::shared_ptr<api::endpoint::request const> origin);
+
+private:
+    std::shared_ptr<api::endpoint::request const> origin_{};
+    std::size_t session_id_{};
+    std::size_t service_id_{};
+    std::string_view payload_{};
+
+    bool init();
 };
+
+std::shared_ptr<api::server::request> create_request(std::shared_ptr<api::endpoint::request const> origin);
 
 }

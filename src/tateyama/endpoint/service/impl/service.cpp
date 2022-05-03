@@ -18,10 +18,14 @@
 #include <string_view>
 #include <memory>
 
+#include <glog/logging.h>
+
 #include <takatori/util/assertion.h>
 
+#include <tateyama/logging.h>
 #include <tateyama/api/endpoint/request.h>
 #include <tateyama/api/endpoint/response.h>
+#include <tateyama/server/impl/request.h>
 
 #include <tateyama/common.h>
 
@@ -41,8 +45,13 @@ tateyama::status impl::service::operator()(
     std::shared_ptr<tateyama::api::endpoint::request const> req,
     std::shared_ptr<tateyama::api::endpoint::response> res
 ) {
+    auto svrreq = tateyama::api::server::impl::create_request(std::move(req));
+    if(! svrreq) {
+        VLOG(log_error) << "request transfer error";
+        return status::unknown;  //TODO assign error code
+    }
     return application_->operator()(
-        std::make_shared<tateyama::api::server::request>(std::move(req)),
+        std::move(svrreq),
         std::make_shared<tateyama::api::server::response>(std::move(res))
     );
 }

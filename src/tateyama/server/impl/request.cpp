@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <tateyama/api/server/request.h>
+#include "request.h"
 
 #include <google/protobuf/message_lite.h>
 
@@ -21,7 +21,7 @@
 #include <tateyama/utils/protobuf_utils.h>
 #include <tateyama/proto/framework/request.pb.h>
 
-namespace tateyama::api::server {
+namespace tateyama::api::server::impl {
 
 std::string_view request::payload() const {
     return payload_;
@@ -59,7 +59,7 @@ std::size_t request::service_id() const {
 }
 
 std::shared_ptr<api::server::request> create_request(std::shared_ptr<api::endpoint::request const> origin) {
-    auto ret = std::make_shared<api::server::request>(std::move(origin));
+    auto ret = std::make_shared<api::server::impl::request>(std::move(origin));
     if(auto res = ret->init(); ! res) {
         return {};
     }
