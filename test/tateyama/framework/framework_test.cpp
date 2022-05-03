@@ -27,44 +27,42 @@
 namespace tateyama::framework {
 
 using namespace std::literals::string_literals;
-
-class framework_test : public ::testing::Test {
-
-};
-
 using namespace std::string_view_literals;
 
-class test_resource : public resource {
+class framework_test : public ::testing::Test {
 public:
-    static constexpr id_type tag = 0;
-    test_resource() = default;
-    [[nodiscard]] id_type id() const noexcept override {
-        return tag;
-    }
-    void setup(environment&) override {}
-    void start(environment&) override {}
-    void shutdown(environment&) override {}
-};
+    class test_resource : public resource {
+    public:
+        static constexpr id_type tag = 0;
+        test_resource() = default;
+        [[nodiscard]] id_type id() const noexcept override {
+            return tag;
+        }
+        void setup(environment&) override {}
+        void start(environment&) override {}
+        void shutdown(environment&) override {}
+    };
 
-class test_service : public service {
-public:
-    static constexpr id_type tag = 0;
+    class test_service : public service {
+    public:
+        static constexpr id_type tag = 0;
 
-    test_service() = default;
+        test_service() = default;
 
-    [[nodiscard]] id_type id() const noexcept override {
-        return tag;
-    }
+        [[nodiscard]] id_type id() const noexcept override {
+            return tag;
+        }
 
-    void operator()(
-        std::shared_ptr<request> req,
-        std::shared_ptr<response> res) override {
-        (void)req;
-        (void)res;
-    }
-    void setup(environment&) override {}
-    void start(environment&) override {}
-    void shutdown(environment&) override {}
+        void operator()(
+            std::shared_ptr<request> req,
+            std::shared_ptr<response> res) override {
+            (void)req;
+            (void)res;
+        }
+        void setup(environment&) override {}
+        void start(environment&) override {}
+        void shutdown(environment&) override {}
+    };
 };
 
 TEST_F(framework_test, server_api) {
@@ -77,6 +75,5 @@ TEST_F(framework_test, server_api) {
     sv.start();
     sv.shutdown();
 }
-
 
 }

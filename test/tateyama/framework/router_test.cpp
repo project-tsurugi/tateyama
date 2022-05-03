@@ -25,6 +25,7 @@
 #include <tateyama/framework/transactional_kvs_resource.h>
 #include <tateyama/api/server/request.h>
 #include <tateyama/server/impl/request.h>
+#include <tateyama/server/impl/response.h>
 #include <tateyama/proto/test.pb.h>
 
 #include <gtest/gtest.h>
@@ -32,53 +33,75 @@
 namespace tateyama::framework {
 
 using namespace std::literals::string_literals;
+using namespace std::string_view_literals;
 
 class router_test : public ::testing::Test {
 
-};
-
-using namespace std::string_view_literals;
-
-class test_service : public service {
 public:
-    static constexpr id_type tag = 0;
-    test_service() = default;
-    [[nodiscard]] id_type id() const noexcept override {
-        return tag;
-    }
-    void operator()(std::shared_ptr<request>, std::shared_ptr<response>) override {}
-    void setup(environment&) override {}
-    void start(environment&) override {}
-    void shutdown(environment&) override {}
-};
 
-class test_request : public api::server::request {
-public:
-    test_request(
-        std::size_t session_id,
-        std::size_t service_id,
-        std::string_view payload
-    ) :
-        session_id_(session_id),
-        service_id_(service_id),
-        payload_(payload)
-    {}
+    class test_service : public service {
+    public:
+        static constexpr id_type tag = max_system_reserved_id;
+        test_service() = default;
+        [[nodiscard]] id_type id() const noexcept override {
+            return tag;
+        }
+        void operator()(std::shared_ptr<request>, std::shared_ptr<response>) override {
+            called_ = true;
+        }
+        void setup(environment&) override {}
+        void start(environment&) override {}
+        void shutdown(environment&) override {}
+        bool called_{false};
+    };
 
-    [[nodiscard]] std::size_t session_id() const override {
-        return session_id_;
-    }
+    class test_request : public api::server::request {
+    public:
+        test_request(
+            std::size_t session_id,
+            std::size_t service_id,
+            std::string_view payload
+        ) :
+            session_id_(session_id),
+            service_id_(service_id),
+            payload_(payload)
+        {}
 
-    [[nodiscard]] std::size_t service_id() const override {
-        return service_id_;
-    }
+        [[nodiscard]] std::size_t session_id() const override {
+            return session_id_;
+        }
 
-    [[nodiscard]] std::string_view payload() const override {
-        return payload_;
-    }
+        [[nodiscard]] std::size_t service_id() const override {
+            return service_id_;
+        }
 
-    std::size_t session_id_{};
-    std::size_t service_id_{};
-    std::string payload_{};
+        [[nodiscard]] std::string_view payload() const override {
+            return payload_;
+        }
+
+        std::size_t session_id_{};
+        std::size_t service_id_{};
+        std::string payload_{};
+    };
+
+    class test_response : public api::server::response {
+    public:
+        test_response() = default;
+
+        void session_id(std::size_t id) override {
+            session_id_ = id;
+        };
+        void code(api::server::response_code code) override {}
+        status body_head(std::string_view body_head) override {}
+        status body(std::string_view body) override { body_ = body; }
+        status acquire_channel(std::string_view name, std::shared_ptr<api::server::data_channel>& ch) override {}
+        status release_channel(api::server::data_channel& ch) override {}
+        status close_session() override {}
+
+        std::size_t session_id_{};
+        std::string body_{};
+    };
+
 };
 
 TEST_F(router_test, basic) {
@@ -87,9 +110,11 @@ TEST_F(router_test, basic) {
     auto svc0 = std::make_shared<test_service>();
     sv.add_service(svc0);
     install_core_components(sv);
+    sv.start();
 
     auto router = sv.find_service<framework::routing_service>();
     ASSERT_TRUE(router);
+    ASSERT_EQ(framework::routing_service::tag, router->id());
 
     std::stringstream ss{};
     {
@@ -98,21 +123,12 @@ TEST_F(router_test, basic) {
         ASSERT_TRUE(msg.SerializeToOstream(&ss));
     }
     auto str = ss.str();
-    auto svrreq = std::make_shared<test_request>(10, 100, str);
-//    auto svrreq = std::make_shared<api::server::response>(10, 100, str);
-//
-//    (*router)()
-//    EXPECT_EQ(res0, sv.find_resource_by_id(0));
-//    EXPECT_EQ(res1, sv.find_resource_by_id(1));
-//    EXPECT_EQ(res0, sv.find_resource<test_resource0>());
-//    EXPECT_EQ(res1, sv.find_resource<test_resource1>());
-//
-//    EXPECT_EQ(svc0, sv.find_service_by_id(0));
-//    EXPECT_EQ(svc1, sv.find_service_by_id(1));
-//    EXPECT_EQ(svc0, sv.find_service<test_service0>());
-//    EXPECT_EQ(svc1, sv.find_service<test_service1>());
+    auto svrreq = std::make_shared<test_request>(10, test_service::tag, str);
+    auto svrres = std::make_shared<test_response>();
 
-    sv.start();
+    ASSERT_FALSE(svc0->called_);
+    (*router)(svrreq, svrres);
+    ASSERT_TRUE(svc0->called_);
     sv.shutdown();
 }
 

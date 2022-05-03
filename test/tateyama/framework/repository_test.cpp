@@ -27,35 +27,56 @@
 namespace tateyama::framework {
 
 using namespace std::literals::string_literals;
-
-class repository_test : public ::testing::Test {
-
-};
-
 using namespace std::string_view_literals;
 
-class test_resource0 : public resource {
+class repository_test : public ::testing::Test {
 public:
-    static constexpr id_type tag = 0;
-    test_resource0() = default;
-    [[nodiscard]] id_type id() const noexcept override {
-        return tag;
-    }
-    void setup(environment&) override {}
-    void start(environment&) override {}
-    void shutdown(environment&) override {}
-};
-
-class test_resource1 : public resource {
-public:
-    static constexpr id_type tag = 1;
-    test_resource1() = default;
-    [[nodiscard]] id_type id() const noexcept override {
-        return tag;
-    }
-    void setup(environment&) override {}
-    void start(environment&) override {}
-    void shutdown(environment&) override {}
+    class test_resource0 : public resource {
+    public:
+        static constexpr id_type tag = 0;
+        test_resource0() = default;
+        [[nodiscard]] id_type id() const noexcept override {
+            return tag;
+        }
+        void setup(environment&) override {}
+        void start(environment&) override {}
+        void shutdown(environment&) override {}
+    };
+    class test_resource1 : public resource {
+    public:
+        static constexpr id_type tag = 1;
+        test_resource1() = default;
+        [[nodiscard]] id_type id() const noexcept override {
+            return tag;
+        }
+        void setup(environment&) override {}
+        void start(environment&) override {}
+        void shutdown(environment&) override {}
+    };
+    class test_service : public service {
+    public:
+        static constexpr id_type tag = 0;
+        test_service() = default;
+        [[nodiscard]] id_type id() const noexcept override {
+            return tag;
+        }
+        void operator()(
+            std::shared_ptr<request> req,
+            std::shared_ptr<response> res) override {
+            (void)req;
+            (void)res;
+        }
+        void setup(environment&) override {}
+        void start(environment&) override {}
+        void shutdown(environment&) override {}
+    };
+    class test_endpoint : public endpoint {
+    public:
+        test_endpoint() = default;
+        void setup(environment&) override {}
+        void start(environment&) override {}
+        void shutdown(environment&) override {}
+    };
 };
 
 TEST_F(repository_test, basic) {
@@ -74,6 +95,28 @@ TEST_F(repository_test, basic) {
     EXPECT_EQ(res0, rep.find_by_id(0));
     EXPECT_EQ(res0, rep.find<test_resource0>());
     EXPECT_EQ(res1, rep.find<test_resource1>());
+}
+
+TEST_F(repository_test, duplicate_id) {
+    {
+        repository<resource> rep{};
+        auto res0 = std::make_shared<test_resource0>();
+        rep.add(res0);
+        ASSERT_DEATH({ rep.add(res0); }, "");
+    }
+    {
+        repository<service> rep{};
+        auto svc = std::make_shared<test_service>();
+        rep.add(svc);
+        ASSERT_DEATH({ rep.add(svc); }, "");
+    }
+    {
+        // endpoint has no id, so no duplicate is checked
+        repository<endpoint> rep{};
+        auto ep = std::make_shared<test_endpoint>();
+        rep.add(ep);
+        ASSERT_NO_FATAL_FAILURE({ rep.add(ep); });
+    }
 }
 
 }

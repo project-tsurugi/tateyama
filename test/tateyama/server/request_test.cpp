@@ -15,6 +15,7 @@
  */
 #include <tateyama/server/impl/request.h>
 
+#include <tateyama/api/endpoint/request.h>
 #include <tateyama/proto/framework/request.pb.h>
 #include <tateyama/proto/test.pb.h>
 #include <tateyama/utils/protobuf_utils.h>

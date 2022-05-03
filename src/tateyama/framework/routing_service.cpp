@@ -51,22 +51,19 @@ void routing_service::shutdown(environment&) {
 }
 
 void routing_service::operator()(std::shared_ptr<request> req, std::shared_ptr<response> res) {
-    if (req->service_id() == tag) {
-        fail();
-    }
-
     if (services_ == nullptr) {
         fail();
     }
-
-    id_type id{};
-    if (auto destination = services_->find_by_id(id); destination != nullptr) {
+    if (req->service_id() == tag) {
+        fail();
+    }
+    if (auto destination = services_->find_by_id(req->service_id()); destination != nullptr) {
         destination->operator()(std::move(req), std::move(res));
         return;
     }
-
     // wrong address
     fail();
 }
+
 }
 

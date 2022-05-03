@@ -19,12 +19,23 @@
 #include <memory>
 #include <type_traits>
 
+#include <takatori/util/detect.h>
+#include <takatori/util/fail.h>
+
 #include <tateyama/utils/cache_align.h>
 #include <tateyama/framework/component.h>
 #include <tateyama/framework/resource.h>
 #include <tateyama/framework/service.h>
 
 namespace tateyama::framework {
+
+using takatori::util::fail;
+
+namespace details {
+
+template <class T> using id_return_type = decltype(std::declval<T&>().id());
+
+}
 
 template<class T>
 class cache_align repository {
@@ -42,6 +53,11 @@ public:
      * @brief add new component
      */
     void add(std::shared_ptr<T> arg) {
+        if constexpr (std::is_same_v<component::id_type, takatori::util::detect_t<details::id_return_type, T>>) {
+            if (find_by_id(arg->id())) {
+                fail();
+            }
+        }
         entity_.emplace_back(std::move(arg));
     }
 
