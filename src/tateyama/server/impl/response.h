@@ -15,20 +15,21 @@
  */
 #pragma once
 
+#include <tateyama/api/server/response.h>
 #include "data_channel.h"
 
 namespace tateyama::api::endpoint {
 class response;
 enum class response_code : std::int64_t;
 }
-namespace tateyama::api::server {
+namespace tateyama::api::server::impl {
 
 using response_code = tateyama::api::endpoint::response_code;
 
 /**
  * @brief response interface
  */
-class response {
+class response : public server::response {
 public:
     ///@brief unknown session id
     constexpr static std::size_t unknown = static_cast<std::size_t>(-1);
@@ -39,9 +40,9 @@ public:
     response() = default;
 
     /**
-     * @brief destruct the object
+     * @brief create new object
      */
-    virtual ~response() = default;
+    explicit response(std::shared_ptr<api::endpoint::response> origin);
 
     response(response const& other) = default;
     response& operator=(response const& other) = default;
@@ -53,7 +54,7 @@ public:
      * @param id the session id
      * @attention this function is not thread-safe and should be called from single thread at a time.
      */
-    virtual void session_id(std::size_t id) = 0;
+    void session_id(std::size_t id) override;
 
     /**
      * @brief setter of the tateyama response status
@@ -62,7 +63,7 @@ public:
      * the body.
      * @attention this function is not thread-safe and should be called from single thread at a time.
      */
-    virtual void code(response_code code) = 0;
+    void code(response_code code) override;
 
     /**
      * @brief setter of the response body head
@@ -72,7 +73,7 @@ public:
      * @return other code when error occurs
      * @attention this function is not thread-safe and should be called from single thread at a time.
      */
-    virtual status body_head(std::string_view body_head) = 0;
+    status body_head(std::string_view body_head) override;
 
     /**
      * @brief setter of the response body
@@ -81,7 +82,7 @@ public:
      * @return other code when error occurs
      * @attention this function is not thread-safe and should be called from single thread at a time.
      */
-    virtual status body(std::string_view body) = 0;
+    status body(std::string_view body) override;
 
     /**
      * @brief retrieve output data channel
@@ -92,7 +93,7 @@ public:
      * @return status::ok when successful
      * @return other code when error occurs
      */
-    virtual status acquire_channel(std::string_view name, std::shared_ptr<data_channel>& ch) = 0;
+    status acquire_channel(std::string_view name, std::shared_ptr<server::data_channel>& ch) override;
 
     /**
      * @brief release the data channel
@@ -107,7 +108,7 @@ public:
      * @return status::ok when successful
      * @return other status code when error occurs
      */
-    virtual status release_channel(data_channel& ch) = 0;
+    status release_channel(server::data_channel& ch) override;
 
     /**
      * @brief notify endpoint to close the current session
@@ -118,8 +119,19 @@ public:
      * @return other code when error occurs
      * @attention this function is not thread-safe and should be called from single thread at a time.
      */
-    virtual status close_session() = 0;
+    status close_session();
 
+    /**
+     * @brief accessor to the endpoint response
+     * @return the endpoint response
+     */
+    [[nodiscard]] std::shared_ptr<api::endpoint::response> const& origin() const noexcept;
+
+private:
+    std::shared_ptr<api::endpoint::response> origin_{};
+    std::size_t session_id_{unknown};
+
+    bool append_header(std::stringstream& ss, std::string_view body) const;
 };
 
 }

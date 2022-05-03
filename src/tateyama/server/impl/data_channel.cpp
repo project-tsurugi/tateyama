@@ -13,26 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <tateyama/api/server/data_channel.h>
+#include "data_channel.h"
 
 #include <tateyama/api/endpoint/data_channel.h>
 #include <tateyama/api/endpoint/writer.h>
 
-namespace tateyama::api::server {
+namespace tateyama::api::server::impl {
 
 data_channel::data_channel(api::endpoint::data_channel& origin) :
     origin_(std::addressof(origin))
 {}
 
-status data_channel::acquire(std::shared_ptr<writer>& wrt) {
+status data_channel::acquire(std::shared_ptr<server::writer>& wrt) {
     api::endpoint::writer* w{};
     auto ret = origin_->acquire(w);
     wrt = std::make_shared<writer>(*w);
     return ret;
 }
 
-status data_channel::release(writer& wrt) {
-    return origin_->release(*wrt.origin());
+status data_channel::release(server::writer& wrt) {
+    auto& w = static_cast<server::impl::writer&>(wrt);
+    return origin_->release(*w.origin());
 }
 
 api::endpoint::data_channel* data_channel::origin() const noexcept {

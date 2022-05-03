@@ -13,11 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <tateyama/api/server/request.h>
-
-#include <tateyama/api/endpoint/request.h>
-#include <tateyama/api/server/request.h>
 #include <tateyama/server/impl/request.h>
+
 #include <tateyama/proto/framework/request.pb.h>
 #include <tateyama/proto/test.pb.h>
 #include <tateyama/utils/protobuf_utils.h>

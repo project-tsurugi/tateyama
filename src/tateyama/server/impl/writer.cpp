@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <tateyama/api/server/writer.h>
+#include "writer.h"
 
 #include <tateyama/api/endpoint/writer.h>
 
 #include <cstddef>
 #include <tateyama/status.h>
 
-namespace tateyama::api::server {
+namespace tateyama::api::server::impl {
 
 writer::writer(endpoint::writer& origin) :
     origin_(std::addressof(origin))

@@ -13,10 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <tateyama/api/server/request.h>
+#include <tateyama/server/impl/response.h>
 
 #include <tateyama/api/endpoint/response.h>
-#include <tateyama/api/server/response.h>
 #include <tateyama/proto/framework/response.pb.h>
 #include <tateyama/utils/protobuf_utils.h>
 #include <tateyama/proto/test.pb.h>
@@ -80,7 +79,7 @@ TEST_F(server_response_test, session_id_is_added_as_header) {
     auto str = ss.str();
     auto epres = std::make_shared<test_response>();
 
-    api::server::response svrres{epres};
+    api::server::impl::response svrres{epres};
     svrres.session_id(100);
     ASSERT_EQ(status::ok, svrres.body(str));
 

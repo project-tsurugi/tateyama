@@ -15,6 +15,7 @@
  */
 #pragma once
 
+#include <tateyama/api/server/data_channel.h>
 #include "writer.h"
 
 #include <tateyama/status.h>
@@ -23,29 +24,29 @@ namespace tateyama::api::endpoint {
 class data_channel;
 }
 
-namespace tateyama::api::server {
+namespace tateyama::api::server::impl {
 
 /**
  * @brief data channel interface
  * @details this object represents a channel for application output.
  * The data channel provides a series of writers to write application output.
  */
-class data_channel {
+class data_channel : public server::data_channel {
 public:
     /**
      * @brief create empty object
      */
     data_channel() = default;
 
-    /**
-     * @brief destruct the object
-     */
-    virtual ~data_channel() = default;
-
     data_channel(data_channel const& other) = default;
     data_channel& operator=(data_channel const& other) = default;
     data_channel(data_channel&& other) noexcept = default;
     data_channel& operator=(data_channel&& other) noexcept = default;
+
+    /**
+     * @brief create new object
+     */
+    explicit data_channel(api::endpoint::data_channel& origin);
 
     /**
      * @brief acquire a new writer
@@ -59,7 +60,7 @@ public:
      * @return status::ok when successful
      * @return other status code when error occurs
      */
-    virtual status acquire(std::shared_ptr<writer>& wrt) = 0;
+    status acquire(std::shared_ptr<server::writer>& wrt) override;
 
     /**
      * @brief declare to finish using the writer and return it to channel
@@ -72,8 +73,16 @@ public:
      * @return status::ok when successful
      * @return other status code when error occurs
      */
-    virtual status release(writer& wrt) = 0;
+    status release(server::writer& wrt) override;
 
+    /**
+     * @brief accessor to the endpoint data channel
+     * @return the endpoint data channel
+     */
+    [[nodiscard]] api::endpoint::data_channel* origin() const noexcept;
+
+private:
+    api::endpoint::data_channel* origin_{};
 };
 
 }

@@ -18,17 +18,19 @@
 #include <cstddef>
 #include <tateyama/status.h>
 
+#include <tateyama/api/server/writer.h>
+
 namespace tateyama::api::endpoint {
 class writer;
 }
 
-namespace tateyama::api::server {
+namespace tateyama::api::server::impl {
 
 /**
  * @brief writer interface
  * @details this writer object provides write function for the application output
  */
-class writer {
+class writer : public server::writer {
 public:
     /**
      * @brief create empty object
@@ -36,9 +38,14 @@ public:
     writer() = default;
 
     /**
+     * @brief create new object
+     */
+    explicit writer(api::endpoint::writer& origin);
+
+    /**
      * @brief destruct the object
      */
-    virtual ~writer() = default;
+    ~writer() = default;
 
     writer(writer const& other) = default;
     writer& operator=(writer const& other) = default;
@@ -57,7 +64,7 @@ public:
      * @return status::ok when successful
      * @return other status code when error occurs
      */
-    virtual status write(char const* data, std::size_t length) = 0;
+    status write(char const* data, std::size_t length);
 
     /**
      * @brief commit the written data
@@ -68,8 +75,12 @@ public:
      * @return status::ok when successful
      * @return other status code when error occurs
      */
-    virtual status commit() = 0;
+    status commit();
 
+    [[nodiscard]] api::endpoint::writer* origin() const noexcept;
+
+private:
+    api::endpoint::writer* origin_{};
 };
 
 }

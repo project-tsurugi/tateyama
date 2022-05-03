@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <tateyama/api/server/response.h>
+#include "response.h"
 
 #include <takatori/util/assertion.h>
 
@@ -23,7 +23,7 @@
 #include <tateyama/proto/framework/response.pb.h>
 #include <glog/logging.h>
 
-namespace tateyama::api::server {
+namespace tateyama::api::server::impl {
 
 std::shared_ptr<api::endpoint::response> const& response::origin() const noexcept {
     return origin_;
@@ -70,11 +70,12 @@ status response::body(std::string_view body) {
     return origin_->body(s);
 }
 
-status response::release_channel(data_channel& ch) {
-    return origin_->release_channel(*ch.origin());
+status response::release_channel(server::data_channel& ch) {
+    auto& c = static_cast<server::impl::data_channel&>(ch);
+    return origin_->release_channel(*c.origin());
 }
 
-status response::acquire_channel(std::string_view name, std::shared_ptr<data_channel>& ch) {
+status response::acquire_channel(std::string_view name, std::shared_ptr<server::data_channel>& ch) {
     endpoint::data_channel* c{};
     auto ret = origin_->acquire_channel(name, c);
     ch = std::make_shared<data_channel>(*c);

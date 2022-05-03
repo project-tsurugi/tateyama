@@ -26,6 +26,7 @@
 #include <tateyama/api/endpoint/request.h>
 #include <tateyama/api/endpoint/response.h>
 #include <tateyama/server/impl/request.h>
+#include <tateyama/server/impl/response.h>
 
 #include <tateyama/common.h>
 
@@ -52,7 +53,7 @@ tateyama::status impl::service::operator()(
     }
     return application_->operator()(
         std::move(svrreq),
-        std::make_shared<tateyama::api::server::response>(std::move(res))
+        std::make_shared<tateyama::api::server::impl::response>(std::move(res))
     );
 }
 
