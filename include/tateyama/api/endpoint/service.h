@@ -75,12 +75,4 @@ public:
     void shutdown(framework::environment&) override {}
 };
 
-/**
- * @brief factory method for tateyama application service
- * @param env the tateyama environmental context
- * @return service api object
- * @return nullptr if error occurs on creation
- */
-std::shared_ptr<service> create_service(tateyama::api::environment& env);
-
 }
