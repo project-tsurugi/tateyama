@@ -110,7 +110,7 @@ public:
      * @return the found service
      * @return nullptr if not found
      */
-    template<class T> std::shared_ptr<service> find_service() {
+    template<class T> std::shared_ptr<T> find_service() {
         return environment_->service_repository().find<T>();
     }
 
