@@ -31,15 +31,17 @@ class service : public api::endpoint::service {
 public:
     service() = default;
 
-    explicit service(std::shared_ptr<api::server::service> app);
-
     tateyama::status operator()(
         std::shared_ptr<tateyama::api::endpoint::request const> req,
         std::shared_ptr<tateyama::api::endpoint::response> res
     ) override;
 
+    void setup(framework::environment& env) override {
+        env_ = std::addressof(env);
+    }
+
 private:
-    std::shared_ptr<api::server::service> application_{};
+    framework::environment* env_{};
 };
 
 }

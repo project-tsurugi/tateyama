@@ -94,7 +94,7 @@ public:
      * @return the found resource
      * @return nullptr if not found
      */
-    template<class T> std::shared_ptr<resource> find_resource() {
+    template<class T> std::shared_ptr<T> find_resource() {
         return environment_->resource_repository().find<T>();
     }
 

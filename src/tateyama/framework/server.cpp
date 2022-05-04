@@ -29,6 +29,7 @@
 #include <tateyama/framework/task_scheduler_resource.h>
 #include <tateyama/framework/transactional_kvs_resource.h>
 #include <tateyama/endpoint/ipc/bootstrap/ipc_endpoint.h>
+#include <tateyama/endpoint/service/impl/service.h>
 #include <tateyama/endpoint/stream/bootstrap/stream_endpoint.h>
 #include <tateyama/datastore/service/bridge.h>
 #include <tateyama/datastore/resource/bridge.h>
@@ -94,6 +95,7 @@ void install_core_components(server& svr) {
     svr.add_resource(std::make_shared<datastore::resource::bridge>());
 
     svr.add_service(std::make_shared<framework::routing_service>());
+    svr.add_service(std::make_shared<api::endpoint::impl::service>());
     svr.add_service(std::make_shared<datastore::service::bridge>());
 
     svr.add_endpoint(std::make_shared<framework::ipc_endpoint>());

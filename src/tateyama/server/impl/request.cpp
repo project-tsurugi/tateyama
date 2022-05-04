@@ -20,6 +20,7 @@
 #include <tateyama/api/endpoint/request.h>
 #include <tateyama/utils/protobuf_utils.h>
 #include <tateyama/proto/framework/request.pb.h>
+#include <tateyama/framework/ids.h>
 
 namespace tateyama::api::server::impl {
 
@@ -40,7 +41,11 @@ bool request::init() {
     auto pl = origin_->payload();
     google::protobuf::io::ArrayInputStream in{pl.data(), static_cast<int>(pl.size())};
     if(auto res = utils::ParseDelimitedFromZeroCopyStream(std::addressof(hdr), std::addressof(in), nullptr); ! res) {
-        return false;
+        //return false;
+        // for compatibility with request without header,
+        service_id_ = tateyama::framework::service_id_sql;
+        payload_ = pl;
+        return true;
     }
     session_id_ = hdr.session_id();
     service_id_ = hdr.service_id();

@@ -70,8 +70,6 @@ public:
         std::shared_ptr<tateyama::api::endpoint::response> res
     ) = 0;
 
-    void setup(framework::environment&) override {}
-
     void start(framework::environment&) override {}
 
     void shutdown(framework::environment&) override {}

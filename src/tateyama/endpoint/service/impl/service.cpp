@@ -27,20 +27,11 @@
 #include <tateyama/api/endpoint/response.h>
 #include <tateyama/server/impl/request.h>
 #include <tateyama/server/impl/response.h>
+#include <tateyama/framework/routing_service.h>
 
 #include <tateyama/common.h>
 
 namespace tateyama::api::endpoint {
-
-std::shared_ptr<service> create_service(tateyama::api::environment& env) {
-    // assuming only one application exists
-    BOOST_ASSERT(env.applications().size() > 0);  //NOLINT
-    return std::make_shared<impl::service>(env.applications()[0]);
-}
-
-impl::service::service(std::shared_ptr<api::server::service> app) :
-    application_(std::move(app))
-{}
 
 tateyama::status impl::service::operator()(
     std::shared_ptr<tateyama::api::endpoint::request const> req,
@@ -51,10 +42,12 @@ tateyama::status impl::service::operator()(
         VLOG(log_error) << "request transfer error";
         return status::unknown;  //TODO assign error code
     }
-    return application_->operator()(
+    auto router = env_->service_repository().find<framework::routing_service>();
+    (*router)(
         std::move(svrreq),
         std::make_shared<tateyama::api::server::impl::response>(std::move(res))
     );
+    return status::ok;
 }
 
 }
