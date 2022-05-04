@@ -13,45 +13,40 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <tateyama/datastore/service.h>
+#pragma once
 
-#include <functional>
-#include <memory>
-#include <type_traits>
-
-#include <tateyama/framework/service.h>
-#include <tateyama/framework/repository.h>
-#include <tateyama/api/server/request.h>
-#include <tateyama/api/server/response.h>
-#include <tateyama/framework/environment.h>
+#include <tateyama/api/configuration.h>
 #include <tateyama/framework/ids.h>
+#include <tateyama/framework/service.h>
+#include <tateyama/datastore/resource/core.h>
 
-namespace tateyama::datastore {
+namespace tateyama::datastore::service {
 
 using tateyama::api::server::request;
 using tateyama::api::server::response;
 
-using namespace framework;
+/**
+ * @brief datastore service main object
+ */
+class core {
+public:
+    core() = default;
 
-component::id_type service::id() const noexcept {
-    return tag;
-}
+    explicit core(std::shared_ptr<tateyama::api::configuration::whole> cfg);
 
-void service::setup(environment&) {
-    //TODO
-}
+    void start(tateyama::datastore::resource::core* resource);
 
-void service::start(environment&) {
-    //TODO
-}
+    void shutdown(bool force = false);
 
-void service::shutdown(environment&) {
-    //TODO
-}
+    void operator()(
+        std::shared_ptr<request> req,
+        std::shared_ptr<response> res
+    );
 
-void service::operator()(std::shared_ptr<request>, std::shared_ptr<response>) {
-    //TODO
-}
+private:
+    std::shared_ptr<tateyama::api::configuration::whole> cfg_{};
+    tateyama::datastore::resource::core* resource_{};
+};
 
 }
 

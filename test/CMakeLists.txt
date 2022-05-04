@@ -64,6 +64,7 @@ endfunction (add_test_executable)
 
 file(GLOB SRCS
         "tateyama/*.cpp"
+        "tateyama/datastore/*.cpp"
         "tateyama/endpoint/*.cpp"
         "tateyama/task_scheduler/*.cpp"
         "tateyama/registry/*.cpp"

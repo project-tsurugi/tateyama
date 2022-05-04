@@ -13,37 +13,41 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#pragma once
+#include "tateyama/datastore/resource/bridge.h"
 
 #include <tateyama/framework/ids.h>
 #include <tateyama/framework/resource.h>
 
-namespace tateyama::datastore {
+namespace tateyama::datastore::resource {
 
-/**
- * @brief resource component
- */
-class resource : public framework::resource {
-public:
-    static constexpr id_type tag = framework::resource_id_datastore;
+using namespace framework;
 
-    [[nodiscard]] id_type id() const noexcept override;
+component::id_type bridge::id() const noexcept {
+    return tag;
+}
 
-    /**
-     * @brief setup the component (the state will be `ready`)
-     */
-    void setup(framework::environment&) override;
+void bridge::setup(environment& env) {
+    core_ = std::make_unique<core>(env.configuration());
+}
 
-    /**
-     * @brief start the component (the state will be `activated`)
-     */
-    void start(framework::environment&) override;
+void bridge::start(environment&) {
+    core_->start();
+}
 
-    /**
-     * @brief shutdown the component (the state will be `deactivated`)
-     */
-    void shutdown(framework::environment&) override;
-};
+void bridge::shutdown(environment&) {
+    core_->shutdown();
+    deactivated_ = true;
+}
+
+bridge::~bridge() {
+    if(core_ && ! deactivated_) {
+        core_->shutdown(true);
+    }
+}
+
+core* bridge::core_object() const noexcept {
+    return core_.get();
+}
 
 }
 

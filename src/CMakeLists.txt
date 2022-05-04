@@ -14,6 +14,8 @@ set(GENERATED_PROTO_SRCS ${GENERATED_PROTO_SRCS} PARENT_SCOPE)
 file(GLOB SOURCES
         "tateyama/*.cpp"
         "tateyama/datastore/*.cpp"
+        "tateyama/datastore/resource/*.cpp"
+        "tateyama/datastore/service/*.cpp"
         "tateyama/endpoint/service/*.cpp"
         "tateyama/endpoint/service/impl/*.cpp"
         "tateyama/endpoint/ipc/*.cpp"

@@ -13,30 +13,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <tateyama/datastore/resource.h>
+#include <tateyama/datastore/resource/core.h>
 
+#include <tateyama/api/configuration.h>
 #include <tateyama/framework/ids.h>
 #include <tateyama/framework/resource.h>
 
-namespace tateyama::datastore {
+namespace tateyama::datastore::resource {
 
-using namespace framework;
+core::core(std::shared_ptr<tateyama::api::configuration::whole> cfg) :
+    cfg_(std::move(cfg))
+{}
 
-component::id_type resource::id() const noexcept {
-    return tag;
+void core::start() {
+    //TODO implement
 }
 
-void resource::setup(environment&) {
-    //TODO
+void core::shutdown(bool force) {
+    //TODO implement
+    (void) force;
 }
 
-void resource::start(environment&) {
-    //TODO
+std::vector<std::string> core::list_backup_files() {
+    // mock implementation TODO
+    return std::vector<std::string>{
+        "/var/datastore/file1",
+        "/var/datastore/file2",
+        "/var/datastore/file3",
+    };
 }
-
-void resource::shutdown(environment&) {
-    //TODO
 }
-
-}
-

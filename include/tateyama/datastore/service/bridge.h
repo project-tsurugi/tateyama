@@ -26,31 +26,52 @@
 #include <tateyama/framework/environment.h>
 #include <tateyama/framework/ids.h>
 
-namespace tateyama::datastore {
+#include <tateyama/datastore/service/core.h>
+#include <tateyama/datastore/resource/core.h>
+
+namespace tateyama::datastore::service {
 
 using tateyama::api::server::request;
 using tateyama::api::server::response;
 
 /**
- * @brief the routing service to dispatch the requests to appropriate service
+ * @brief datastore resource bridge for tateyama framework
+ * @details This object bridges datastore as a resource component in tateyama framework.
+ * This object should be responsible only for life-cycle management.
  */
-class service : public framework::service {
+class bridge : public framework::service {
 public:
     static constexpr id_type tag = framework::service_id_datastore;
 
     [[nodiscard]] id_type id() const noexcept override;
 
-    void setup(framework::environment& env) override;
+    /**
+     * @brief setup the component (the state will be `ready`)
+     */
+    void setup(framework::environment&) override;
 
+    /**
+     * @brief start the component (the state will be `activated`)
+     */
     void start(framework::environment&) override;
 
+    /**
+     * @brief shutdown the component (the state will be `deactivated`)
+     */
     void shutdown(framework::environment&) override;
 
     void operator()(
         std::shared_ptr<request> req,
         std::shared_ptr<response> res) override;
 
+    /**
+     * @brief destructor the object
+     */
+    ~bridge() override;
+
 private:
+    std::unique_ptr<core> core_{};
+    bool deactivated_{false};
 };
 
 }
