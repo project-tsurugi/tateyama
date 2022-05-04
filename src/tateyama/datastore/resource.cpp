@@ -13,43 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <tateyama/datastore/datastore_service.h>
+#include <tateyama/datastore/resource.h>
 
-#include <functional>
-#include <memory>
-#include <type_traits>
-
-#include <tateyama/framework/service.h>
-#include <tateyama/framework/repository.h>
-#include <tateyama/api/server/request.h>
-#include <tateyama/api/server/response.h>
-#include <tateyama/framework/environment.h>
 #include <tateyama/framework/ids.h>
+#include <tateyama/framework/resource.h>
 
 namespace tateyama::datastore {
 
-using tateyama::api::server::request;
-using tateyama::api::server::response;
-
 using namespace framework;
 
-component::id_type datastore_service::id() const noexcept {
+component::id_type resource::id() const noexcept {
     return tag;
 }
 
-void datastore_service::setup(environment&) {
+void resource::setup(environment&) {
     //TODO
 }
 
-void datastore_service::start(environment&) {
+void resource::start(environment&) {
     //TODO
 }
 
-void datastore_service::shutdown(environment&) {
-    //TODO
-}
-
-void datastore_service::operator()(std::shared_ptr<request>, std::shared_ptr<response>) {
+void resource::shutdown(environment&) {
     //TODO
 }
 

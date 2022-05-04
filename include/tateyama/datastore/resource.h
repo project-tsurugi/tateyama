@@ -23,7 +23,7 @@ namespace tateyama::datastore {
 /**
  * @brief resource component
  */
-class datastore_resource : public framework::resource {
+class resource : public framework::resource {
 public:
     static constexpr id_type tag = framework::resource_id_datastore;
 

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#pragma once
+#include <tateyama/datastore/service.h>
 
 #include <functional>
 #include <memory>
@@ -31,28 +31,27 @@ namespace tateyama::datastore {
 using tateyama::api::server::request;
 using tateyama::api::server::response;
 
-/**
- * @brief the routing service to dispatch the requests to appropriate service
- */
-class datastore_service : public framework::service {
-public:
-    static constexpr id_type tag = framework::service_id_datastore;
+using namespace framework;
 
-    [[nodiscard]] id_type id() const noexcept override;
+component::id_type service::id() const noexcept {
+    return tag;
+}
 
-    void setup(framework::environment& env) override;
+void service::setup(environment&) {
+    //TODO
+}
 
-    void start(framework::environment&) override;
+void service::start(environment&) {
+    //TODO
+}
 
-    void shutdown(framework::environment&) override;
+void service::shutdown(environment&) {
+    //TODO
+}
 
-    void operator()(
-        std::shared_ptr<request> req,
-        std::shared_ptr<response> res) override;
-
-private:
-    framework::repository<service>* services_{};
-};
+void service::operator()(std::shared_ptr<request>, std::shared_ptr<response>) {
+    //TODO
+}
 
 }
 
