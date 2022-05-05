@@ -115,8 +115,14 @@ public:
     }
 
     /**
+     * @brief setup the server
+     * @details setup all resource, service and endpoint appropriately.
+     */
+    void setup();
+
+    /**
      * @brief start the server
-     * @details setup and start all resource, service and endpoint appropriately.
+     * @details setup (if not yet done) and start all resource, service and endpoint appropriately.
      */
     void start();
 
@@ -128,6 +134,7 @@ public:
 
 private:
     std::shared_ptr<environment> environment_{std::make_shared<environment>()};
+    bool setup_done_{false};
 };
 
 /**

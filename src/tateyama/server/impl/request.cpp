@@ -40,9 +40,16 @@ bool request::init() {
     ::tateyama::proto::framework::request::Header hdr{};
     auto pl = origin_->payload();
     google::protobuf::io::ArrayInputStream in{pl.data(), static_cast<int>(pl.size())};
+    bool no_header = false;
     if(auto res = utils::ParseDelimitedFromZeroCopyStream(std::addressof(hdr), std::addressof(in), nullptr); ! res) {
         //return false;
         // for compatibility with request without header,
+        no_header = true;
+    }
+    if(hdr.message_version() != 1) {
+        no_header = true;
+    }
+    if (no_header) {
         service_id_ = tateyama::framework::service_id_sql;
         payload_ = pl;
         return true;

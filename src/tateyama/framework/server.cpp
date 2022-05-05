@@ -52,7 +52,8 @@ std::shared_ptr<resource> server::find_resource_by_id(component::id_type id) {
     return environment_->resource_repository().find_by_id(id);
 }
 
-void server::start() {
+void server::setup() {
+    if(setup_done_) return;
     environment_->resource_repository().each([this](resource& arg){
         arg.setup(*environment_);
     });
@@ -62,7 +63,12 @@ void server::start() {
     environment_->endpoint_repository().each([this](endpoint& arg){
         arg.setup(*environment_);
     });
-
+    setup_done_ = true;
+}
+void server::start() {
+    if(! setup_done_) {
+        setup();
+    }
     environment_->resource_repository().each([this](resource& arg){
         arg.start(*environment_);
     });
