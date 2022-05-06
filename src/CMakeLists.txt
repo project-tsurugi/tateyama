@@ -11,6 +11,13 @@ PROTOBUF_GENERATE_CPP(GENERATED_PROTO_SRCS GENERATED_PROTO_HDRS ${ProtoFiles})
 add_custom_target(build_protos DEPENDS ${GENERATED_PROTO_SRCS})
 set(GENERATED_PROTO_SRCS ${GENERATED_PROTO_SRCS} PARENT_SCOPE)
 
+install(DIRECTORY
+        ${CMAKE_BINARY_DIR}/src/tateyama
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/tateyama
+        FILES_MATCHING
+        PATTERN "*.pb.h"
+)
+
 file(GLOB SOURCES
         "tateyama/*.cpp"
         "tateyama/datastore/*.cpp"
