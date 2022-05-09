@@ -25,13 +25,15 @@ core::core(std::shared_ptr<tateyama::api::configuration::whole> cfg) :
     cfg_(std::move(cfg))
 {}
 
-void core::start() {
+bool core::start() {
     //TODO implement
+    return true;
 }
 
-void core::shutdown(bool force) {
+bool core::shutdown(bool force) {
     //TODO implement
     (void) force;
+    return true;
 }
 
 std::vector<std::string> core::list_backup_files() {

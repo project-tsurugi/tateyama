@@ -34,11 +34,11 @@ public:
 
     explicit core(std::shared_ptr<tateyama::api::configuration::whole> cfg);
 
-    void start(tateyama::datastore::resource::core* resource);
+    bool start(tateyama::datastore::resource::core* resource);
 
-    void shutdown(bool force = false);
+    bool shutdown(bool force = false);
 
-    void operator()(
+    bool operator()(
         std::shared_ptr<request> req,
         std::shared_ptr<response> res
     );

@@ -40,13 +40,13 @@ public:
 
     [[nodiscard]] id_type id() const noexcept override;
 
-    void setup(environment& env) override;
+    bool setup(environment& env) override;
 
-    void start(environment&) override;
+    bool start(environment&) override;
 
-    void shutdown(environment&) override;
+    bool shutdown(environment&) override;
 
-    void operator()(
+    bool operator()(
         std::shared_ptr<request> req,
         std::shared_ptr<response> res) override;
 

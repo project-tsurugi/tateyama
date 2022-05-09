@@ -26,17 +26,19 @@ component::id_type bridge::id() const noexcept {
     return tag;
 }
 
-void bridge::setup(environment& env) {
+bool bridge::setup(environment& env) {
     core_ = std::make_unique<core>(env.configuration());
+    return true;
 }
 
-void bridge::start(environment&) {
-    core_->start();
+bool bridge::start(environment&) {
+    return core_->start();
 }
 
-void bridge::shutdown(environment&) {
-    core_->shutdown();
+bool bridge::shutdown(environment&) {
+    auto ret = core_->shutdown();
     deactivated_ = true;
+    return ret;
 }
 
 bridge::~bridge() {

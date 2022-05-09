@@ -56,17 +56,17 @@ public:
     /**
      * @brief setup the component (the state will be `ready`)
      */
-    virtual void setup(environment&) = 0;
+    virtual bool setup(environment&) = 0;
 
     /**
      * @brief start the component (the state will be `activated`)
      */
-    virtual void start(environment&) = 0;
+    virtual bool start(environment&) = 0;
 
     /**
      * @brief shutdown the component (the state will be `deactivated`)
      */
-    virtual void shutdown(environment&) = 0;
+    virtual bool shutdown(environment&) = 0;
 
     /**
      * @brief destruct the object (the state will be `disposed`)

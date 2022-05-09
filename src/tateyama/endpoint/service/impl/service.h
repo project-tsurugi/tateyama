@@ -36,9 +36,7 @@ public:
         std::shared_ptr<tateyama::api::endpoint::response> res
     ) override;
 
-    void setup(framework::environment& env) override {
-        env_ = std::addressof(env);
-    }
+    bool setup(framework::environment& env) override;
 
 private:
     framework::environment* env_{};

@@ -38,9 +38,9 @@ public:
         [[nodiscard]] id_type id() const noexcept override {
             return tag;
         }
-        void setup(environment&) override {}
-        void start(environment&) override {}
-        void shutdown(environment&) override {}
+        bool setup(environment&) override { return true; }
+        bool start(environment&) override { return true; }
+        bool shutdown(environment&) override { return true; }
     };
 
     class test_service : public service {
@@ -53,15 +53,15 @@ public:
             return tag;
         }
 
-        void operator()(
+        bool operator()(
             std::shared_ptr<request> req,
             std::shared_ptr<response> res) override {
             (void)req;
             (void)res;
         }
-        void setup(environment&) override {}
-        void start(environment&) override {}
-        void shutdown(environment&) override {}
+        bool setup(environment&) override { return true; }
+        bool start(environment&) override { return true; }
+        bool shutdown(environment&) override { return true; }
     };
 };
 

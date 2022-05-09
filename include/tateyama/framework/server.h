@@ -116,19 +116,19 @@ public:
      * @brief setup the server
      * @details setup all resource, service and endpoint appropriately.
      */
-    void setup();
+    bool setup();
 
     /**
      * @brief start the server
      * @details setup (if not yet done) and start all resource, service and endpoint appropriately.
      */
-    void start();
+    bool start();
 
     /**
      * @brief shutdown the server
      * @details shutdown all resource, service and endpoint appropriately.
      */
-    void shutdown();
+    bool shutdown();
 
 private:
     std::shared_ptr<environment> environment_{std::make_shared<environment>()};

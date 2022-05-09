@@ -30,9 +30,9 @@ public:
 
     explicit core(std::shared_ptr<tateyama::api::configuration::whole> cfg);
 
-    void start();
+    bool start();
 
-    void shutdown(bool force = false);
+    bool shutdown(bool force = false);
 
     std::vector<std::string> list_backup_files();
 

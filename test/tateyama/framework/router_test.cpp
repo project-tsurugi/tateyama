@@ -21,7 +21,6 @@
 #include <tateyama/framework/routing_service.h>
 #include <tateyama/framework/server.h>
 #include <tateyama/framework/environment.h>
-#include <tateyama/framework/task_scheduler_resource.h>
 #include <tateyama/framework/transactional_kvs_resource.h>
 #include <tateyama/api/server/request.h>
 #include <tateyama/server/impl/request.h>
@@ -46,12 +45,13 @@ public:
         [[nodiscard]] id_type id() const noexcept override {
             return tag;
         }
-        void operator()(std::shared_ptr<request>, std::shared_ptr<response>) override {
+        bool operator()(std::shared_ptr<request>, std::shared_ptr<response>) override {
             called_ = true;
+            return true;
         }
-        void setup(environment&) override {}
-        void start(environment&) override {}
-        void shutdown(environment&) override {}
+        bool setup(environment&) override { return true;}
+        bool start(environment&) override { return true;}
+        bool shutdown(environment&) override { return true;}
         bool called_{false};
     };
 

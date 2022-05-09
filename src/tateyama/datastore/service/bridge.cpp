@@ -38,24 +38,26 @@ component::id_type bridge::id() const noexcept {
     return tag;
 }
 
-void bridge::setup(environment& env) {
+bool bridge::setup(environment& env) {
     core_ = std::make_unique<core>(env.configuration());
+    return true;
 }
 
-void bridge::start(environment& env) {
+bool bridge::start(environment& env) {
     auto resource = env.resource_repository().find<tateyama::datastore::resource::bridge>();
     if (! resource) {
-        fail();
+        LOG(ERROR) << "datastore resource not found";
+        return false;
     }
-    core_->start(resource->core_object());
+    return core_->start(resource->core_object());
 }
 
-void bridge::shutdown(environment&) {
-    core_->shutdown();
+bool bridge::shutdown(environment&) {
+    return core_->shutdown();
 }
 
-void bridge::operator()(std::shared_ptr<request> req, std::shared_ptr<response> res) {
-    core_->operator()(std::move(req), std::move(res));
+bool bridge::operator()(std::shared_ptr<request> req, std::shared_ptr<response> res) {
+    return core_->operator()(std::move(req), std::move(res));
 }
 
 bridge::~bridge() {

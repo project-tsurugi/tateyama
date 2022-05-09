@@ -21,7 +21,6 @@
 #include <tateyama/framework/routing_service.h>
 #include <tateyama/framework/server.h>
 #include <tateyama/framework/environment.h>
-#include <tateyama/framework/task_scheduler_resource.h>
 #include <tateyama/framework/transactional_kvs_resource.h>
 
 #include <gtest/gtest.h>
@@ -43,9 +42,9 @@ public:
     [[nodiscard]] id_type id() const noexcept override {
         return tag;
     }
-    void setup(environment&) override {}
-    void start(environment&) override {}
-    void shutdown(environment&) override {}
+    bool setup(environment&) override { return true; }
+    bool start(environment&) override { return true; }
+    bool shutdown(environment&) override { return true; }
 };
 
 class test_resource1 : public resource {
@@ -55,9 +54,9 @@ public:
     [[nodiscard]] id_type id() const noexcept override {
         return tag;
     }
-    void setup(environment&) override {}
-    void start(environment&) override {}
-    void shutdown(environment&) override {}
+    bool setup(environment&) override { return true; }
+    bool start(environment&) override { return true; }
+    bool shutdown(environment&) override { return true; }
 };
 
 class test_service0 : public service {
@@ -67,10 +66,10 @@ public:
     [[nodiscard]] id_type id() const noexcept override {
         return tag;
     }
-    void operator()(std::shared_ptr<request>, std::shared_ptr<response>) override {}
-    void setup(environment&) override {}
-    void start(environment&) override {}
-    void shutdown(environment&) override {}
+    bool operator()(std::shared_ptr<request>, std::shared_ptr<response>) override {}
+    bool setup(environment&) override { return true; }
+    bool start(environment&) override { return true; }
+    bool shutdown(environment&) override { return true; }
 };
 
 class test_service1 : public service {
@@ -80,10 +79,10 @@ public:
     [[nodiscard]] id_type id() const noexcept override {
         return tag;
     }
-    void operator()(std::shared_ptr<request>, std::shared_ptr<response>) override {}
-    void setup(environment&) override {}
-    void start(environment&) override {}
-    void shutdown(environment&) override {}
+    bool operator()(std::shared_ptr<request>, std::shared_ptr<response>) override {}
+    bool setup(environment&) override { return true; }
+    bool start(environment&) override { return true; }
+    bool shutdown(environment&) override { return true; }
 };
 
 TEST_F(server_test, basic) {
@@ -126,12 +125,4 @@ TEST_F(server_test, add_core_components) {
     sv.shutdown();
 }
 
-TEST_F(server_test, add_task_scheduler) {
-    auto cfg = api::configuration::create_configuration("");
-    server sv{boot_mode::database_server, cfg};
-    struct task {};
-    sv.add_resource(std::make_shared<task_scheduler_resource<task>>());
-    auto sched = sv.find_resource<task_scheduler_resource<task>>();
-    ASSERT_TRUE(sched);
-}
 }

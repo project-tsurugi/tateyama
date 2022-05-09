@@ -40,6 +40,11 @@ public:
     transactional_kvs_resource& operator=(transactional_kvs_resource&& other) noexcept = delete;
 
     /**
+     * @brief destruct object
+     */
+    ~transactional_kvs_resource() override = default;
+
+    /**
      * @brief create new object
      */
     explicit transactional_kvs_resource(sharksfin::DatabaseHandle handle) noexcept;
@@ -53,22 +58,22 @@ public:
     /**
      * @brief setup the component (the state will be `ready`)
      */
-    void setup(environment&) override;
+    bool setup(environment&) override;
 
     /**
      * @brief start the component (the state will be `activated`)
      */
-    void start(environment&) override;
+    bool start(environment&) override;
 
     /**
      * @brief shutdown the component (the state will be `deactivated`)
      */
-    void shutdown(environment&) override;
+    bool shutdown(environment&) override;
 
     /**
      * @brief accessor to the native handle
      */
-    [[nodiscard]] sharksfin::DatabaseHandle handle() const noexcept;
+    [[nodiscard]] sharksfin::DatabaseHandle core_object() const noexcept;
 
 private:
     sharksfin::DatabaseHandle database_handle_{};

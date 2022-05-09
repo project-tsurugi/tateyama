@@ -48,19 +48,19 @@ public:
     /**
      * @brief setup the component (the state will be `ready`)
      */
-    void setup(framework::environment&) override;
+    bool setup(framework::environment&) override;
 
     /**
      * @brief start the component (the state will be `activated`)
      */
-    void start(framework::environment&) override;
+    bool start(framework::environment&) override;
 
     /**
      * @brief shutdown the component (the state will be `deactivated`)
      */
-    void shutdown(framework::environment&) override;
+    bool shutdown(framework::environment&) override;
 
-    void operator()(
+    bool operator()(
         std::shared_ptr<request> req,
         std::shared_ptr<response> res) override;
 

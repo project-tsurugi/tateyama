@@ -26,7 +26,6 @@
 #include <tateyama/framework/boot_mode.h>
 #include <tateyama/api/configuration.h>
 #include <tateyama/framework/routing_service.h>
-#include <tateyama/framework/task_scheduler_resource.h>
 #include <tateyama/framework/transactional_kvs_resource.h>
 #include <tateyama/endpoint/ipc/bootstrap/ipc_endpoint.h>
 #include <tateyama/endpoint/service/impl/service.h>
@@ -52,45 +51,58 @@ std::shared_ptr<resource> server::find_resource_by_id(component::id_type id) {
     return environment_->resource_repository().find_by_id(id);
 }
 
-void server::setup() {
-    if(setup_done_) return;
-    environment_->resource_repository().each([this](resource& arg){
-        arg.setup(*environment_);
+bool server::setup() {
+    if(setup_done_) return true;
+    bool success = true;
+    environment_->resource_repository().each([this, &success](resource& arg){
+        if (! success) return;
+        success = arg.setup(*environment_);
     });
-    environment_->service_repository().each([this](service& arg){
-        arg.setup(*environment_);
+    environment_->service_repository().each([this, &success](service& arg){
+        if (! success) return;
+        success = arg.setup(*environment_);
     });
-    environment_->endpoint_repository().each([this](endpoint& arg){
-        arg.setup(*environment_);
+    environment_->endpoint_repository().each([this, &success](endpoint& arg){
+        if (! success) return;
+        success = arg.setup(*environment_);
     });
-    setup_done_ = true;
+    setup_done_ = success;
+    return success;
 }
 
-void server::start() {
+bool server::start() {
     if(! setup_done_) {
         setup();
     }
-    environment_->resource_repository().each([this](resource& arg){
-        arg.start(*environment_);
+    bool success = true;
+    environment_->resource_repository().each([this, &success](resource& arg){
+        if (! success) return;
+        success = arg.start(*environment_);
     });
-    environment_->service_repository().each([this](service& arg){
-        arg.start(*environment_);
+    environment_->service_repository().each([this, &success](service& arg){
+        if (! success) return;
+        success = arg.start(*environment_);
     });
-    environment_->endpoint_repository().each([this](endpoint& arg){
-        arg.start(*environment_);
+    environment_->endpoint_repository().each([this, &success](endpoint& arg){
+        if (! success) return;
+        success = arg.start(*environment_);
     });
+    return success;
 }
 
-void server::shutdown() {
-    environment_->endpoint_repository().each([this](endpoint& arg){
-        arg.shutdown(*environment_);
+bool server::shutdown() {
+    // even if some components fails, continue all shutdown
+    bool success = true;
+    environment_->endpoint_repository().each([this, &success](endpoint& arg){
+        success = success && arg.shutdown(*environment_);
     });
-    environment_->service_repository().each([this](service& arg){
-        arg.shutdown(*environment_);
+    environment_->service_repository().each([this, &success](service& arg){
+        success = success && arg.shutdown(*environment_);
     });
-    environment_->resource_repository().each([this](resource& arg){
-        arg.shutdown(*environment_);
+    environment_->resource_repository().each([this, &success](resource& arg){
+        success = success && arg.shutdown(*environment_);
     });
+    return success;
 }
 
 std::shared_ptr<service> server::find_service_by_id(component::id_type id) {

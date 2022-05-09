@@ -7,11 +7,8 @@ option java_outer_classname = "FrameworkResponseProtos";
 
 // common response header for client to receive
 message Header {
-  // the request message version.
-  uint64 message_version = 1;
-
   // reserved for system use
-  reserved 2 to 10;
+  reserved 1 to 10;
 
   // the response payload type.
   enum PayloadType {

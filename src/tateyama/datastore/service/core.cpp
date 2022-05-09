@@ -27,7 +27,7 @@ namespace tateyama::datastore::service {
 using tateyama::api::server::request;
 using tateyama::api::server::response;
 
-void tateyama::datastore::service::core::operator()(std::shared_ptr<request> req, std::shared_ptr<response> res) {
+bool tateyama::datastore::service::core::operator()(std::shared_ptr<request> req, std::shared_ptr<response> res) {
     // mock implementation TODO
     namespace ns = tateyama::proto::datastore::request;
 
@@ -35,7 +35,7 @@ void tateyama::datastore::service::core::operator()(std::shared_ptr<request> req
     ns::Request rq{};
     if(! rq.ParseFromArray(data.data(), data.size())) {
         VLOG(log_error) << "request parse error";
-        return;
+        return false;
     }
 
     switch(rq.command_case()) {
@@ -63,20 +63,23 @@ void tateyama::datastore::service::core::operator()(std::shared_ptr<request> req
         case ns::Request::kTagRemove: break;
         case ns::Request::COMMAND_NOT_SET: break;
     }
+    return true;
 }
 
 core::core(std::shared_ptr<tateyama::api::configuration::whole> cfg) :
     cfg_(std::move(cfg))
 {}
 
-void core::start(tateyama::datastore::resource::core* resource) {
+bool core::start(tateyama::datastore::resource::core* resource) {
     resource_ = resource;
     //TODO implement
+    return true;
 }
 
-void core::shutdown(bool force) {
+bool core::shutdown(bool force) {
     //TODO implement
     (void) force;
+    return true;
 }
 
 }

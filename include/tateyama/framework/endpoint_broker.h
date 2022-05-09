@@ -48,11 +48,20 @@ public:
     [[nodiscard]] id_type id() const noexcept override;
 
     /**
-     * @brief exchange request/response with endpoint
-     * @param req the request from endpoint
-     * @param res the response from endpoint
-     * @return status::ok if successful
-     * @return any error otherwise
+     * @brief tateyama endpoint service interface
+     * @param req the request
+     * @param res the response
+     * @details this function provides API for tateyama AP service (routing requests to server AP and
+     * returning response and application output through data channels.)
+     * Endpoint uses this function to transfer request to AP and receive its response and output.
+     * `request`, `response` and IF objects (such as data_channel) derived from them are expected to be implemented
+     * by the Endpoint so that it provides necessary information in request, and receive result or notification
+     * in response.
+     * This function is asynchronous, that is, it returns as soon as the request is submitted and scheduled.
+     * The caller monitors the response and data_channel to check the progress. See tateyama::api::endpoint::response
+     * for details. Once request is transferred and fulfilled by the server AP, the response and data_channel
+     * objects member functions are called back to transfer the result.
+     * @note this function is thread-safe. Multiple client threads sharing this database object can call simultaneously.
      */
     virtual tateyama::status operator()(
         std::shared_ptr<api::endpoint::request const> req,
@@ -62,7 +71,7 @@ public:
      * @brief api function for framework::service - this should not be called
      * @details kept for consistency to run as framework::service.
      */
-    void operator()(
+    bool operator()(
         std::shared_ptr<request>,
         std::shared_ptr<response>) override;
 

@@ -40,7 +40,7 @@ component::id_type endpoint_broker::id() const noexcept {
     return tag;
 }
 
-void endpoint_broker::operator()(std::shared_ptr<request>, std::shared_ptr<response>) {
+bool endpoint_broker::operator()(std::shared_ptr<request>, std::shared_ptr<response>) {
     fail();
 }
 }

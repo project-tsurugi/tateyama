@@ -38,31 +38,36 @@ component::id_type routing_service::id() const noexcept {
     return tag;
 }
 
-void routing_service::setup(environment& env) {
+bool routing_service::setup(environment& env) {
     services_ = std::addressof(env.service_repository());
+    return true;
 }
 
-void routing_service::start(environment&) {
+bool routing_service::start(environment&) {
     //no-op
+    return true;
 }
 
-void routing_service::shutdown(environment&) {
+bool routing_service::shutdown(environment&) {
     services_ = {};
+    return true;
 }
 
-void routing_service::operator()(std::shared_ptr<request> req, std::shared_ptr<response> res) {
+bool routing_service::operator()(std::shared_ptr<request> req, std::shared_ptr<response> res) {
     if (services_ == nullptr) {
-        fail();
+        LOG(ERROR) << "routing service not setup yet";
+        return false;
     }
     if (req->service_id() == tag) {
-        fail();
+        LOG(ERROR) << "bad request destination (routing service)";
+        return false;
     }
     if (auto destination = services_->find_by_id(req->service_id()); destination != nullptr) {
         destination->operator()(std::move(req), std::move(res));
-        return;
+        return true;
     }
-    // wrong address
-    fail();
+    LOG(ERROR) << "request has invalid service id";
+    return false;
 }
 
 }

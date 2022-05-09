@@ -43,11 +43,18 @@ tateyama::status impl::service::operator()(
         return status::unknown;  //TODO assign error code
     }
     auto router = env_->service_repository().find<framework::routing_service>();
-    (*router)(
+    if(auto r = (*router)(
         std::move(svrreq),
         std::make_shared<tateyama::api::server::impl::response>(std::move(res))
-    );
+    ); ! r) {
+        return status::unknown;  //TODO assign error code
+    }
     return status::ok;
+}
+
+bool impl::service::setup(framework::environment& env) {
+    env_ = std::addressof(env);
+    return true;
 }
 
 }

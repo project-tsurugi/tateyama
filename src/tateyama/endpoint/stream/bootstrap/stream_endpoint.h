@@ -28,27 +28,30 @@ class stream_endpoint : public endpoint {
     /**
      * @brief setup the component (the state will be `ready`)
      */
-    void setup(environment& env) override {
+    bool setup(environment& env) override {
         // create listener object
         listener_ = std::make_unique<tateyama::server::stream_listener>(
             env.configuration(),
             env.service_repository().find<framework::endpoint_broker>()
         );
+        return true;
     }
 
     /**
      * @brief start the component (the state will be `activated`)
      */
-    void start(environment&) override {
+    bool start(environment&) override {
         listener_thread_ = std::thread(std::ref(*listener_));
+        return true;
     }
 
     /**
      * @brief shutdown the component (the state will be `deactivated`)
      */
-    void shutdown(environment&) override {
+    bool shutdown(environment&) override {
         listener_->terminate();
         listener_thread_.join();
+        return true;
     }
 private:
     std::unique_ptr<tateyama::server::stream_listener> listener_;

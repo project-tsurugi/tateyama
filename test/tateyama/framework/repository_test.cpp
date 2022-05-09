@@ -38,9 +38,9 @@ public:
         [[nodiscard]] id_type id() const noexcept override {
             return tag;
         }
-        void setup(environment&) override {}
-        void start(environment&) override {}
-        void shutdown(environment&) override {}
+        bool setup(environment&) override { return true;}
+        bool start(environment&) override { return true;}
+        bool shutdown(environment&) override { return true;}
     };
     class test_resource1 : public resource {
     public:
@@ -49,9 +49,9 @@ public:
         [[nodiscard]] id_type id() const noexcept override {
             return tag;
         }
-        void setup(environment&) override {}
-        void start(environment&) override {}
-        void shutdown(environment&) override {}
+        bool setup(environment&) override { return true;}
+        bool start(environment&) override { return true;}
+        bool shutdown(environment&) override { return true;}
     };
     class test_service : public service {
     public:
@@ -60,22 +60,23 @@ public:
         [[nodiscard]] id_type id() const noexcept override {
             return tag;
         }
-        void operator()(
+        bool operator()(
             std::shared_ptr<request> req,
             std::shared_ptr<response> res) override {
             (void)req;
             (void)res;
+            return true;
         }
-        void setup(environment&) override {}
-        void start(environment&) override {}
-        void shutdown(environment&) override {}
+        bool setup(environment&) override { return true;}
+        bool start(environment&) override { return true;}
+        bool shutdown(environment&) override { return true;}
     };
     class test_endpoint : public endpoint {
     public:
         test_endpoint() = default;
-        void setup(environment&) override {}
-        void start(environment&) override {}
-        void shutdown(environment&) override {}
+        bool setup(environment&) override { return true;}
+        bool start(environment&) override { return true;}
+        bool shutdown(environment&) override { return true;}
     };
 };
 
@@ -102,20 +103,20 @@ TEST_F(repository_test, duplicate_id) {
         repository<resource> rep{};
         auto res0 = std::make_shared<test_resource0>();
         rep.add(res0);
-        ASSERT_DEATH({ rep.add(res0); }, "");
+        rep.add(res0); // error shown
     }
     {
         repository<service> rep{};
         auto svc = std::make_shared<test_service>();
         rep.add(svc);
-        ASSERT_DEATH({ rep.add(svc); }, "");
+        rep.add(svc); // error shown
     }
     {
         // endpoint has no id, so no duplicate is checked
         repository<endpoint> rep{};
         auto ep = std::make_shared<test_endpoint>();
         rep.add(ep);
-        ASSERT_NO_FATAL_FAILURE({ rep.add(ep); });
+        rep.add(ep);  // no error
     }
 }
 

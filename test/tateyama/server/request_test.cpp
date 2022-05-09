@@ -48,13 +48,13 @@ public:
 };
 
 TEST_F(server_request_test, basic) {
-
     using namespace std::string_view_literals;
     std::stringstream ss{};
     {
         ::tateyama::proto::framework::request::Header hdr100{};
         hdr100.set_service_id(100);
         hdr100.set_session_id(101);
+        hdr100.set_message_version(1);
         ASSERT_TRUE(utils::SerializeDelimitedToOstream(hdr100, &ss));
     }
     {
@@ -65,9 +65,7 @@ TEST_F(server_request_test, basic) {
 
     auto str = ss.str();
     auto epreq = std::make_shared<test_request>(str);
-
     auto svrreq = server::impl::create_request(epreq);
-
     ASSERT_TRUE(svrreq);
     EXPECT_EQ(100, svrreq->service_id());
     EXPECT_EQ(101, svrreq->session_id());

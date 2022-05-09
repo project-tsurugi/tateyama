@@ -15,28 +15,46 @@
  */
 #include <tateyama/framework/transactional_kvs_resource.h>
 
+#include <glog/logging.h>
+
+#include <tateyama/framework/environment.h>
 #include <tateyama/framework/component_ids.h>
 #include <tateyama/framework/resource.h>
 
 namespace tateyama::framework {
 
-void transactional_kvs_resource::setup(environment&) {
-    //TODO
+bool transactional_kvs_resource::setup(environment&) {
+    // no-op
+    return true;
 }
 
-void transactional_kvs_resource::start(environment&) {
-    //TODO
+bool transactional_kvs_resource::start(environment& env) {
+    env.configuration();
+    sharksfin::DatabaseOptions options{};
+    if(auto res = sharksfin::database_open(options, std::addressof(database_handle_)); res != sharksfin::StatusCode::OK) {
+        LOG(ERROR) << "opening database failed";
+        return false;
+    }
+    return true;
 }
 
-void transactional_kvs_resource::shutdown(environment&) {
-    //TODO
+bool transactional_kvs_resource::shutdown(environment&) {
+    if(auto res = sharksfin::database_close(database_handle_); res != sharksfin::StatusCode::OK) {
+        LOG(ERROR) << "closing database failed";
+        // proceed to dispose db even on error
+    }
+    if(auto res = sharksfin::database_dispose(database_handle_); res != sharksfin::StatusCode::OK) {
+        LOG(ERROR) << "disposing database failed";
+        return false;
+    }
+    return true;
 }
 
 component::id_type transactional_kvs_resource::id() const noexcept {
     return tag;
 }
 
-sharksfin::DatabaseHandle transactional_kvs_resource::handle() const noexcept {
+sharksfin::DatabaseHandle transactional_kvs_resource::core_object() const noexcept {
     return database_handle_;
 }
 
