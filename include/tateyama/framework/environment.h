@@ -25,7 +25,7 @@
 
 namespace tateyama::framework {
 
-class environment {
+class cache_align environment {
 public:
 
     /**
@@ -38,7 +38,7 @@ public:
      * @param mode framework boot mode on this environment
      * @param cfg configuration for the environment.
      */
-    environment(boot_mode mode, std::shared_ptr<api::configuration::whole> cfg);
+    environment(boot_mode mode, std::shared_ptr<api::configuration::whole> cfg) noexcept;
 
     /**
      * @brief destruct the object
@@ -54,29 +54,29 @@ public:
      * @brief accessor to the framework boot mode
      * @return the framework boot mode
      */
-    boot_mode mode();
+    [[nodiscard]] boot_mode mode() const noexcept;
 
     /**
      * @brief accessor to the configuration
      * @return reference to the configuration created by initialize()
      * @pre initialize() has been called successfully
      */
-    std::shared_ptr<api::configuration::whole> const& configuration();
+    [[nodiscard]] std::shared_ptr<api::configuration::whole> const& configuration() const noexcept;
 
     /**
      * @brief accessor to the resource component repository
      */
-    repository<resource>& resource_repository();
+    repository<resource>& resource_repository() noexcept;
 
     /**
      * @brief accessor to the service component repository
      */
-    repository<service>& service_repository();
+    repository<service>& service_repository() noexcept;
 
     /**
      * @brief accessor to the endpoint component repository
      */
-    repository<endpoint>& endpoint_repository();
+    repository<endpoint>& endpoint_repository() noexcept;
 
 private:
     boot_mode mode_{};

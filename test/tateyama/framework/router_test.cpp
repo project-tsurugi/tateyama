@@ -109,7 +109,7 @@ TEST_F(router_test, basic) {
     server sv{boot_mode::database_server, cfg};
     auto svc0 = std::make_shared<test_service>();
     sv.add_service(svc0);
-    install_core_components(sv);
+    add_core_components(sv);
     sv.start();
 
     auto router = sv.find_service<framework::routing_service>();

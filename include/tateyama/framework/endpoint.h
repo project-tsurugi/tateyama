@@ -23,7 +23,7 @@ namespace tateyama::framework {
  * @brief endpoint component
  */
 class endpoint : public component {
-    // intentionally blank
+    // endpoints run actively and has no member function
 };
 
 }

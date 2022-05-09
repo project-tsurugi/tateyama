@@ -17,7 +17,7 @@
 
 #include <memory>
 
-#include <tateyama/framework/ids.h>
+#include <tateyama/framework/component_ids.h>
 #include <tateyama/framework/resource.h>
 #include <tateyama/api/task_scheduler/scheduler.h>
 

@@ -83,7 +83,7 @@ using namespace std::string_view_literals;
 TEST_F(datastore_test, basic) {
     auto cfg = api::configuration::create_configuration("");
     framework::server sv{framework::boot_mode::database_server, cfg};
-    install_core_components(sv);
+    add_core_components(sv);
     sv.start();
     auto router = sv.find_service<framework::routing_service>();
     ASSERT_TRUE(router);

@@ -54,9 +54,7 @@ public:
      * @param mode framework boot mode on this environment
      * @param cfg configuration for the environment.
      */
-    explicit server(framework::boot_mode mode, std::shared_ptr<api::configuration::whole> cfg) :
-        environment_(std::make_shared<environment>(mode, std::move(cfg)))
-    {}
+    server(framework::boot_mode mode, std::shared_ptr<api::configuration::whole> cfg);
 
     /**
      * @brief add new resource to manage life cycle
@@ -138,12 +136,12 @@ private:
 };
 
 /**
- * @brief install tateyama core components
+ * @brief add tateyama core components
  * @param svr the server to add comopnents to
  * @details This function add core components such as router, endpoint,
  * that are built-in part of tateyama infrastructure.
  */
-void install_core_components(server& svr);
+void add_core_components(server& svr);
 
 }
 

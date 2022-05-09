@@ -20,7 +20,7 @@
 #include <tateyama/api/endpoint/request.h>
 #include <tateyama/utils/protobuf_utils.h>
 #include <tateyama/proto/framework/request.pb.h>
-#include <tateyama/framework/ids.h>
+#include <tateyama/framework/component_ids.h>
 
 namespace tateyama::api::server::impl {
 

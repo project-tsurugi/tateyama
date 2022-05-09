@@ -112,11 +112,11 @@ TEST_F(server_test, basic) {
     sv.shutdown();
 }
 
-TEST_F(server_test, install_core_components) {
+TEST_F(server_test, add_core_components) {
     auto cfg = api::configuration::create_configuration("");
     server sv{boot_mode::database_server, cfg};
     auto res0 = std::make_shared<test_resource0>();
-    install_core_components(sv);
+    add_core_components(sv);
 
     auto router = sv.find_service<routing_service>();
     ASSERT_TRUE(router);

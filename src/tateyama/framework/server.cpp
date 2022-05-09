@@ -65,6 +65,7 @@ void server::setup() {
     });
     setup_done_ = true;
 }
+
 void server::start() {
     if(! setup_done_) {
         setup();
@@ -96,7 +97,11 @@ std::shared_ptr<service> server::find_service_by_id(component::id_type id) {
     return environment_->service_repository().find_by_id(id);
 }
 
-void install_core_components(server& svr) {
+server::server(framework::boot_mode mode, std::shared_ptr<api::configuration::whole> cfg) :
+    environment_(std::make_shared<environment>(mode, std::move(cfg)))
+{}
+
+void add_core_components(server& svr) {
     svr.add_resource(std::make_shared<framework::transactional_kvs_resource>());
     svr.add_resource(std::make_shared<datastore::resource::bridge>());
 

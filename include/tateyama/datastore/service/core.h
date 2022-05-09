@@ -16,7 +16,7 @@
 #pragma once
 
 #include <tateyama/api/configuration.h>
-#include <tateyama/framework/ids.h>
+#include <tateyama/framework/component_ids.h>
 #include <tateyama/framework/service.h>
 #include <tateyama/datastore/resource/core.h>
 

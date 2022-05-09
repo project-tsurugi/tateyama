@@ -15,7 +15,7 @@
  */
 #include <tateyama/framework/transactional_kvs_resource.h>
 
-#include <tateyama/framework/ids.h>
+#include <tateyama/framework/component_ids.h>
 #include <tateyama/framework/resource.h>
 
 namespace tateyama::framework {

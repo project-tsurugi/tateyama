@@ -77,6 +77,7 @@ public:
      * @brief list the section names in the config. file that this component is affected
      * @return the list of section name
      */
+    // TODO implement to validate config file
     //virtual std::vector<std::string> configuration_sections() = 0;
 };
 

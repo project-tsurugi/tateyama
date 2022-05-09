@@ -24,7 +24,7 @@
 #include <tateyama/api/server/request.h>
 #include <tateyama/api/server/response.h>
 #include <tateyama/framework/environment.h>
-#include <tateyama/framework/ids.h>
+#include <tateyama/framework/component_ids.h>
 #include <tateyama/datastore/resource/bridge.h>
 
 namespace tateyama::datastore::service {

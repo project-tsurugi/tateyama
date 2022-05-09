@@ -26,27 +26,27 @@
 
 namespace tateyama::framework {
 
-boot_mode tateyama::framework::environment::mode() {
+boot_mode tateyama::framework::environment::mode() const noexcept {
     return mode_;
 }
 
-std::shared_ptr<api::configuration::whole> const& environment::configuration() {
+std::shared_ptr<api::configuration::whole> const& environment::configuration() const noexcept {
     return configuration_;
 }
 
-repository<resource>& environment::resource_repository() {
+repository<resource>& environment::resource_repository() noexcept {
     return resource_repository_;
 }
 
-repository<service>& environment::service_repository() {
+repository<service>& environment::service_repository() noexcept {
     return service_repository_;
 }
 
-repository<endpoint>& environment::endpoint_repository() {
+repository<endpoint>& environment::endpoint_repository() noexcept {
     return endpoint_repository_;
 }
 
-environment::environment(boot_mode mode, std::shared_ptr<api::configuration::whole> cfg) :
+environment::environment(boot_mode mode, std::shared_ptr<api::configuration::whole> cfg) noexcept :
     mode_(mode),
     configuration_(std::move(cfg))
 {}

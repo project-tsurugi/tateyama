@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <tateyama/framework/routing_service.h>
+#include <tateyama/framework/endpoint_broker.h>
 
 #include <functional>
 #include <memory>
@@ -21,49 +21,27 @@
 
 #include <takatori/util/fail.h>
 
+#include <tateyama/framework/component_ids.h>
+#include <tateyama/framework/component.h>
 #include <tateyama/framework/service.h>
-#include <tateyama/framework/repository.h>
 #include <tateyama/api/server/request.h>
 #include <tateyama/api/server/response.h>
-#include <tateyama/framework/environment.h>
-#include <tateyama/framework/component_ids.h>
+#include <tateyama/api/endpoint/request.h>
+#include <tateyama/api/endpoint/response.h>
 
 namespace tateyama::framework {
 
 using tateyama::api::server::request;
 using tateyama::api::server::response;
+
 using takatori::util::fail;
 
-component::id_type routing_service::id() const noexcept {
+component::id_type endpoint_broker::id() const noexcept {
     return tag;
 }
 
-void routing_service::setup(environment& env) {
-    services_ = std::addressof(env.service_repository());
-}
-
-void routing_service::start(environment&) {
-    //no-op
-}
-
-void routing_service::shutdown(environment&) {
-    services_ = {};
-}
-
-void routing_service::operator()(std::shared_ptr<request> req, std::shared_ptr<response> res) {
-    if (services_ == nullptr) {
-        fail();
-    }
-    if (req->service_id() == tag) {
-        fail();
-    }
-    if (auto destination = services_->find_by_id(req->service_id()); destination != nullptr) {
-        destination->operator()(std::move(req), std::move(res));
-        return;
-    }
-    // wrong address
+void endpoint_broker::operator()(std::shared_ptr<request>, std::shared_ptr<response>) {
     fail();
 }
-
 }
 

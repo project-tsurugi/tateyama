@@ -21,7 +21,7 @@
 
 #include <takatori/util/fail.h>
 
-#include <tateyama/framework/ids.h>
+#include <tateyama/framework/component_ids.h>
 #include <tateyama/framework/component.h>
 #include <tateyama/framework/service.h>
 #include <tateyama/api/server/request.h>
@@ -36,23 +36,36 @@ using tateyama::api::server::response;
 
 using takatori::util::fail;
 
+/**
+ * @brief endpoint broker
+ * @details endpoint broker is a special service that accepts request from endpoints, convert it to service request
+ * and dispatch to services layer.
+ */
 class endpoint_broker : public service {
 public:
     static constexpr id_type tag = service_id_endpoint_broker;
 
-    [[nodiscard]] id_type id() const noexcept override {
-        return tag;
-    };
+    [[nodiscard]] id_type id() const noexcept override;
 
-    void operator()(
-        std::shared_ptr<request>,
-        std::shared_ptr<response>) override {
-        fail();
-    };
-
+    /**
+     * @brief exchange request/response with endpoint
+     * @param req the request from endpoint
+     * @param res the response from endpoint
+     * @return status::ok if successful
+     * @return any error otherwise
+     */
     virtual tateyama::status operator()(
         std::shared_ptr<api::endpoint::request const> req,
         std::shared_ptr<api::endpoint::response> res) = 0;
+
+    /**
+     * @brief api function for framework::service - this should not be called
+     * @details kept for consistency to run as framework::service.
+     */
+    void operator()(
+        std::shared_ptr<request>,
+        std::shared_ptr<response>) override;
+
 };
 
 }
