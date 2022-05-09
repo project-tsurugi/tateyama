@@ -29,8 +29,14 @@ bool transactional_kvs_resource::setup(environment&) {
 }
 
 bool transactional_kvs_resource::start(environment& env) {
-    env.configuration();
+    auto s = env.configuration()->get_section("data_store");
+    BOOST_ASSERT(s != nullptr); //NOLINT
+    std::string location{};
     sharksfin::DatabaseOptions options{};
+    if(auto res = s->get("log_location", location); res && !location.empty()) {
+        static constexpr std::string_view KEY_LOCATION{"location"};
+        options.attribute(KEY_LOCATION, location);
+    }
     if(auto res = sharksfin::database_open(options, std::addressof(database_handle_)); res != sharksfin::StatusCode::OK) {
         LOG(ERROR) << "opening database failed";
         return false;

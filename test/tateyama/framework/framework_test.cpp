@@ -58,6 +58,7 @@ public:
             std::shared_ptr<response> res) override {
             (void)req;
             (void)res;
+            return true;
         }
         bool setup(environment&) override { return true; }
         bool start(environment&) override { return true; }
