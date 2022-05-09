@@ -23,12 +23,7 @@
 
 namespace tateyama::framework {
 
-bool transactional_kvs_resource::setup(environment&) {
-    // no-op
-    return true;
-}
-
-bool transactional_kvs_resource::start(environment& env) {
+bool transactional_kvs_resource::setup(environment& env) {
     auto s = env.configuration()->get_section("data_store");
     BOOST_ASSERT(s != nullptr); //NOLINT
     std::string location{};
@@ -41,6 +36,11 @@ bool transactional_kvs_resource::start(environment& env) {
         LOG(ERROR) << "opening database failed";
         return false;
     }
+    return true;
+}
+
+bool transactional_kvs_resource::start(environment&) {
+    // no-op
     return true;
 }
 
