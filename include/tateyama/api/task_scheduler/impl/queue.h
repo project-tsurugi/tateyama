@@ -15,8 +15,12 @@
  */
 #pragma once
 
+#include <atomic>
+
 #include "tbb_queue.h"
+#ifdef MC_QUEUE
 #include "mc_queue.h"
+#endif
 #include <tateyama/utils/cache_align.h>
 
 namespace tateyama::task_scheduler {
