@@ -45,15 +45,27 @@ public:
     /**
      * @brief start the component (the state will be `activated`)
      */
-    void start(environment&) override {
-        scheduler_->start();
+    void start(environment& env) override {
+        if(env.mode() == boot_mode::database_server) {
+            scheduler_->start();
+        }
     }
 
     /**
      * @brief shutdown the component (the state will be `deactivated`)
      */
-    void shutdown(environment&) override {
-        scheduler_->stop();
+    void shutdown(environment& env) override {
+        if(env.mode() == boot_mode::database_server) {
+            scheduler_->stop();
+        }
+    }
+
+    /**
+     * @brief accessor to the core object
+     * @return the scheduler held by this object
+     */
+    [[nodiscard]] api::task_scheduler::scheduler<T>* core_object() const noexcept {
+        return scheduler_.get();
     }
 
 private:
