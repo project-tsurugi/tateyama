@@ -30,6 +30,25 @@ jobs:
           submodules: recursive
           token: ${{ secrets.GHA_PAT }}
 
+      - id: Install_shirakami
+        name: Install_shirakami
+        run: |
+          cd third_party/sharksfin/third_party/shirakami
+          rm -rf build
+          mkdir -p build
+          cd build
+          cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_SANITIZER=ON -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/.local ..
+          cmake --build . --target install --clean-first -- -j
+
+      - id: Install_sharksfin
+        name: Install_sharksfin
+        run: |
+          cd third_party/sharksfin
+          rm -rf build
+          mkdir -p build
+          cd build
+          cmake -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTS=OFF -DBUILD_DOCUMENTS=OFF -DBUILD_EXAMPLES=OFF -DFORCE_INSTALL_RPATH=ON -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/.local ..
+          cmake --build . --target install --clean-first -- -j
       - id: Install_fpdecimal
         name: Install_fpdecimal
         run: |
