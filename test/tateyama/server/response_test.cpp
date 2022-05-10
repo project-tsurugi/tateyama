@@ -49,6 +49,7 @@ public:
     }
 
     status body_head(std::string_view body_head) override {
+        body_head_ = body_head;
         return status::ok;
     }
 
@@ -64,6 +65,7 @@ public:
         return status::ok;
     }
     std::string data_{};  //NOLINT
+    std::string body_head_{};  //NOLINT
 };
 
 TEST_F(server_response_test, session_id_is_added_as_header) {
@@ -104,4 +106,42 @@ TEST_F(server_response_test, session_id_is_added_as_header) {
 
 }
 
+TEST_F(server_response_test, temporary_header_for_body_head) {
+    // body_head will be removed soon, this is temporary work-around for tsubakuro expecting header for body_head
+    using namespace std::string_view_literals;
+    std::stringstream ss{};
+    {
+        ::tateyama::proto::test::TestMsg msg{};
+        msg.set_id(999);
+        msg.set_message_version(1);
+        ASSERT_TRUE(msg.SerializeToOstream(&ss));
+    }
+
+    auto str = ss.str();
+    auto epres = std::make_shared<test_response>();
+
+    api::server::impl::response svrres{epres};
+    svrres.session_id(100);
+    ASSERT_EQ(status::ok, svrres.body_head(str));
+
+    auto result = epres->body_head_;
+    ::tateyama::proto::framework::response::Header out100{}, etc{};
+    bool clean_eof{false};
+    google::protobuf::io::ArrayInputStream in{result.data(), static_cast<int>(result.size())};
+    EXPECT_TRUE(utils::ParseDelimitedFromZeroCopyStream(&out100, &in, &clean_eof));
+    EXPECT_FALSE(clean_eof);
+    std::string_view out{};
+    EXPECT_TRUE(utils::GetDelimitedBodyFromZeroCopyStream(&in, &clean_eof, out));
+    EXPECT_FALSE(clean_eof);
+
+    EXPECT_FALSE(utils::ParseDelimitedFromZeroCopyStream(&etc, &in, &clean_eof));
+    EXPECT_TRUE(clean_eof);
+    ::tateyama::proto::test::TestMsg msg{};
+    EXPECT_TRUE(msg.ParseFromArray(out.data(), out.size()));
+
+    EXPECT_EQ(100, out100.session_id());
+    EXPECT_EQ(1, msg.message_version());
+    EXPECT_EQ(999, msg.id());
+
+}
 }
