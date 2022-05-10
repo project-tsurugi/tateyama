@@ -41,6 +41,7 @@ NOTE: for developers
 oltp start [--conf </path/to/conf>] [--recovery|--no-recovery]
 oltp shutdown [--conf </path/to/conf>]
 oltp kill [--conf </path/to/conf>]
+oltp quiesce [--conf </path/to/conf>] [--message <message-text>]
 oltp status [--json] [--conf </path/to/conf>]
 ```
 
@@ -98,6 +99,26 @@ oltp status [--json] [--conf </path/to/conf>]
         * do nothing
       * otherwise
         * try to kill the service
+  * `quiesce`
+    * overview
+      * データベースプロセスを静止状態で起動する
+    * options
+      * (N/A)
+    * note
+      * 同一の設定ファイルを参照するデータベースが稼働中である場合、コマンドは失敗する
+      * 同一の設定ファイルを参照するデータベースが完全に終了していない場合、コマンドは失敗する
+      * この操作は、静止状態でのバックアップを作成する際に、他の操作によるバックアップ対象の破損を防ぐために存在する
+        * 静止状態のデータベースは、 `shutdown`. `kill`, `status` コマンドやそれに該当する機能のみ利用可能で、それ以外の操作はすべて禁止されている
+        * 静止状態でバックアップを作成する際に、当該サブコマンドを実行する
+          * 静止状態で起動中は、他のリストア操作などが一切行えない
+          * 静止状態で起動中は、他のプロセスからデータベースを起動することもできないため、 mutex lock のような扱いが可能
+        * 静止状態でのバックアップ作成が完了したのちに、 `shutdown` サブコマンドでデータベースを終了する
+    * impl memo
+      * if service is absent
+        * exec service with `--quiescent`
+        * wait until service is ready
+      * otherwise
+        * raise error
   * `status`
     * overview
       * データベースの状態を表示する

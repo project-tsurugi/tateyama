@@ -26,9 +26,20 @@
   * 全てのコンポーネントが deactivated になってから終了した場合、安全に終了したといえる
 * サービスモードを新設する
   * モードごとに利用可能なリソースやサービスが存在する
-  * モードは通常サービスの `database_server`, 保守/サーバーモードの `maintenance_server`, 保守/単独モードの `maintenance_standalone` の3つ
-    * `database_standalone` は今のところ用途が思いつかない
+  * モードは以下
+    * `database_server` - 通常のデータベースとして起動
+    * `database_standalone` - 定義しない
+    * `maintenance_server` - 保守モードかつサーバーとして起動
+    * `maintenance_standalone` - 保守モードかつスタンドアロンアプリケーションとして起動
+    * `quiescent_server` - 静止モードかつサーバーとして起動
+    * `quiescent_standalone` - 定義しない
   * モードごとに各コンポーネントの `activated` フェーズにおいて提供する機能が異なる
+  * モードごとのコンセプトは以下
+    * 通常系 (`database_*`) - あらゆる機能を利用できる
+    * メンテナンス系 (`maintenance_*`) - システム管理機能のみを利用できる
+      * DBA的な管理 (スキーマ変更等) **ではない**
+    * 静止系 (`quiescent_*`) - あらゆる機能が利用できない
+      * 例外的に、ステータス確認とシャットダウンは利用可能
 
 ## 登場人物
 
@@ -46,47 +57,6 @@
 * router
   * end-point と service の仲介を行い、二者間でメッセージの授受を行うコンポーネント
   * 単なる service の一種 (`routing_service`)
-
-## 現在の構成
-
-* 初期化シーケンス
-  * [main]
-  * [backend_main]
-    * calling [create_database]
-    * calling [initialize database]
-    * calling [create jogasaki]
-    * calling [initialize jogasaki]
-    * calling [create ipc_endpoint]
-    * calling [create stream_endpoint]
-    * calling [initialize ipc_endpoint]
-    * calling [initialize stream_endpoint]
-* ルーティング
-  * calling [peep wire]
-    * calling [invoke service]
-* 終了シーケンス
-  * calling [sigwait]
-    * calling [shutdown ipc_endpoint]
-    * calling [shutdown stream_endpoint]
-    * calling [shutdown jogasaki]
-    * calling [shutdown database]
-
-[main]:https://github.com/project-tsurugi/tateyama-bootstrap/blob/058829fd395e54cc71056ebe16a94d70564f0903/src/tateyama/server/backend.cpp#L208
-[backend_main]:https://github.com/project-tsurugi/tateyama-bootstrap/blob/058829fd395e54cc71056ebe16a94d70564f0903/src/tateyama/server/backend.cpp#L55
-[create_database]:https://github.com/project-tsurugi/tateyama-bootstrap/blob/058829fd395e54cc71056ebe16a94d70564f0903/src/tateyama/server/backend.cpp#L80
-[initialize database]:https://github.com/project-tsurugi/tateyama-bootstrap/blob/058829fd395e54cc71056ebe16a94d70564f0903/src/tateyama/server/backend.cpp#L81
-[create jogasaki]:https://github.com/project-tsurugi/tateyama-bootstrap/blob/058829fd395e54cc71056ebe16a94d70564f0903/src/tateyama/server/backend.cpp#L87
-[initialize jogasaki]:https://github.com/project-tsurugi/tateyama-bootstrap/blob/058829fd395e54cc71056ebe16a94d70564f0903/src/tateyama/server/backend.cpp#L89
-[create ipc_endpoint]:https://github.com/project-tsurugi/tateyama-bootstrap/blob/058829fd395e54cc71056ebe16a94d70564f0903/src/tateyama/server/backend.cpp#L94
-[create stream_endpoint]:https://github.com/project-tsurugi/tateyama-bootstrap/blob/058829fd395e54cc71056ebe16a94d70564f0903/src/tateyama/server/backend.cpp#L97
-[initialize ipc_endpoint]:https://github.com/project-tsurugi/tateyama-bootstrap/blob/058829fd395e54cc71056ebe16a94d70564f0903/src/tateyama/server/backend.cpp#L107
-[initialize stream_endpoint]:https://github.com/project-tsurugi/tateyama-bootstrap/blob/058829fd395e54cc71056ebe16a94d70564f0903/src/tateyama/server/backend.cpp#L110
-[peep wire]:https://github.com/project-tsurugi/tateyama/blob/2e76cb3aa93690d477efb3a117c66b34ed68ca45/src/tateyama/endpoint/ipc/bootstrap/worker.cpp#L26
-[invoke service]:https://github.com/project-tsurugi/tateyama/blob/2e76cb3aa93690d477efb3a117c66b34ed68ca45/src/tateyama/endpoint/ipc/bootstrap/worker.cpp#L29
-[sigwait]:https://github.com/project-tsurugi/tateyama-bootstrap/blob/058829fd395e54cc71056ebe16a94d70564f0903/src/tateyama/server/backend.cpp#L177
-[shutdown ipc_endpoint]:https://github.com/project-tsurugi/tateyama-bootstrap/blob/058829fd395e54cc71056ebe16a94d70564f0903/src/tateyama/server/backend.cpp#L188
-[shutdown stream_endpoint]:https://github.com/project-tsurugi/tateyama-bootstrap/blob/058829fd395e54cc71056ebe16a94d70564f0903/src/tateyama/server/backend.cpp#L190
-[shutdown jogasaki]:https://github.com/project-tsurugi/tateyama-bootstrap/blob/058829fd395e54cc71056ebe16a94d70564f0903/src/tateyama/server/backend.cpp#L192
-[shutdown database]:https://github.com/project-tsurugi/tateyama-bootstrap/blob/058829fd395e54cc71056ebe16a94d70564f0903/src/tateyama/server/backend.cpp#L194
 
 ## class design
 
@@ -364,17 +334,21 @@ public:
 
 * 起動時のモードごとに各コンポーネントの `activated` 状態の挙動が異なる
 
-  | 項目 | `database_server` | `maintenance_server` | `maintenance_standalone` |
-  |---|:-:|:-:|:-:|
-  | データベース   | ○ | △ (保守モード) | △ (保守モード) |
-  | スケジューラ   | ○ | × | × |
-  | 認証機構       | ○ | ○ | ○ |
-  | サービス       | ○ | ○ | × |
-  | エンドポイント | ○ | △ (一部のみ) | × |
-  | ルーター       | ○ | ○ | × |
+  | 項目 | `database_server` | `maintenance_server` | `maintenance_standalone` | `quiescent_server` |
+  |---|:-:|:-:|:-:|:-:|
+  | データベース   | ○ | △ (保守モード) | △ (保守モード) | x |
+  | スケジューラ   | ○ | × | × | x |
+  | 認証機構       | ○ | ○ | ○ | o |
+  | サービス       | ○ | ○ | × | △ (起動制御のみ) |
+  | エンドポイント | ○ | △ (一部のみ) | × | △ (一部のみ) |
+  | ルーター       | ○ | ○ | × | ○ |
+
 * 備考
   * "×" となっている部分は、そもそもコンポーネントを `activated` にする必要性はないが、依存解決がめんどくさそうなので「`activated` だがまともに働いていない」という状態がよさそう
   * `maintenance_standalone` での実行時にも外部からステータスの取得や shutdown の要求を受け付ける必要がある場合、そもそも `maintenance_server` で稼動させるか、または `maintenance_standalone` でも各種通信経路を有効にする必要がある
+  * `quiescent_server` はステータスの取得や shutdown の要求以外を拒否する
+    * 無関係のサービスへのコマンドは利用不可能
+    * 排他的に静止状態を作り出すためのモードで、主に静止状態のバックアップ作成に利用する
 
 ### bootstrap sequence
 
@@ -387,6 +361,7 @@ tateyama-bootstrap \
 <behavior-options>:
     [--database] |
     --maintenance |
+    --quiescent [--message <message>] |
     --restore-backup </path/to/backup> [--keep-backup|--no-keep-backup] |
     --restore-tag <tag-name>
 ```
@@ -398,6 +373,7 @@ tateyama-bootstrap \
   | 未指定 | `database_server` |
   | `--database` | `database_server` |
   | `--maintenance` | `maintenance_server` |
+  | `--quiescent` | `quiescent_server` |
   | その他 | `maintenance_standalone` |
 * 各モードについて、それぞれ以下のように実行する
   * 初期化
@@ -405,9 +381,9 @@ tateyama-bootstrap \
   * 準備
     * 各コンポーネントを `-> ready -> activate` の順に遷移させる
   * 本体
-    * `{database,maintenance}_server`
+    * `*_server` モード
       * `SIGINT`, `SIGTERM` が来るまでポーリングを行う
-    * `maintenance_standalone`
+    * `maintenance_standalone` モード
       * それぞれ以下の関数を実行する
 
         | オプション名 | 実行する関数 |
@@ -423,6 +399,9 @@ tateyama-bootstrap \
   * `--restore-tag` などは `maintenance_server` で動かしてクライアントからコマンドで指示を出してもよい
   * 逆に `--tag-{list,add,remove,show}` なども `maintenance_standalone` として bootstrap 内に作りこんでもよい
   * 性能や保守性、初動開発の効率を見て適宜判断されたし
+  * `--quiescent --message "something"` は、ステータス確認が行われた際に表示するメッセージを想定
+    * 「Aがバックアップを作成中」などのイメージ
+    * 後回しでもいい
 
 ### module role
 
