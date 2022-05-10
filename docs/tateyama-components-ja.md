@@ -55,16 +55,18 @@ tateyama を実行する上で必須となるであろう組み込みコンポ�
       * セッションの lease 期限を延ばす
   * depends on
     * `status_resource` ?
-* `backup_service`
-  * バックアップ・リストア機能を提供する
+* `datastore_service`
+  * データストアの操作を提供する
     * handle `backup_begin` command
     * handle `backup_end` command
+    * handle `backup_continue` command
+    * handle `backup_estimate` command
     * handle `restore_backup` command (only if maintenance)
     * handle `restore_tag` command (only if maintenance)
-    * handle PITR `tag_list` command
-    * handle PITR `tag_info` command
-    * handle PITR `tag_add` command
-    * handle PITR `tag_remove` command
+    * handle `tag_list` command
+    * handle `tag_get` command
+    * handle `tag_add` command
+    * handle `tag_remove` command
     * expose restore from backup function
     * expose restore from tag function
   * depends on
@@ -98,7 +100,22 @@ tateyama を実行する上で必須となるであろう組み込みコンポ�
 
 * `sql_service`
   * SQL機能をコマンド経由で利用するサービス
-    * コマンドを解釈して `joagsaki_resource` の機能に移譲する ?
+    * transaction control
+      * handle `transaction_begin` command
+      * handle `transaction_commit` command
+      * handle `transaction_rollback` command
+    * prepare statement
+      * handle `statement_prepare` command
+      * handle `statement_dispose` command
+    * metadata
+      * handle `describe_statement` command
+      * handle `describe_table` command
+    * SQL operations
+      * handle `execute` command
+      * handle `query` command
+    * bulk data operations
+      * handle `dump` command
+      * handle `load` command
   * depends on
     * `sql_resource`
     * `session_resource`
