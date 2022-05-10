@@ -167,8 +167,14 @@ public:
         const char* payload(std::size_t length) override {
             return wire_->payload(bip_buffer_, length);
         }
-        void write(const char* from, message_header&& header) {
-            wire_->write(bip_buffer_, from, std::move(header));  // NOLINT
+        void brand_new() {
+            wire_->brand_new();
+        }
+        void write(const int c) {
+            wire_->write(bip_buffer_, c);
+        }
+        void flush(message_header&& header) {
+            wire_->flush(bip_buffer_, std::move(header));
         }
         void read(char* to, std::size_t msg_len) {
             wire_->read(to, bip_buffer_, msg_len);

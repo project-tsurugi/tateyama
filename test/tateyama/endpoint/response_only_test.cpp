@@ -64,8 +64,12 @@ public:
 TEST_F(response_only_test, normal) {
     auto* request_wire = static_cast<tateyama::common::wire::server_wire_container_impl::wire_container_impl*>(wire_->get_request_wire());
 
-    request_wire->write(request_test_message_.data(),
-                       tateyama::common::wire::message_header(index_, request_test_message_.length()));
+    request_wire->brand_new();
+    const char *ptr = request_test_message_.data();
+    for (std::size_t i = 0; i < request_test_message_.length(); ptr++, i++) {
+        request_wire->write(*ptr);
+    }
+    request_wire->flush(tateyama::common::wire::message_header(index_, request_test_message_.length()));
 
     auto h = request_wire->peep(true);
     EXPECT_EQ(index_, h.get_idx());
