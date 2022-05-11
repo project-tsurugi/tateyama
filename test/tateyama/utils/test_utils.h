@@ -15,6 +15,9 @@
  */
 #pragma once
 
+#include <sys/types.h>
+#include <unistd.h>
+
 #include "temporary_folder.h"
 
 namespace tateyama::test {
@@ -37,13 +40,13 @@ public:
 
         auto* stmcfg = cfg.get_section("stream_endpoint");
         BOOST_ASSERT(stmcfg != nullptr); //NOLINT
-        auto i = ++integer_src_;
-        stmcfg->set("port", std::to_string(12346+i));
+        // use port randomly chosen from PID
+        auto id = getpid() % 1000;
+        stmcfg->set("port", std::to_string(12345+id));
     }
 
 protected:
     temporary_folder temporary_{};
-    static inline std::atomic_size_t integer_src_{0};
 };
 
 }
