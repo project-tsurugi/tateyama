@@ -32,7 +32,6 @@ namespace tateyama::framework {
 
 using tateyama::api::server::request;
 using tateyama::api::server::response;
-using takatori::util::fail;
 
 component::id_type routing_service::id() const noexcept {
     return tag;

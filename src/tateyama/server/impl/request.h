@@ -47,6 +47,11 @@ public:
     request& operator=(request&& other) noexcept = default;
 
     /**
+     * @brief destruct the object
+     */
+    ~request() override = default;
+
+    /**
      * @brief accessor to session identifier
      */
     [[nodiscard]] std::size_t session_id() const override;

@@ -18,10 +18,6 @@
 #include <cstddef>
 #include <tateyama/status.h>
 
-namespace tateyama::api::endpoint {
-class writer;
-}
-
 namespace tateyama::api::server {
 
 /**

@@ -18,7 +18,6 @@
 #include "data_channel.h"
 
 namespace tateyama::api::endpoint {
-class response;
 enum class response_code : std::int64_t;
 }
 namespace tateyama::api::server {

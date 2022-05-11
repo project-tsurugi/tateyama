@@ -56,10 +56,7 @@ bool request::init() {
     }
     session_id_ = hdr.session_id();
     service_id_ = hdr.service_id();
-    if(auto res = utils::GetDelimitedBodyFromZeroCopyStream(std::addressof(in), nullptr, payload_); ! res) {
-        return false;
-    }
-    return true;
+    return utils::GetDelimitedBodyFromZeroCopyStream(std::addressof(in), nullptr, payload_);
 }
 
 std::size_t request::session_id() const {

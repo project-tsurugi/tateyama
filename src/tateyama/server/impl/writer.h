@@ -45,7 +45,7 @@ public:
     /**
      * @brief destruct the object
      */
-    ~writer() = default;
+    ~writer() override = default;
 
     writer(writer const& other) = default;
     writer& operator=(writer const& other) = default;
@@ -64,7 +64,7 @@ public:
      * @return status::ok when successful
      * @return other status code when error occurs
      */
-    status write(char const* data, std::size_t length);
+    status write(char const* data, std::size_t length) override;
 
     /**
      * @brief commit the written data
@@ -75,7 +75,7 @@ public:
      * @return status::ok when successful
      * @return other status code when error occurs
      */
-    status commit();
+    status commit() override;
 
     [[nodiscard]] api::endpoint::writer* origin() const noexcept;
 

@@ -32,7 +32,7 @@ status data_channel::acquire(std::shared_ptr<server::writer>& wrt) {
 }
 
 status data_channel::release(server::writer& wrt) {
-    auto& w = static_cast<server::impl::writer&>(wrt);
+    auto& w = static_cast<server::impl::writer&>(wrt);  //NOLINT
     return origin_->release(*w.origin());
 }
 

@@ -40,7 +40,7 @@ bool ParseDelimitedFromCodedStream(
     int start = input->CurrentPosition();
 
     // Read the size.
-    google::protobuf::uint32 size;
+    google::protobuf::uint32 size{};
     if (!input->ReadVarint32(&size)) {
         if (clean_eof != nullptr) *clean_eof = input->CurrentPosition() == start;
         return false;
@@ -118,7 +118,7 @@ bool GetDelimitedBodyFromCodedStream(
     int start = input->CurrentPosition();
 
     // Read the size.
-    google::protobuf::uint32 size;
+    google::protobuf::uint32 size{};
     if (!input->ReadVarint32(&size)) {
         if (clean_eof != nullptr) *clean_eof = input->CurrentPosition() == start;
         return false;

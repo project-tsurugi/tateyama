@@ -82,7 +82,7 @@ status response::body(std::string_view body) {
 }
 
 status response::release_channel(server::data_channel& ch) {
-    auto& c = static_cast<server::impl::data_channel&>(ch);
+    auto& c = static_cast<server::impl::data_channel&>(ch); //NOLINT
     return origin_->release_channel(*c.origin());
 }
 

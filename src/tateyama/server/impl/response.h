@@ -50,6 +50,11 @@ public:
     response& operator=(response&& other) noexcept = default;
 
     /**
+     * @brief destruct the object
+     */
+    ~response() override = default;
+
+    /**
      * @brief setter of the session id
      * @param id the session id
      * @attention this function is not thread-safe and should be called from single thread at a time.
@@ -119,7 +124,7 @@ public:
      * @return other code when error occurs
      * @attention this function is not thread-safe and should be called from single thread at a time.
      */
-    status close_session();
+    status close_session() override;
 
     /**
      * @brief accessor to the endpoint response

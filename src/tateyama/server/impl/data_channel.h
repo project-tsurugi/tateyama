@@ -44,6 +44,11 @@ public:
     data_channel& operator=(data_channel&& other) noexcept = default;
 
     /**
+     * @brief destruct object
+     */
+    ~data_channel() override = default;
+
+    /**
      * @brief create new object
      */
     explicit data_channel(api::endpoint::data_channel& origin);

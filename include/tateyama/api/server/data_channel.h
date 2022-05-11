@@ -19,10 +19,6 @@
 
 #include <tateyama/status.h>
 
-namespace tateyama::api::endpoint {
-class data_channel;
-}
-
 namespace tateyama::api::server {
 
 /**
