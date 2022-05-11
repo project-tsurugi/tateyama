@@ -225,7 +225,7 @@ public:
         socket_address.sin_port = htons(port);
         socket_address.sin_addr.s_addr = INADDR_ANY;
         if (bind(socket_, (struct sockaddr *) &socket_address, sizeof(socket_address)) != 0) {  // NOLINT
-            VLOG(log_error) << "bind error, probably another server is running";
+            LOG(ERROR) << "bind error, probably another server is running";
             std::abort();
         }
         // listen the port
