@@ -28,15 +28,24 @@
 #include <tateyama/proto/test.pb.h>
 
 #include <gtest/gtest.h>
+#include <tateyama/utils/test_utils.h>
 
 namespace tateyama::framework {
 
 using namespace std::literals::string_literals;
 using namespace std::string_view_literals;
 
-class router_test : public ::testing::Test {
-
+class router_test :
+    public ::testing::Test,
+    public test::test_utils
+{
 public:
+    void SetUp() override {
+        temporary_.prepare();
+    }
+    void TearDown() override {
+        temporary_.clean();
+    }
 
     class test_service : public service {
     public:
@@ -106,6 +115,7 @@ public:
 
 TEST_F(router_test, basic) {
     auto cfg = api::configuration::create_configuration("");
+    set_dbpath(*cfg);
     server sv{boot_mode::database_server, cfg};
     auto svc0 = std::make_shared<test_service>();
     sv.add_service(svc0);

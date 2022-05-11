@@ -37,8 +37,17 @@ class proto_test : public ::testing::Test {
 using namespace std::string_view_literals;
 
 TEST_F(proto_test, basic) {
-    proto::framework::response::Header hdr{};
+    proto::framework::request::Header reqhdr{};
+    reqhdr.set_message_version(1);
+    reqhdr.set_service_id(10);
+    reqhdr.set_session_id(100);
+    EXPECT_EQ(1, reqhdr.message_version());
+    EXPECT_EQ(10, reqhdr.service_id());
+    EXPECT_EQ(100, reqhdr.session_id());
 
+    proto::framework::response::Header reshdr{};
+    reshdr.set_session_id(99);
+    EXPECT_EQ(99, reshdr.session_id());
 }
 
 }

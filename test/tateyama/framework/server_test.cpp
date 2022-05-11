@@ -24,13 +24,23 @@
 #include <tateyama/framework/transactional_kvs_resource.h>
 
 #include <gtest/gtest.h>
+#include <tateyama/utils/test_utils.h>
 
 namespace tateyama::framework {
 
 using namespace std::literals::string_literals;
 
-class server_test : public ::testing::Test {
-
+class server_test :
+    public ::testing::Test,
+    public test::test_utils
+{
+public:
+    void SetUp() override {
+        temporary_.prepare();
+    }
+    void TearDown() override {
+        temporary_.clean();
+    }
 };
 
 using namespace std::string_view_literals;
@@ -87,6 +97,7 @@ public:
 
 TEST_F(server_test, basic) {
     auto cfg = api::configuration::create_configuration("");
+    set_dbpath(*cfg);
     server sv{boot_mode::database_server, cfg};
     auto res0 = std::make_shared<test_resource0>();
     auto res1 = std::make_shared<test_resource1>();
@@ -113,6 +124,7 @@ TEST_F(server_test, basic) {
 
 TEST_F(server_test, add_core_components) {
     auto cfg = api::configuration::create_configuration("");
+    set_dbpath(*cfg);
     server sv{boot_mode::database_server, cfg};
     auto res0 = std::make_shared<test_resource0>();
     add_core_components(sv);

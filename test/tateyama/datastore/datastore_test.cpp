@@ -22,13 +22,24 @@
 #include <tateyama/proto/datastore/response.pb.h>
 
 #include <gtest/gtest.h>
+#include <tateyama/utils/test_utils.h>
 
 namespace tateyama::datastore {
 
 using namespace std::literals::string_literals;
 
-class datastore_test : public ::testing::Test {
+class datastore_test :
+    public ::testing::Test,
+    public test::test_utils
+{
 public:
+    void SetUp() override {
+        temporary_.prepare();
+    }
+    void TearDown() override {
+        temporary_.clean();
+    }
+
     class test_request : public api::server::request {
     public:
         test_request(
@@ -82,6 +93,7 @@ using namespace std::string_view_literals;
 
 TEST_F(datastore_test, basic) {
     auto cfg = api::configuration::create_configuration("");
+    set_dbpath(*cfg);
     framework::server sv{framework::boot_mode::database_server, cfg};
     add_core_components(sv);
     sv.start();
