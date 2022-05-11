@@ -43,7 +43,7 @@ public:
 
 protected:
     temporary_folder temporary_{};
-    std::atomic_size_t integer_src_{0};
+    static inline std::atomic_size_t integer_src_{0};
 };
 
 }
