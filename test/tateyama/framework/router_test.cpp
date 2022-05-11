@@ -13,12 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <tateyama/framework/repository.h>
+#include <tateyama/framework/routing_service.h>
 
 #include <tateyama/framework/resource.h>
 #include <tateyama/framework/service.h>
 #include <tateyama/framework/endpoint.h>
-#include <tateyama/framework/routing_service.h>
 #include <tateyama/framework/server.h>
 #include <tateyama/framework/environment.h>
 #include <tateyama/framework/transactional_kvs_resource.h>
