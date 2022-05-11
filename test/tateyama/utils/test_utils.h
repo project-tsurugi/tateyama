@@ -38,7 +38,7 @@ public:
         auto* stmcfg = cfg.get_section("stream_endpoint");
         BOOST_ASSERT(stmcfg != nullptr); //NOLINT
         auto i = ++integer_src_;
-        stmcfg->set("port", std::to_string(12345+i));
+        stmcfg->set("port", std::to_string(12346+i));
     }
 
 protected:
