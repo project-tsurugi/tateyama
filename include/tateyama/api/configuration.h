@@ -62,6 +62,24 @@ public:
         return false;
     }
 
+    /**
+     * @brief set property value for the given key
+     * @param n key
+     * @param v value
+     * @return true if new property is added
+     * @return true if existing property value is updated
+     */
+    inline bool set(std::string_view n, std::string_view v) {
+        auto name = std::string(n);
+        auto value = std::string{v};
+        if (auto it = property_tree_.find(name) ; it != property_tree_.not_found()) {
+            it->second.data() = value;
+            return false;
+        }
+        property_tree_.push_back({name, boost::property_tree::ptree{value}});
+        return true;
+    }
+
 private:
     boost::property_tree::ptree& property_tree_;
     boost::property_tree::ptree& default_tree_;
@@ -90,7 +108,7 @@ inline bool section::get<bool>(std::string_view name, bool& rv) const {
 
 class whole {
 public:
-    static constexpr char property_flename[] = "tsurugi.ini";  // NOLINT
+    static constexpr char property_filename[] = "tsurugi.ini";  // NOLINT
 
     explicit whole(std::string_view d) {
         auto directory = std::string(d);
@@ -117,7 +135,7 @@ public:
         }
         if (!property_file_absent_) {
             try {
-                boost::property_tree::read_ini((directory_ / boost::filesystem::path(property_flename)).string(), property_tree_);  // NOLINT
+                boost::property_tree::read_ini((directory_ / boost::filesystem::path(property_filename)).string(), property_tree_);  // NOLINT
             } catch (boost::property_tree::ini_parser_error &e) {
                 VLOG(log_info) << "cannot find " << e.filename() << ", thus we use default property only.";
                 property_file_absent_ = true;
@@ -153,7 +171,7 @@ public:
     section* get_section(std::string_view n) {
         auto name = std::string(n);
         if (auto it = map_.find(name); it != map_.end()) {
-            VLOG(log_trace) << "configurateion of section " << name << " will be used.";
+            VLOG(log_trace) << "configuration of section " << name << " will be used.";
             return map_[name].get();
         }
         LOG(ERROR) << "cannot find " << name << " section in the configuration.";
