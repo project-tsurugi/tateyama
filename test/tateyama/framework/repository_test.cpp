@@ -18,8 +18,6 @@
 #include <tateyama/framework/resource.h>
 #include <tateyama/framework/service.h>
 #include <tateyama/framework/endpoint.h>
-#include <tateyama/framework/routing_service.h>
-#include <tateyama/framework/server.h>
 #include <tateyama/framework/environment.h>
 
 #include <gtest/gtest.h>
@@ -91,6 +89,11 @@ TEST_F(repository_test, basic) {
         ASSERT_EQ(cnt, res.id());
         ++cnt;
     });
+    int revcnt = rep.size()-1;
+    rep.each([&](resource& res){
+        ASSERT_EQ(revcnt, res.id());
+        --revcnt;
+    }, true);
 
     EXPECT_EQ(res1, rep.find_by_id(1));
     EXPECT_EQ(res0, rep.find_by_id(0));

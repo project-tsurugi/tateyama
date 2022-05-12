@@ -114,19 +114,22 @@ public:
 
     /**
      * @brief setup the server
-     * @details setup all resource, service and endpoint appropriately.
+     * @details setup all resource, service and endpoint in this order appropriately.
+     * Components on the same category are setup in the priority order. Highest priority one is setup first.
      */
     bool setup();
 
     /**
      * @brief start the server
-     * @details setup (if not yet done) and start all resource, service and endpoint appropriately.
+     * @details setup (if not yet done) and start all resource, service and endpoint in this order appropriately.
+     * Components on the same category are started in the priority order. Highest priority one is started first.
      */
     bool start();
 
     /**
      * @brief shutdown the server
-     * @details shutdown all resource, service and endpoint appropriately.
+     * @details shutdown all endpoint, service and resource in this order appropriately.
+     * Components on the same category are shutdown in the reverse priority order. Highest priority one is shutdown last.
      */
     bool shutdown();
 

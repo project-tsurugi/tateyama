@@ -41,10 +41,17 @@ class cache_align repository {
 public:
     /**
      * @brief iterate over added components
+     * @param reverse_order indicates whether the iteration is done in reverse order
      */
-    void each(std::function<void(T&)> consumer) {
-        for(auto&& e : entity_) {
-            consumer(*e);
+    void each(std::function<void(T&)> consumer, bool reverse_order = false) {
+        if(! reverse_order) {
+            for(auto&& e : entity_) {
+                consumer(*e);
+            }
+            return;
+        }
+        for(auto it = entity_.rbegin(), end = entity_.rend(); it != end; ++it) {
+            consumer(**it);
         }
     }
 
@@ -84,6 +91,14 @@ public:
         static_assert(std::is_same_v<std::remove_const_t<decltype(U::tag)>, component::id_type>);
         auto c = find_by_id(U::tag);
         return std::static_pointer_cast<U>(c);
+    }
+
+    /**
+     * @brief accessor to the number of elements
+     * @return the number of elements added to this repository
+     */
+    [[nodiscard]] std::size_t size() const noexcept {
+        return entity_.size();
     }
 
 private:

@@ -91,17 +91,17 @@ bool server::start() {
 }
 
 bool server::shutdown() {
-    // even if some components fails, continue all shutdown
+    // even if some components fails, continue all shutdown for clean-up
     bool success = true;
     environment_->endpoint_repository().each([this, &success](endpoint& arg){
         success = success && arg.shutdown(*environment_);
-    });
+    }, true);
     environment_->service_repository().each([this, &success](service& arg){
         success = success && arg.shutdown(*environment_);
-    });
+    }, true);
     environment_->resource_repository().each([this, &success](resource& arg){
         success = success && arg.shutdown(*environment_);
-    });
+    }, true);
     return success;
 }
 
