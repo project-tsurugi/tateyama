@@ -26,11 +26,13 @@ namespace tateyama::framework {
 bool transactional_kvs_resource::setup(environment& env) {
     auto s = env.configuration()->get_section("data_store");
     BOOST_ASSERT(s != nullptr); //NOLINT
-    std::string location{};
     sharksfin::DatabaseOptions options{};
-    if(auto res = s->get("log_location", location); res && !location.empty()) {
-        static constexpr std::string_view KEY_LOCATION{"location"};
-        options.attribute(KEY_LOCATION, location);
+    if(auto res = s->get<std::string>("log_location"); res) {
+        auto location = res.value();
+        if(!location.empty()) {
+            static constexpr std::string_view KEY_LOCATION{"location"};
+            options.attribute(KEY_LOCATION, location);
+        }
     }
     if(auto res = sharksfin::database_open(options, std::addressof(database_handle_)); res != sharksfin::StatusCode::OK) {
         LOG(ERROR) << "opening database failed";

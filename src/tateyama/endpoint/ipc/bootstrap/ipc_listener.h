@@ -50,15 +50,18 @@ public:
             LOG(ERROR) << "cannot find ipc_endpoint section in the configuration";
             exit(1);
         }
-        if (!endpoint_config->get<>("database_name", database_name_)) {
-            LOG(ERROR) << "cannot database_name at the section in the configuration";
+        auto database_name_opt = endpoint_config->get<std::string>("database_name");
+        if (!database_name_opt) {
+            LOG(ERROR) << "cannot find database_name at the section in the configuration";
             exit(1);
         }
-        std::size_t threads{};
-        if (!endpoint_config->get<>("threads", threads)) {
+        database_name_ = database_name_opt.value();
+        auto threads_opt = endpoint_config->get<std::size_t>("threads");
+        if (!threads_opt) {
             LOG(ERROR) << "cannot find thread_pool_size at the section in the configuration";
             exit(1);
         }
+        auto threads = threads_opt.value();
 
         // connection channel
         container_ = std::make_unique<tateyama::common::wire::connection_container>(database_name_);

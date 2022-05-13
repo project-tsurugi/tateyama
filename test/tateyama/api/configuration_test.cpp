@@ -33,17 +33,18 @@ TEST_F(configuration_test, add_new_property) {
     auto section = cfg->get_section("data_store"); // any section name is fine for testing
     ASSERT_TRUE(section);
     ASSERT_TRUE(section->set("test", "value"));
-    std::string v{};
-    ASSERT_TRUE(section->get("test", v));
-    EXPECT_EQ("value", v);
+    auto v1 = section->get<std::string>("test");
+    ASSERT_TRUE(v1);
+    EXPECT_EQ("value", v1.value());
     ASSERT_FALSE(section->set("test", "value2"));
-    ASSERT_TRUE(section->get("test", v));
-    EXPECT_EQ("value2", v);
+    auto vu = section->get<std::string>("test");
+    ASSERT_TRUE(vu);
+    EXPECT_EQ("value2", vu.value());
 
     auto section2 = cfg->get_section("data_store");
-    std::string v2{};
-    ASSERT_TRUE(section2->get("test", v2));
-    EXPECT_EQ("value2", v2);
+    auto v2 = section2->get<std::string>("test");
+    ASSERT_TRUE(v2);
+    EXPECT_EQ("value2", v2.value());
 }
 
 TEST_F(configuration_test, add_new_property_bool) {
@@ -51,12 +52,13 @@ TEST_F(configuration_test, add_new_property_bool) {
     auto section = cfg->get_section("data_store"); // any section name is fine for testing
     ASSERT_TRUE(section);
     ASSERT_TRUE(section->set("test", "true"));
-    bool v{};
-    EXPECT_TRUE(section->get("test", v));
+    auto v = section->get<bool>("test");
     EXPECT_TRUE(v);
+    EXPECT_TRUE(v.value());
     ASSERT_FALSE(section->set("test", "false"));
-    EXPECT_TRUE(section->get("test", v));
-    EXPECT_FALSE(v);
+    auto vf = section->get<bool>("test");
+    EXPECT_TRUE(vf);
+    EXPECT_FALSE(vf.value());
 }
 
 TEST_F(configuration_test, add_same_name_property_to_different_section) {
@@ -67,11 +69,12 @@ TEST_F(configuration_test, add_same_name_property_to_different_section) {
     ASSERT_TRUE(section1);
     ASSERT_TRUE(section0->set("test", "v0"));
     ASSERT_TRUE(section1->set("test", "v1"));
-    std::string v0{}, v1{};
-    ASSERT_TRUE(section0->get("test", v0));
-    ASSERT_TRUE(section1->get("test", v1));
-    EXPECT_EQ("v0", v0);
-    EXPECT_EQ("v1", v1);
+    auto v0 = section0->get<std::string>("test");
+    auto v1 = section1->get<std::string>("test");
+    ASSERT_TRUE(v0);
+    ASSERT_TRUE(v1);
+    EXPECT_EQ("v0", v0.value());
+    EXPECT_EQ("v1", v1.value());
 }
 
 }
