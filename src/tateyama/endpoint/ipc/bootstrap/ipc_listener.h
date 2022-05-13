@@ -41,7 +41,7 @@ namespace tateyama::server {
  */
 class ipc_listener {
 public:
-    explicit ipc_listener(std::shared_ptr<api::configuration::whole> cfg, std::shared_ptr<framework::endpoint_broker> broker) :
+    explicit ipc_listener(const std::shared_ptr<api::configuration::whole>& cfg, std::shared_ptr<framework::endpoint_broker> broker) :
         cfg_(cfg),
         broker_(std::move(broker))
     {

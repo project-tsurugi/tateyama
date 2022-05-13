@@ -27,7 +27,7 @@ namespace tateyama::datastore::service {
 using tateyama::api::server::request;
 using tateyama::api::server::response;
 
-bool tateyama::datastore::service::core::operator()(std::shared_ptr<request> req, std::shared_ptr<response> res) {
+bool tateyama::datastore::service::core::operator()(const std::shared_ptr<request>& req, const std::shared_ptr<response>& res) {
     // mock implementation TODO
     namespace ns = tateyama::proto::datastore::request;
 

@@ -57,7 +57,7 @@ bool bridge::shutdown(environment&) {
 }
 
 bool bridge::operator()(std::shared_ptr<request> req, std::shared_ptr<response> res) {
-    return core_->operator()(std::move(req), std::move(res));
+    return core_->operator()(req, res);
 }
 
 bridge::~bridge() {

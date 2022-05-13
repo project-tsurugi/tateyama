@@ -39,8 +39,8 @@ public:
     bool shutdown(bool force = false);
 
     bool operator()(
-        std::shared_ptr<request> req,
-        std::shared_ptr<response> res
+        const std::shared_ptr<request>& req,
+        const std::shared_ptr<response>& res
     );
 
 private:
