@@ -82,7 +82,7 @@ TEST_F(result_set_test, normal) {
     for (std::size_t i = 0; i < request_test_message_.length(); ptr++, i++) {
         request_wire->write(*ptr);
     }
-    request_wire->flush(tateyama::common::wire::message_header(index_, request_test_message_.length()));
+    request_wire->flush(index_);
     wire_->get_response(index_).set_query_mode();
 
     auto h = request_wire->peep(true);

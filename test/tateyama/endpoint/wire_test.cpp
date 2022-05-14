@@ -55,7 +55,7 @@ TEST_F(wire_test, loop) {
             request_wire->write(*ptr);
         }
         tateyama::common::wire::message_header::index_type index = n % 11;
-        request_wire->flush(tateyama::common::wire::message_header(index, request_test_message_.length()));
+        request_wire->flush(index);
 
         auto h = request_wire->peep(true);
         EXPECT_EQ(index, h.get_idx());
