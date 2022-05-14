@@ -40,7 +40,7 @@ public:
     section (boost::property_tree::ptree& pt, boost::property_tree::ptree& dt) : property_tree_(pt), default_tree_(dt) {}
     explicit section (boost::property_tree::ptree& dt) : property_tree_(dt), default_tree_(dt) {}
     template<typename T>
-    inline std::optional<T> get(std::string_view n) const {
+    [[nodiscard]] inline std::optional<T> get(std::string_view n) const {
         auto name = std::string(n);
         if (auto it = property_tree_.find(name) ; it != property_tree_.not_found()) {
             auto rv = boost::lexical_cast<T>(it->second.data());
@@ -85,7 +85,7 @@ private:
 };
 
 template<>
-inline std::optional<bool> section::get<bool>(std::string_view name) const {
+[[nodiscard]] inline std::optional<bool> section::get<bool>(std::string_view name) const {
     using boost::algorithm::iequals;
 
     std::optional<std::string> opt = get<std::string>(name);
@@ -116,7 +116,7 @@ public:
     whole(whole&& other) noexcept = delete;
     whole& operator=(whole&& other) noexcept = delete;
 
-    section* get_section(std::string_view n) {
+    [[nodiscard]] section* get_section(std::string_view n) {
         auto name = std::string(n);
         if (auto it = map_.find(name); it != map_.end()) {
             VLOG(log_trace) << "configuration of section " << name << " will be used.";
@@ -124,6 +124,14 @@ public:
         }
         LOG(ERROR) << "cannot find " << name << " section in the configuration.";
         return nullptr;
+    }
+
+    /**
+     * @brief get directory of the config file
+     * @return path of the directory
+     */
+    boost::filesystem::path get_directory() {
+        return file_.parent_path();
     }
 
 private:
