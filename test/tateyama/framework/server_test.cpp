@@ -75,7 +75,7 @@ public:
     [[nodiscard]] id_type id() const noexcept override {
         return tag;
     }
-    bool operator()(std::shared_ptr<request>, std::shared_ptr<response>) override {}
+    bool operator()(std::shared_ptr<request>, std::shared_ptr<response>) override { return true; }
     bool setup(environment&) override { return true; }
     bool start(environment&) override { return true; }
     bool shutdown(environment&) override { return true; }
@@ -88,7 +88,7 @@ public:
     [[nodiscard]] id_type id() const noexcept override {
         return tag;
     }
-    bool operator()(std::shared_ptr<request>, std::shared_ptr<response>) override {}
+    bool operator()(std::shared_ptr<request>, std::shared_ptr<response>) override { return true; }
     bool setup(environment&) override { return true; }
     bool start(environment&) override { return true; }
     bool shutdown(environment&) override { return true; }

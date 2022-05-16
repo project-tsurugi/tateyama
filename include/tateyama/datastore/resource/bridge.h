@@ -58,6 +58,16 @@ public:
      */
      [[nodiscard]] core* core_object() const noexcept;
 
+    bridge(bridge const& other) = delete;
+    bridge& operator=(bridge const& other) = delete;
+    bridge(bridge&& other) noexcept = delete;
+    bridge& operator=(bridge&& other) noexcept = delete;
+
+    /**
+     * @brief create empty object
+     */
+    bridge() = default;
+
 private:
     std::unique_ptr<core> core_{};
     bool deactivated_{false};

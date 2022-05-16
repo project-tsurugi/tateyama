@@ -100,11 +100,11 @@ public:
             session_id_ = id;
         };
         void code(api::server::response_code code) override {}
-        status body_head(std::string_view body_head) override {}
-        status body(std::string_view body) override { body_ = body; }
-        status acquire_channel(std::string_view name, std::shared_ptr<api::server::data_channel>& ch) override {}
-        status release_channel(api::server::data_channel& ch) override {}
-        status close_session() override {}
+        status body_head(std::string_view body_head) override { return status::ok; }
+        status body(std::string_view body) override { body_ = body; return status::ok; }
+        status acquire_channel(std::string_view name, std::shared_ptr<api::server::data_channel>& ch) override { return status::ok; }
+        status release_channel(api::server::data_channel& ch) override { return status::ok; }
+        status close_session() override { return status::ok; }
 
         std::size_t session_id_{};
         std::string body_{};

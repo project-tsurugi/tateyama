@@ -65,6 +65,16 @@ public:
         std::shared_ptr<response> res) override;
 
     /**
+     * @brief create empty object
+     */
+    bridge() = default;
+
+    bridge(bridge const& other) = delete;
+    bridge& operator=(bridge const& other) = delete;
+    bridge(bridge&& other) noexcept = delete;
+    bridge& operator=(bridge&& other) noexcept = delete;
+
+    /**
      * @brief destructor the object
      */
     ~bridge() override;
