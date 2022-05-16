@@ -29,7 +29,7 @@ public:
 using namespace std::string_view_literals;
 
 TEST_F(configuration_test, add_new_property) {
-    auto cfg = api::configuration::create_configuration("");
+    auto cfg = api::configuration::create_configuration();
     auto section = cfg->get_section("data_store"); // any section name is fine for testing
     ASSERT_TRUE(section);
     ASSERT_TRUE(section->set("test", "value"));
@@ -48,7 +48,7 @@ TEST_F(configuration_test, add_new_property) {
 }
 
 TEST_F(configuration_test, add_new_property_bool) {
-    auto cfg = api::configuration::create_configuration("");
+    auto cfg = api::configuration::create_configuration();
     auto section = cfg->get_section("data_store"); // any section name is fine for testing
     ASSERT_TRUE(section);
     ASSERT_TRUE(section->set("test", "true"));
@@ -62,7 +62,7 @@ TEST_F(configuration_test, add_new_property_bool) {
 }
 
 TEST_F(configuration_test, add_same_name_property_to_different_section) {
-    auto cfg = api::configuration::create_configuration("");
+    auto cfg = api::configuration::create_configuration();
     auto section0 = cfg->get_section("data_store"); // any section name is fine for testing
     auto section1 = cfg->get_section("sql"); // any section name is fine for testing
     ASSERT_TRUE(section0);
