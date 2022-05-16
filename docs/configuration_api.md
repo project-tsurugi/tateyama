@@ -18,15 +18,14 @@ Tateyama AP基盤に用意したconfiguration APIの使用方法を記述する
 まずenvironmentオブジェクトを作成し、次にconfigurationオブジェクトを作成してenvironmentオブジェクトに設定する
 ```
     auto env = std::make_shared<tateyama::api::environment>();
-    if (auto conf = tateyama::api::configuration::create_configuration("directory名"); conf != nullptr) {
+    if (auto conf = tateyama::api::configuration::create_configuration("file名"); conf != nullptr) {
         env->configuration(conf);
     } else {
         LOG(ERROR) << "error in create_configuration";
         exit(1);
     }
 ```
-ここで、```directory名```は、configuration設定ファイル（名前は"tsurugi.ini"に固定）を置いたディレクトリの絶対パス
-```directory名```が空文字列（""）の場合は、環境変数TGDIRが使われる
+ここで、```file名```は、configuration設定ファイル名の絶対パス
 
 cf. "名前"は文字列であることを示す、std::stringでも良い、以下同様
 
@@ -39,11 +38,16 @@ ateyama AP基盤を使用するモジュールがconfigurationとして設定さ
 ## 方法
 セクション名を```section名```, property名を```property名```、propertyの型は```type```、取得したpropertyの値を格納する変数を```value```と表記する
 ```
-    auto endpoint_config = env.configuration()->get_section("section名");
-    type value{};
-    if (!endpoint_config->get<>("property名", value)) {
+    auto config = env.configuration()->get_section("section名");
+    if (config == nullptr) {
+        LOG(ERROR) << "cannot find section名 section in the configuration";
+        exit(1);
+    }
+    auto opt = config->get<type>("property名");
+    if (!opt) {
         LOG(ERROR) << "cannot find property名 at the section名 in the configuration";
         exit(1);
     }
+    auto value = opt.value();
 ```
-上記は、取得対象propertyが存在しない場合はexit(1)させるコードを示したが、状況に応じて適宜変更しても良い
+上記は、取得対象sectionやpropertyが存在しない場合はexit(1)させるコードを示したが、状況に応じて適宜変更しても良い

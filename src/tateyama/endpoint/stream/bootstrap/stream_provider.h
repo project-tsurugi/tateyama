@@ -54,16 +54,19 @@ private:
                 LOG(ERROR) << "cannot find stream_endpoint section in the configuration";
                 exit(1);
             }
-            int port{};
-            if (!endpoint_config->get<>("port", port)) {
+            auto port_opt = endpoint_config->get<int>("port");
+            if (!port_opt) {
                 LOG(ERROR) << "cannot port at the section in the configuration";
                 exit(1);
             }
-            std::size_t threads{};
-            if (!endpoint_config->get<>("threads", threads)) {
+            auto port = port_opt.value();
+            auto threads_opt = endpoint_config->get<std::size_t>("threads");
+            if (!threads_opt) {
                 LOG(ERROR) << "cannot find thread_pool_size at the section in the configuration";
                 exit(1);
             }
+            auto threads = threads_opt.value();
+
             // connection stream
             connection_socket_ = std::make_unique<tateyama::common::stream::connection_socket>(port);
 

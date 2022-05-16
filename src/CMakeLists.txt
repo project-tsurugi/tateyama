@@ -35,6 +35,7 @@ file(GLOB SOURCES
         "tateyama/task_scheduler/*.cpp"
         "tateyama/utils/*.cpp"
         "tateyama/registry/*.cpp"
+        "tateyama/configuration/*.cpp"
 )
 
 if(TRACY_ENABLE)
