@@ -15,6 +15,10 @@
  */
 #include <tateyama/api/configuration.h>
 
+namespace tateyama::api::configuration {
+
+namespace details {
+
 static constexpr std::string_view default_configuration {  // NOLINT
     "[sql]\n"
         "thread_pool_size=5\n"
@@ -36,13 +40,13 @@ static constexpr std::string_view default_configuration {  // NOLINT
         "log_location=\n"
 };
 
+} // namespace details
 
-namespace tateyama::api::configuration {
 
 whole::whole(std::string_view file_name) {
     // default configuration
     try {
-        auto default_conf_string = std::string(default_configuration);
+        auto default_conf_string = std::string(details::default_configuration);
         std::istringstream default_iss(default_conf_string);  // NOLINT
         boost::property_tree::read_ini(default_iss, default_tree_);
     } catch (boost::property_tree::ini_parser_error &e) {
