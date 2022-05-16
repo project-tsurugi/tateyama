@@ -169,7 +169,7 @@ private:
     }
 };
 
-inline std::shared_ptr<whole> create_configuration(std::string_view file_name) {
+inline std::shared_ptr<whole> create_configuration(std::string_view file_name = "") {
     try {
         return std::make_shared<whole>(file_name);
     } catch (boost::property_tree::ptree_error &e) {
