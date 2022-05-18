@@ -24,6 +24,7 @@ void Worker::run()
 {
     while(true) {
         auto h = request_wire_container_->peep(true);
+        if (h.get_length() == 0 && h.get_idx() == tateyama::common::wire::message_header::not_use) { break; }
         auto request = std::make_shared<tateyama::common::wire::ipc_request>(*wire_, h);
         auto response = std::make_shared<tateyama::common::wire::ipc_response>(*request, h.get_idx());
         service_(static_cast<std::shared_ptr<tateyama::api::endpoint::request const>>(request),
