@@ -31,6 +31,8 @@ bool tateyama::datastore::service::core::operator()(const std::shared_ptr<reques
     // mock implementation TODO
     namespace ns = tateyama::proto::datastore::request;
 
+    constexpr static auto this_request_does_not_use_session_id = static_cast<std::size_t>(-2);
+
     auto data = req->payload();
     ns::Request rq{};
     if(! rq.ParseFromArray(data.data(), data.size())) {
@@ -38,6 +40,7 @@ bool tateyama::datastore::service::core::operator()(const std::shared_ptr<reques
         return false;
     }
 
+    VLOG(log_debug) << "request is no. " << rq.command_case();
     switch(rq.command_case()) {
         case ns::Request::kBackupBegin: {
             auto files = resource_->list_backup_files();
@@ -54,9 +57,35 @@ bool tateyama::datastore::service::core::operator()(const std::shared_ptr<reques
         }
         case ns::Request::kBackupEnd: break;
         case ns::Request::kBackupContine: break;
-        case ns::Request::kBackupEstimate: break;
-        case ns::Request::kRestoreBackup: break;
-        case ns::Request::kRestoreTag: break;
+        case ns::Request::kBackupEstimate: {
+            tateyama::proto::datastore::response::BackupEstimate rp{};
+            auto success = rp.mutable_success();
+            success->set_number_of_files(123);
+            success->set_number_of_bytes(456);
+            res->session_id(this_request_does_not_use_session_id);
+            auto body = rp.SerializeAsString();
+            res->body(body);
+            rp.clear_success();
+            break;
+        }
+        case ns::Request::kRestoreBackup: {
+            tateyama::proto::datastore::response::RestoreBackup rp{};
+            rp.mutable_success();
+            res->session_id(this_request_does_not_use_session_id);
+            auto body = rp.SerializeAsString();
+            res->body(body);
+            rp.clear_success();
+            break;
+        }
+        case ns::Request::kRestoreTag: {
+            tateyama::proto::datastore::response::RestoreTag rp{};
+            rp.mutable_success();
+            res->session_id(this_request_does_not_use_session_id);
+            auto body = rp.SerializeAsString();
+            res->body(body);
+            rp.clear_success();
+            break;
+        }
         case ns::Request::kTagList: break;
         case ns::Request::kTagAdd: break;
         case ns::Request::kTagGet: break;
