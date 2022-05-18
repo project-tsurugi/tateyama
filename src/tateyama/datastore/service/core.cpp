@@ -31,7 +31,7 @@ bool tateyama::datastore::service::core::operator()(const std::shared_ptr<reques
     // mock implementation TODO
     namespace ns = tateyama::proto::datastore::request;
 
-    constexpr static std::size_t this_request_does_not_use_session_id = static_cast<std::size_t>(-2);
+    constexpr static auto this_request_does_not_use_session_id = static_cast<std::size_t>(-2);
 
     auto data = req->payload();
     ns::Request rq{};
