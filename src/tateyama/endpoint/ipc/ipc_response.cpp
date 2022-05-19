@@ -21,6 +21,7 @@
 #include <tateyama/logging.h>
 
 #include "ipc_response.h"
+#include "../common/endpoint_proto_utils.h"
 
 namespace tateyama::common::wire {
 
@@ -28,16 +29,30 @@ namespace tateyama::common::wire {
 // class ipc_response
 tateyama::status ipc_response::body(std::string_view body) {
     VLOG(log_trace) << __func__ << std::endl;  //NOLINT
-
-    memcpy(response_box_.get_buffer(body.length()), body.data(), body.length());
+    std::stringstream ss{};
+    endpoint::common::header_content arg{};
+    arg.session_id_ = session_id_;
+    if(auto res = endpoint::common::append_response_header(ss, body, arg); ! res) {
+        VLOG(log_error) << "error formatting response message";
+        return status::unknown;
+    }
+    auto s = ss.str();
+    memcpy(response_box_.get_buffer(s.length()), s.data(), s.length());
     response_box_.flush();
     return tateyama::status::ok;
 }
 
 tateyama::status ipc_response::body_head(std::string_view body_head) {
     VLOG(log_trace) << __func__ << std::endl;  //NOLINT
-
-    memcpy(response_box_.get_buffer(body_head.length()), body_head.data(), body_head.length());
+    std::stringstream ss{};
+    endpoint::common::header_content arg{};
+    arg.session_id_ = session_id_;
+    if(auto res = endpoint::common::append_response_header(ss, body_head, arg); ! res) {
+        VLOG(log_error) << "error formatting response message";
+        return status::unknown;
+    }
+    auto s = ss.str();
+    memcpy(response_box_.get_buffer(s.length()), s.data(), s.length());
     response_box_.flush();
     return tateyama::status::ok;
 }
