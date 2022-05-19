@@ -23,6 +23,7 @@
 #include <tateyama/api/endpoint/response.h>
 #include <tateyama/api/endpoint/service.h>
 #include <tateyama/api/endpoint/service.h>
+#include <tateyama/framework/routing_service.h>
 
 #include "server_wires_impl.h"
 
@@ -31,7 +32,7 @@ class ipc_provider;
 
 class Worker {
  public:
-    Worker(tateyama::framework::endpoint_broker& service, std::size_t session_id, std::unique_ptr<tateyama::common::wire::server_wire_container_impl> wire)
+    Worker(tateyama::framework::routing_service& service, std::size_t session_id, std::unique_ptr<tateyama::common::wire::server_wire_container_impl> wire)
         : service_(service), wire_(std::move(wire)),
           request_wire_container_(dynamic_cast<tateyama::common::wire::server_wire_container_impl::wire_container_impl*>(wire_->get_request_wire())),
           session_id_(session_id) {
@@ -53,7 +54,7 @@ class Worker {
     friend class ipc_provider;
 
  private:
-    tateyama::framework::endpoint_broker& service_;
+    tateyama::framework::routing_service& service_;
     std::unique_ptr<tateyama::common::wire::server_wire_container_impl> wire_;
     tateyama::common::wire::server_wire_container_impl::wire_container_impl* request_wire_container_;
     std::size_t session_id_;

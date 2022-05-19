@@ -48,8 +48,8 @@ public:
     class test_service {
     public:
         int operator()(
-            std::shared_ptr<tateyama::api::endpoint::request const> req,
-            std::shared_ptr<tateyama::api::endpoint::response> res
+            std::shared_ptr<tateyama::api::server::request const> req,
+            std::shared_ptr<tateyama::api::server::response> res
         ) {
             auto payload = req->payload();
             EXPECT_EQ(request_test_message_, payload);
@@ -83,8 +83,8 @@ TEST_F(response_only_test, normal) {
     auto response = std::make_shared<tateyama::common::wire::ipc_response>(*request, h.get_idx());
 
     test_service sv;
-    sv(static_cast<std::shared_ptr<tateyama::api::endpoint::request const>>(request),
-             static_cast<std::shared_ptr<tateyama::api::endpoint::response>>(response));
+    sv(static_cast<std::shared_ptr<tateyama::api::server::request>>(request),
+             static_cast<std::shared_ptr<tateyama::api::server::response>>(response));
 
     auto& r_box = wire_->get_response(h.get_idx());
     auto r_msg = r_box.recv();

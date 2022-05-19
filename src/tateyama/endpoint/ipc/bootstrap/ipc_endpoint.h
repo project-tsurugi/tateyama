@@ -34,7 +34,7 @@ public:
         // create listener object
         listener_ = std::make_unique<tateyama::server::ipc_listener>(
             env.configuration(),
-            env.service_repository().find<framework::endpoint_broker>()
+            env.service_repository().find<framework::routing_service>()
         );
         return true;
     }

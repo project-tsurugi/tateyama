@@ -50,22 +50,22 @@ public:
     class test_service {
     public:
         int operator()(
-            std::shared_ptr<tateyama::api::endpoint::request const> req,
-            std::shared_ptr<tateyama::api::endpoint::response> res
+            std::shared_ptr<tateyama::api::server::request const> req,
+            std::shared_ptr<tateyama::api::server::response> res
         ) {
             auto payload = req->payload();
             EXPECT_EQ(request_test_message_, payload);
 
-            tateyama::api::endpoint::data_channel* dc;
+            std::shared_ptr<tateyama::api::server::data_channel> dc;
             EXPECT_EQ(res->acquire_channel(resultset_wire_name_, dc), tateyama::status::ok);
             res->body_head(resultset_wire_name_);
 
-            tateyama::api::endpoint::writer* w;
+            std::shared_ptr<tateyama::api::server::writer> w;
             EXPECT_EQ(dc->acquire(w), tateyama::status::ok);
             w->write(r_.data(), r_.length());
 
             res->body(response_test_message_);
-            res->code(tateyama::api::endpoint::response_code::success);
+            res->code(tateyama::api::server::response_code::success);
             EXPECT_EQ(dc->release(*w), tateyama::status::ok);
             EXPECT_EQ(res->release_channel(*dc), tateyama::status::ok);
 
@@ -97,8 +97,8 @@ TEST_F(result_set_test, normal) {
     auto response = std::make_shared<tateyama::common::wire::ipc_response>(*request, h.get_idx());
 
     test_service sv;
-    sv(static_cast<std::shared_ptr<tateyama::api::endpoint::request const>>(request),
-             static_cast<std::shared_ptr<tateyama::api::endpoint::response>>(response));
+    sv(static_cast<std::shared_ptr<tateyama::api::server::request>>(request),
+             static_cast<std::shared_ptr<tateyama::api::server::response>>(response));
 
     auto& r_box = wire_->get_response(h.get_idx());
     auto r_name = r_box.recv();

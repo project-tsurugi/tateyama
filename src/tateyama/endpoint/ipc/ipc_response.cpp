@@ -48,17 +48,17 @@ void ipc_response::code(tateyama::api::endpoint::response_code code) {
     response_code_ = code;
 }
 
-tateyama::status ipc_response::acquire_channel(std::string_view name, tateyama::api::endpoint::data_channel*& ch) {
+tateyama::status ipc_response::acquire_channel(std::string_view name, std::shared_ptr<tateyama::api::server::data_channel>& ch) {
     VLOG(log_trace) << __func__ << std::endl;  //NOLINT
 
-    data_channel_ = std::make_unique<ipc_data_channel>(server_wire_.create_resultset_wires(name));
-    if (ch = data_channel_.get(); ch != nullptr) {
+    data_channel_ = std::make_shared<ipc_data_channel>(server_wire_.create_resultset_wires(name));
+    if (ch = data_channel_; ch != nullptr) {
         return tateyama::status::ok;
     }
     return tateyama::status::unknown;
 }
 
-tateyama::status ipc_response::release_channel(tateyama::api::endpoint::data_channel& ch) {
+tateyama::status ipc_response::release_channel(tateyama::api::server::data_channel& ch) {
     VLOG(log_trace) << __func__ << std::endl;  //NOLINT
 
     data_channel_->set_eor();
@@ -80,18 +80,18 @@ tateyama::status ipc_response::close_session() {
 }
 
 // class ipc_data_channel
-tateyama::status ipc_data_channel::acquire(tateyama::api::endpoint::writer*& wrt) {
+tateyama::status ipc_data_channel::acquire(std::shared_ptr<tateyama::api::server::writer>& wrt) {
     VLOG(log_trace) << __func__ << std::endl;  //NOLINT
 
-    if (auto ipc_wrt = std::make_unique<ipc_writer>(data_channel_->acquire()); ipc_wrt != nullptr) {
-        wrt = ipc_wrt.get();
+    if (auto ipc_wrt = std::make_shared<ipc_writer>(data_channel_->acquire()); ipc_wrt != nullptr) {
+        wrt = ipc_wrt;
         data_writers_.emplace(std::move(ipc_wrt));
         return tateyama::status::ok;
     }
     return tateyama::status::unknown;
 }
 
-tateyama::status ipc_data_channel::release(tateyama::api::endpoint::writer& wrt) {
+tateyama::status ipc_data_channel::release(tateyama::api::server::writer& wrt) {
     VLOG(log_trace) << __func__ << std::endl;  //NOLINT
 
     if (auto itr = data_writers_.find(dynamic_cast<ipc_writer*>(&wrt)); itr != data_writers_.end()) {

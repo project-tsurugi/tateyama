@@ -17,7 +17,7 @@
 
 #include <string_view>
 
-#include <tateyama/api/endpoint/request.h>
+#include <tateyama/api/server/request.h>
 
 #include "server_wires.h"
 
@@ -26,7 +26,7 @@ namespace tateyama::common::wire {
 /**
  * @brief request object for ipc_endpoint
  */
-class ipc_request : public tateyama::api::endpoint::request {
+class ipc_request : public tateyama::api::server::request {
 public:
     ipc_request(server_wire_container& server_wire, message_header& header)
         : server_wire_(server_wire), length_(header.get_length()), read_point(server_wire_.get_request_wire()->read_point()) {
@@ -38,10 +38,19 @@ public:
     server_wire_container& get_server_wire_container();
     void dispose();
 
+    [[nodiscard]] std::size_t session_id() const override {
+        return session_id_;
+    }
+
+    [[nodiscard]] std::size_t service_id() const override {
+        return service_id_;
+    }
 private:
     server_wire_container& server_wire_;
     const std::size_t length_;
     const std::size_t read_point;
+    std::size_t session_id_{};
+    std::size_t service_id_{};
 };
 
 }  // tateyama::common::wire
