@@ -38,11 +38,6 @@ status response::close_session() {
 }
 
 status response::body_head(std::string_view body_head) {
-    if(session_id_ == unknown) {
-        // legacy implementation
-        // TODO remove
-        return origin_->body_head(body_head);
-    }
     std::stringstream ss{};
     if(auto res = append_header(ss, body_head); ! res) {
         VLOG(log_error) << "error formatting response message";
@@ -67,11 +62,6 @@ bool response::append_header(std::stringstream& ss, std::string_view body) const
 }
 
 status response::body(std::string_view body) {
-    if(session_id_ == unknown) {
-        // legacy implementation
-        // TODO remove
-        return origin_->body(body);
-    }
     std::stringstream ss{};
     if(auto res = append_header(ss, body); ! res) {
         VLOG(log_error) << "error formatting response message";
