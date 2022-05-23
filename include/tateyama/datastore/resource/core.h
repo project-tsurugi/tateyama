@@ -21,6 +21,13 @@
 
 namespace tateyama::datastore::resource {
 
+struct tag_info {
+    std::string name_{};
+    std::string comment_{};
+    std::string author_{};
+    std::uint64_t timestamp_{};
+};
+
 /**
  * @brief datastore resource main object
  */
@@ -36,8 +43,16 @@ public:
 
     std::vector<std::string> list_backup_files();
 
+    std::vector<std::string> list_tags();
+
+    tag_info add_tag(std::string_view name, std::string_view comment);
+
+    bool get_tag(std::string_view name, tag_info& out);
+
+    bool remove_tag(std::string_view name);
 private:
     std::shared_ptr<tateyama::api::configuration::whole> cfg_{};
+    std::unordered_map<std::string, tag_info> tags_{};
 };
 
 }
