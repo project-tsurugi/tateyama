@@ -35,3 +35,29 @@ parameter=value
 |---:| :---: | :--- |---|
 |thread_pool_size | 整数 | SQLサービスが使用するタスクスケジューラの使用するスレッド数|開発用のため将来的に削除/変更される可能性あり|
 |lazy_worker | ブール(true/false) | SQLサービスが使用するタスクスケジューラが省CPUのためにワーカースレッドをスリープさせるかどうか|開発用のため将来的に削除される可能性あり|
+
+## ipc_endpointセクション
+
+セクション名
+  - ipc_endpoint
+
+対象コンポーネント
+  - ipc_endpoint(tateyama)
+
+|パラメーター名 | 型 | 値 |備考|
+|---:| :---: | :--- |---|
+|database_name | 文字列 | ipc_endpointに接続する際のurl名、default値はtateyama（参）この文字列は/dev/shmに作成されるファイル名のprefixとして使われる
+|threads | 整数 | ipc_endpointの最大同時接続数
+
+## stream_endpointセクション
+
+セクション名
+  - stream_endpoint
+
+対象コンポーネント
+  - stream_endpoint(tateyama)
+
+|パラメーター名 | 型 | 値 |備考|
+|---:| :---: | :--- |---|
+|port | 整数 | stream_endpointに接続する際のport番号、default値は12345
+|threads | 整数 | stream_endpointの最大同時接続数
