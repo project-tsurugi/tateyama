@@ -15,6 +15,10 @@
  */
 #include <tateyama/datastore/service/core.h>
 
+#include <shirakami/interface.h>
+#include <sharksfin/api.h>
+#include <limestone/api/datastore.h>
+
 #include <tateyama/api/configuration.h>
 #include <tateyama/framework/component_ids.h>
 #include <tateyama/framework/service.h>
