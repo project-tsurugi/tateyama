@@ -15,12 +15,17 @@
  */
 #include <tateyama/datastore/service/core.h>
 
+#include <shirakami/interface.h>
+#include <sharksfin/api.h>
+#include <limestone/api/datastore.h>
+
 #include <tateyama/api/configuration.h>
 #include <tateyama/framework/component_ids.h>
 #include <tateyama/framework/service.h>
 
 #include <tateyama/proto/datastore/request.pb.h>
 #include <tateyama/proto/datastore/response.pb.h>
+
 
 namespace tateyama::datastore::service {
 
@@ -190,6 +195,20 @@ bool tateyama::datastore::service::core::operator()(const std::shared_ptr<reques
 core::core(std::shared_ptr<tateyama::api::configuration::whole> cfg) :
     cfg_(std::move(cfg))
 {}
+
+limestone::api::datastore* get_datastore() {
+    ::sharksfin::Slice id{};
+    if(auto rc = ::sharksfin::implementation_id(std::addressof(id)); rc != ::sharksfin::StatusCode::OK) {
+        std::abort();
+    }
+    if(id.to_string_view() == "shirakami") {
+// TODO uncomment when shirakami implemented get_datastore()
+//        void* dsp = ::shirakami::get_datastore();
+        void* dsp = nullptr;
+        return reinterpret_cast<limestone::api::datastore*>(dsp);
+    }
+    return nullptr;
+}
 
 bool core::start(tateyama::datastore::resource::core* resource) {
     resource_ = resource;
