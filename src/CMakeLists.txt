@@ -75,6 +75,7 @@ target_link_libraries(${ENGINE}
         PUBLIC api
         PUBLIC sharksfin-${SHARKSFIN_IMPLEMENTATION}
         PRIVATE takatori
+        PRIVATE limestone
         PRIVATE tbb
         PRIVATE numa
         PRIVATE Boost::boost
