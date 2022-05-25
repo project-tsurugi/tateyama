@@ -76,6 +76,7 @@ target_link_libraries(${ENGINE}
         PUBLIC sharksfin-${SHARKSFIN_IMPLEMENTATION}
         PRIVATE takatori
         PRIVATE limestone
+        PRIVATE shirakami-shirakami
         PRIVATE tbb
         PRIVATE numa
         PRIVATE Boost::boost
@@ -111,6 +112,7 @@ target_include_directories(tateyama-impl
 target_link_libraries(tateyama-impl
         INTERFACE ${ENGINE}
         INTERFACE takatori
+        INTERFACE shirakami-shirakami
         INTERFACE tbb
         INTERFACE numa
         INTERFACE moodycamel

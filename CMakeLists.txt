@@ -63,6 +63,7 @@ find_package(Boost
 find_package(TBB REQUIRED)
 find_package(Protobuf REQUIRED)
 find_package(msgpack REQUIRED)
+find_package(shirakami)
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 include(CompileOptions)
