@@ -400,16 +400,16 @@ OLTP サービスプロセスと通信する全てのサブコマンドは、以
 
 ```sh
 <auth-options>:
-    --user <user-name> [--password <password>] |
+    --user <user-name> |
     --auth-token <token> |
     --credentials </path/to/credentials.json> |
-    --no-auth
+    --no-auth |
+
 ```
 
 * options
   * `--user` - ユーザー名
-  * `--password` - パスワード文字列
-    * 未指定の場合はコマンド実行後にパスワードプロンプトが表示される
+    * 対応するパスワードは起動後にパスワードプロンプトを経由して入力する
   * `--auth-token` - 認証トークン
   * `--credentials` - 認証情報ファイルのパス
   * `--no-auth` - 認証機構を利用しない
@@ -425,7 +425,7 @@ OLTP サービスプロセスと通信する全てのサブコマンドは、以
 TODO - 検討中
 
 ```sh
-oltp credentials [/path/to/credentials.json] [--user <user-name> [--password <password>]] [--overwrite|--no-overwrite] [--conf </path/to/conf>]
+oltp credentials [/path/to/credentials.json] [--user <user-name>] [--overwrite|--no-overwrite] [--conf </path/to/conf>]
 ```
 
 * overview
@@ -434,13 +434,13 @@ oltp credentials [/path/to/credentials.json] [--user <user-name> [--password <pa
     * 未指定の場合は既定の認証情報ファイルパスを利用する
   * `--user` - ユーザー名
     * 未指定の場合は実行後にユーザー名プロンプトが表示される
-  * `--password` - パスワード文字列
-    * 未指定の場合はコマンド実行後にパスワードプロンプトが表示される
+    * パスワードは起動後に別途プロンプトに入力する
   * `--overwrite` - 出力先に既にファイルが存在していた場合、上書きする
   * `--no-overwrite` - 出力先にファイルが存在していた場合、エラー終了する
 * note
   * 当該コマンドでは `--credentials` や `--auth-token` を **指定できない**
-    * 同様に、既定の認証情報ファイルも利用しない
+    * 既定の認証情報ファイルも利用しない
+    * `--user` を入力しなかった場合、他のあらゆる認証に関する設定を無視してユーザー名のプロンプトを表示する
   * `--overwrite`, `--no-overwrite` のいずれの指定もない場合、上書きを行うかプロンプトを表示する
 * impl memo
   * if service is present
