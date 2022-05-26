@@ -379,13 +379,82 @@ oltp tag [-h|--help]
 * options
   * `-h,--help` - ヘルプ情報を表示する
 
-### 認証 (案)
+## 認証
 
-* 認証情報は共通オプションで指定する
-  * `--credential </path/to/credential>`
-    * 認証情報ファイルを指定する
-  * オプション未指定の場合、コマンド起動後にプロンプトを表示
-    * user/password を入力
+* 本CLIの認証は以下の方法がある
+  * (A) ユーザー名とパスワードを指定
+    * この場合、CLIは自身が認証機構と通信し、一時的な認証トークンを取得したうえで、認証トークンをサービスプロセスに引き渡す
+  * (B) 外部で取得した認証トークンを指定
+    * この場合、指定された認証トークンをサービスプロセスに引き渡す
+  * (C) 暗号化した認証情報ファイルを指定
+    * この場合、暗号化した認証情報をサービスプロセスに引き渡す
+    * 認証情報ファイルは、 [認証情報ファイルの作成](#認証情報ファイルの作成) コマンドで作成できる
+    * 認証情報はサービスプロセスが提供する公開鍵によって暗号化され、サービスプロセス上の秘密鍵で複合化される
+* 備考
+  * 認証情報ファイルを既定のパス (`$HOME/.tsurugidb/credentials.json`) に配置すると、ユーザー名とパスワードの入力を省略できる
+  * 認証情報ファイルは、 `user`, `password` のフィールドを持つ JSON ファイルで、各フィールドは公開鍵による暗号化済み
+
+### 認証オプション
+
+OLTP サービスプロセスと通信する全てのサブコマンドは、以下の認証オプション `<auth-options>` を指定できる
+
+```sh
+<auth-options>:
+    --user <user-name> |
+    --auth-token <token> |
+    --credentials </path/to/credentials.json> |
+    --no-auth |
+
+```
+
+* options
+  * `--user` - ユーザー名
+    * 対応するパスワードは起動後にパスワードプロンプトを経由して入力する
+  * `--auth-token` - 認証トークン
+  * `--credentials` - 認証情報ファイルのパス
+  * `--no-auth` - 認証機構を利用しない
+* note
+  * `--user`, `--auth-token`, `--credentials`, `--no-auth` のいずれも指定されない場合、次の順序で解決する
+    1. 環境変数 `TSURUGI_AUTH_TOKEN` が空でなければ、認証トークンとしてその文字列を利用する
+    2. 既定の認証情報ファイルがあればそれを利用する
+    3. ユーザー名を入力するプロンプトを表示し、入力された文字列が空でなければユーザー名として利用する (その後、パスワードプロンプトも表示される)
+    4. 認証機構を利用しない
+
+### 認証情報ファイルの作成
+
+TODO - 検討中
+
+```sh
+oltp credentials [/path/to/credentials.json] [--user <user-name>] [--overwrite|--no-overwrite] [--conf </path/to/conf>]
+```
+
+* overview
+* options
+  * `/path/to/credentials.json` - 出力先の認証情報ファイルパス
+    * 未指定の場合は既定の認証情報ファイルパスを利用する
+  * `--user` - ユーザー名
+    * 未指定の場合は実行後にユーザー名プロンプトが表示される
+    * パスワードは起動後に別途プロンプトに入力する
+  * `--overwrite` - 出力先に既にファイルが存在していた場合、上書きする
+  * `--no-overwrite` - 出力先にファイルが存在していた場合、エラー終了する
+* note
+  * 当該コマンドでは `--credentials` や `--auth-token` を **指定できない**
+    * 既定の認証情報ファイルも利用しない
+    * `--user` を入力しなかった場合、他のあらゆる認証に関する設定を無視してユーザー名のプロンプトを表示する
+  * `--overwrite`, `--no-overwrite` のいずれの指定もない場合、上書きを行うかプロンプトを表示する
+* impl memo
+  * if service is present
+    * retrieve public key from the service (via `control_service`?)
+    * encrypt user and password using openssl
+      * https://www.openssl.org/docs/man3.0/man1/openssl-pkeyutl.html
+    * dump json file with crypted `user` and `password` into the path
+  * if service is absent
+    * exec service with `--maintenance`
+    * process as it was present
+    * send `shutdown` to "control_service"
+    * wait until service is absent
+  * if service is unknown
+    * raise error
 
 ## ユーザーコマンド案
 
