@@ -126,6 +126,7 @@ TEST_F(datastore_test, basic) {
     sv.shutdown();
 }
 
+#if 0
 TEST_F(datastore_test, test_connectivity_with_limestone) {
     auto cfg = api::configuration::create_configuration("");
     set_dbpath(*cfg);
@@ -139,4 +140,6 @@ TEST_F(datastore_test, test_connectivity_with_limestone) {
 
     sv.shutdown();
 }
+#endif
+
 }
