@@ -18,7 +18,10 @@
 #include <tateyama/framework/component_ids.h>
 #include <tateyama/framework/resource.h>
 #include <tateyama/framework/environment.h>
-#include "core.h"
+
+#include <shirakami/interface.h>
+#include <sharksfin/api.h>
+#include <limestone/api/datastore.h>
 
 namespace tateyama::datastore::resource {
 
@@ -53,11 +56,6 @@ public:
      */
     ~bridge() override;
 
-    /**
-     * @brief accessor to the resource core object
-     */
-     [[nodiscard]] core* core_object() const noexcept;
-
     bridge(bridge const& other) = delete;
     bridge& operator=(bridge const& other) = delete;
     bridge(bridge&& other) noexcept = delete;
@@ -68,10 +66,20 @@ public:
      */
     bridge() = default;
 
+#if 0
+    /**
+     * @brief bridge to the limestone::api::datastore
+     */
+    std::vector<std::string> list_backup_files();
+    std::vector<std::string> list_tags();
+    void add_tag(std::string_view name, std::string_view comment);
+    bool get_tag(std::string_view name, tag_info& out);
+    bool remove_tag(std::string_view name);
+#endif
+
 private:
-    std::unique_ptr<core> core_{};
+    limestone::api::datastore* datastore_{};
     bool deactivated_{false};
 };
 
 }
-

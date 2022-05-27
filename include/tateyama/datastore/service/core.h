@@ -18,7 +18,7 @@
 #include <tateyama/api/configuration.h>
 #include <tateyama/framework/component_ids.h>
 #include <tateyama/framework/service.h>
-#include <tateyama/datastore/resource/core.h>
+#include <tateyama/datastore/resource/bridge.h>
 #include <limestone/api/datastore.h>
 
 namespace tateyama::datastore::service {
@@ -35,7 +35,7 @@ public:
 
     explicit core(std::shared_ptr<tateyama::api::configuration::whole> cfg);
 
-    bool start(tateyama::datastore::resource::core* resource);
+    bool start(tateyama::datastore::resource::bridge* resource);
 
     bool shutdown(bool force = false);
 
@@ -46,7 +46,7 @@ public:
 
 private:
     std::shared_ptr<tateyama::api::configuration::whole> cfg_{};
-    tateyama::datastore::resource::core* resource_{};
+    tateyama::datastore::resource::bridge* resource_{};
 };
 
 }
