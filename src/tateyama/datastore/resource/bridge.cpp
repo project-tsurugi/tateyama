@@ -22,34 +22,87 @@ namespace tateyama::datastore::resource {
 
 using namespace framework;
 
+limestone::api::datastore* get_datastore() {
+    ::sharksfin::Slice id{};
+    if(auto rc = ::sharksfin::implementation_id(std::addressof(id)); rc != ::sharksfin::StatusCode::OK) {
+        std::abort();
+    }
+    if(id.to_string_view() == "shirakami") {
+        void* dsp = ::shirakami::get_datastore();
+        return reinterpret_cast<limestone::api::datastore*>(dsp);
+    }
+    return nullptr;
+}
+
 component::id_type bridge::id() const noexcept {
     return tag;
 }
 
-bool bridge::setup(environment& env) {
-    core_ = std::make_unique<core>(env.configuration());
+bool bridge::setup([[maybe_unused]] environment& env) {
     return true;
 }
 
 bool bridge::start(environment&) {
-    return core_->start();
+    datastore_ = get_datastore();
+    return datastore_ != nullptr;
 }
 
 bool bridge::shutdown(environment&) {
-    auto ret = core_->shutdown();
     deactivated_ = true;
-    return ret;
+    return true;
 }
 
 bridge::~bridge() {
-    if(core_ && ! deactivated_) {
-        core_->shutdown(true);
+}
+
+#if 0
+std::vector<std::string> bridge::list_backup_files() {
+    // mock implementation TODO
+    return std::vector<std::string>{
+        "/var/datastore/file1",
+        "/var/datastore/file2",
+        "/var/datastore/file3",
+    };
+}
+
+std::vector<std::string> bridge::list_tags() {
+    std::vector<std::string> ret{};
+    ret.reserve(tags_.size());
+    for(auto&& [name, comment] : tags_) {
+        (void)comment;
+        ret.emplace_back(name);
     }
+    return ret;
 }
 
-core* bridge::core_object() const noexcept {
-    return core_.get();
+// tag_info bridge::add_tag(std::string_view name, std::string_view comment) {
+void bridge::add_tag(std::string_view name, std::string_view comment) {
+    auto& tag_repository = datastore_->epoch_tag_repository();
+
+    tag_repository.register_tag(std::string(name), std::string(comment));
+    // TODO fill author and timestamp correctly
+//    tag_info t{std::string(name), std::string{comment}, "author", 100000};
+//    tags_.emplace(n, t);
+//    return t;
 }
 
+bool bridge::get_tag(std::string_view name, tag_info& out) {
+    std::string n{name};
+    if(auto it = tags_.find(n); it != tags_.end()) {
+        out = it->second;
+        return true;
+    }
+    return false;
 }
 
+bool bridge::remove_tag(std::string_view name) {
+    std::string n{name};
+    if(auto it = tags_.find(n); it != tags_.end()) {
+        tags_.erase(it);
+        return true;
+    }
+    return false;
+}
+#endif
+
+}

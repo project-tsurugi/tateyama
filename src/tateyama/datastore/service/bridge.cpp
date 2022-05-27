@@ -49,11 +49,11 @@ bool bridge::start(environment& env) {
         LOG(ERROR) << "datastore resource not found";
         return false;
     }
-    return core_->start(resource->core_object());
+    return true;
 }
 
 bool bridge::shutdown(environment&) {
-    return core_->shutdown();
+    return true;
 }
 
 bool bridge::operator()(std::shared_ptr<request> req, std::shared_ptr<response> res) {

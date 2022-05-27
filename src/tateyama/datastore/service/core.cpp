@@ -194,7 +194,7 @@ core::core(std::shared_ptr<tateyama::api::configuration::whole> cfg) :
     cfg_(std::move(cfg))
 {}
 
-bool core::start(tateyama::datastore::resource::core* resource) {
+bool core::start(tateyama::datastore::resource::bridge* resource) {
     resource_ = resource;
     //TODO implement
     return true;

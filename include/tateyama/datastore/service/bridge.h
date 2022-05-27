@@ -27,7 +27,6 @@
 #include <tateyama/framework/component_ids.h>
 
 #include <tateyama/datastore/service/core.h>
-#include <tateyama/datastore/resource/core.h>
 
 namespace tateyama::datastore::service {
 
