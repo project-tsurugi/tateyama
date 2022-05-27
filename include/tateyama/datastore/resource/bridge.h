@@ -74,7 +74,6 @@ public:
      */
     bridge() = default;
 
-
     void begin_backup() {
         backup_ = std::make_unique<limestone_backup>(datastore_->begin_backup());
     }
@@ -93,6 +92,7 @@ public:
     /**
      * @brief bridge to the limestone::api::datastore
      */
+    std::vector<std::string> list_backup_files();
     std::vector<std::string> list_tags();
     void add_tag(std::string_view name, std::string_view comment);
     bool get_tag(std::string_view name, tag_info& out);
