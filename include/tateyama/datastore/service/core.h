@@ -19,6 +19,7 @@
 #include <tateyama/framework/component_ids.h>
 #include <tateyama/framework/service.h>
 #include <tateyama/datastore/resource/core.h>
+#include <limestone/api/datastore.h>
 
 namespace tateyama::datastore::service {
 
@@ -49,4 +50,3 @@ private:
 };
 
 }
-
