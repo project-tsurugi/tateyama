@@ -19,6 +19,8 @@
 #include <tateyama/framework/component_ids.h>
 #include <tateyama/framework/resource.h>
 
+#include <limestone/api/datastore.h>
+
 namespace tateyama::datastore::resource {
 
 struct tag_info {
@@ -45,7 +47,8 @@ public:
 
     std::vector<std::string> list_tags();
 
-    tag_info add_tag(std::string_view name, std::string_view comment);
+//    tag_info add_tag(std::string_view name, std::string_view comment);
+    void add_tag(std::string_view name, std::string_view comment);
 
     bool get_tag(std::string_view name, tag_info& out);
 
@@ -53,7 +56,9 @@ public:
 private:
     std::shared_ptr<tateyama::api::configuration::whole> cfg_{};
     std::unordered_map<std::string, tag_info> tags_{};
+
+    limestone::api::datastore* datastore_{};
+
 };
 
 }
-

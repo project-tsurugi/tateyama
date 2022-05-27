@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 #include <tateyama/datastore/resource/core.h>
+#include <shirakami/interface.h>
+#include <sharksfin/api.h>
 
 #include <tateyama/api/configuration.h>
 #include <tateyama/framework/component_ids.h>
@@ -21,12 +23,30 @@
 
 namespace tateyama::datastore::resource {
 
+#if 0 // TODO uncomment when shirakami implemented get_datastore()
+limestone::api::datastore* get_datastore() {
+    ::sharksfin::Slice id{};
+    if(auto rc = ::sharksfin::implementation_id(std::addressof(id)); rc != ::sharksfin::StatusCode::OK) {
+        std::abort();
+    }
+    if(id.to_string_view() == "shirakami") {
+        void* dsp = ::shirakami::get_datastore();
+        return reinterpret_cast<limestone::api::datastore*>(dsp);
+    }
+    return nullptr;
+}
+#endif
+
 core::core(std::shared_ptr<tateyama::api::configuration::whole> cfg) :
     cfg_(std::move(cfg))
-{}
+{
+}
 
 bool core::start() {
     //TODO implement
+// TODO uncomment when shirakami implemented get_datastore()
+//    datastore_ = get_datastore();
+    datastore_ = new limestone::api::datastore();
     return true;
 }
 
@@ -55,12 +75,15 @@ std::vector<std::string> core::list_tags() {
     return ret;
 }
 
-tag_info core::add_tag(std::string_view name, std::string_view comment) {
-    std::string n{name};
+// tag_info core::add_tag(std::string_view name, std::string_view comment) {
+void core::add_tag(std::string_view name, std::string_view comment) {
+    auto& tag_repository = datastore_->epoch_tag_repository();
+
+    tag_repository.register_tag(std::string(name), std::string(comment));
     // TODO fill author and timestamp correctly
-    tag_info t{n, std::string{comment}, "author", 100000};
-    tags_.emplace(n, t);
-    return t;
+//    tag_info t{std::string(name), std::string{comment}, "author", 100000};
+//    tags_.emplace(n, t);
+//    return t;
 }
 
 bool core::get_tag(std::string_view name, tag_info& out) {
