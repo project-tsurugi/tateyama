@@ -15,10 +15,6 @@
  */
 #include <tateyama/datastore/service/core.h>
 
-#include <shirakami/interface.h>
-#include <sharksfin/api.h>
-#include <limestone/api/datastore.h>
-
 #include <tateyama/api/configuration.h>
 #include <tateyama/framework/component_ids.h>
 #include <tateyama/framework/service.h>
@@ -129,6 +125,7 @@ bool tateyama::datastore::service::core::operator()(const std::shared_ptr<reques
             break;
         }
         case ns::Request::kTagAdd: {
+#if 0
             auto& ta = rq.tag_add();
             auto info = resource_->add_tag(ta.name(), ta.comment());
             tateyama::proto::datastore::response::TagAdd rp{};
@@ -143,6 +140,7 @@ bool tateyama::datastore::service::core::operator()(const std::shared_ptr<reques
             res->body(body);
             success->clear_tag();
             rp.clear_success();
+#endif
             break;
         }
         case ns::Request::kTagGet: {
