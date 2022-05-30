@@ -44,11 +44,13 @@ bool tateyama::datastore::service::core::operator()(const std::shared_ptr<reques
     VLOG(log_debug) << "request is no. " << rq.command_case();
     switch(rq.command_case()) {
         case ns::Request::kBackupBegin: {
+            resource_->begin_backup();
+
             auto files = resource_->list_backup_files();
             tateyama::proto::datastore::response::BackupBegin rp{};
             auto success = rp.mutable_success();
             for(auto&& f : files) {
-                success->add_files(f);
+                success->add_files(f.string());
             }
             res->session_id(req->session_id());
             auto body = rp.SerializeAsString();
@@ -57,6 +59,8 @@ bool tateyama::datastore::service::core::operator()(const std::shared_ptr<reques
             break;
         }
         case ns::Request::kBackupEnd: {
+            resource_->end_backup();
+
             tateyama::proto::datastore::response::BackupEnd rp{};
             rp.mutable_success();
             res->session_id(req->session_id());
@@ -94,7 +98,9 @@ bool tateyama::datastore::service::core::operator()(const std::shared_ptr<reques
             rp.clear_success();
             break;
         }
-        case ns::Request::kRestoreTag: {
+
+#if 0
+    case ns::Request::kRestoreTag: {
             tateyama::proto::datastore::response::RestoreTag rp{};
             rp.mutable_success();
             res->session_id(this_request_does_not_use_session_id);
@@ -119,7 +125,6 @@ bool tateyama::datastore::service::core::operator()(const std::shared_ptr<reques
             break;
         }
         case ns::Request::kTagAdd: {
-#if 0
             auto& ta = rq.tag_add();
             auto info = resource_->add_tag(ta.name(), ta.comment());
             tateyama::proto::datastore::response::TagAdd rp{};
@@ -134,7 +139,6 @@ bool tateyama::datastore::service::core::operator()(const std::shared_ptr<reques
             res->body(body);
             success->clear_tag();
             rp.clear_success();
-#endif
             break;
         }
         case ns::Request::kTagGet: {
@@ -185,6 +189,14 @@ bool tateyama::datastore::service::core::operator()(const std::shared_ptr<reques
             }
             break;
         }
+#else
+    case ns::Request::kRestoreTag:
+    case ns::Request::kTagList:
+    case ns::Request::kTagAdd:
+    case ns::Request::kTagGet:
+    case ns::Request::kTagRemove:
+        break;
+#endif
         case ns::Request::COMMAND_NOT_SET: break;
     }
     return true;
