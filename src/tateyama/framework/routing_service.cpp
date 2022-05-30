@@ -38,6 +38,9 @@ component::id_type routing_service::id() const noexcept {
 }
 
 bool routing_service::setup(environment& env) {
+    if(env.mode() == boot_mode::maintenance_standalone) {
+        return true;
+    }
     services_ = std::addressof(env.service_repository());
     return true;
 }
@@ -54,7 +57,7 @@ bool routing_service::shutdown(environment&) {
 
 bool routing_service::operator()(std::shared_ptr<request> req, std::shared_ptr<response> res) {
     if (services_ == nullptr) {
-        LOG(ERROR) << "routing service not setup yet";
+        LOG(ERROR) << "routing service is not setup, or framework is running on standalone mode";
         return false;
     }
     if (req->service_id() == tag) {
