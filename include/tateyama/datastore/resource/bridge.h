@@ -92,7 +92,6 @@ public:
     /**
      * @brief bridge to the limestone::api::datastore
      */
-    std::vector<std::string> list_backup_files();
     std::vector<std::string> list_tags();
     void add_tag(std::string_view name, std::string_view comment);
     bool get_tag(std::string_view name, tag_info& out);

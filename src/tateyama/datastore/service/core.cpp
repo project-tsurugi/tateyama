@@ -125,7 +125,6 @@ bool tateyama::datastore::service::core::operator()(const std::shared_ptr<reques
             break;
         }
         case ns::Request::kTagAdd: {
-#if 0
             auto& ta = rq.tag_add();
             auto info = resource_->add_tag(ta.name(), ta.comment());
             tateyama::proto::datastore::response::TagAdd rp{};
@@ -140,7 +139,6 @@ bool tateyama::datastore::service::core::operator()(const std::shared_ptr<reques
             res->body(body);
             success->clear_tag();
             rp.clear_success();
-#endif
             break;
         }
         case ns::Request::kTagGet: {
