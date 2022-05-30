@@ -32,11 +32,10 @@ class core {
 public:
     core() = default;
 
-    explicit core(std::shared_ptr<tateyama::api::configuration::whole> cfg);
-
-    bool start(tateyama::datastore::resource::core* resource);
-
-    bool shutdown(bool force = false);
+    core(
+        std::shared_ptr<tateyama::api::configuration::whole> cfg,
+        tateyama::datastore::resource::core* resource
+    );
 
     bool operator()(
         const std::shared_ptr<request>& req,

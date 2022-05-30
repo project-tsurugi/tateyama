@@ -187,21 +187,13 @@ bool tateyama::datastore::service::core::operator()(const std::shared_ptr<reques
     return true;
 }
 
-core::core(std::shared_ptr<tateyama::api::configuration::whole> cfg) :
-    cfg_(std::move(cfg))
+core::core(
+    std::shared_ptr<tateyama::api::configuration::whole> cfg,
+    tateyama::datastore::resource::core* resource
+) :
+    cfg_(std::move(cfg)),
+    resource_(resource)
 {}
-
-bool core::start(tateyama::datastore::resource::core* resource) {
-    resource_ = resource;
-    //TODO implement
-    return true;
-}
-
-bool core::shutdown(bool force) {
-    //TODO implement
-    (void) force;
-    return true;
-}
 
 }
 

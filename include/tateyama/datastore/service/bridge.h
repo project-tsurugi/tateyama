@@ -77,11 +77,10 @@ public:
     /**
      * @brief destructor the object
      */
-    ~bridge() override;
+    ~bridge() override = default;
 
 private:
     std::unique_ptr<core> core_{};
-    bool deactivated_{false};
 };
 
 }

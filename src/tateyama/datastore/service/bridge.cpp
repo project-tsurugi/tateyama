@@ -38,8 +38,7 @@ component::id_type bridge::id() const noexcept {
     return tag;
 }
 
-bool bridge::setup(environment& env) {
-    core_ = std::make_unique<core>(env.configuration());
+bool bridge::setup(environment&) {
     return true;
 }
 
@@ -49,21 +48,17 @@ bool bridge::start(environment& env) {
         LOG(ERROR) << "datastore resource not found";
         return false;
     }
-    return core_->start(resource->core_object());
+    core_ = std::make_unique<core>(env.configuration(), resource->core_object());
+    return true;
 }
 
 bool bridge::shutdown(environment&) {
-    return core_->shutdown();
+    core_.reset();
+    return true;
 }
 
 bool bridge::operator()(std::shared_ptr<request> req, std::shared_ptr<response> res) {
     return core_->operator()(req, res);
-}
-
-bridge::~bridge() {
-    if(core_ && ! deactivated_) {
-        core_->shutdown(true);
-    }
 }
 
 }
