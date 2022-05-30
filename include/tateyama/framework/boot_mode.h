@@ -29,6 +29,7 @@ enum class boot_mode : std::uint32_t {
     database_server,
     maintenance_server,
     maintenance_standalone,
+    quiescent_server,
 };
 
 /**
@@ -43,6 +44,7 @@ enum class boot_mode : std::uint32_t {
         case boot_mode::database_server: return "database_server"sv;
         case boot_mode::maintenance_server: return "maintenance_server"sv;
         case boot_mode::maintenance_standalone: return "maintenance_standalone"sv;
+        case boot_mode::quiescent_server: return "quiescent_server"sv;
     }
     std::abort();
 }
