@@ -25,6 +25,14 @@
 
 namespace tateyama::datastore::resource {
 
+class limestone_backup {
+public:
+    limestone_backup(limestone::api::backup& backup) : backup_(backup) {}
+    limestone::api::backup& backup() { return backup_; }
+private:
+    limestone::api::backup& backup_;
+};
+
 /**
  * @brief datastore resource bridge for tateyama framework
  * @details This object bridges datastore as a resource component in tateyama framework.
@@ -66,11 +74,25 @@ public:
      */
     bridge() = default;
 
+
+    void begin_backup() {
+        backup_ = std::make_unique<limestone_backup>(datastore_->begin_backup());
+    }
+    std::vector<boost::filesystem::path>& list_backup_files() {
+        return backup_->backup().files();
+    }
+    void end_backup() {
+        backup_ = nullptr;
+    }
+    
+    void restore_backup(std::string_view, bool) {
+        datastore_->recover();
+    }
+
 #if 0
     /**
      * @brief bridge to the limestone::api::datastore
      */
-    std::vector<std::string> list_backup_files();
     std::vector<std::string> list_tags();
     void add_tag(std::string_view name, std::string_view comment);
     bool get_tag(std::string_view name, tag_info& out);
@@ -79,6 +101,7 @@ public:
 
 private:
     limestone::api::datastore* datastore_{};
+    std::unique_ptr<limestone_backup> backup_{};
     bool deactivated_{false};
 };
 
