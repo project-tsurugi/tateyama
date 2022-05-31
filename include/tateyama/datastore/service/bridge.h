@@ -81,6 +81,16 @@ public:
 
 private:
     std::unique_ptr<core> core_{};
+
+    template <class Res, class Req>
+    bool process(Req const& req_proto, response& res) {
+        Res rp{};
+        auto ret = (*core_)(req_proto, rp);
+        auto body = rp.SerializeAsString();
+        res.body(body);
+        return ret;
+    }
+
 };
 
 }

@@ -20,6 +20,9 @@
 #include <tateyama/framework/service.h>
 #include <tateyama/datastore/resource/core.h>
 
+#include <tateyama/proto/datastore/request.pb.h>
+#include <tateyama/proto/datastore/response.pb.h>
+
 namespace tateyama::datastore::service {
 
 using tateyama::api::server::request;
@@ -38,8 +41,53 @@ public:
     );
 
     bool operator()(
-        const std::shared_ptr<request>& req,
-        const std::shared_ptr<response>& res
+        tateyama::proto::datastore::request::BackupBegin const&,
+        tateyama::proto::datastore::response::BackupBegin& rp
+    );
+
+    bool operator()(
+        tateyama::proto::datastore::request::BackupEnd const&,
+        tateyama::proto::datastore::response::BackupEnd& rp
+    );
+
+    bool operator()(
+        tateyama::proto::datastore::request::BackupContinue const&,
+        tateyama::proto::datastore::response::BackupContinue& rp
+    );
+
+    bool operator()(
+        tateyama::proto::datastore::request::BackupEstimate const&,
+        tateyama::proto::datastore::response::BackupEstimate& rp
+    );
+
+    bool operator()(
+        tateyama::proto::datastore::request::RestoreBackup const&,
+        tateyama::proto::datastore::response::RestoreBackup& rp
+    );
+
+    bool operator()(
+        tateyama::proto::datastore::request::RestoreTag const& ,
+        tateyama::proto::datastore::response::RestoreTag& rp
+    );
+
+    bool operator()(
+        tateyama::proto::datastore::request::TagList const&,
+        tateyama::proto::datastore::response::TagList & rp
+    );
+
+    bool operator()(
+        tateyama::proto::datastore::request::TagAdd const& ta,
+        tateyama::proto::datastore::response::TagAdd & res
+    );
+
+    bool operator()(
+        tateyama::proto::datastore::request::TagGet const& tg,
+        tateyama::proto::datastore::response::TagGet & rp
+    );
+
+    bool operator()(
+        tateyama::proto::datastore::request::TagRemove const& tr,
+        tateyama::proto::datastore::response::TagRemove & rp
     );
 
 private:
