@@ -43,8 +43,7 @@ bool bridge::setup([[maybe_unused]] environment& env) {
 }
 
 bool bridge::start(environment&) {
-    datastore_ = get_datastore();
-    return datastore_ != nullptr;
+    return true;
 }
 
 bool bridge::shutdown(environment&) {
@@ -53,6 +52,23 @@ bool bridge::shutdown(environment&) {
 }
 
 bridge::~bridge() {
+}
+
+void bridge::begin_backup() {
+    if (!datastore_) {
+        datastore_ = get_datastore();
+    }
+    backup_ = std::make_unique<limestone_backup>(datastore_->begin_backup());
+}
+std::vector<boost::filesystem::path>& bridge::list_backup_files() {
+    return backup_->backup().files();
+}
+void bridge::end_backup() {
+    backup_ = nullptr;
+}
+
+void bridge::restore_backup(std::string_view, bool) {
+    datastore_->recover();
 }
 
 #if 0
