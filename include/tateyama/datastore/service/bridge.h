@@ -82,6 +82,7 @@ public:
 
 private:
     std::unique_ptr<core> core_{};
+    bool quiescent_{false};
 
     template <class Res, class Req>
     bool process(Req const& req_proto, response& res) {

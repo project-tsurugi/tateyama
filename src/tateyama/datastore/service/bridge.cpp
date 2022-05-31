@@ -46,6 +46,9 @@ bool bridge::setup(environment&) {
 }
 
 bool bridge::start(environment& env) {
+    if (env.mode() == boot_mode::quiescent_server) {
+        quiescent_ = true;
+    }
     auto resource = env.resource_repository().find<tateyama::datastore::resource::bridge>();
     if (! resource) {
         LOG(ERROR) << "datastore resource not found";
@@ -60,10 +63,13 @@ bool bridge::shutdown(environment&) {
     return true;
 }
 
-
 bool bridge::operator()(std::shared_ptr<request> req, std::shared_ptr<response> res) {
     constexpr static auto this_request_does_not_use_session_id = static_cast<std::size_t>(-2);
     namespace ns = tateyama::proto::datastore::request;
+    if (quiescent_) {
+        LOG(ERROR) << "datastore service is running on quiescent mode - no request is allowed";
+        return false;
+    }
     auto data = req->payload();
     ns::Request rq{};
     if(! rq.ParseFromArray(data.data(), data.size())) {
