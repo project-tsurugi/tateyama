@@ -74,25 +74,15 @@ public:
      */
     bridge() = default;
 
-    void begin_backup() {
-        backup_ = std::make_unique<limestone_backup>(datastore_->begin_backup());
-    }
-    std::vector<boost::filesystem::path>& list_backup_files() {
-        return backup_->backup().files();
-    }
-    void end_backup() {
-        backup_ = nullptr;
-    }
-    
-    void restore_backup(std::string_view, bool) {
-        datastore_->recover();
-    }
+    void begin_backup();
+    std::vector<boost::filesystem::path>& list_backup_files();
+    void end_backup();
+    void restore_backup(std::string_view, bool);
 
 #if 0
     /**
      * @brief bridge to the limestone::api::datastore
      */
-    std::vector<std::string> list_backup_files();
     std::vector<std::string> list_tags();
     void add_tag(std::string_view name, std::string_view comment);
     bool get_tag(std::string_view name, tag_info& out);
