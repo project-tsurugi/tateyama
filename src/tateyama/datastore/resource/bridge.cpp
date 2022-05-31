@@ -121,44 +121,4 @@ bool bridge::remove_tag(std::string_view name) {
 }
 #endif
 
-std::vector<std::string> bridge::list_tags() {
-    std::vector<std::string> ret{};
-    ret.reserve(tags_.size());
-    for(auto&& [name, comment] : tags_) {
-        (void)comment;
-        ret.emplace_back(name);
-    }
-    return ret;
-}
-
-// tag_info bridge::add_tag(std::string_view name, std::string_view comment) {
-void bridge::add_tag(std::string_view name, std::string_view comment) {
-    auto& tag_repository = datastore_->epoch_tag_repository();
-
-    tag_repository.register_tag(std::string(name), std::string(comment));
-    // TODO fill author and timestamp correctly
-//    tag_info t{std::string(name), std::string{comment}, "author", 100000};
-//    tags_.emplace(n, t);
-//    return t;
-}
-
-bool bridge::get_tag(std::string_view name, tag_info& out) {
-    std::string n{name};
-    if(auto it = tags_.find(n); it != tags_.end()) {
-        out = it->second;
-        return true;
-    }
-    return false;
-}
-
-bool bridge::remove_tag(std::string_view name) {
-    std::string n{name};
-    if(auto it = tags_.find(n); it != tags_.end()) {
-        tags_.erase(it);
-        return true;
-    }
-    return false;
-}
-#endif
-
 }
