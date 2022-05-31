@@ -35,9 +35,10 @@ using tateyama::api::server::request;
 using tateyama::api::server::response;
 
 /**
- * @brief datastore resource bridge for tateyama framework
- * @details This object bridges datastore as a resource component in tateyama framework.
- * This object should be responsible only for life-cycle management.
+ * @brief datastore service bridge for tateyama framework
+ * @details This object bridges datastore as a service component in tateyama framework.
+ * The main functionalities are provided by the core functions defined for proto. msgs, and this object is responsible
+ * for all other aspects including life-cycle management, request/response objects handling.
  */
 class bridge : public framework::service {
 public:
