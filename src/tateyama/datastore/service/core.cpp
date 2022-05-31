@@ -24,10 +24,6 @@
 
 namespace tateyama::datastore::service {
 
-using tateyama::api::server::request;
-using tateyama::api::server::response;
-
-
 core::core(
     std::shared_ptr<tateyama::api::configuration::whole> cfg,
     tateyama::datastore::resource::core* resource
