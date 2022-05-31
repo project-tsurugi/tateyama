@@ -49,7 +49,7 @@ bool bridge::start(environment& env) {
         LOG(ERROR) << "datastore resource not found";
         return false;
     }
-    return true;
+    return core_->start(resource.get());
 }
 
 bool bridge::shutdown(environment&) {
