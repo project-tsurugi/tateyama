@@ -20,6 +20,9 @@
 #include <tateyama/framework/service.h>
 #include <tateyama/datastore/resource/core.h>
 
+#include <tateyama/proto/datastore/request.pb.h>
+#include <tateyama/proto/datastore/response.pb.h>
+
 namespace tateyama::datastore::service {
 
 using tateyama::api::server::request;
@@ -27,20 +30,137 @@ using tateyama::api::server::response;
 
 /**
  * @brief datastore service main object
+ * @details this object provide main functionality of datastore service, whose member functions are aligned with
+ * datastore proto messages.
  */
 class core {
 public:
+    /**
+     * @brief create empty object
+     */
     core() = default;
 
-    explicit core(std::shared_ptr<tateyama::api::configuration::whole> cfg);
+    /**
+     * @brief create new object
+     * @param cfg configuration
+     * @param resource the datastore resource
+     */
+    core(
+        std::shared_ptr<tateyama::api::configuration::whole> cfg,
+        tateyama::datastore::resource::core* resource
+    );
 
-    bool start(tateyama::datastore::resource::core* resource);
-
-    bool shutdown(bool force = false);
-
+    /**
+     * @brief process BackupBegin message
+     * @param rp response to be filled
+     * @return true when successful
+     * @return false when any error occurs
+     */
     bool operator()(
-        const std::shared_ptr<request>& req,
-        const std::shared_ptr<response>& res
+        tateyama::proto::datastore::request::BackupBegin const&,
+        tateyama::proto::datastore::response::BackupBegin& rp
+    );
+
+    /**
+     * @brief process BackupEnd message
+     * @param rp response to be filled
+     * @return true when successful
+     * @return false when any error occurs
+     */
+    bool operator()(
+        tateyama::proto::datastore::request::BackupEnd const&,
+        tateyama::proto::datastore::response::BackupEnd& rp
+    );
+
+    /**
+     * @brief process BackupContinue message
+     * @param rp response to be filled
+     * @return true when successful
+     * @return false when any error occurs
+     */
+    bool operator()(
+        tateyama::proto::datastore::request::BackupContinue const&,
+        tateyama::proto::datastore::response::BackupContinue& rp
+    );
+
+    /**
+     * @brief process BackupEstimate message
+     * @param rp response to be filled
+     * @return true when successful
+     * @return false when any error occurs
+     */
+    bool operator()(
+        tateyama::proto::datastore::request::BackupEstimate const&,
+        tateyama::proto::datastore::response::BackupEstimate& rp
+    );
+
+    /**
+     * @brief process RestoreBackup message
+     * @param rp response to be filled
+     * @return true when successful
+     * @return false when any error occurs
+     */
+    bool operator()(
+        tateyama::proto::datastore::request::RestoreBackup const&,
+        tateyama::proto::datastore::response::RestoreBackup& rp
+    );
+
+    /**
+     * @brief process RestoreTag message
+     * @param rp response to be filled
+     * @return true when successful
+     * @return false when any error occurs
+     */
+    bool operator()(
+        tateyama::proto::datastore::request::RestoreTag const& ,
+        tateyama::proto::datastore::response::RestoreTag& rp
+    );
+
+    /**
+     * @brief process TagList message
+     * @param rp response to be filled
+     * @return true when successful
+     * @return false when any error occurs
+     */
+    bool operator()(
+        tateyama::proto::datastore::request::TagList const&,
+        tateyama::proto::datastore::response::TagList & rp
+    );
+
+    /**
+     * @brief process TagAdd message
+     * @param ta request
+     * @param rp response to be filled
+     * @return true when successful
+     * @return false when any error occurs
+     */
+    bool operator()(
+        tateyama::proto::datastore::request::TagAdd const& ta,
+        tateyama::proto::datastore::response::TagAdd & res
+    );
+
+    /**
+     * @brief process TagGet message
+     * @param tg request
+     * @param rp response to be filled
+     * @return true when successful
+     * @return false when any error occurs
+     */
+    bool operator()(
+        tateyama::proto::datastore::request::TagGet const& tg,
+        tateyama::proto::datastore::response::TagGet & rp
+    );
+
+    /**
+     * @brief process TagRemove message
+     * @param tr request
+     * @param rp response to be filled
+     * @return true when successful
+     * @return false when any error occurs
+     */
+    bool operator()(
+        tateyama::proto::datastore::request::TagRemove const& tr,
+        tateyama::proto::datastore::response::TagRemove & rp
     );
 
 private:
