@@ -39,10 +39,20 @@ component::id_type bridge::id() const noexcept {
 }
 
 bool bridge::setup([[maybe_unused]] environment& env) {
+    auto config = env.configuration()->get_section("data_store");
+    auto opt = config->get<std::string>("log_location");
+    if (!opt.has_value()) {
+        std::abort();
+    }
+    log_location_ = opt.value();
     return true;
 }
 
 bool bridge::start(environment&) {
+    datastore_ = get_datastore();
+    if (!datastore_) {
+        std::abort();
+    }
     return true;
 }
 
@@ -55,9 +65,6 @@ bridge::~bridge() {
 }
 
 void bridge::begin_backup() {
-    if (!datastore_) {
-        datastore_ = get_datastore();
-    }
     backup_ = std::make_unique<limestone_backup>(datastore_->begin_backup());
 }
 std::vector<boost::filesystem::path>& bridge::list_backup_files() {
@@ -67,8 +74,8 @@ void bridge::end_backup() {
     backup_ = nullptr;
 }
 
-void bridge::restore_backup(std::string_view, bool) {
-    datastore_->recover();
+void bridge::restore_backup(std::string_view from, bool overwrite) {
+    datastore_->recover(from, overwrite, log_location_);
 }
 
 #if 0
