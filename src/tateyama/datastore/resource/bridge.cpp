@@ -39,12 +39,6 @@ component::id_type bridge::id() const noexcept {
 }
 
 bool bridge::setup([[maybe_unused]] environment& env) {
-    auto config = env.configuration()->get_section("data_store");
-    auto opt = config->get<std::string>("log_location");
-    if (!opt.has_value()) {
-        std::abort();
-    }
-    log_location_ = opt.value();
     return true;
 }
 
@@ -75,7 +69,7 @@ void bridge::end_backup() {
 }
 
 void bridge::restore_backup(std::string_view from, bool overwrite) {
-    datastore_->recover(from, overwrite, log_location_);
+    datastore_->recover(from, overwrite);
 }
 
 #if 0

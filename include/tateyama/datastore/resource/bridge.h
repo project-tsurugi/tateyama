@@ -92,7 +92,6 @@ public:
 private:
     limestone::api::datastore* datastore_{};
     std::unique_ptr<limestone_backup> backup_{};
-    std::string log_location_{};
     bool deactivated_{false};
 };
 
