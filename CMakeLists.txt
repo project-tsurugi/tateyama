@@ -49,6 +49,7 @@ set(ENGINE "engine")
 
 find_package(takatori REQUIRED)
 find_package(sharksfin REQUIRED)
+find_package(limestone REQUIRED)
 find_package(fpdecimal REQUIRED) # temporary
 find_package(moodycamel REQUIRED)
 find_package(Doxygen)
@@ -62,6 +63,7 @@ find_package(Boost
 find_package(TBB REQUIRED)
 find_package(Protobuf REQUIRED)
 find_package(msgpack REQUIRED)
+find_package(shirakami)
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 include(CompileOptions)
