@@ -27,9 +27,6 @@
 #include <tateyama/framework/component_ids.h>
 #include <tateyama/datastore/resource/bridge.h>
 
-#include <tateyama/proto/datastore/request.pb.h>
-#include <tateyama/proto/datastore/response.pb.h>
-
 namespace tateyama::datastore::service {
 
 using tateyama::api::server::request;
@@ -41,69 +38,32 @@ component::id_type bridge::id() const noexcept {
     return tag;
 }
 
-bool bridge::setup(environment&) {
+bool bridge::setup(environment& env) {
+    core_ = std::make_unique<core>(env.configuration());
     return true;
 }
 
 bool bridge::start(environment& env) {
-    if (env.mode() == boot_mode::quiescent_server) {
-        quiescent_ = true;
-    }
     auto resource = env.resource_repository().find<tateyama::datastore::resource::bridge>();
     if (! resource) {
         LOG(ERROR) << "datastore resource not found";
         return false;
     }
-    core_ = std::make_unique<core>(env.configuration(), resource->core_object());
-    return true;
+    return core_->start(resource.get());
 }
 
 bool bridge::shutdown(environment&) {
-    core_.reset();
     return true;
 }
 
 bool bridge::operator()(std::shared_ptr<request> req, std::shared_ptr<response> res) {
-    constexpr static auto this_request_does_not_use_session_id = static_cast<std::size_t>(-2);
-    namespace ns = tateyama::proto::datastore::request;
-    if (quiescent_) {
-        LOG(ERROR) << "datastore service is running on quiescent mode - no request is allowed";
-        return false;
-    }
-    auto data = req->payload();
-    ns::Request rq{};
-    if(! rq.ParseFromArray(data.data(), data.size())) {
-        VLOG(log_error) << "request parse error";
-        return false;
-    }
+    return core_->operator()(req, res);
+}
 
-    VLOG(log_debug) << "request is no. " << rq.command_case();
-
-    switch(rq.command_case()) {
-        case ns::Request::kBackupEstimate:
-        case ns::Request::kRestoreBackup:
-        case ns::Request::kRestoreTag:
-            res->session_id(this_request_does_not_use_session_id);
-            break;
-        default:
-            res->session_id(req->session_id());
-            break;
+bridge::~bridge() {
+    if(core_ && ! deactivated_) {
+        core_->shutdown(true);
     }
-    namespace resp = tateyama::proto::datastore::response;
-    switch(rq.command_case()) {
-        case ns::Request::kBackupBegin: return process<resp::BackupBegin>(rq.backup_begin(), *res);
-        case ns::Request::kBackupEnd: return process<resp::BackupEnd>(rq.backup_end(), *res);
-        case ns::Request::kBackupContine: return process<resp::BackupContinue>(rq.backup_contine(), *res);
-        case ns::Request::kBackupEstimate: return process<resp::BackupEstimate>(rq.backup_estimate(), *res);
-        case ns::Request::kRestoreBackup: return process<resp::RestoreBackup>(rq.restore_backup(), *res);
-        case ns::Request::kRestoreTag: return process<resp::RestoreTag>(rq.restore_tag(), *res);
-        case ns::Request::kTagList: return process<resp::TagList>(rq.tag_list(), *res);
-        case ns::Request::kTagAdd: return process<resp::TagAdd>(rq.tag_add(), *res);
-        case ns::Request::kTagGet: return process<resp::TagGet>(rq.tag_get(), *res);
-        case ns::Request::kTagRemove: return process<resp::TagRemove>(rq.tag_remove(), *res);
-        case ns::Request::COMMAND_NOT_SET: break;
-    }
-    return false;
 }
 
 }

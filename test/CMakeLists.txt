@@ -46,6 +46,7 @@ target_link_libraries(${test_target}
         PRIVATE atomic
         PRIVATE moodycamel
         PRIVATE rt
+        PRIVATE limestone
         )
 
 function (add_test_executable source_file)

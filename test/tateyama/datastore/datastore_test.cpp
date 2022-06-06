@@ -126,4 +126,20 @@ TEST_F(datastore_test, basic) {
     sv.shutdown();
 }
 
+#if 0
+TEST_F(datastore_test, test_connectivity_with_limestone) {
+    auto cfg = api::configuration::create_configuration("");
+    set_dbpath(*cfg);
+    framework::server sv{framework::boot_mode::database_server, cfg};
+    add_core_components(sv);
+    sv.start();
+    auto ds = sv.find_service<datastore::service::bridge>();
+    datastore::
+
+
+
+    sv.shutdown();
+}
+#endif
+
 }
