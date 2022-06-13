@@ -17,19 +17,17 @@
 
 #include <tateyama/framework/component_ids.h>
 #include <tateyama/framework/resource.h>
+#include <tateyama/framework/transactional_kvs_resource.h>
 
 namespace tateyama::datastore::resource {
 
 using namespace framework;
 
-limestone::api::datastore* get_datastore() {
-    ::sharksfin::Slice id{};
-    if(auto rc = ::sharksfin::implementation_id(std::addressof(id)); rc != ::sharksfin::StatusCode::OK) {
-        std::abort();
-    }
-    if(id.to_string_view() == "shirakami") {
-        void* dsp = ::shirakami::get_datastore();
-        return reinterpret_cast<limestone::api::datastore*>(dsp);
+limestone::api::datastore* get_datastore(transactional_kvs_resource& kvs) {
+    std::any ptr{};
+    auto res = ::sharksfin::implementation_get_datastore(kvs.core_object(), std::addressof(ptr));
+    if(res == ::sharksfin::StatusCode::OK) {
+        return reinterpret_cast<limestone::api::datastore*>(std::any_cast<void*>(ptr));  //NOLINT
     }
     return nullptr;
 }
@@ -42,11 +40,12 @@ bool bridge::setup([[maybe_unused]] environment& env) {
     return true;
 }
 
-bool bridge::start(environment&) {
-    datastore_ = get_datastore();
-    if (!datastore_) {
+bool bridge::start(environment& env) {
+    auto kvs = env.resource_repository().find<framework::transactional_kvs_resource>();
+    if (! kvs) {
         std::abort();
     }
+    datastore_ = get_datastore(*kvs); // this can be nullptr if kvs doesn't support datastore (e.g. memory)
     return true;
 }
 

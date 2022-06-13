@@ -19,7 +19,6 @@
 #include <tateyama/framework/resource.h>
 #include <tateyama/framework/environment.h>
 
-#include <shirakami/interface.h>
 #include <sharksfin/api.h>
 #include <limestone/api/datastore.h>
 
