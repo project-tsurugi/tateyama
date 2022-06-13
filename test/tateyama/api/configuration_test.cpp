@@ -30,7 +30,7 @@ using namespace std::string_view_literals;
 
 TEST_F(configuration_test, add_new_property) {
     auto cfg = api::configuration::create_configuration();
-    auto section = cfg->get_section("data_store"); // any section name is fine for testing
+    auto section = cfg->get_section("datastore"); // any section name is fine for testing
     ASSERT_TRUE(section);
     ASSERT_TRUE(section->set("test", "value"));
     auto v1 = section->get<std::string>("test");
@@ -41,7 +41,7 @@ TEST_F(configuration_test, add_new_property) {
     ASSERT_TRUE(vu);
     EXPECT_EQ("value2", vu.value());
 
-    auto section2 = cfg->get_section("data_store");
+    auto section2 = cfg->get_section("datastore");
     auto v2 = section2->get<std::string>("test");
     ASSERT_TRUE(v2);
     EXPECT_EQ("value2", v2.value());
@@ -49,7 +49,7 @@ TEST_F(configuration_test, add_new_property) {
 
 TEST_F(configuration_test, add_new_property_bool) {
     auto cfg = api::configuration::create_configuration();
-    auto section = cfg->get_section("data_store"); // any section name is fine for testing
+    auto section = cfg->get_section("datastore"); // any section name is fine for testing
     ASSERT_TRUE(section);
     ASSERT_TRUE(section->set("test", "true"));
     auto v = section->get<bool>("test");
@@ -63,7 +63,7 @@ TEST_F(configuration_test, add_new_property_bool) {
 
 TEST_F(configuration_test, add_same_name_property_to_different_section) {
     auto cfg = api::configuration::create_configuration();
-    auto section0 = cfg->get_section("data_store"); // any section name is fine for testing
+    auto section0 = cfg->get_section("datastore"); // any section name is fine for testing
     auto section1 = cfg->get_section("sql"); // any section name is fine for testing
     ASSERT_TRUE(section0);
     ASSERT_TRUE(section1);

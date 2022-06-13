@@ -24,7 +24,7 @@
 namespace tateyama::framework {
 
 bool transactional_kvs_resource::setup(environment& env) {
-    auto s = env.configuration()->get_section("data_store");
+    auto s = env.configuration()->get_section("datastore");
     BOOST_ASSERT(s != nullptr); //NOLINT
     sharksfin::DatabaseOptions options{};
     if(auto res = s->get<std::string>("log_location"); res) {

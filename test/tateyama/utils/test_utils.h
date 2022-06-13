@@ -29,7 +29,7 @@ public:
     }
 
     void set_dbpath(api::configuration::whole& cfg) {
-        auto* dscfg = cfg.get_section("data_store");
+        auto* dscfg = cfg.get_section("datastore");
         BOOST_ASSERT(dscfg != nullptr); //NOLINT
         dscfg->set("log_location", path());
 

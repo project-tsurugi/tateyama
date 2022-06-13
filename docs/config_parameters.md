@@ -9,10 +9,10 @@ parameter=value
 
 下記にセクションごとにサポートされるパラメーターの一覧を列挙する。
 
-## data_storeセクション
+## datastoreセクション
 
 セクション名
-  - data_store
+  - datastore
 
 対象コンポーネント
 
