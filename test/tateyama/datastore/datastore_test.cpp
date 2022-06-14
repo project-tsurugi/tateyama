@@ -102,8 +102,8 @@ TEST_F(datastore_test, basic) {
     add_core_components(sv);
     sv.start();
     auto router = sv.find_service<framework::routing_service>();
-    ASSERT_TRUE(router);
-    ASSERT_EQ(framework::routing_service::tag, router->id());
+    EXPECT_TRUE(router);
+    EXPECT_EQ(framework::routing_service::tag, router->id());
 
     std::string str{};
     {
@@ -121,9 +121,9 @@ TEST_F(datastore_test, basic) {
     auto& body = svrres->body_;
     std::vector<std::string> files{};
     ::tateyama::proto::datastore::response::BackupBegin bb{};
-    ASSERT_TRUE(bb.ParseFromString(body));
-    ASSERT_TRUE(bb.has_success());
-    ASSERT_EQ(3, bb.success().files_size());
+    EXPECT_TRUE(bb.ParseFromString(body));
+    EXPECT_TRUE(bb.has_success());
+    EXPECT_EQ(3, bb.success().files_size());
     for(auto&& f : bb.success().files()) {
         std::cout << "backup file: " << f << std::endl;
     }
