@@ -26,7 +26,7 @@ namespace tateyama::datastore::resource {
 
 class limestone_backup {
 public:
-    limestone_backup(limestone::api::backup& backup) : backup_(backup) {}
+    explicit limestone_backup(limestone::api::backup& backup) : backup_(backup) {}
     limestone::api::backup& backup() { return backup_; }
 private:
     limestone::api::backup& backup_;
