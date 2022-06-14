@@ -40,7 +40,6 @@ jobs:
       - id: Install_limestone
         name: Install_limestone
         run: |
-
           cd third_party/sharksfin/third_party/shirakami/third_party/limestone
           rm -rf build
           mkdir -p build
