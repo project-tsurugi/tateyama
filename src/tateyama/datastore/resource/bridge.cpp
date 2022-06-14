@@ -54,8 +54,7 @@ bool bridge::shutdown(environment&) {
     return true;
 }
 
-bridge::~bridge() {
-}
+bridge::~bridge() = default;
 
 void bridge::begin_backup() {
     backup_ = std::make_unique<limestone_backup>(datastore_->begin_backup());
