@@ -123,7 +123,7 @@ TEST_F(datastore_test, basic) {
     ::tateyama::proto::datastore::response::BackupBegin bb{};
     EXPECT_TRUE(bb.ParseFromString(body));
     EXPECT_TRUE(bb.has_success());
-    EXPECT_EQ(3, bb.success().files_size());
+    EXPECT_EQ(0, bb.success().files_size());
     for(auto&& f : bb.success().files()) {
         std::cout << "backup file: " << f << std::endl;
     }
