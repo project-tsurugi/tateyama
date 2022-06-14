@@ -27,7 +27,6 @@
 #include <tateyama/framework/component_ids.h>
 
 #include <tateyama/datastore/service/core.h>
-#include <tateyama/datastore/resource/core.h>
 
 namespace tateyama::datastore::service {
 
@@ -35,10 +34,9 @@ using tateyama::api::server::request;
 using tateyama::api::server::response;
 
 /**
- * @brief datastore service bridge for tateyama framework
- * @details This object bridges datastore as a service component in tateyama framework.
- * The main functionalities are provided by the core functions defined for proto. msgs, and this object is responsible
- * for all other aspects including life-cycle management, request/response objects handling.
+ * @brief datastore resource bridge for tateyama framework
+ * @details This object bridges datastore as a resource component in tateyama framework.
+ * This object should be responsible only for life-cycle management.
  */
 class bridge : public framework::service {
 public:
@@ -78,22 +76,11 @@ public:
     /**
      * @brief destructor the object
      */
-    ~bridge() override = default;
+    ~bridge() override;
 
 private:
     std::unique_ptr<core> core_{};
-    bool quiescent_{false};
-
-    template <class Res, class Req>
-    bool process(Req const& req_proto, response& res) {
-        Res rp{};
-        auto ret = (*core_)(req_proto, rp);
-        auto body = rp.SerializeAsString();
-        res.body(body);
-        return ret;
-    }
-
+    bool deactivated_{false};
 };
 
 }
-

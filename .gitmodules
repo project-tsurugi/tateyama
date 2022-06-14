@@ -16,6 +16,3 @@
 [submodule "third_party/sharksfin"]
 	path = third_party/sharksfin
 	url = git@github.com:project-tsurugi/sharksfin.git
-[submodule "third_party/limestone"]
-	path = third_party/limestone
-	url = git@github.com:project-tsurugi/limestone.git

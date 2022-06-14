@@ -40,7 +40,6 @@ jobs:
       - id: Install_limestone
         name: Install_limestone
         run: |
-
           cd third_party/sharksfin/third_party/shirakami/third_party/limestone
           rm -rf build
           mkdir -p build
@@ -55,7 +54,7 @@ jobs:
           rm -rf build
           mkdir -p build
           cd build
-          cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_SANITIZER=ON -DFORCE_INSTALL_RPATH=ON -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/.local ..
+          cmake -DBUILD_WP=ON -DBUILD_PWAL=ON -DCMAKE_BUILD_TYPE=Debug -DENABLE_SANITIZER=ON -DFORCE_INSTALL_RPATH=ON -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/.local ..
           cmake --build . --target install --clean-first -- -j
 
       - id: Install_sharksfin

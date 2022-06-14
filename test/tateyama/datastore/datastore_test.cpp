@@ -92,14 +92,18 @@ public:
 using namespace std::string_view_literals;
 
 TEST_F(datastore_test, basic) {
+    ::sharksfin::Slice name{};
+    if (auto rc = ::sharksfin::implementation_id(&name); rc == ::sharksfin::StatusCode::OK && name == "memory") {
+        GTEST_SKIP() << "tateyama-memory doesn't support datastore";
+    }
     auto cfg = api::configuration::create_configuration("");
     set_dbpath(*cfg);
     framework::server sv{framework::boot_mode::database_server, cfg};
     add_core_components(sv);
     sv.start();
     auto router = sv.find_service<framework::routing_service>();
-    ASSERT_TRUE(router);
-    ASSERT_EQ(framework::routing_service::tag, router->id());
+    EXPECT_TRUE(router);
+    EXPECT_EQ(framework::routing_service::tag, router->id());
 
     std::string str{};
     {
@@ -117,13 +121,29 @@ TEST_F(datastore_test, basic) {
     auto& body = svrres->body_;
     std::vector<std::string> files{};
     ::tateyama::proto::datastore::response::BackupBegin bb{};
-    ASSERT_TRUE(bb.ParseFromString(body));
-    ASSERT_TRUE(bb.has_success());
-    ASSERT_EQ(3, bb.success().files_size());
+    EXPECT_TRUE(bb.ParseFromString(body));
+    EXPECT_TRUE(bb.has_success());
+    EXPECT_EQ(0, bb.success().files_size());
     for(auto&& f : bb.success().files()) {
         std::cout << "backup file: " << f << std::endl;
     }
     sv.shutdown();
 }
+
+#if 0
+TEST_F(datastore_test, test_connectivity_with_limestone) {
+    auto cfg = api::configuration::create_configuration("");
+    set_dbpath(*cfg);
+    framework::server sv{framework::boot_mode::database_server, cfg};
+    add_core_components(sv);
+    sv.start();
+    auto ds = sv.find_service<datastore::service::bridge>();
+    datastore::
+
+
+
+    sv.shutdown();
+}
+#endif
 
 }

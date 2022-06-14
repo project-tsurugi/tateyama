@@ -17,39 +17,107 @@
 
 #include <tateyama/framework/component_ids.h>
 #include <tateyama/framework/resource.h>
+#include <tateyama/framework/transactional_kvs_resource.h>
 
 namespace tateyama::datastore::resource {
 
 using namespace framework;
 
+limestone::api::datastore* get_datastore(transactional_kvs_resource& kvs) {
+    std::any ptr{};
+    auto res = ::sharksfin::implementation_get_datastore(kvs.core_object(), std::addressof(ptr));
+    if(res == ::sharksfin::StatusCode::OK) {
+        return reinterpret_cast<limestone::api::datastore*>(std::any_cast<void*>(ptr));  //NOLINT
+    }
+    return nullptr;
+}
+
 component::id_type bridge::id() const noexcept {
     return tag;
 }
 
-bool bridge::setup(environment& env) {
-    core_ = std::make_unique<core>(env.configuration());
+bool bridge::setup([[maybe_unused]] environment& env) {
     return true;
 }
 
-bool bridge::start(environment&) {
-    return core_->start();
+bool bridge::start(environment& env) {
+    auto kvs = env.resource_repository().find<framework::transactional_kvs_resource>();
+    if (! kvs) {
+        std::abort();
+    }
+    datastore_ = get_datastore(*kvs); // this can be nullptr if kvs doesn't support datastore (e.g. memory)
+    return true;
 }
 
 bool bridge::shutdown(environment&) {
-    auto ret = core_->shutdown();
     deactivated_ = true;
+    return true;
+}
+
+bridge::~bridge() = default;
+
+void bridge::begin_backup() {
+    backup_ = std::make_unique<limestone_backup>(datastore_->begin_backup());
+}
+std::vector<boost::filesystem::path>& bridge::list_backup_files() {
+    return backup_->backup().files();
+}
+void bridge::end_backup() {
+    backup_ = nullptr;
+}
+
+void bridge::restore_backup(std::string_view from, bool overwrite) {
+    datastore_->recover(from, overwrite);
+}
+
+#if 0
+std::vector<std::string> bridge::list_backup_files() {
+    // mock implementation TODO
+    return std::vector<std::string>{
+        "/var/datastore/file1",
+        "/var/datastore/file2",
+        "/var/datastore/file3",
+    };
+}
+
+std::vector<std::string> bridge::list_tags() {
+    std::vector<std::string> ret{};
+    ret.reserve(tags_.size());
+    for(auto&& [name, comment] : tags_) {
+        (void)comment;
+        ret.emplace_back(name);
+    }
     return ret;
 }
 
-bridge::~bridge() {
-    if(core_ && ! deactivated_) {
-        core_->shutdown(true);
+// tag_info bridge::add_tag(std::string_view name, std::string_view comment) {
+void bridge::add_tag(std::string_view name, std::string_view comment) {
+    auto& tag_repository = datastore_->epoch_tag_repository();
+
+    tag_repository.register_tag(std::string(name), std::string(comment));
+    // TODO fill author and timestamp correctly
+//    tag_info t{std::string(name), std::string{comment}, "author", 100000};
+//    tags_.emplace(n, t);
+//    return t;
+}
+
+bool bridge::get_tag(std::string_view name, tag_info& out) {
+    std::string n{name};
+    if(auto it = tags_.find(n); it != tags_.end()) {
+        out = it->second;
+        return true;
     }
+    return false;
 }
 
-core* bridge::core_object() const noexcept {
-    return core_.get();
+bool bridge::remove_tag(std::string_view name) {
+    std::string n{name};
+    if(auto it = tags_.find(n); it != tags_.end()) {
+        tags_.erase(it);
+        return true;
+    }
+    return false;
 }
+#endif
 
 }
-

@@ -18,9 +18,19 @@
 #include <tateyama/framework/component_ids.h>
 #include <tateyama/framework/resource.h>
 #include <tateyama/framework/environment.h>
-#include "core.h"
+
+#include <sharksfin/api.h>
+#include <limestone/api/datastore.h>
 
 namespace tateyama::datastore::resource {
+
+class limestone_backup {
+public:
+    explicit limestone_backup(limestone::api::backup& backup) : backup_(backup) {}
+    limestone::api::backup& backup() { return backup_; }
+private:
+    limestone::api::backup& backup_;
+};
 
 /**
  * @brief datastore resource bridge for tateyama framework
@@ -53,11 +63,6 @@ public:
      */
     ~bridge() override;
 
-    /**
-     * @brief accessor to the resource core object
-     */
-     [[nodiscard]] core* core_object() const noexcept;
-
     bridge(bridge const& other) = delete;
     bridge& operator=(bridge const& other) = delete;
     bridge(bridge&& other) noexcept = delete;
@@ -68,10 +73,25 @@ public:
      */
     bridge() = default;
 
+    void begin_backup();
+    std::vector<boost::filesystem::path>& list_backup_files();
+    void end_backup();
+    void restore_backup(std::string_view, bool);
+
+#if 0
+    /**
+     * @brief bridge to the limestone::api::datastore
+     */
+    std::vector<std::string> list_tags();
+    void add_tag(std::string_view name, std::string_view comment);
+    bool get_tag(std::string_view name, tag_info& out);
+    bool remove_tag(std::string_view name);
+#endif
+
 private:
-    std::unique_ptr<core> core_{};
+    limestone::api::datastore* datastore_{};
+    std::unique_ptr<limestone_backup> backup_{};
     bool deactivated_{false};
 };
 
 }
-
