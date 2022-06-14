@@ -92,6 +92,10 @@ public:
 using namespace std::string_view_literals;
 
 TEST_F(datastore_test, basic) {
+    ::sharksfin::Slice name{};
+    if (auto rc = ::sharksfin::implementation_id(&name); rc == ::sharksfin::StatusCode::OK && name == "memory") {
+        GTEST_SKIP() << "tateyama-memory doesn't support datastore";
+    }
     auto cfg = api::configuration::create_configuration("");
     set_dbpath(*cfg);
     framework::server sv{framework::boot_mode::database_server, cfg};
