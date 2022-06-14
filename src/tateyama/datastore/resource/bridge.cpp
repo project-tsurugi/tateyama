@@ -15,6 +15,8 @@
  */
 #include "tateyama/datastore/resource/bridge.h"
 
+#include <any>
+
 #include <tateyama/framework/component_ids.h>
 #include <tateyama/framework/resource.h>
 #include <tateyama/framework/transactional_kvs_resource.h>
