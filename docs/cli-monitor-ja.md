@@ -17,7 +17,7 @@
     * `oltp kill`
     * `oltp quiesce`
     * `oltp status`
-  * [backuoサブコマンド](cli-spec-ja.md#backup-%E3%82%B5%E3%83%96%E3%82%B3%E3%83%9E%E3%83%B3%E3%83%89)
+  * [backupサブコマンド](cli-spec-ja.md#backup-%E3%82%B5%E3%83%96%E3%82%B3%E3%83%9E%E3%83%B3%E3%83%89)
     * `oltp backup create`
   * [restoreサブコマンド](cli-spec-ja.md#restore-%E3%82%B5%E3%83%96%E3%82%B3%E3%83%9E%E3%83%B3%E3%83%89)
     * `oltp restore backup`
@@ -63,7 +63,7 @@
 |:-:|:--|
 | `kind` | `start` |
 
-### `end`
+### `finish`
 
 | フィールド名 | 内容 |
 |:-:|:--|
@@ -94,5 +94,5 @@
 | `arguments` | コードに対する引数列 (配列型, 任意) |
 
 * 備考
-  * fatal error の場合、 `log` ではなく `end` の `status=failure` で通知する方が都合はいいが、必須ではない
+  * fatal error の場合、 `log` ではなく `finish` の `status=failure` で通知する方が都合はいいが、必須ではない
   * 基本的に `info` はあまり利用せず、 `progress` レコードを利用する
