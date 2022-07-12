@@ -21,7 +21,7 @@ parameter=value
 
 |パラメーター名 | 型 | 値 |備考|
 |---:| :---: | :--- |---|
-|log_location | 文字列 | ログを保存するディレクトリへの絶対パス||
+|log_location | 文字列 | ログを保存するディレクトリへの絶対パス|デフォルトはshirakamiの決めるデフォルトパス([database_options::log_directory_path_の記述](https://github.com/project-tsurugi/shirakami/blob/master/docs/database_options.md)を参照)|
 
 ## sqlセクション
 
