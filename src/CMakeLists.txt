@@ -20,6 +20,7 @@ install(DIRECTORY
 
 file(GLOB SOURCES
         "tateyama/*.cpp"
+        "tateyama/api/*.cpp"
         "tateyama/datastore/*.cpp"
         "tateyama/datastore/resource/*.cpp"
         "tateyama/datastore/service/*.cpp"
@@ -34,7 +35,6 @@ file(GLOB SOURCES
         "tateyama/server/impl/*.cpp"
         "tateyama/task_scheduler/*.cpp"
         "tateyama/utils/*.cpp"
-        "tateyama/registry/*.cpp"
         "tateyama/configuration/*.cpp"
 )
 

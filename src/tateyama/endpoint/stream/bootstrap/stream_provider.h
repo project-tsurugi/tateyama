@@ -26,7 +26,6 @@
 #include <tateyama/logging.h>
 #include <tateyama/api/endpoint/service.h>
 #include <tateyama/api/endpoint/provider.h>
-#include <tateyama/api/registry.h>
 #include <tateyama/api/environment.h>
 #include <tateyama/api/configuration.h>
 
