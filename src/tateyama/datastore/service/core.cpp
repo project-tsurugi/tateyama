@@ -90,6 +90,8 @@ bool tateyama::datastore::service::core::operator()(const std::shared_ptr<reques
             break;
         }
         case ns::Request::kRestoreBackup: {
+            auto& rb = rq.restore_backup();
+            resource_->restore_backup(rb.path(), !rb.keep_backup());
             tateyama::proto::datastore::response::RestoreBackup rp{};
             rp.mutable_success();
             res->session_id(this_request_does_not_use_session_id);
@@ -125,7 +127,6 @@ bool tateyama::datastore::service::core::operator()(const std::shared_ptr<reques
             break;
         }
         case ns::Request::kTagAdd: {
-#if 0
             auto& ta = rq.tag_add();
             auto info = resource_->add_tag(ta.name(), ta.comment());
             tateyama::proto::datastore::response::TagAdd rp{};
@@ -140,7 +141,6 @@ bool tateyama::datastore::service::core::operator()(const std::shared_ptr<reques
             res->body(body);
             success->clear_tag();
             rp.clear_success();
-#endif
             break;
         }
         case ns::Request::kTagGet: {
