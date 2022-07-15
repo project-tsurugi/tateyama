@@ -141,7 +141,7 @@ oltp status [--json] [--conf </path/to/conf>]
 ### backup サブコマンド
 
 ```sh
-oltp backup create </path/to/backup> [--conf </path/to/conf>] [--overwrite] [-v|--verbose]
+oltp backup create </path/to/backup> [--conf </path/to/conf>] [--overwrite] [--label <text>] [-v|--verbose]
 oltp backup estimate [--conf </path/to/conf>]
 ```
 
@@ -162,6 +162,7 @@ oltp backup estimate [--conf </path/to/conf>]
     * options
       * `</path/to/backup>` - バックアップ先のディレクトリ
       * `--overwrite` - 出力先にディレクトリが既に存在していた場合、削除してからバックアップファイルを出力する
+      * `--label` - この操作のラベルを指定する
       * `-v,--verbose` - 詳細情報を表示する
     * note
       * 作成したバックアップは `oltp restore backup` で復元できる
@@ -202,8 +203,8 @@ oltp backup estimate [--conf </path/to/conf>]
 ### restore サブコマンド
 
 ```sh
-oltp restore backup </path/to/backup> [--conf </path/to/conf>] [--keep-backup|--no-keep-backup] [-f|--force]
-oltp restore tag <tag-name> [--conf </path/to/conf>] [-f|--force]
+oltp restore backup </path/to/backup> [--conf </path/to/conf>] [--keep-backup|--no-keep-backup] [--label <text>] [-f|--force]
+oltp restore tag <tag-name> [--conf </path/to/conf>] [--label <text>] [-f|--force]
 ```
 
 * overview
@@ -211,6 +212,8 @@ oltp restore tag <tag-name> [--conf </path/to/conf>] [-f|--force]
 * 共通
   * options
     * `--conf` - 設定ファイルのパス、未指定の場合は既定の設定パスを利用
+    * `--label` - この操作のラベルを指定する
+    * `-f,--force` - 確認のプロンプトを表示させずに実行する
   * note
     * 同一の設定ファイルを参照する、完全に終了しているデータベースを対象にとる
     * 対象のデータベースが完全に終了していない場合、このコマンドは失敗する
@@ -225,7 +228,6 @@ oltp restore tag <tag-name> [--conf </path/to/conf>] [-f|--force]
       * `</path/to/backup>` - バックアップファイルの位置
       * `--keep-backup` (default) - 入力したバックアップファイルをコピーして利用する
       * `--no-keep-backup` - 入力したバックアップをリストア時に削除する
-      * `-f,--force` - 確認のプロンプトを表示させずに実行する
     * impl memo
       * if service is absent
         * (A)
@@ -243,7 +245,6 @@ oltp restore tag <tag-name> [--conf </path/to/conf>] [-f|--force]
       * Point-in-Time Recovery のタグ作成時点にデータベースをリストアする
     * options
       * `<tag-name>` - リストア対象の Point-in-Time recovery のタグ
-      * `-f,--force` - 確認のプロンプトを表示させずに実行する
     * impl memo
       * if service is absent
         * (A)
