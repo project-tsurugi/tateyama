@@ -34,6 +34,13 @@ bool transactional_kvs_resource::setup(environment& env) {
             options.attribute(KEY_LOCATION, location);
         }
     }
+    if(auto res = s->get<std::size_t>("logging_max_parallelism"); res) {
+        auto sz = res.value();
+        if(sz > 0) {
+            static constexpr std::string_view KEY_LOGGING_MAX_PARALLELISM{"logging_max_parallelism"};
+            options.attribute(KEY_LOGGING_MAX_PARALLELISM, std::to_string(sz));
+        }
+    }
     if(auto res = sharksfin::database_open(options, std::addressof(database_handle_)); res != sharksfin::StatusCode::OK) {
         LOG(ERROR) << "opening database failed";
         return false;

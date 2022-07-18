@@ -38,6 +38,8 @@ static constexpr std::string_view default_configuration {  // NOLINT
 
     "[datastore]\n"
         "log_location=\n"
+        "logging_max_parallelism=112\n"
+
 };
 
 } // namespace details
