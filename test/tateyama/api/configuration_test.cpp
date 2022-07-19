@@ -77,4 +77,22 @@ TEST_F(configuration_test, add_same_name_property_to_different_section) {
     EXPECT_EQ("v1", v1.value());
 }
 
+TEST_F(configuration_test, property_file_missing) {
+    // even on invalid path, configuration object is created with default values
+    auto cfg = api::configuration::create_configuration("/dummy/file/path");
+    ASSERT_TRUE(cfg);
+}
+
+TEST_F(configuration_test, create_from_input_stream) {
+    std::stringstream ss{
+        "[datastore]\n"
+        "log_location=LOCATION\n"
+    };
+    configuration::whole cfg{ss};
+    auto section = cfg.get_section("datastore");
+    ASSERT_TRUE(section);
+    auto value = section->get<std::string>("log_location");
+    ASSERT_TRUE(value);
+    EXPECT_EQ("LOCATION", *value);
+}
 }

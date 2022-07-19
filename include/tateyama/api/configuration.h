@@ -109,6 +109,9 @@ public:
     static constexpr char property_filename[] = "tsurugi.ini";  // NOLINT
 
     explicit whole(std::string_view file_name);
+
+    explicit whole(std::istream& content);
+
     ~whole() = default;
 
     whole(whole const& other) = delete;
@@ -167,6 +170,8 @@ private:
         }
         return true;
     }
+
+    void initialize(std::istream& content);
 };
 
 inline std::shared_ptr<whole> create_configuration(std::string_view file_name = "") {
