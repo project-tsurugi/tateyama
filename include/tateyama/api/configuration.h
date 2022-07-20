@@ -79,10 +79,23 @@ public:
         return true;
     }
 
+    /**
+     * @brief equality comparison operator
+     */
+    friend bool operator==(section const& a, section const& b) noexcept {
+        return a.property_tree_ == b.property_tree_;
+    }
 private:
     boost::property_tree::ptree& property_tree_;
     boost::property_tree::ptree& default_tree_;
 };
+
+/**
+ * @brief inequality comparison operator
+ */
+inline bool operator!=(section const& a, section const& b) noexcept {
+    return !(a == b);
+}
 
 template<>
 [[nodiscard]] inline std::optional<bool> section::get<bool>(std::string_view name) const {
@@ -119,11 +132,11 @@ public:
     whole(whole&& other) noexcept = delete;
     whole& operator=(whole&& other) noexcept = delete;
 
-    [[nodiscard]] section* get_section(std::string_view n) {
+    [[nodiscard]] section* get_section(std::string_view n) const {
         auto name = std::string(n);
         if (auto it = map_.find(name); it != map_.end()) {
             VLOG(log_trace) << "configuration of section " << name << " will be used.";
-            return map_[name].get();
+            return it->second.get();
         }
         LOG(ERROR) << "cannot find " << name << " section in the configuration.";
         return nullptr;
@@ -137,6 +150,23 @@ public:
         return file_.parent_path();
     }
 
+    /**
+     * @brief equality comparison operator
+     */
+    friend bool operator==(whole const& a, whole const& b) noexcept {
+        if(a.property_tree_ != b.property_tree_) {
+            return false;
+        }
+        for(auto&& section : a.property_tree_) {
+            auto& name = section.first;
+            auto* pa = a.get_section(name);
+            auto* pb = b.get_section(name);
+            if(*pa != *pb) {
+                return false;
+            }
+        }
+        return true;
+    }
 private:
     boost::property_tree::ptree property_tree_;
     boost::property_tree::ptree default_tree_;
@@ -173,6 +203,13 @@ private:
 
     void initialize(std::istream& content);
 };
+
+/**
+ * @brief inequality comparison operator
+ */
+inline bool operator!=(whole const& a, whole const& b) noexcept {
+    return !(a == b);
+}
 
 inline std::shared_ptr<whole> create_configuration(std::string_view file_name = "") {
     try {

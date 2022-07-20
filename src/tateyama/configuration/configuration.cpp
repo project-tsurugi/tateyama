@@ -94,9 +94,10 @@ whole::whole(std::string_view file_name) {
     initialize(stream);
 }
 
-whole::whole(std::istream& content) {
+whole::whole(std::istream& content) :
     // this constructor works as if property file exists and its content is provided as istream
-    property_file_exist_ = true;
+    property_file_exist_(true)
+{
     initialize(content);
 }
 
