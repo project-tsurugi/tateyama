@@ -41,7 +41,7 @@ NOTE: for developers
 oltp start [--conf </path/to/conf>] [--recovery|--no-recovery]
 oltp shutdown [--conf </path/to/conf>]
 oltp kill [--conf </path/to/conf>]
-oltp quiesce [--conf </path/to/conf>] [--message <message-text>]
+oltp quiesce [--conf </path/to/conf>] [--label <text>]
 oltp status [--json] [--conf </path/to/conf>]
 ```
 
@@ -103,7 +103,7 @@ oltp status [--json] [--conf </path/to/conf>]
     * overview
       * データベースプロセスを静止状態で起動する
     * options
-      * (N/A)
+    * `--label` - この操作のラベルを指定する
     * note
       * 同一の設定ファイルを参照するデータベースが稼働中である場合、コマンドは失敗する
       * 同一の設定ファイルを参照するデータベースが完全に終了していない場合、コマンドは失敗する
