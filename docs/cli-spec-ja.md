@@ -162,7 +162,7 @@ oltp backup estimate [--conf </path/to/conf>]
     * options
       * `</path/to/backup>` - バックアップ先のディレクトリ
       * `--overwrite` - 出力先にディレクトリが既に存在していた場合、削除してからバックアップファイルを出力する
-
+      * `--label` - この操作のラベルを指定する
       * `-v,--verbose` - 詳細情報を表示する
     * note
       * 作成したバックアップは `oltp restore backup` で復元できる
