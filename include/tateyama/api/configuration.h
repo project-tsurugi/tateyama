@@ -132,14 +132,12 @@ public:
     whole(whole&& other) noexcept = delete;
     whole& operator=(whole&& other) noexcept = delete;
 
-    [[nodiscard]] section* get_section(std::string_view n) const {
-        auto name = std::string(n);
-        if (auto it = map_.find(name); it != map_.end()) {
-            VLOG(log_trace) << "configuration of section " << name << " will be used.";
-            return it->second.get();
-        }
-        LOG(ERROR) << "cannot find " << name << " section in the configuration.";
-        return nullptr;
+    [[nodiscard]] section const* get_section(std::string_view n) const {
+        return get_section_internal(n);
+    }
+
+    [[nodiscard]] section* get_section(std::string_view n) {
+        return get_section_internal(n);
     }
 
     /**
@@ -202,6 +200,16 @@ private:
     }
 
     void initialize(std::istream& content);
+
+    [[nodiscard]] section* get_section_internal(std::string_view n) const {
+        auto name = std::string(n);
+        if (auto it = map_.find(name); it != map_.end()) {
+            VLOG(log_trace) << "configuration of section " << name << " will be used.";
+            return it->second.get();
+        }
+        LOG(ERROR) << "cannot find " << name << " section in the configuration.";
+        return nullptr;
+    }
 };
 
 /**
