@@ -42,6 +42,7 @@
   * `start` - コマンド実行の開始
   * `finish` - コマンド実行の終了
   * `progress` - 進捗情報
+  * `status` - oltp statusコマンドの実行結果
   * `log` - 任意のメッセージ
 * 全てのレコードに共通して、以下のフィールドを有する
   * `kind` - レコードの種類
@@ -83,6 +84,19 @@
 | `message` | タスク名 (任意) |
 | `code` | コード (任意) |
 | `arguments` | コードに対する引数列 (配列型, 任意) |
+
+### `status`
+
+| フィールド名 | 内容 |
+|:-:|:--|
+| `kind` | `status` |
+| `pid` | tateyama-serverが起動している場合はそのプロセスID、起動していない場合は0 |
+| `lockfile` | tateyama-serverが起動している場合、それに対応するロックファイルの名前（絶対パス名） |
+| `message` | メッセージ (任意) |
+
+* 備考
+  * tateyama-serverが起動していない場合はlockfileフィールドは出力しない
+  * oltp statusコマンドによるtateyama-server状態検出がエラーとなった場合は、そのエラー・メッセージをmessageフィールドに出力する。
 
 ### `log`
 
