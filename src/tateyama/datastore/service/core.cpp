@@ -29,7 +29,6 @@ using tateyama::api::server::request;
 using tateyama::api::server::response;
 
 bool tateyama::datastore::service::core::operator()(const std::shared_ptr<request>& req, const std::shared_ptr<response>& res) {
-    // mock implementation TODO
     namespace ns = tateyama::proto::datastore::request;
 
     constexpr static auto this_request_does_not_use_session_id = static_cast<std::size_t>(-2);
@@ -37,19 +36,20 @@ bool tateyama::datastore::service::core::operator()(const std::shared_ptr<reques
     auto data = req->payload();
     ns::Request rq{};
     if(! rq.ParseFromArray(data.data(), data.size())) {
-        VLOG(log_error) << "request parse error";
+        LOG(ERROR) << "request parse error";
         return false;
     }
 
-    VLOG(log_debug) << "request is no. " << rq.command_case();
+    DVLOG(log_debug) << "request is no. " << rq.command_case();
     switch(rq.command_case()) {
         case ns::Request::kBackupBegin: {
-            resource_->begin_backup();
+            backup_id_++;
+            backup_ = std::make_unique<limestone_backup>(resource_->begin_backup());
 
-            auto files = resource_->list_backup_files();
             tateyama::proto::datastore::response::BackupBegin rp{};
             auto success = rp.mutable_success();
-            for(auto&& f : files) {
+            success->set_id(backup_id_);
+            for(auto&& f : backup_->backup().files()) {
                 success->add_files(f.string());
             }
             res->session_id(req->session_id());
@@ -59,14 +59,17 @@ bool tateyama::datastore::service::core::operator()(const std::shared_ptr<reques
             break;
         }
         case ns::Request::kBackupEnd: {
-            resource_->end_backup();
-
             tateyama::proto::datastore::response::BackupEnd rp{};
-            rp.mutable_success();
-            res->session_id(req->session_id());
-            auto body = rp.SerializeAsString();
-            res->body(body);
-            rp.clear_success();
+            if (backup_) {
+                rp.mutable_success();
+                res->session_id(req->session_id());
+                auto body = rp.SerializeAsString();
+                res->body(body);
+                rp.clear_success();
+                backup_ = nullptr;
+            } else {
+                rp.mutable_expired();
+            }
             break;
         }
         case ns::Request::kBackupContine: {
@@ -91,9 +94,24 @@ bool tateyama::datastore::service::core::operator()(const std::shared_ptr<reques
         }
         case ns::Request::kRestoreBackup: {
             auto& rb = rq.restore_backup();
-            resource_->restore_backup(rb.path(), !rb.keep_backup());
             tateyama::proto::datastore::response::RestoreBackup rp{};
-            rp.mutable_success();
+            switch (resource_->restore_backup(rb.path(), rb.keep_backup())) {
+            case limestone::status::ok:
+                rp.mutable_success();
+                break;
+            case limestone::status::err_not_found:
+                rp.mutable_not_found();
+                break;
+            case limestone::status::err_permission_error:
+                rp.mutable_permission_error();
+                break;
+            case limestone::status::err_broken_data:
+                rp.mutable_broken_data();
+                break;
+            default:
+                rp.mutable_unknown_error();
+                break;
+            }
             res->session_id(this_request_does_not_use_session_id);
             auto body = rp.SerializeAsString();
             res->body(body);

@@ -58,18 +58,14 @@ bool bridge::shutdown(environment&) {
 
 bridge::~bridge() = default;
 
-void bridge::begin_backup() {
-    backup_ = std::make_unique<limestone_backup>(datastore_->begin_backup());
-}
-std::vector<boost::filesystem::path>& bridge::list_backup_files() {
-    return backup_->backup().files();
+limestone::api::backup& bridge::begin_backup() {
+    return datastore_->begin_backup();
 }
 void bridge::end_backup() {
-    backup_ = nullptr;
 }
 
-void bridge::restore_backup(std::string_view from, bool overwrite) {
-    datastore_->recover(from, overwrite);
+limestone::status bridge::restore_backup(std::string_view from, bool overwrite) {
+    return datastore_->restore(from, overwrite);
 }
 
 #if 0

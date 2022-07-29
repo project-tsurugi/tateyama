@@ -20,17 +20,10 @@
 #include <tateyama/framework/environment.h>
 
 #include <sharksfin/api.h>
+#include <limestone/status.h>
 #include <limestone/api/datastore.h>
 
 namespace tateyama::datastore::resource {
-
-class limestone_backup {
-public:
-    explicit limestone_backup(limestone::api::backup& backup) : backup_(backup) {}
-    limestone::api::backup& backup() { return backup_; }
-private:
-    limestone::api::backup& backup_;
-};
 
 /**
  * @brief datastore resource bridge for tateyama framework
@@ -73,10 +66,9 @@ public:
      */
     bridge() = default;
 
-    void begin_backup();
-    std::vector<boost::filesystem::path>& list_backup_files();
+    limestone::api::backup& begin_backup();
     void end_backup();
-    void restore_backup(std::string_view, bool);
+    limestone::status restore_backup(std::string_view, bool);
 
 #if 0
     /**
@@ -90,7 +82,6 @@ public:
 
 private:
     limestone::api::datastore* datastore_{};
-    std::unique_ptr<limestone_backup> backup_{};
     bool deactivated_{false};
 };
 
