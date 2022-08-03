@@ -129,16 +129,16 @@ oltp status [--json] [--conf </path/to/conf>]
       * 対象のデータベースが未稼働の場合、このコマンドはその旨を表示する
       * 対象のデータベースが稼働中の場合、コマンドは各機能の状態を表示する
       * `--json` は一例で、machine readable なフォーマットが一つあればいい
-        * それらのオプションがなにも指定されない場合、human readable な形式で出力する
+        * それらのオプションがなにも指定されない場合、human readable な形式（impl memo欄参照）で出力する
     * impl memo
       * if service is present
         * send `status` to "control_service" and display one of the following messages depending on the status (human readable case)
-          * 'a tateyama-server in *boot_mode* on *configファイル名* is running'
-          * 'a tateyama-server in *boot_mode* on *configファイル名* is setting up *resource名*'
-          * 'a tateyama-server in *boot_mode* on *configファイル名* is starting *resource名*'
-          * 'a tateyama-server in *boot_mode* on *configファイル名* is shutting down *resource名*'、
+          * 'tateyama-server in *boot_mode* on *configファイル名* is running'
+          * 'tateyama-server in *boot_mode* on *configファイル名* is setting up *resource名*'
+          * 'tateyama-server in *boot_mode* on *configファイル名* is starting *resource名*'
+          * 'tateyama-server in *boot_mode* on *configファイル名* is shutting down *resource名*'、
       * if service is absent, display the following message (human readable case)
-        * tell it is absent as 'no tateyama-server on *configファイル名* is running'
+        * tell it is absent as 'tateyama-server on *configファイル名* is inactive'
       * if service is unknown
         * tell it is unknown as 'the service is unknown'
 
