@@ -133,12 +133,11 @@ oltp status [--json] [--conf </path/to/conf>]
     * impl memo
       * if service is present
         * send `status` to "control_service" and display one of the following messages depending on the status (human readable case)
-          * 'tateyama-server in *boot_mode* on *configファイル名* is running'
-          * 'tateyama-server in *boot_mode* on *configファイル名* is setting up *resource名*'
-          * 'tateyama-server in *boot_mode* on *configファイル名* is starting *resource名*'
-          * 'tateyama-server in *boot_mode* on *configファイル名* is shutting down *resource名*'、
+          * 'Tsurugi OLTP database is running'
+          * 'Tsurugi OLTP database is booting up'
+          * 'Tsurugi OLTP database is shutting down'、
       * if service is absent, display the following message (human readable case)
-        * tell it is absent as 'tateyama-server on *configファイル名* is inactive'
+        * tell it is absent as 'Tsurugi OLTP database is inactive'
       * if service is unknown
         * tell it is unknown as 'the service is unknown'
 
