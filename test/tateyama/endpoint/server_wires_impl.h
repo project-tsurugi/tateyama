@@ -197,7 +197,7 @@ public:
             responses_ = managed_shared_memory_->construct<response_box>(response_box_name)(16, managed_shared_memory_.get());
         }
         catch(const boost::interprocess::interprocess_exception& ex) {
-            LOG(FATAL) << "running out of boost managed shared memory" << std::endl;
+            LOG(FATAL) << ex.what() << ", error_code = " << ex.get_error_code() << ", native_error = " << ex.get_native_error();
             pthread_exit(nullptr);  // FIXME
         }
     }
