@@ -97,21 +97,26 @@ public:
 
     void send(std::string_view payload) {  // for RESPONSE_SESSION_HELLO_OK
         std::unique_lock<std::mutex> lock(mutex_);
+        DVLOG(log_trace) << "<-- RESPONSE_SESSION_HELLO_OK ";  //NOLINT
         send_response(RESPONSE_SESSION_HELLO_OK, 0, payload);
     }
     void send(unsigned char slot, std::string_view payload) {  // for RESPONSE_SESSION_PAYLOAD
+        DVLOG(log_trace) << "<-- RESPONSE_SESSION_PAYLOAD ";  //NOLINT
         std::unique_lock<std::mutex> lock(mutex_);
         send_response(RESPONSE_SESSION_PAYLOAD, slot, payload);
     }
     void send_result_set_hello(unsigned char slot, std::string_view name) {  // for RESPONSE_RESULT_SET_HELLO
+        DVLOG(log_trace)  << "<-- RESPONSE_RESULT_SET_HELLO " << static_cast<std::uint32_t>(slot) << ", " << name;  //NOLINT
         std::unique_lock<std::mutex> lock(mutex_);
         send_response(RESPONSE_RESULT_SET_HELLO, slot, name);
     }
     void send_result_set_bye(unsigned char slot) {  // for RESPONSE_RESULT_SET_BYE
+        DVLOG(log_trace) << "<-- RESPONSE_RESULT_SET_BYE " << static_cast<std::uint32_t>(slot);  //NOLINT
         std::unique_lock<std::mutex> lock(mutex_);
         send_response(RESPONSE_RESULT_SET_BYE, slot, "");
     }
     void send(unsigned char slot, unsigned char writer, std::string_view payload) { // for RESPONSE_RESULT_SET_PAYLOAD
+        DVLOG(log_trace) << "<-- RESPONSE_RESULT_SET_PAYLOAD " << static_cast<std::uint32_t>(slot) << ", " << static_cast<std::uint32_t>(writer);  //NOLINT
         std::unique_lock<std::mutex> lock(mutex_);
         unsigned char info = RESPONSE_RESULT_SET_PAYLOAD;
         ::send(socket_, &info, 1, 0);
@@ -149,18 +154,32 @@ private:
 
             if (FD_ISSET(socket_, &fds)) {  // NOLINT
                 if (auto size_i = ::recv(socket_, &info, 1, 0); size_i == 0) {
+                    DVLOG(log_trace) << "socket is closed by the client ";  //NOLINT
                     return false;
                 }
                 if (auto size_i = ::recv(socket_, &slot, 1, 0); size_i == 0) {
+                    LOG(ERROR) << "received an incomplete message ";  //NOLINT
                     std::abort();
                 }
             }
-            if (info == REQUEST_RESULT_SET_BYE_OK) {
+            switch (info) {
+            case REQUEST_SESSION_PAYLOAD:
+                DVLOG(log_trace) << "--> REQUEST_SESSION_PAYLOAD " << static_cast<std::uint32_t>(slot);  //NOLINT
+                return true;
+            case REQUEST_RESULT_SET_BYE_OK:
+            {
+                DVLOG(log_trace) << "--> REQUEST_RESULT_SET_BYE_OK " << static_cast<std::uint32_t>(slot);  //NOLINT
                 std::string dummy;
                 recv(dummy);
                 release_slot(slot);
-            } else {
+                break;
+            }
+            case REQUEST_SESSION_HELLO:
+                DVLOG(log_trace) << "--> REQUEST_SESSION_HELLO ";  //NOLINT
                 return true;
+            default:
+                LOG(ERROR) << "illegal message type " << static_cast<std::uint32_t>(info);  //NOLINT
+                std::abort();
             }
         }
     }
@@ -198,7 +217,6 @@ private:
             std::abort();
         }
         in_use.at(slot) = false;
-        send_result_set_bye(slot);
     }
 };
 
