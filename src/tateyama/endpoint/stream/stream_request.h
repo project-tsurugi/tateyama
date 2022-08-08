@@ -29,8 +29,7 @@ namespace tateyama::common::stream {
 class stream_request : public tateyama::api::endpoint::request {
 public:
     stream_request() = delete;
-    explicit stream_request(stream_socket& session_socket) : session_socket_(session_socket) {
-        session_socket_.recv(payload_);
+    explicit stream_request(stream_socket& session_socket, std::string& payload) : session_socket_(session_socket), payload_(payload) {
     }
 
     [[nodiscard]] std::string_view payload() const override;
@@ -38,7 +37,7 @@ public:
     
 private:
     stream_socket& session_socket_;
-    std::string payload_{};
+    std::string& payload_;
 };
 
 }  // tateyama::common::stream

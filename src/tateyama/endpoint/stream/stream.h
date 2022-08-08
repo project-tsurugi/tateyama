@@ -24,6 +24,10 @@
 #include <array>
 #include <iterator>
 #include <mutex>
+#include <condition_variable>
+#include <atomic>
+#include <queue>
+
 #include <glog/logging.h>
 
 #include <tateyama/logging.h>
@@ -48,6 +52,25 @@ class stream_socket
 
     static constexpr unsigned int SLOT_SIZE = 16;
 
+    class recv_entry {
+    public:
+        recv_entry(unsigned char info, unsigned char slot, std::string payload) : info_(info), slot_(slot), payload_(payload) {
+        }
+        unsigned char info() const {
+            return info_;
+        }
+        unsigned char slot() const {
+            return slot_;
+        }
+        std::string payload() const {
+            return payload_;
+        }
+    private:
+        unsigned char info_;
+        unsigned char slot_;
+        std::string payload_;
+    };
+
 public:
     explicit stream_socket(int socket) : socket_(socket) {
         for (unsigned int i = 0; i < SLOT_SIZE; i++) {
@@ -58,7 +81,7 @@ public:
         unsigned char slot{};
         std::string dummy;
 
-        if (!recv(info, slot, dummy)) {
+        if (!await(info, slot, dummy)) {
             std::abort();
         }
         if (info != REQUEST_SESSION_HELLO) {
@@ -72,27 +95,9 @@ public:
     stream_socket(stream_socket&& other) noexcept = delete;
     stream_socket& operator=(stream_socket&& other) noexcept = delete;
 
-    bool await(unsigned char& slot) {
+    bool await(unsigned char& slot, std::string& payload) {
         unsigned char info{};
-        return await(info, slot);
-    }
-    void recv(std::string& payload) {
-        char buffer[4];  // NOLINT
-
-        std::int64_t size_l = ::recv(socket_, &buffer[0], sizeof(int), 0);
-        while (size_l < static_cast<std::int64_t>(sizeof(int))) {
-            size_l += ::recv(socket_, &buffer[size_l], sizeof(int) - size_l, 0);  // NOLINT
-        }
-        unsigned int length = (strip(buffer[3]) << 24) | (strip(buffer[2]) << 16) | (strip(buffer[1]) << 8) | strip(buffer[0]);  // NOLINT
-
-        if (length > 0) {
-            payload.resize(length);
-            char *data_buffer = payload.data();
-            auto size_v = ::recv(socket_, data_buffer, length, 0);
-            while (size_v < length) {
-                size_v += ::recv(socket_, data_buffer + size_v, length - size_v, 0);  // NOLINT
-            }
-        }
+        return await(info, slot, payload);
     }
 
     void send(std::string_view payload) {  // for RESPONSE_SESSION_HELLO_OK
@@ -129,12 +134,14 @@ public:
         for (unsigned int i = 0; i < SLOT_SIZE; i++) {
             if (!in_use.at(i)) {
                 in_use.at(i) = true;
+                slot_using_++;
                 return i;
             }
         }
+        LOG(ERROR) << "running out the slots for result set";
         std::abort();
     }
-    
+
 // for session stream
     void close_session() { session_closed_ = true; }
     [[nodiscard]] bool is_session_closed() const { return session_closed_; }
@@ -144,13 +151,31 @@ private:
     bool session_closed_{false};
     std::array<bool, SLOT_SIZE> in_use{};
     std::mutex mutex_{};
+    std::atomic_uint slot_using_{};
+    std::queue<recv_entry> queue_{};
 
-    bool await(unsigned char& info, unsigned char& slot) {
+    bool await(unsigned char& info, unsigned char& slot, std::string& payload) {
+        DVLOG(log_trace) << "-- enter waiting REQUEST --";  //NOLINT
+
         while (true) {
+            if (!queue_.empty() && slot_using_ < SLOT_SIZE) {
+                auto entry = queue_.front();
+                info = entry.info();
+                slot = entry.slot();
+                payload = entry.payload();
+                queue_.pop();
+                return true;
+            }
+
+            struct timeval tv;
             fd_set fds;
             FD_ZERO(&fds);  // NOLINT
             FD_SET(socket_, &fds);  // NOLINT
-            select(socket_ + 1, &fds, nullptr, nullptr, nullptr);
+            tv.tv_sec = 0;
+            tv.tv_usec = 50000;  // 50(mS)
+            if (auto rv = select(socket_ + 1, &fds, nullptr, nullptr, &tv); rv == 0) {
+                continue;
+            }
 
             if (FD_ISSET(socket_, &fds)) {  // NOLINT
                 if (auto size_i = ::recv(socket_, &info, 1, 0); size_i == 0) {
@@ -165,7 +190,13 @@ private:
             switch (info) {
             case REQUEST_SESSION_PAYLOAD:
                 DVLOG(log_trace) << "--> REQUEST_SESSION_PAYLOAD " << static_cast<std::uint32_t>(slot);  //NOLINT
-                return true;
+                recv(payload);
+                if (slot_using_ < SLOT_SIZE) {
+                    return true;
+                } else {
+                    queue_.push(recv_entry(info, slot, payload));
+                }
+                break;
             case REQUEST_RESULT_SET_BYE_OK:
             {
                 DVLOG(log_trace) << "--> REQUEST_RESULT_SET_BYE_OK " << static_cast<std::uint32_t>(slot);  //NOLINT
@@ -176,7 +207,9 @@ private:
             }
             case REQUEST_SESSION_HELLO:
                 DVLOG(log_trace) << "--> REQUEST_SESSION_HELLO ";  //NOLINT
-                return true;
+                recv(payload);
+                return true;  // no need to care about overflow of result set slot
+                break;
             default:
                 LOG(ERROR) << "illegal message type " << static_cast<std::uint32_t>(info);  //NOLINT
                 std::abort();
@@ -186,12 +219,24 @@ private:
     std::size_t strip(char c) {
         return (static_cast<std::uint32_t>(c) & 0xff);  // NOLINT
     }
-    bool recv(unsigned char& info, unsigned char& slot, std::string& payload) {  // REQUEST_SESSION_HELLO and REQUEST_SESSION_PAYLOAD
-        if (!await(info, slot)) {
-            return false;
+
+    void recv(std::string& payload) {
+        char buffer[4];  // NOLINT
+
+        std::int64_t size_l = ::recv(socket_, &buffer[0], sizeof(int), 0);
+        while (size_l < static_cast<std::int64_t>(sizeof(int))) {
+            size_l += ::recv(socket_, &buffer[size_l], sizeof(int) - size_l, 0);  // NOLINT
         }
-        recv(payload);
-        return true;
+        unsigned int length = (strip(buffer[3]) << 24) | (strip(buffer[2]) << 16) | (strip(buffer[1]) << 8) | strip(buffer[0]);  // NOLINT
+
+        if (length > 0) {
+            payload.resize(length);
+            char *data_buffer = payload.data();
+            auto size_v = ::recv(socket_, data_buffer, length, 0);
+            while (size_v < length) {
+                size_v += ::recv(socket_, data_buffer + size_v, length - size_v, 0);  // NOLINT
+            }
+        }
     }
 
     void send_response(unsigned char info, unsigned char slot, std::string_view payload) {  // a support function, assumes caller hold lock
@@ -214,9 +259,11 @@ private:
 
     void release_slot(unsigned int slot) {
         if (!in_use.at(slot)) {
+            LOG(ERROR) << "slot " << slot << " is not using, abort due to inconsistent state";
             std::abort();
         }
         in_use.at(slot) = false;
+        slot_using_--;
     }
 };
 
