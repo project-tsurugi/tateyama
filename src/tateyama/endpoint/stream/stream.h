@@ -54,15 +54,15 @@ class stream_socket
 
     class recv_entry {
     public:
-        recv_entry(unsigned char info, unsigned char slot, std::string payload) : info_(info), slot_(slot), payload_(payload) {
+        recv_entry(unsigned char info, unsigned char slot, std::string payload) : info_(info), slot_(slot), payload_(std::move(payload)) {
         }
-        unsigned char info() const {
+        [[nodiscard]] unsigned char info() const {
             return info_;
         }
-        unsigned char slot() const {
+        [[nodiscard]] unsigned char slot() const {
             return slot_;
         }
-        std::string payload() const {
+        [[nodiscard]] std::string payload() const {
             return payload_;
         }
     private:
@@ -167,7 +167,7 @@ private:
                 return true;
             }
 
-            struct timeval tv;
+            struct timeval tv{};
             fd_set fds;
             FD_ZERO(&fds);  // NOLINT
             FD_SET(socket_, &fds);  // NOLINT
@@ -193,9 +193,8 @@ private:
                 recv(payload);
                 if (slot_using_ < SLOT_SIZE) {
                     return true;
-                } else {
-                    queue_.push(recv_entry(info, slot, payload));
                 }
+                queue_.push(recv_entry(info, slot, payload));
                 break;
             case REQUEST_RESULT_SET_BYE_OK:
             {
