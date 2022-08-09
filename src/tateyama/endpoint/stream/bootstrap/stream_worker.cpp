@@ -24,9 +24,10 @@ void stream_worker::run()
 {
     while(true) {
         unsigned char slot{};
-        if (!session_stream_->await(slot)) { break; }
+        std::string payload{};
+        if (!session_stream_->await(slot, payload)) { break; }
 
-        auto request = std::make_shared<tateyama::common::stream::stream_request>(*session_stream_);
+        auto request = std::make_shared<tateyama::common::stream::stream_request>(*session_stream_, payload);
         auto response = std::make_shared<tateyama::common::stream::stream_response>(*request, slot);
         service_(static_cast<std::shared_ptr<tateyama::api::endpoint::request const>>(request),
                  static_cast<std::shared_ptr<tateyama::api::endpoint::response>>(std::move(response)));
