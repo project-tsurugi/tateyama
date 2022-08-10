@@ -16,6 +16,7 @@
 #pragma once
 
 #include <set>
+#include <mutex>
 
 #include <glog/logging.h>
 
@@ -36,13 +37,15 @@ public:
     class resultset_wires_container_impl : public resultset_wires_container {
     public:
         //   for server
-        resultset_wires_container_impl(boost::interprocess::managed_shared_memory* managed_shm_ptr, std::string_view name, std::size_t count)
-            : managed_shm_ptr_(managed_shm_ptr), rsw_name_(name), server_(true) {
+        resultset_wires_container_impl(boost::interprocess::managed_shared_memory* managed_shm_ptr, std::string_view name, std::size_t count, std::mutex& mtx_shm)
+            : managed_shm_ptr_(managed_shm_ptr), rsw_name_(name), server_(true), mtx_shm_(mtx_shm) {
+            std::lock_guard<std::mutex> lock(mtx_shm_);
             managed_shm_ptr_->destroy<shm_resultset_wires>(rsw_name_.c_str());
             shm_resultset_wires_ = managed_shm_ptr_->construct<shm_resultset_wires>(rsw_name_.c_str())(managed_shm_ptr_, count);
         }
         ~resultset_wires_container_impl() override {
             if (server_) {
+                std::lock_guard<std::mutex> lock(mtx_shm_);
                 managed_shm_ptr_->destroy<shm_resultset_wires>(rsw_name_.c_str());
             }
         }
@@ -77,6 +80,7 @@ public:
         std::string rsw_name_;
         shm_resultset_wires* shm_resultset_wires_{};
         bool server_;
+        std::mutex& mtx_shm_;
     };
     static void resultset_deleter_impl(resultset_wires_container* resultset) {
         delete dynamic_cast<resultset_wires_container_impl*>(resultset);  // NOLINT
@@ -99,21 +103,29 @@ public:
         garbage_collector_impl& operator = (garbage_collector_impl&&) = delete;
 
         void put(unq_p_resultset_wires_conteiner wires) override {
+            std::lock_guard<std::mutex> lock(mtx_put_);
             resultset_wires_set_.emplace(std::move(wires));
         }
         void dump() override {
-            auto it = resultset_wires_set_.begin();
-            while (it != resultset_wires_set_.end()) {
-                if ((*it)->is_closed()) {
-                    resultset_wires_set_.erase(it++);
-                } else {
-                    it++;
+            if (mtx_dump_.try_lock()) {
+                std::lock_guard<std::mutex> lock(mtx_put_);
+
+                auto it = resultset_wires_set_.begin();
+                while (it != resultset_wires_set_.end()) {
+                    if ((*it)->is_closed()) {
+                        resultset_wires_set_.erase(it++);
+                    } else {
+                        it++;
+                    }
                 }
+                mtx_dump_.unlock();
             }
         }
 
     private:
         std::set<unq_p_resultset_wires_conteiner> resultset_wires_set_{};
+        std::mutex mtx_put_{};
+        std::mutex mtx_dump_{};
     };
 
 
@@ -177,7 +189,7 @@ public:
     unq_p_resultset_wires_conteiner create_resultset_wires(std::string_view name, std::size_t count) override {
         try {
             return std::unique_ptr<resultset_wires_container_impl, resultset_deleter_type>{
-                new resultset_wires_container_impl{managed_shared_memory_.get(), name, count}, resultset_deleter_impl };
+                new resultset_wires_container_impl{managed_shared_memory_.get(), name, count, mtx_shm_}, resultset_deleter_impl };
         }
         catch(const boost::interprocess::interprocess_exception& ex) {
             LOG(ERROR) << "running out of boost managed shared memory" << std::endl;
@@ -201,6 +213,7 @@ private:
     response_box* responses_;
     std::unique_ptr<garbage_collector_impl> garbage_collector_impl_;
     bool session_closed_{false};
+    std::mutex mtx_shm_{};
 };
 
 class connection_container
