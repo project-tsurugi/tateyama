@@ -68,7 +68,5 @@ FutureResponse<Void> updateExpirationTime(long time, @Nonnull TimeUnit unit) thr
 
 ## 設定 (案)
 
-* セクション `session`
-  * 自動タイムアウトの有効性 : `enable_timeout = true`
-  * 通信によるライフタイムの延長時間 (sec.) : `keep_alive = 300`
-  * 明示的なライフタイム延長時間の最大値 (sec.) : `max_keep_alive = 10800`
+tateyama構成ファイルの[`session`セクション](https://github.com/project-tsurugi/tateyama/blob/master/docs/config_parameters.md#sessionセクション
+)で、タイムアウト有無の制御や延長時間の設定を可能にする。
