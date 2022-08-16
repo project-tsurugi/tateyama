@@ -42,7 +42,7 @@ oltp start [--conf </path/to/conf>] [--recovery|--no-recovery]
 oltp shutdown [--conf </path/to/conf>]
 oltp kill [--conf </path/to/conf>]
 oltp quiesce [--conf </path/to/conf>] [--label <text>]
-oltp status [--json] [--conf </path/to/conf>]
+oltp status [--conf </path/to/conf>]
 ```
 
 * overview
@@ -128,8 +128,7 @@ oltp status [--json] [--conf </path/to/conf>]
       * 同一の設定ファイルを参照する、未稼働または稼働中のデータベースを対象にとる
       * 対象のデータベースが未稼働の場合、このコマンドはその旨を表示する
       * 対象のデータベースが稼働中の場合、コマンドは各機能の状態を表示する
-      * `--json` は一例で、machine readable なフォーマットが一つあればいい
-        * それらのオプションがなにも指定されない場合、human readable な形式（impl memo欄参照）で出力する
+      * [--monitorオプション](cli-monitor-ja.md)が指定されない場合、human readable な形式で出力する
     * impl memo
       * if service is present
         * send `status` to "control_service" and display one of the following messages depending on the status (human readable case)
