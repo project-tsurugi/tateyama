@@ -62,3 +62,17 @@ parameter=value
 |---:| :---: | :--- |---|
 |port | 整数 | stream_endpointに接続する際のport番号、default値は12345
 |threads | 整数 | stream_endpointの最大同時接続数
+
+## sessionセクション
+
+セクション名
+  - session
+
+対象コンポーネント
+  - セッションを利用するtateyamaのコンポーネント全て
+
+|パラメーター名 | 型 | 値 |備考|
+|---:| :---: | :--- |---|
+|enable_timeout | ブール(true/false) | セッションの自動タイムアウトの有効性、デフォルト値はtrue
+|refresh_timeout | 整数 | 通信によるセッションのライフタイム延長時間(秒)、デフォルト値は300
+|max_refresh_timeout | 整数 | 明示的な要求によるセッションのライフタイム延長時間の最大値(秒)、デフォルト値は10800
