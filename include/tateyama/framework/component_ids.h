@@ -25,7 +25,7 @@ constexpr inline component::id_type resource_id_transactional_kvs = 1;
 constexpr inline component::id_type resource_id_sql = 2;
 constexpr inline component::id_type resource_id_datastore = 3;
 //constexpr inline component::id_type resource_id_session = 4;
-//constexpr inline component::id_type resource_id_status = 5;
+constexpr inline component::id_type resource_id_status = 5;
 //constexpr inline component::id_type resource_id_mutex = 6;
 
 // service

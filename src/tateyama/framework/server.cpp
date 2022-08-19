@@ -32,6 +32,7 @@
 #include <tateyama/endpoint/stream/bootstrap/stream_endpoint.h>
 #include <tateyama/datastore/service/bridge.h>
 #include <tateyama/datastore/resource/bridge.h>
+#include <tateyama/status/resource/bridge.h>
 
 namespace tateyama::framework {
 
@@ -116,6 +117,7 @@ server::server(framework::boot_mode mode, std::shared_ptr<api::configuration::wh
 void add_core_components(server& svr) {
     svr.add_resource(std::make_shared<framework::transactional_kvs_resource>());
     svr.add_resource(std::make_shared<datastore::resource::bridge>());
+    svr.add_resource(std::make_shared<status_info::resource::bridge>());
 
     svr.add_service(std::make_shared<framework::routing_service>());
     svr.add_service(std::make_shared<api::endpoint::impl::service>());

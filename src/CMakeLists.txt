@@ -24,6 +24,7 @@ file(GLOB SOURCES
         "tateyama/datastore/*.cpp"
         "tateyama/datastore/resource/*.cpp"
         "tateyama/datastore/service/*.cpp"
+        "tateyama/status/resource/*.cpp"
         "tateyama/endpoint/service/*.cpp"
         "tateyama/endpoint/service/impl/*.cpp"
         "tateyama/endpoint/ipc/*.cpp"
@@ -87,6 +88,7 @@ target_link_libraries(${ENGINE}
         PRIVATE moodycamel
         PRIVATE protobuf::libprotobuf # temporary
         PRIVATE rt # for shm
+        PRIVATE crypto
 )
 
 if(MC_QUEUE)

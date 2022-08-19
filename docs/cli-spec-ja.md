@@ -132,7 +132,7 @@ oltp status [--conf </path/to/conf>]
         * if service is present
           * display one of the following messages depending on the status (human readable case)
             * 'Tsurugi OLTP database is RUNNING'
-            * 'Tsurugi OLTP database is BOOTINT_UP'
+            * 'Tsurugi OLTP database is BOOTING_UP'
             * 'Tsurugi OLTP database is SHUTTING_DOWN'、
         * if service is absent, display the following message
           * tell it is absent as 'Tsurugi OLTP database is INACTIVE'

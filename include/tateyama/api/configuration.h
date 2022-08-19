@@ -29,6 +29,7 @@
 #include <boost/foreach.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem/path.hpp>
+#include <boost/filesystem/operations.hpp>
 
 #include <glog/logging.h>
 #include <tateyama/logging.h>
@@ -119,8 +120,6 @@ template<>
 
 class whole {
 public:
-    static constexpr char property_filename[] = "tsurugi.ini";  // NOLINT
-
     explicit whole(std::string_view file_name);
 
     explicit whole(std::istream& content);
@@ -145,7 +144,21 @@ public:
      * @return path of the directory
      */
     boost::filesystem::path get_directory() {
-        return file_.parent_path();
+        if (property_file_exist_) {
+            return file_.parent_path();
+        }
+        return boost::filesystem::path("");
+    }
+
+    /**
+     * @brief get canonical path of the config file
+     * @return canonical path of the config file
+     */
+    boost::filesystem::path get_canonical_path() {
+        if (property_file_exist_) {
+            return boost::filesystem::canonical(file_);
+        }
+        return boost::filesystem::path("");
     }
 
     /**
