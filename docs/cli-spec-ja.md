@@ -123,22 +123,21 @@ oltp status [--conf </path/to/conf>]
     * overview
       * データベースの状態を表示する
     * options
-      * `--json` コマンドをJSON形式で出力する
+      * (N/A)
     * note
       * 同一の設定ファイルを参照する、未稼働または稼働中のデータベースを対象にとる
       * 対象のデータベースが未稼働の場合、このコマンドはその旨を表示する
       * 対象のデータベースが稼働中の場合、コマンドは各機能の状態を表示する
-      * [--monitorオプション](cli-monitor-ja.md)が指定されない場合、human readable な形式で出力する
-    * impl memo
-      * if service is present
-        * send `status` to "control_service" and display one of the following messages depending on the status (human readable case)
-          * 'Tsurugi OLTP database is running'
-          * 'Tsurugi OLTP database is booting up'
-          * 'Tsurugi OLTP database is shutting down'、
-      * if service is absent, display the following message (human readable case)
-        * tell it is absent as 'Tsurugi OLTP database is inactive'
-      * if service is unknown
-        * tell it is unknown as 'the service is unknown'
+      * [--monitorオプション](cli-monitor-ja.md)が指定されない場合、下記のhuman readable な形式で出力する
+        * if service is present
+          * display one of the following messages depending on the status (human readable case)
+            * 'Tsurugi OLTP database is RUNNING'
+            * 'Tsurugi OLTP database is BOOTINT_UP'
+            * 'Tsurugi OLTP database is SHUTTING_DOWN'、
+        * if service is absent, display the following message
+          * tell it is absent as 'Tsurugi OLTP database is INACTIVE'
+        * if service is unknown
+          * tell it is unknown as 'Tsurugi OLTP database is UNKNOWN'
 
 ### backup サブコマンド
 
