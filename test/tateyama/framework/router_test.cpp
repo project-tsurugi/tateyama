@@ -25,6 +25,8 @@
 #include <tateyama/server/impl/request.h>
 #include <tateyama/server/impl/response.h>
 #include <tateyama/proto/test.pb.h>
+#include <tateyama/proto/core/request.pb.h>
+#include <tateyama/proto/core/response.pb.h>
 
 #include <gtest/gtest.h>
 #include <tateyama/utils/test_utils.h>
@@ -141,4 +143,38 @@ TEST_F(router_test, basic) {
     sv.shutdown();
 }
 
+TEST_F(router_test, update_expiration_time) {
+    auto cfg = api::configuration::create_configuration();
+    set_dbpath(*cfg);
+    server sv{boot_mode::database_server, cfg};
+    auto svc0 = std::make_shared<test_service>();
+    sv.add_service(svc0);
+    add_core_components(sv);
+    sv.start();
+
+    auto router = sv.find_service<framework::routing_service>();
+    ASSERT_TRUE(router);
+    ASSERT_EQ(framework::routing_service::tag, router->id());
+
+    std::stringstream ss{};
+    {
+        ::tateyama::proto::core::request::Request msg{};
+        auto uxt = msg.mutable_update_expiration_time();
+        uxt->set_expiration_time(100);
+        ASSERT_TRUE(msg.SerializeToOstream(&ss));
+    }
+    auto str = ss.str();
+    auto svrreq = std::make_shared<test_request>(10, routing_service::tag, str);
+    auto svrres = std::make_shared<test_response>();
+
+    ASSERT_FALSE(svc0->called_);
+    (*router)(svrreq, svrres);
+    ASSERT_FALSE(svc0->called_);
+
+    auto pl = svrreq->payload();
+    ::tateyama::proto::core::response::UpdateExpirationTime out{};
+    ASSERT_TRUE(out.ParseFromArray(pl.data(), pl.size()));
+    EXPECT_TRUE(out.has_success());
+    sv.shutdown();
+}
 }
