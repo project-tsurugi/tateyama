@@ -38,12 +38,18 @@ namespace tateyama::status_info::resource {
 class bridge : public framework::resource {
     class shm_remover {
     public:
-        shm_remover(std::string name) : name_(name) {
+        explicit shm_remover(std::string name) : name_(std::move(name)) {
             boost::interprocess::shared_memory_object::remove(name_.c_str());
         }
         ~shm_remover(){
             boost::interprocess::shared_memory_object::remove(name_.c_str());
         }
+
+        shm_remover(shm_remover const& other) = delete;
+        shm_remover& operator=(shm_remover const& other) = delete;
+        shm_remover(shm_remover&& other) noexcept = delete;
+        shm_remover& operator=(shm_remover&& other) noexcept = delete;
+        
     private:
         std::string name_;
     };

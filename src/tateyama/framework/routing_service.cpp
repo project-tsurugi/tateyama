@@ -58,7 +58,7 @@ bool routing_service::shutdown(environment&) {
     return true;
 }
 
-bool handle_update_expiration_time(std::shared_ptr<request> req, std::shared_ptr<response> res) {
+bool handle_update_expiration_time(const std::shared_ptr<request>& req, const std::shared_ptr<response>& res) {
     namespace ns = proto::core::request;
     auto data = req->payload();
     ns::Request rq{};

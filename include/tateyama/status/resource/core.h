@@ -58,7 +58,7 @@ class resource_status_memory {
         using shmem_allocator = boost::interprocess::allocator<map_value_type, boost::interprocess::managed_shared_memory::segment_manager>;
         using shared_memory_map = boost::interprocess::map<key_type, value_type, std::less<>, shmem_allocator>;
     
-        resource_status(void_allocator allocator)
+        explicit resource_status(const void_allocator allocator)
           : resource_status_map_(allocator), service_status_map_(allocator), endpoint_status_map_(allocator) {
         }
     
@@ -72,7 +72,7 @@ class resource_status_memory {
         friend class resource_status_memory;
     };
 
-    resource_status_memory(boost::interprocess::managed_shared_memory& mem, bool owner = true) : mem_(mem), owner_(owner) {
+    explicit resource_status_memory(boost::interprocess::managed_shared_memory& mem, bool owner = true) : mem_(mem), owner_(owner) {
         std::string name(area_name);
         if (owner) {
             mem_.destroy<resource_status>(name.c_str());
