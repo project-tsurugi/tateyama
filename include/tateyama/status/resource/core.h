@@ -58,7 +58,7 @@ class resource_status_memory {
         using shmem_allocator = boost::interprocess::allocator<map_value_type, boost::interprocess::managed_shared_memory::segment_manager>;
         using shared_memory_map = boost::interprocess::map<key_type, value_type, std::less<>, shmem_allocator>;
     
-        explicit resource_status(const void_allocator allocator)
+        explicit resource_status(const void_allocator& allocator)
           : resource_status_map_(allocator), service_status_map_(allocator), endpoint_status_map_(allocator) {
         }
     
@@ -87,6 +87,11 @@ class resource_status_memory {
         }
     }
 
+    resource_status_memory(resource_status_memory const& other) = delete;
+    resource_status_memory& operator=(resource_status_memory const& other) = delete;
+    resource_status_memory(resource_status_memory&& other) noexcept = delete;
+    resource_status_memory& operator=(resource_status_memory&& other) noexcept = delete;
+    
     void set_pid() {
         resource_status_->pid_ = ::getpid();
     }
