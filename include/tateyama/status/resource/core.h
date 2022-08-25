@@ -107,6 +107,9 @@ class resource_status_memory {
     [[nodiscard]] bool shutdown() {
         return resource_status_->shutdown_.test_and_set(boost::memory_order_relaxed);
     }
+    [[nodiscard]] bool valid() {
+        return resource_status_ != nullptr;
+    }
 
 private:
     resource_status* resource_status_{};
