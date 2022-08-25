@@ -50,9 +50,6 @@ class resource_status_memory {
       public:
         using void_allocator = boost::interprocess::allocator<void, boost::interprocess::managed_shared_memory::segment_manager>;
 
-        using char_allocator = boost::interprocess::allocator<char, boost::interprocess::managed_shared_memory::segment_manager>;
-        using shared_string = boost::interprocess::basic_string<char, std::char_traits<char>, char_allocator>;
-
         using key_type = tateyama::framework::component::id_type;
         using value_type = state;
         using map_value_type = std::pair<const key_type, value_type>;
