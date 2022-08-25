@@ -21,8 +21,9 @@
 
 #include <boost/interprocess/managed_shared_memory.hpp>
 #include <boost/interprocess/containers/map.hpp>
-#include <boost/interprocess/containers/string.hpp>
 #include <boost/interprocess/allocators/allocator.hpp>
+#include <boost/atomic/atomic_flag.hpp>
+#include <boost/memory_order.hpp>
 
 #include <tateyama/framework/component.h>
 
@@ -59,7 +60,8 @@ class resource_status_memory {
         using shared_memory_map = boost::interprocess::map<key_type, value_type, std::less<>, shmem_allocator>;
     
         explicit resource_status(const void_allocator& allocator)
-          : resource_status_map_(allocator), service_status_map_(allocator), endpoint_status_map_(allocator) {
+            : resource_status_map_(allocator), service_status_map_(allocator), endpoint_status_map_(allocator) {
+            shutdown_.clear(boost::memory_order_relaxed);
         }
     
       private:
@@ -68,6 +70,7 @@ class resource_status_memory {
         shared_memory_map endpoint_status_map_;
         state whole_{};
         pid_t pid_{};
+        boost::atomic_flag shutdown_{};
 
         friend class resource_status_memory;
     };
@@ -103,6 +106,9 @@ class resource_status_memory {
     }
     [[nodiscard]] state whole() const {
         return resource_status_->whole_;
+    }
+    [[nodiscard]] bool shutdown() {
+        return !resource_status_->shutdown_.test_and_set(boost::memory_order_relaxed);
     }
 
 private:
