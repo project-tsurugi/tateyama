@@ -42,7 +42,7 @@ tateyama::status stream_response::body(std::string_view body) {
         return status::unknown;
     }
     auto s = ss.str();
-    session_socket_.send(index_, s);
+    session_socket_.send(index_, s, true);
     return tateyama::status::ok;
 }
 
@@ -56,7 +56,7 @@ tateyama::status stream_response::body_head(std::string_view body_head) {
         return status::unknown;
     }
     auto s = ss.str();
-    session_socket_.send(index_, s);
+    session_socket_.send(index_, s, false);
     return tateyama::status::ok;
 }
 
