@@ -18,12 +18,16 @@ tateyama内の各componentの状態を保持し、外部からの要求に応じ
 - start完了状態
 - shutdown完了状態
 
-上記状態間の遷移は、tateyama::framework::serverのsetup(), start(), shutdown()メソッドが各componentのsetup(), start(), shutdown()メソッドを呼び出すことにより行われる。
+上記状態間の遷移は、tateyama::framework::serverのsetup(), start(), shutdown()メソッドが各componentのsetup(), start(), shutdown()メソッドを呼び出すことにより行われる。<br>
          <img src="status_service_ja/start.PNG" width="600">
 1) tsurugi.pidファイルが既に存在している場合、tateyama-serverの以降の起動操作は行わず、エラー終了（別のサーバ起動）となる。
-2) `oltp start` コマンドは、tsurugi.pidが存在し、かつ、flock()されていることを確認して（正常）終了する。<br>
+2) tsurugi.pidファイルに書き込まれたpidが、oltp startがfork()したpidと一致しない場合は、tateyama-server起動失敗（別のサーバ起動）となる。
+3) `oltp start` コマンドは、状態格納用共有メモリに格納されたtateyama-serverがactivatedになったことをを確認して（正常）終了する。<br>
          <img src="status_service_ja/shutdown.PNG" width="600">
-3) `oltp shutdown` コマンドは、tsurugi.pidが存在していないことを確認して（正常）終了する。<br>
+4) `oltp shutdown` コマンドは、状態格納用共有メモリのshutdownフラグに対してtest_and_setを行い、最初にshutdown操作を行うプロセスであることを確認する。
+   既に別のshutdownが実行されている場合、shutdown操作を行わず、直ちにエラー終了（別のshutdown操作進行中）となる。
+   また、状態格納用共有メモリが存在していない場合は、エラー終了（shutdown対象のtateyama-servetが起動していない）となる。
+5) `oltp shutdown` コマンドは、状態格納用共有メモリの削除を確認して（正常）終了する。<br>
 
 ### 状態の種類
 status serviceは、各componentの状態を以下に区分して扱う。
