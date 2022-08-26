@@ -37,6 +37,7 @@ tateyama::status ipc_response::body(std::string_view body) {
 tateyama::status ipc_response::body_head(std::string_view body_head) {
     VLOG(log_trace) << __func__ << std::endl;  //NOLINT
 
+    response_box_.set_query_mode();
     memcpy(response_box_.get_buffer(body_head.length()), body_head.data(), body_head.length());
     response_box_.flush();
     return tateyama::status::ok;

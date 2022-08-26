@@ -49,6 +49,7 @@ class stream_socket
     static constexpr unsigned char RESPONSE_SESSION_HELLO_NG = 4;
     static constexpr unsigned char RESPONSE_RESULT_SET_HELLO = 5;
     static constexpr unsigned char RESPONSE_RESULT_SET_BYE = 6;
+    static constexpr unsigned char RESPONSE_SESSION_BODYHEAD = 7;
 
     static constexpr unsigned int SLOT_SIZE = 16;
 
@@ -105,10 +106,16 @@ public:
         DVLOG(log_trace) << "<-- RESPONSE_SESSION_HELLO_OK ";  //NOLINT
         send_response(RESPONSE_SESSION_HELLO_OK, 0, payload);
     }
-    void send(unsigned char slot, std::string_view payload) {  // for RESPONSE_SESSION_PAYLOAD
-        DVLOG(log_trace) << "<-- RESPONSE_SESSION_PAYLOAD ";  //NOLINT
-        std::unique_lock<std::mutex> lock(mutex_);
-        send_response(RESPONSE_SESSION_PAYLOAD, slot, payload);
+    void send(unsigned char slot, std::string_view payload, bool body) {  // for RESPONSE_SESSION_PAYLOAD
+        if (body) {
+            DVLOG(log_trace) << "<-- RESPONSE_SESSION_PAYLOAD ";  //NOLINT
+            std::unique_lock<std::mutex> lock(mutex_);
+            send_response(RESPONSE_SESSION_PAYLOAD, slot, payload);
+        } else {
+            DVLOG(log_trace) << "<-- RESPONSE_SESSION_BODYHEAD ";  //NOLINT
+            std::unique_lock<std::mutex> lock(mutex_);
+            send_response(RESPONSE_SESSION_BODYHEAD, slot, payload);
+        }
     }
     void send_result_set_hello(unsigned char slot, std::string_view name) {  // for RESPONSE_RESULT_SET_HELLO
         DVLOG(log_trace)  << "<-- RESPONSE_RESULT_SET_HELLO " << static_cast<std::uint32_t>(slot) << ", " << name;  //NOLINT

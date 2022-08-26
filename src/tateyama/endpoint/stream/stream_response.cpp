@@ -34,14 +34,14 @@ stream_response::stream_response(stream_request& request, unsigned char index)
 tateyama::status stream_response::body(std::string_view body) {
     VLOG(log_trace) << __func__ << std::endl;  //NOLINT
 
-    session_socket_.send(index_, body);
+    session_socket_.send(index_, body, true);
     return tateyama::status::ok;
 }
 
 tateyama::status stream_response::body_head(std::string_view body_head) {
     VLOG(log_trace) << __func__ << std::endl;  //NOLINT
 
-    session_socket_.send(index_, body_head);
+    session_socket_.send(index_, body_head, false);
     return tateyama::status::ok;
 }
 
