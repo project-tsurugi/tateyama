@@ -26,6 +26,30 @@ namespace tateyama::datastore::service {
 using tateyama::api::server::request;
 using tateyama::api::server::response;
 
+class limestone_backup {
+public:
+    explicit limestone_backup(limestone::api::backup& backup) : backup_(backup) {}
+    /**
+     * @brief create empty handle - null reference
+     */
+    limestone_backup() = delete;
+
+    /**
+     * @brief destruct the object
+     */
+    ~limestone_backup() = default;
+
+    limestone_backup(limestone_backup const& other) = delete;
+    limestone_backup& operator=(limestone_backup const& other) = delete;
+    limestone_backup(limestone_backup&& other) noexcept = delete;
+    limestone_backup& operator=(limestone_backup&& other) noexcept = delete;
+
+    limestone::api::backup& backup() { return backup_; }
+
+private:
+    limestone::api::backup& backup_;
+};
+
 /**
  * @brief datastore service main object
  */
@@ -47,6 +71,9 @@ public:
 private:
     std::shared_ptr<tateyama::api::configuration::whole> cfg_{};
     tateyama::datastore::resource::bridge* resource_{};
+
+    std::unique_ptr<limestone_backup> backup_{};
+    std::uint64_t backup_id_{};
 };
 
 }
