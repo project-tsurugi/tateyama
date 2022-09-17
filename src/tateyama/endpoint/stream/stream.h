@@ -56,12 +56,12 @@ class stream_socket
 
     class recv_entry {
     public:
-        recv_entry(unsigned char info, unsigned short slot, std::string payload) : info_(info), slot_(slot), payload_(std::move(payload)) {
+        recv_entry(unsigned char info, std::uint16_t slot, std::string payload) : info_(info), slot_(slot), payload_(std::move(payload)) {
         }
         [[nodiscard]] unsigned char info() const {
             return info_;
         }
-        [[nodiscard]] unsigned short slot() const {
+        [[nodiscard]] std::uint16_t slot() const {
             return slot_;
         }
         [[nodiscard]] std::string payload() const {
@@ -69,14 +69,14 @@ class stream_socket
         }
     private:
         unsigned char info_;
-        unsigned short slot_;
+        std::uint16_t slot_;
         std::string payload_;
     };
 
 public:
     explicit stream_socket(int socket) : socket_(socket) {
         unsigned char info{};
-        unsigned short slot{};
+        std::uint16_t slot{};
         std::string dummy;
 
         if (!await(info, slot, dummy)) {
@@ -98,7 +98,7 @@ public:
     stream_socket(stream_socket&& other) noexcept = delete;
     stream_socket& operator=(stream_socket&& other) noexcept = delete;
 
-    bool await(unsigned short& slot, std::string& payload) {
+    bool await(std::uint16_t& slot, std::string& payload) {
         unsigned char info{};
         return await(info, slot, payload);
     }
@@ -108,7 +108,7 @@ public:
         DVLOG(log_trace) << "<-- RESPONSE_SESSION_HELLO_OK ";  //NOLINT
         send_response(RESPONSE_SESSION_HELLO_OK, 0, payload);
     }
-    void send(unsigned short slot, std::string_view payload, bool body) {  // for RESPONSE_SESSION_PAYLOAD
+    void send(std::uint16_t slot, std::string_view payload, bool body) {  // for RESPONSE_SESSION_PAYLOAD
         if (body) {
             DVLOG(log_trace) << "<-- RESPONSE_SESSION_PAYLOAD ";  //NOLINT
             std::unique_lock<std::mutex> lock(mutex_);
@@ -119,25 +119,25 @@ public:
             send_response(RESPONSE_SESSION_BODYHEAD, slot, payload);
         }
     }
-    void send_result_set_hello(unsigned short slot, std::string_view name) {  // for RESPONSE_RESULT_SET_HELLO
+    void send_result_set_hello(std::uint16_t slot, std::string_view name) {  // for RESPONSE_RESULT_SET_HELLO
         DVLOG(log_trace)  << "<-- RESPONSE_RESULT_SET_HELLO " << static_cast<std::uint32_t>(slot) << ", " << name;  //NOLINT
         std::unique_lock<std::mutex> lock(mutex_);
         send_response(RESPONSE_RESULT_SET_HELLO, slot, name);
     }
-    void send_result_set_bye(unsigned short slot) {  // for RESPONSE_RESULT_SET_BYE
+    void send_result_set_bye(std::uint16_t slot) {  // for RESPONSE_RESULT_SET_BYE
         DVLOG(log_trace) << "<-- RESPONSE_RESULT_SET_BYE " << static_cast<std::uint32_t>(slot);  //NOLINT
         std::unique_lock<std::mutex> lock(mutex_);
         send_response(RESPONSE_RESULT_SET_BYE, slot, "");
     }
-    void send(unsigned short slot, unsigned char writer, std::string_view payload) { // for RESPONSE_RESULT_SET_PAYLOAD
+    void send(std::uint16_t slot, unsigned char writer, std::string_view payload) { // for RESPONSE_RESULT_SET_PAYLOAD
         DVLOG(log_trace) << "<-- RESPONSE_RESULT_SET_PAYLOAD " << static_cast<std::uint32_t>(slot) << ", " << static_cast<std::uint32_t>(writer);  //NOLINT
         std::unique_lock<std::mutex> lock(mutex_);
         unsigned char info = RESPONSE_RESULT_SET_PAYLOAD;
         ::send(socket_, &info, 1, 0);
-        char buffer[sizeof(unsigned short)];  // NOLINT
+        char buffer[sizeof(std::uint16_t)];  // NOLINT
         buffer[0] = slot & 0xff;  // NOLINT
         buffer[1] = (slot / 0x100) & 0xff;  // NOLINT
-        ::send(socket_, &buffer[0], sizeof(unsigned short), 0);
+        ::send(socket_, &buffer[0], sizeof(std::uint16_t), 0);
         ::send(socket_, &writer, 1, 0);
         send_payload(payload);
     }
@@ -167,7 +167,7 @@ private:
     std::queue<recv_entry> queue_{};
     std::size_t slot_size_{SLOT_SIZE};
 
-    bool await(unsigned char& info, unsigned short& slot, std::string& payload) {
+    bool await(unsigned char& info, std::uint16_t& slot, std::string& payload) {
         DVLOG(log_trace) << "-- enter waiting REQUEST --";  //NOLINT
 
         while (true) {
@@ -196,8 +196,8 @@ private:
                     return false;
                 }
 
-                char buffer[sizeof(unsigned short)];  // NOLINT
-                if (auto size_i = ::recv(socket_, &buffer[0], sizeof(unsigned short), 0); size_i != sizeof(unsigned short)) {  // NOLINT
+                char buffer[sizeof(std::uint16_t)];  // NOLINT
+                if (auto size_i = ::recv(socket_, &buffer[0], sizeof(std::uint16_t), 0); size_i != sizeof(std::uint16_t)) {  // NOLINT
                     LOG(ERROR) << "received an incomplete message ";  //NOLINT
                     std::abort();
                 }
@@ -254,12 +254,12 @@ private:
         }
     }
 
-    void send_response(unsigned char info, unsigned short slot, std::string_view payload) {  // a support function, assumes caller hold lock
+    void send_response(unsigned char info, std::uint16_t slot, std::string_view payload) {  // a support function, assumes caller hold lock
         ::send(socket_, &info, 1, 0);
-        char buffer[sizeof(unsigned short)];  // NOLINT
+        char buffer[sizeof(std::uint16_t)];  // NOLINT
         buffer[0] = slot & 0xff;  // NOLINT
         buffer[1] = (slot / 0x100) & 0xff;  // NOLINT
-        ::send(socket_, &buffer[0], sizeof(unsigned short), 0);
+        ::send(socket_, &buffer[0], sizeof(std::uint16_t), 0);
         send_payload(payload);
     }
     void send_payload(std::string_view payload) const {  // a support function, assumes caller hold lock

@@ -21,7 +21,7 @@
 #include "tateyama/endpoint/ipc/ipc_request.h"
 #include "tateyama/endpoint/ipc/ipc_response.h"
 
-#include "server_wires_impl.h"
+#include "server_wires_test.h"
 #include "header_utils.h"
 
 #include <gtest/gtest.h>
@@ -95,9 +95,9 @@ TEST_F(response_only_test, normal) {
     sv(static_cast<std::shared_ptr<tateyama::api::server::request>>(request),
              static_cast<std::shared_ptr<tateyama::api::server::response>>(response));
 
-    auto& r_box = wire_->get_response(h.get_idx());
-    auto r_msg = r_box.recv();
-    r_box.dispose();
+    auto& response_wire = wire_->get_response_wire();
+    auto header = response_wire.await();
+    std::string r_msg;
     std::stringstream expected{};
     tateyama::endpoint::common::header_content hc{10};
     tateyama::endpoint::common::append_response_header(expected, response_test_message_, hc);

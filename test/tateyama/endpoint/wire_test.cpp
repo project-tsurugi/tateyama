@@ -17,7 +17,7 @@
 #include <tateyama/api/server/request.h>
 #include <tateyama/api/server/response.h>
 
-#include "server_wires_impl.h"
+#include "server_wires_test.h"
 
 #include <gtest/gtest.h>
 

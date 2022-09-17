@@ -37,7 +37,7 @@ tateyama::status ipc_response::body(std::string_view body) {
         return status::unknown;
     }
     auto s = ss.str();
-    memcpy(response_box_.get_buffer(s.length()), s.data(), s.length());
+    server_wire_.get_response_wire().write(s.data(), response_header(index_, s.length(), RESPONSE_BODY));
     response_box_.flush();
     return tateyama::status::ok;
 }
@@ -52,7 +52,7 @@ tateyama::status ipc_response::body_head(std::string_view body_head) {
         return status::unknown;
     }
     auto s = ss.str();
-    memcpy(response_box_.get_buffer(s.length()), s.data(), s.length());
+    server_wire_.get_response_wire().write(s.data(), response_header(index_, s.length(), RESPONSE_BODYHEAD));
     response_box_.flush();
     return tateyama::status::ok;
 }
@@ -127,6 +127,7 @@ tateyama::status ipc_writer::write(char const* data, std::size_t length) {
 tateyama::status ipc_writer::commit() {
     VLOG(log_trace) << __func__ << std::endl;  //NOLINT
 
+    resultset_wire_->flush();
     return tateyama::status::ok;
 }
 

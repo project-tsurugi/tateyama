@@ -15,6 +15,7 @@
  */
 #pragma once
 
+#include <iostream>
 #include <set>
 
 #include <glog/logging.h>
@@ -28,6 +29,7 @@ class server_wire_container_impl : public server_wire_container
 {
     static constexpr std::size_t shm_size = (1<<21) * 104;  // 2M(64K * 8writes * 4result_sets) * 104threads bytes (tentative)  NOLINT
     static constexpr std::size_t request_buffer_size = (1<<12);   //  4K bytes (tentative)  NOLINT
+    static constexpr std::size_t response_buffer_size = (1<<14);  // 16K bytes (tentative)  NOLINT
     static constexpr std::size_t resultset_vector_size = (1<<12); //  4K bytes (tentative)  NOLINT
     static constexpr std::size_t writer_count = 8;
 
@@ -73,18 +75,23 @@ public:
             }
         }
 
-        std::pair<char*, std::size_t> get_chunk() {
+        std::string_view get_chunk() {
+            if (wrap_around_.data()) {
+                auto rv = wrap_around_;
+                wrap_around_ = std::string_view();
+                return rv;
+            }
             if (current_wire_ == nullptr) {
                 current_wire_ = active_wire();
             }
             if (current_wire_ != nullptr) {
-                return current_wire_->get_chunk(current_wire_->get_bip_address(managed_shm_ptr_));
+                return current_wire_->get_chunk(current_wire_->get_bip_address(managed_shm_ptr_), wrap_around_);
             }
-            return std::pair<char*, std::size_t>(nullptr, 0);
+            return std::string_view();
         }
         void dispose(std::size_t length) {
             if (current_wire_ != nullptr) {
-                current_wire_->dispose(length);
+                current_wire_->dispose(current_wire_->get_bip_address(managed_shm_ptr_));
                 current_wire_ = nullptr;
                 return;
             }
@@ -108,6 +115,7 @@ public:
         boost::interprocess::managed_shared_memory* managed_shm_ptr_;
         std::string rsw_name_;
         shm_resultset_wires* shm_resultset_wires_{};
+        std::string_view wrap_around_{};
         //   for client
         shm_resultset_wire* current_wire_{};
         bool server_;
@@ -187,14 +195,54 @@ public:
         char* bip_buffer_{};
     };
 
+    class response_wire_container_impl : public response_wire_container {
+    public:
+        response_wire_container_impl() = default;
+        response_wire_container_impl(unidirectional_response_wire* wire, char* bip_buffer) : wire_(wire), bip_buffer_(bip_buffer) {}
+        ~response_wire_container_impl() override = default;
+        response_wire_container_impl(response_wire_container_impl const&) = delete;
+        response_wire_container_impl(response_wire_container_impl&&) = delete;
+        response_wire_container_impl& operator = (response_wire_container_impl const&) = default;
+        response_wire_container_impl& operator = (response_wire_container_impl&&) = default;
+
+        void write(const char* from, response_header header) {
+            wire_->write(bip_buffer_, from, header);
+        }
+
+        response_header await() {
+            return wire_->await(bip_buffer_);
+        }
+        response_header::length_type get_length() const {
+            return wire_->get_length();
+        }
+        response_header::index_type get_idx() const {
+            return wire_->get_idx();
+        }
+        response_header::msg_type get_type() const {
+            return wire_->get_type();
+        }
+        void read(char* to) {
+            wire_->read(to, bip_buffer_);
+        }
+        void close() {
+            wire_->close();
+        }
+
+    private:
+        unidirectional_response_wire* wire_{};
+        char* bip_buffer_{};
+    };
+
     explicit server_wire_container_impl(std::string_view name) : name_(name), garbage_collector_impl_(std::make_unique<garbage_collector_impl>()) {
         boost::interprocess::shared_memory_object::remove(name_.c_str());
         try {
             managed_shared_memory_ =
                 std::make_unique<boost::interprocess::managed_shared_memory>(boost::interprocess::create_only, name_.c_str(), shm_size);
             auto req_wire = managed_shared_memory_->construct<unidirectional_message_wire>(request_wire_name)(managed_shared_memory_.get(), request_buffer_size);
+            auto res_wire = managed_shared_memory_->construct<unidirectional_response_wire>(response_wire_name)(managed_shared_memory_.get(), response_buffer_size);
+
             request_wire_ = wire_container_impl(req_wire, req_wire->get_bip_address(managed_shared_memory_.get()));
-            responses_ = managed_shared_memory_->construct<response_box>(response_box_name)(16, managed_shared_memory_.get());
+            response_wire_ = response_wire_container_impl(res_wire, res_wire->get_bip_address(managed_shared_memory_.get()));
         }
         catch(const boost::interprocess::interprocess_exception& ex) {
             LOG(FATAL) << ex.what() << ", error_code = " << ex.get_error_code() << ", native_error = " << ex.get_native_error();
@@ -215,7 +263,7 @@ public:
     }
 
     wire_container* get_request_wire() override { return &request_wire_; }
-    response_box::response& get_response(std::size_t idx) override { return responses_->at(idx); }
+    response_wire_container_impl& get_response_wire() override { return response_wire_; }
 
     unq_p_resultset_wires_conteiner create_resultset_wires(std::string_view name, std::size_t count) override {
         try {
@@ -244,7 +292,7 @@ private:
     std::string name_;
     std::unique_ptr<boost::interprocess::managed_shared_memory> managed_shared_memory_{};
     wire_container_impl request_wire_;
-    response_box* responses_;
+    response_wire_container_impl response_wire_;
     std::unique_ptr<garbage_collector_impl> garbage_collector_impl_;
     bool session_closed_{false};
 };
