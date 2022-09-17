@@ -32,7 +32,7 @@ class stream_endpoint : public endpoint {
         // create listener object
         listener_ = std::make_unique<tateyama::server::stream_listener>(
             env.configuration(),
-            env.service_repository().find<framework::endpoint_broker>()
+            env.service_repository().find<framework::routing_service>()
         );
         return true;
     }

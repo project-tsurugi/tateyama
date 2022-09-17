@@ -21,6 +21,7 @@
 #include <tateyama/logging.h>
 
 #include "stream_response.h"
+#include "../common/endpoint_proto_utils.h"
 
 namespace tateyama::common::stream {
 
@@ -33,15 +34,29 @@ stream_response::stream_response(stream_request& request, unsigned char index)
 
 tateyama::status stream_response::body(std::string_view body) {
     VLOG(log_trace) << __func__ << std::endl;  //NOLINT
-
-    session_socket_.send(index_, body);
+    std::stringstream ss{};
+    endpoint::common::header_content arg{};
+    arg.session_id_ = session_id_;
+    if(auto res = endpoint::common::append_response_header(ss, body, arg); ! res) {
+        VLOG(log_error) << "error formatting response message";
+        return status::unknown;
+    }
+    auto s = ss.str();
+    session_socket_.send(index_, s);
     return tateyama::status::ok;
 }
 
 tateyama::status stream_response::body_head(std::string_view body_head) {
     VLOG(log_trace) << __func__ << std::endl;  //NOLINT
-
-    session_socket_.send(index_, body_head);
+    std::stringstream ss{};
+    endpoint::common::header_content arg{};
+    arg.session_id_ = session_id_;
+    if(auto res = endpoint::common::append_response_header(ss, body_head, arg); ! res) {
+        VLOG(log_error) << "error formatting response message";
+        return status::unknown;
+    }
+    auto s = ss.str();
+    session_socket_.send(index_, s);
     return tateyama::status::ok;
 }
 
@@ -51,19 +66,19 @@ void stream_response::code(tateyama::api::endpoint::response_code code) {
     response_code_ = code;
 }
 
-tateyama::status stream_response::acquire_channel(std::string_view name, tateyama::api::endpoint::data_channel*& ch) {
+tateyama::status stream_response::acquire_channel(std::string_view name, std::shared_ptr<tateyama::api::server::data_channel>& ch) {
     VLOG(log_trace) << __func__ << std::endl;  //NOLINT
 
     auto slot = session_socket_.look_for_slot();
     data_channel_ = std::make_unique<stream_data_channel>(session_socket_, slot);
-    if (ch = data_channel_.get(); ch != nullptr) {
+    if (ch = data_channel_; ch != nullptr) {
         session_socket_.send_result_set_hello(slot, name);
         return tateyama::status::ok;
     }
     return tateyama::status::unknown;
 }
 
-tateyama::status stream_response::release_channel(tateyama::api::endpoint::data_channel& ch) {
+tateyama::status stream_response::release_channel(tateyama::api::server::data_channel& ch) {
     VLOG(log_trace) << __func__ << std::endl;  //NOLINT
 
     if (auto dc = dynamic_cast<stream_data_channel*>(&ch); data_channel_.get() == dc) {
@@ -83,18 +98,18 @@ tateyama::status stream_response::close_session() {
 }
 
 // class stream_data_channel
-tateyama::status stream_data_channel::acquire(tateyama::api::endpoint::writer*& wrt) {
+tateyama::status stream_data_channel::acquire(std::shared_ptr<tateyama::api::server::writer>& wrt) {
     VLOG(log_trace) << __func__ << std::endl;  //NOLINT
 
-    if (auto stream_wrt = std::make_unique<stream_writer>(session_socket_, get_slot(), writer_id_++); stream_wrt != nullptr) {
-        wrt = stream_wrt.get();
+    if (auto stream_wrt = std::make_shared<stream_writer>(session_socket_, get_slot(), writer_id_++); stream_wrt != nullptr) {
+        wrt = stream_wrt;
         data_writers_.emplace(std::move(stream_wrt));
         return tateyama::status::ok;
     }
     return tateyama::status::unknown;
 }
 
-tateyama::status stream_data_channel::release(tateyama::api::endpoint::writer& wrt) {
+tateyama::status stream_data_channel::release(tateyama::api::server::writer& wrt) {
     VLOG(log_trace) << __func__ << std::endl;  //NOLINT
 
     if (auto itr = data_writers_.find(dynamic_cast<stream_writer*>(&wrt)); itr != data_writers_.end()) {

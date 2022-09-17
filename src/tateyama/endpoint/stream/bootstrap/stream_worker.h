@@ -22,7 +22,7 @@
 #include <tateyama/api/endpoint/request.h>
 #include <tateyama/api/endpoint/response.h>
 #include <tateyama/api/endpoint/service.h>
-#include <tateyama/api/endpoint/service.h>
+#include <tateyama/framework/routing_service.h>
 
 #include <tateyama/endpoint/stream/stream.h>
 
@@ -31,7 +31,7 @@ class stream_provider;
 
 class stream_worker {
  public:
-    stream_worker(tateyama::framework::endpoint_broker& service, std::size_t session_id, std::unique_ptr<tateyama::common::stream::stream_socket> stream)
+    stream_worker(tateyama::framework::routing_service& service, std::size_t session_id, std::unique_ptr<tateyama::common::stream::stream_socket> stream)
         : service_(service), session_stream_(std::move(stream)), session_id_(session_id) {
     }
     ~stream_worker() {
@@ -51,7 +51,7 @@ class stream_worker {
     friend class stream_provider;
 
  private:
-    tateyama::framework::endpoint_broker& service_;
+    tateyama::framework::routing_service& service_;
     std::unique_ptr<tateyama::common::stream::stream_socket> session_stream_;
     std::size_t session_id_;
 

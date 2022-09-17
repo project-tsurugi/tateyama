@@ -47,9 +47,9 @@ struct stream_endpoint_context {
  */
 class stream_listener {
 public:
-    explicit stream_listener(const std::shared_ptr<api::configuration::whole>& cfg, std::shared_ptr<framework::endpoint_broker> broker) :
+    explicit stream_listener(const std::shared_ptr<api::configuration::whole>& cfg, std::shared_ptr<framework::routing_service> router) :
         cfg_(cfg),
-        broker_(std::move(broker))
+        router_(std::move(router))
     {
         auto endpoint_config = cfg->get_section("stream_endpoint");
         if (endpoint_config == nullptr) {
@@ -103,7 +103,7 @@ public:
                 }
                 try {
                     std::unique_ptr<stream_worker> &worker = workers_.at(index);
-                    worker = std::make_unique<stream_worker>(*broker_, session_id, std::move(stream));
+                    worker = std::make_unique<stream_worker>(*router_, session_id, std::move(stream));
                     worker->task_ = std::packaged_task<void()>([&]{worker->run();});
                     worker->future_ = worker->task_.get_future();
                     worker->thread_ = std::thread(std::move(worker->task_));
@@ -125,7 +125,7 @@ public:
 
 private:
     std::shared_ptr<api::configuration::whole> cfg_{};
-    std::shared_ptr<framework::endpoint_broker> broker_{};
+    std::shared_ptr<framework::routing_service> router_{};
     std::unique_ptr<tateyama::common::stream::connection_socket> connection_socket_{};
     std::vector<std::unique_ptr<stream_worker>> workers_{};
 };

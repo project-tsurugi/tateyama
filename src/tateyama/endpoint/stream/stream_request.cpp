@@ -24,8 +24,16 @@ namespace tateyama::common::stream {
 std::string_view
 stream_request::payload() const {
     VLOG(log_trace) << __func__ << std::endl;  //NOLINT
-
     return payload_;
 }
 
+std::size_t stream_request::session_id() const {
+    VLOG(log_trace) << __func__ << std::endl;  //NOLINT
+    return session_id_;
+}
+
+std::size_t stream_request::service_id() const {
+    VLOG(log_trace) << __func__ << std::endl;  //NOLINT
+    return service_id_;
+}
 }  // tateyama::common::stream
