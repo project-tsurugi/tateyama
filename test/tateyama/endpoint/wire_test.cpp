@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 #include <tateyama/status.h>
-#include <tateyama/api/endpoint/request.h>
-#include <tateyama/api/endpoint/response.h>
-#include <tateyama/api/endpoint/service.h>
+#include <tateyama/api/server/request.h>
+#include <tateyama/api/server/response.h>
 
 #include "server_wires_impl.h"
 

@@ -60,7 +60,7 @@ tateyama::status stream_response::body_head(std::string_view body_head) {
     return tateyama::status::ok;
 }
 
-void stream_response::code(tateyama::api::endpoint::response_code code) {
+void stream_response::code(tateyama::api::server::response_code code) {
     VLOG(log_trace) << __func__ << std::endl;  //NOLINT
 
     response_code_ = code;

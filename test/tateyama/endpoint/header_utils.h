@@ -15,19 +15,13 @@
  */
 #pragma once
 #include <tateyama/status.h>
-#include <tateyama/api/endpoint/request.h>
-#include <tateyama/api/endpoint/response.h>
-#include <tateyama/api/endpoint/service.h>
+#include <tateyama/api/server/request.h>
+#include <tateyama/api/server/response.h>
 #include <tateyama/endpoint/common/endpoint_proto_utils.h>
-
-#include "tateyama/endpoint/ipc/ipc_request.h"
-#include "tateyama/endpoint/ipc/ipc_response.h"
-
-#include "server_wires_impl.h"
 
 #include <gtest/gtest.h>
 
-namespace tateyama::api::endpoint::ipc {
+namespace tateyama::api::endpoint {
 
 struct request_header_content {
     std::size_t session_id_{};

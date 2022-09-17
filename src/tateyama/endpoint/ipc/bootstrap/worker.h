@@ -19,10 +19,8 @@
 #include <thread>
 
 #include <tateyama/status.h>
-#include <tateyama/api/endpoint/request.h>
-#include <tateyama/api/endpoint/response.h>
-#include <tateyama/api/endpoint/service.h>
-#include <tateyama/api/endpoint/service.h>
+#include <tateyama/api/server/request.h>
+#include <tateyama/api/server/response.h>
 #include <tateyama/framework/routing_service.h>
 
 #include "server_wires_impl.h"

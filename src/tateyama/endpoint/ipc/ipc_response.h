@@ -19,7 +19,7 @@
 #include <string_view>
 
 #include <tateyama/api/server/response.h>
-#include <tateyama/api/endpoint/response_code.h>
+#include <tateyama/api/server/response_code.h>
 
 #include "server_wires.h"
 #include "ipc_request.h"
@@ -117,7 +117,7 @@ public:
 
     ipc_response() = delete;
 
-    void code(tateyama::api::endpoint::response_code code) override;
+    void code(tateyama::api::server::response_code code) override;
     tateyama::status body(std::string_view body) override;
     tateyama::status body_head(std::string_view body_head) override;
     tateyama::status acquire_channel(std::string_view name, std::shared_ptr<tateyama::api::server::data_channel>& ch) override;

@@ -16,13 +16,9 @@
 #pragma once
 
 #include "data_channel.h"
+#include "response_code.h"
 
-namespace tateyama::api::endpoint {
-enum class response_code : std::int64_t;
-}
 namespace tateyama::api::server {
-
-using response_code = tateyama::api::endpoint::response_code;
 
 /**
  * @brief response interface

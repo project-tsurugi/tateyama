@@ -18,7 +18,7 @@
 #include <cstddef>
 #include <takatori/util/enum_set.h>
 
-namespace tateyama::api::endpoint {
+namespace tateyama::api::server {
 
 /**
  * @brief response code

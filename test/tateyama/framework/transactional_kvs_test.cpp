@@ -23,8 +23,6 @@
 #include <tateyama/framework/environment.h>
 #include <tateyama/framework/transactional_kvs_resource.h>
 #include <tateyama/api/server/request.h>
-#include <tateyama/server/impl/request.h>
-#include <tateyama/server/impl/response.h>
 #include <tateyama/proto/test.pb.h>
 
 #include <gtest/gtest.h>

@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 #include <tateyama/status.h>
-#include <tateyama/api/endpoint/request.h>
-#include <tateyama/api/endpoint/response.h>
-#include <tateyama/api/endpoint/service.h>
+#include <tateyama/api/server/request.h>
+#include <tateyama/api/server/response.h>
 #include <tateyama/endpoint/common/endpoint_proto_utils.h>
 
 #include "tateyama/endpoint/ipc/ipc_request.h"
@@ -57,7 +56,7 @@ public:
             EXPECT_EQ(request_test_message_, payload);
             res->session_id(req->session_id());
             res->body(response_test_message_);
-            res->code(tateyama::api::endpoint::response_code::success);
+            res->code(tateyama::api::server::response_code::success);
             return 0;
         }
     };

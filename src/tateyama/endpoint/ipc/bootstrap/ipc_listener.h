@@ -26,9 +26,7 @@
 #include <glog/logging.h>
 
 #include <tateyama/logging.h>
-#include <tateyama/api/endpoint/service.h>
-#include <tateyama/api/endpoint/provider.h>
-#include <tateyama/framework/endpoint_broker.h>
+#include <tateyama/framework/routing_service.h>
 #include <tateyama/api/configuration.h>
 
 #include "worker.h"
