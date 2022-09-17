@@ -22,6 +22,7 @@
 #include "tateyama/endpoint/ipc/ipc_response.h"
 
 #include "server_wires_impl.h"
+#include "header_utils.h"
 
 #include <gtest/gtest.h>
 
@@ -77,9 +78,14 @@ public:
 TEST_F(result_set_test, normal) {
     auto* request_wire = static_cast<tateyama::common::wire::server_wire_container_impl::wire_container_impl*>(wire_->get_request_wire());
 
+    request_header_content hdr{};
+    std::stringstream ss{};
+    append_request_header(ss, request_test_message_, hdr);
+    auto request_message = ss.str();
+
     request_wire->brand_new();
-    const char *ptr = request_test_message_.data();
-    for (std::size_t i = 0; i < request_test_message_.length(); ptr++, i++) {
+    const char *ptr = request_message.data();
+    for (std::size_t i = 0; i < request_message.length(); ptr++, i++) {
         request_wire->write(*ptr);
     }
     request_wire->flush(index_);
@@ -91,7 +97,7 @@ TEST_F(result_set_test, normal) {
     std::string message;
     message.resize(length);
     memcpy(message.data(), request_wire->payload(length), length);
-    EXPECT_EQ(message, request_test_message_);
+    EXPECT_EQ(message, request_message);
 
     auto request = std::make_shared<tateyama::common::wire::ipc_request>(*wire_, h);
     auto response = std::make_shared<tateyama::common::wire::ipc_response>(*request, h.get_idx());
@@ -103,9 +109,13 @@ TEST_F(result_set_test, normal) {
     auto& r_box = wire_->get_response(h.get_idx());
     auto r_name = r_box.recv();
     r_box.dispose();
-    EXPECT_EQ(std::string_view(r_name.first, r_name.second), resultset_wire_name_);
+
+    std::stringstream expected_resultset_wire_name{};
+    tateyama::endpoint::common::header_content hc{};
+    tateyama::endpoint::common::append_response_header(expected_resultset_wire_name, resultset_wire_name_, hc);
+    EXPECT_EQ(std::string_view(r_name.first, r_name.second), expected_resultset_wire_name.str());
     auto resultset_wires =
-        wire_->create_resultset_wires_for_client(std::string_view(r_name.first, r_name.second));
+        wire_->create_resultset_wires_for_client(resultset_wire_name_);
 
     auto chunk = resultset_wires->get_chunk();
     std::string r(r_);
@@ -118,7 +128,11 @@ TEST_F(result_set_test, normal) {
 
     auto r_msg = r_box.recv();
     r_box.dispose();
-    EXPECT_EQ(std::string_view(r_msg.first, r_msg.second), response_test_message_);
+
+    std::stringstream expected{};
+    tateyama::endpoint::common::header_content hc2{};
+    tateyama::endpoint::common::append_response_header(expected, response_test_message_, hc2);
+    EXPECT_EQ(std::string_view(r_msg.first, r_msg.second), expected.str());
 }
 
 }  // namespace tateyama::api::endpoint::ipc

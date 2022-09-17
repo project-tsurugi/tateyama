@@ -36,19 +36,8 @@ inline bool parse_header(std::string_view input, parse_result& result) {
     result = {};
     ::tateyama::proto::framework::request::Header hdr{};
     google::protobuf::io::ArrayInputStream in{input.data(), static_cast<int>(input.size())};
-    bool no_header = false;
     if(auto res = utils::ParseDelimitedFromZeroCopyStream(std::addressof(hdr), std::addressof(in), nullptr); ! res) {
-        //return false;
-        // for compatibility with request without header,
-        no_header = true;
-    }
-    if(hdr.message_version() != 1) {
-        no_header = true;
-    }
-    if (no_header) {
-        result.service_id_ = tateyama::framework::service_id_sql;
-        result.payload_ = input;
-        return true;
+        return false;
     }
     result.session_id_ = hdr.session_id();
     result.service_id_ = hdr.service_id();
