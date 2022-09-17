@@ -61,6 +61,10 @@ struct pointer_comp {
     }
 };
 
+constexpr static response_header::msg_type RESPONSE_BODY = 1;
+constexpr static response_header::msg_type RESPONSE_BODYHEAD = 2;
+constexpr static response_header::msg_type RESPONSE_CODE = 3;
+
 class ipc_data_channel;
 
 /**
@@ -108,7 +112,7 @@ public:
     ipc_response(ipc_request& request, std::size_t index) :
         ipc_request_(request),
         server_wire_(ipc_request_.get_server_wire_container()),
-        response_box_(server_wire_.get_response(index)),
+        index_(index),
         garbage_collector_(server_wire_.get_garbage_collector()) {
         // do dump here
         garbage_collector_->dump();
@@ -126,7 +130,7 @@ public:
 private:
     ipc_request& ipc_request_;
     server_wire_container& server_wire_;
-    response_box::response& response_box_;
+    std::size_t index_;
     tateyama::common::wire::garbage_collector* garbage_collector_;
 
     tateyama::api::endpoint::response_code response_code_{tateyama::api::endpoint::response_code::unknown};

@@ -23,7 +23,7 @@ namespace tateyama::server {
 void stream_worker::run()
 {
     while(true) {
-        unsigned short slot{};
+        std::uint16_t slot{};
         std::string payload{};
         if (!session_stream_->await(slot, payload)) { break; }
 

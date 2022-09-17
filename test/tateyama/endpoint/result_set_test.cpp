@@ -21,7 +21,7 @@
 #include "tateyama/endpoint/ipc/ipc_request.h"
 #include "tateyama/endpoint/ipc/ipc_response.h"
 
-#include "server_wires_impl.h"
+#include "server_wires_test.h"
 
 #include <gtest/gtest.h>
 
@@ -63,6 +63,7 @@ public:
             tateyama::api::endpoint::writer* w;
             EXPECT_EQ(dc->acquire(w), tateyama::status::ok);
             w->write(r_.data(), r_.length());
+            w->commit();
 
             res->body(response_test_message_);
             res->code(tateyama::api::endpoint::response_code::success);
@@ -83,7 +84,6 @@ TEST_F(result_set_test, normal) {
         request_wire->write(*ptr);
     }
     request_wire->flush(index_);
-    wire_->get_response(index_).set_query_mode();
 
     auto h = request_wire->peep(true);
     EXPECT_EQ(index_, h.get_idx());
@@ -100,25 +100,29 @@ TEST_F(result_set_test, normal) {
     sv(static_cast<std::shared_ptr<tateyama::api::endpoint::request const>>(request),
              static_cast<std::shared_ptr<tateyama::api::endpoint::response>>(response));
 
-    auto& r_box = wire_->get_response(h.get_idx());
-    auto r_name = r_box.recv();
-    r_box.dispose();
-    EXPECT_EQ(std::string_view(r_name.first, r_name.second), resultset_wire_name_);
-    auto resultset_wires =
-        wire_->create_resultset_wires_for_client(std::string_view(r_name.first, r_name.second));
+    auto& response_wire = wire_->get_response_wire();
+    auto header_1st = response_wire.await();
+    std::string r_name;
+    r_name.resize(header_1st.get_length());
+    response_wire.read(r_name.data());
+    EXPECT_EQ(r_name, resultset_wire_name_);
+    auto resultset_wires = wire_->create_resultset_wires_for_client(r_name);
 
     auto chunk = resultset_wires->get_chunk();
+    ASSERT_NE(chunk.data(), nullptr);
     std::string r(r_);
-    EXPECT_EQ(r, std::string_view(chunk.first, chunk.second));
+    EXPECT_EQ(r, chunk);
     resultset_wires->dispose(r.length());
 
     auto chunk_e = resultset_wires->get_chunk();
-    EXPECT_EQ(chunk_e.second, 0);
+    EXPECT_EQ(chunk_e.length(), 0);
     EXPECT_TRUE(resultset_wires->is_eor());
 
-    auto r_msg = r_box.recv();
-    r_box.dispose();
-    EXPECT_EQ(std::string_view(r_msg.first, r_msg.second), response_test_message_);
+    auto header_2nd = response_wire.await();
+    std::string r_msg;
+    r_msg.resize(header_2nd.get_length());
+    response_wire.read(r_msg.data());
+    EXPECT_EQ(r_msg, response_test_message_);
 }
 
 }  // namespace tateyama::api::endpoint::ipc

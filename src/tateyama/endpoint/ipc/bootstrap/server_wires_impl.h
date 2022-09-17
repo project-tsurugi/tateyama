@@ -29,6 +29,7 @@ class server_wire_container_impl : public server_wire_container
 {
     static constexpr std::size_t shm_size = (1<<21) * 104;  // 2M(64K * 8writes * 4result_sets) * 104threads bytes (tentative)  NOLINT
     static constexpr std::size_t request_buffer_size = (1<<12);   //  4K bytes (tentative)  NOLINT
+    static constexpr std::size_t response_buffer_size = (1<<14);  // 16K bytes (tentative)  NOLINT
     static constexpr std::size_t resultset_vector_size = (1<<12); //  4K bytes (tentative)  NOLINT
     static constexpr std::size_t writer_count = 16;
 
@@ -156,14 +157,35 @@ public:
         char* bip_buffer_{};
     };
 
+    class response_wire_container_impl : public response_wire_container {
+    public:
+        response_wire_container_impl() = default;
+        response_wire_container_impl(unidirectional_response_wire* wire, char* bip_buffer) : wire_(wire), bip_buffer_(bip_buffer) {}
+        ~response_wire_container_impl() override = default;
+        response_wire_container_impl(response_wire_container_impl const&) = delete;
+        response_wire_container_impl(response_wire_container_impl&&) = delete;
+        response_wire_container_impl& operator = (response_wire_container_impl const&) = default;
+        response_wire_container_impl& operator = (response_wire_container_impl&&) = default;
+
+        void write(const char* from, response_header header) override {
+            wire_->write(bip_buffer_, from, header);
+        }
+
+    private:
+        unidirectional_response_wire* wire_{};
+        char* bip_buffer_{};
+    };
+
     explicit server_wire_container_impl(std::string_view name) : name_(name), garbage_collector_impl_(std::make_unique<garbage_collector_impl>()) {
         boost::interprocess::shared_memory_object::remove(name_.c_str());
         try {
             managed_shared_memory_ =
                 std::make_unique<boost::interprocess::managed_shared_memory>(boost::interprocess::create_only, name_.c_str(), shm_size);
             auto req_wire = managed_shared_memory_->construct<unidirectional_message_wire>(request_wire_name)(managed_shared_memory_.get(), request_buffer_size);
+            auto res_wire = managed_shared_memory_->construct<unidirectional_response_wire>(response_wire_name)(managed_shared_memory_.get(), response_buffer_size);
+
             request_wire_ = wire_container_impl(req_wire, req_wire->get_bip_address(managed_shared_memory_.get()));
-            responses_ = managed_shared_memory_->construct<response_box>(response_box_name)(16, managed_shared_memory_.get());
+            response_wire_ = response_wire_container_impl(res_wire, res_wire->get_bip_address(managed_shared_memory_.get()));
         }
         catch(const boost::interprocess::interprocess_exception& ex) {
             LOG(ERROR) << "running out of boost managed shared memory" << std::endl;
@@ -184,7 +206,7 @@ public:
     }
 
     wire_container* get_request_wire() override { return &request_wire_; }
-    response_box::response& get_response(std::size_t idx) override { return responses_->at(idx); }
+    response_wire_container& get_response_wire() override { return response_wire_; }
 
     unq_p_resultset_wires_conteiner create_resultset_wires(std::string_view name, std::size_t count) override {
         try {
@@ -210,11 +232,12 @@ private:
     std::string name_;
     std::unique_ptr<boost::interprocess::managed_shared_memory> managed_shared_memory_{};
     wire_container_impl request_wire_;
-    response_box* responses_;
+    response_wire_container_impl response_wire_;
     std::unique_ptr<garbage_collector_impl> garbage_collector_impl_;
     bool session_closed_{false};
     std::mutex mtx_shm_{};
 };
+
 
 class connection_container
 {

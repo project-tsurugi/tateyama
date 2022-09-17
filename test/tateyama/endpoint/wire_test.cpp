@@ -18,7 +18,7 @@
 #include <tateyama/api/endpoint/response.h>
 #include <tateyama/api/endpoint/service.h>
 
-#include "server_wires_impl.h"
+#include "server_wires_test.h"
 
 #include <gtest/gtest.h>
 
