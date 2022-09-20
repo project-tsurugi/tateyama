@@ -21,6 +21,7 @@
 #include <tateyama/logging.h>
 
 #include "ipc_response.h"
+#include "../common/endpoint_proto_utils.h"
 
 namespace tateyama::common::wire {
 
@@ -28,16 +29,30 @@ namespace tateyama::common::wire {
 // class ipc_response
 tateyama::status ipc_response::body(std::string_view body) {
     VLOG(log_trace) << __func__ << std::endl;  //NOLINT
-
-    memcpy(response_box_.get_buffer(body.length()), body.data(), body.length());
+    std::stringstream ss{};
+    endpoint::common::header_content arg{};
+    arg.session_id_ = session_id_;
+    if(auto res = endpoint::common::append_response_header(ss, body, arg); ! res) {
+        VLOG(log_error) << "error formatting response message";
+        return status::unknown;
+    }
+    auto s = ss.str();
+    memcpy(response_box_.get_buffer(s.length()), s.data(), s.length());
     response_box_.flush();
     return tateyama::status::ok;
 }
 
 tateyama::status ipc_response::body_head(std::string_view body_head) {
     VLOG(log_trace) << __func__ << std::endl;  //NOLINT
-
-    memcpy(response_box_.get_buffer(body_head.length()), body_head.data(), body_head.length());
+    std::stringstream ss{};
+    endpoint::common::header_content arg{};
+    arg.session_id_ = session_id_;
+    if(auto res = endpoint::common::append_response_header(ss, body_head, arg); ! res) {
+        VLOG(log_error) << "error formatting response message";
+        return status::unknown;
+    }
+    auto s = ss.str();
+    memcpy(response_box_.get_buffer(s.length()), s.data(), s.length());
     response_box_.flush();
     return tateyama::status::ok;
 }
@@ -48,17 +63,17 @@ void ipc_response::code(tateyama::api::endpoint::response_code code) {
     response_code_ = code;
 }
 
-tateyama::status ipc_response::acquire_channel(std::string_view name, tateyama::api::endpoint::data_channel*& ch) {
+tateyama::status ipc_response::acquire_channel(std::string_view name, std::shared_ptr<tateyama::api::server::data_channel>& ch) {
     VLOG(log_trace) << __func__ << std::endl;  //NOLINT
 
-    data_channel_ = std::make_unique<ipc_data_channel>(server_wire_.create_resultset_wires(name));
-    if (ch = data_channel_.get(); ch != nullptr) {
+    data_channel_ = std::make_shared<ipc_data_channel>(server_wire_.create_resultset_wires(name));
+    if (ch = data_channel_; ch != nullptr) {
         return tateyama::status::ok;
     }
     return tateyama::status::unknown;
 }
 
-tateyama::status ipc_response::release_channel(tateyama::api::endpoint::data_channel& ch) {
+tateyama::status ipc_response::release_channel(tateyama::api::server::data_channel& ch) {
     VLOG(log_trace) << __func__ << std::endl;  //NOLINT
 
     data_channel_->set_eor();
@@ -80,18 +95,18 @@ tateyama::status ipc_response::close_session() {
 }
 
 // class ipc_data_channel
-tateyama::status ipc_data_channel::acquire(tateyama::api::endpoint::writer*& wrt) {
+tateyama::status ipc_data_channel::acquire(std::shared_ptr<tateyama::api::server::writer>& wrt) {
     VLOG(log_trace) << __func__ << std::endl;  //NOLINT
 
-    if (auto ipc_wrt = std::make_unique<ipc_writer>(data_channel_->acquire()); ipc_wrt != nullptr) {
-        wrt = ipc_wrt.get();
+    if (auto ipc_wrt = std::make_shared<ipc_writer>(data_channel_->acquire()); ipc_wrt != nullptr) {
+        wrt = ipc_wrt;
         data_writers_.emplace(std::move(ipc_wrt));
         return tateyama::status::ok;
     }
     return tateyama::status::unknown;
 }
 
-tateyama::status ipc_data_channel::release(tateyama::api::endpoint::writer& wrt) {
+tateyama::status ipc_data_channel::release(tateyama::api::server::writer& wrt) {
     VLOG(log_trace) << __func__ << std::endl;  //NOLINT
 
     if (auto itr = data_writers_.find(dynamic_cast<ipc_writer*>(&wrt)); itr != data_writers_.end()) {

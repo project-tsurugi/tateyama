@@ -20,7 +20,8 @@
 #include <mutex>
 #include <condition_variable>
 
-#include <tateyama/api/endpoint/response.h>
+#include <tateyama/api/server/response.h>
+#include <tateyama/api/endpoint/response_code.h>
 
 #include "stream.h"
 #include "stream_request.h"
@@ -71,7 +72,7 @@ class stream_data_channel;
 /**
  * @brief writer object for stream_endpoint
  */
-class stream_writer : public tateyama::api::endpoint::writer {
+class stream_writer : public tateyama::api::server::writer {
     friend stream_data_channel;
 
 public:
@@ -90,17 +91,17 @@ private:
 /**
  * @brief data_channel object for stream_endpoint
  */
-class stream_data_channel : public tateyama::api::endpoint::data_channel {
+class stream_data_channel : public tateyama::api::server::data_channel {
 public:
     stream_data_channel() = delete;
     explicit stream_data_channel(stream_socket& session_socket, unsigned int slot) : session_socket_(session_socket), slot_(slot) {}
-    tateyama::status acquire(tateyama::api::endpoint::writer*& wrt) override;
-    tateyama::status release(tateyama::api::endpoint::writer& wrt) override;
+    tateyama::status acquire(std::shared_ptr<tateyama::api::server::writer>& wrt) override;
+    tateyama::status release(tateyama::api::server::writer& wrt) override;
     [[nodiscard]] unsigned int get_slot() const { return slot_; }
 
 private:
     stream_socket& session_socket_;
-    std::set<std::unique_ptr<stream_writer>, pointer_comp<stream_writer>> data_writers_{};
+    std::set<std::shared_ptr<stream_writer>, pointer_comp<stream_writer>> data_writers_{};
     unsigned int slot_;
 //    std::mutex mutex_{};
 //    std::condition_variable condition_{};
@@ -110,7 +111,7 @@ private:
 /**
  * @brief response object for stream_endpoint
  */
-class stream_response : public tateyama::api::endpoint::response {
+class stream_response : public tateyama::api::server::response {
 public:
     stream_response(stream_request& request, unsigned char index);
     stream_response() = delete;
@@ -118,18 +119,23 @@ public:
     void code(tateyama::api::endpoint::response_code code) override;
     tateyama::status body(std::string_view body) override;
     tateyama::status body_head(std::string_view body_head) override;
-    tateyama::status acquire_channel(std::string_view name, tateyama::api::endpoint::data_channel*& ch) override;
-    tateyama::status release_channel(tateyama::api::endpoint::data_channel& ch) override;
+    tateyama::status acquire_channel(std::string_view name, std::shared_ptr<tateyama::api::server::data_channel>& ch) override;
+    tateyama::status release_channel(tateyama::api::server::data_channel& ch) override;
     tateyama::status close_session() override;
 
+    void session_id(std::size_t id) override {
+        session_id_ = id;
+    }
 private:
     stream_socket& session_socket_;
     unsigned char index_;
 
-    tateyama::api::endpoint::response_code response_code_{tateyama::api::endpoint::response_code::unknown};
+    tateyama::api::server::response_code response_code_{tateyama::api::server::response_code::unknown};
     std::string message_{};
 
-    std::unique_ptr<stream_data_channel> data_channel_{};
+    std::shared_ptr<stream_data_channel> data_channel_{};
+
+    std::size_t session_id_{};
 };
 
 }  // tateyama::common::stream

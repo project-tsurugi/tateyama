@@ -18,6 +18,7 @@
 #include <tateyama/logging.h>
 
 #include "ipc_request.h"
+#include "../common/endpoint_proto_utils.h"
 
 namespace tateyama::common::wire {
 
@@ -29,9 +30,7 @@ ipc_request::get_server_wire_container() {
 std::string_view
 ipc_request::payload() const {
     VLOG(log_trace) << __func__ << std::endl;  //NOLINT
-
-    auto address = server_wire_.get_request_wire()->payload(length_);
-    return std::string_view(address, length_);
+    return payload_;
 }
 
 void
@@ -39,6 +38,16 @@ ipc_request::dispose() {
     VLOG(log_trace) << __func__ << std::endl;  //NOLINT
 
     server_wire_.get_request_wire()->dispose(read_point);
+}
+
+std::size_t ipc_request::session_id() const {
+    VLOG(log_trace) << __func__ << std::endl;  //NOLINT
+    return session_id_;
+}
+
+std::size_t ipc_request::service_id() const {
+    VLOG(log_trace) << __func__ << std::endl;  //NOLINT
+    return service_id_;
 }
 
 }  // tateyama::common::wire

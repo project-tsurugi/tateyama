@@ -18,7 +18,8 @@
 #include <set>
 #include <string_view>
 
-#include <tateyama/api/endpoint/response.h>
+#include <tateyama/api/server/response.h>
+#include <tateyama/api/endpoint/response_code.h>
 
 #include "server_wires.h"
 #include "ipc_request.h"
@@ -66,7 +67,7 @@ class ipc_data_channel;
 /**
  * @brief writer object for ipc_endpoint
  */
-class ipc_writer : public tateyama::api::endpoint::writer {
+class ipc_writer : public tateyama::api::server::writer {
     friend ipc_data_channel;
 
 public:
@@ -82,14 +83,14 @@ private:
 /**
  * @brief data_channel object for ipc_endpoint
  */
-class ipc_data_channel : public tateyama::api::endpoint::data_channel {
+class ipc_data_channel : public tateyama::api::server::data_channel {
 public:
     explicit ipc_data_channel(server_wire_container::unq_p_resultset_wires_conteiner data_channel)
         : data_channel_(std::move(data_channel)) {
     }
 
-    tateyama::status acquire(tateyama::api::endpoint::writer*& wrt) override;
-    tateyama::status release(tateyama::api::endpoint::writer& wrt) override;
+    tateyama::status acquire(std::shared_ptr<tateyama::api::server::writer>& wrt) override;
+    tateyama::status release(tateyama::api::server::writer& wrt) override;
     void set_eor() { return data_channel_->set_eor(); }
     bool is_closed() { return data_channel_->is_closed(); }
     server_wire_container::unq_p_resultset_wires_conteiner get_resultset_wires() { return std::move(data_channel_); }
@@ -97,13 +98,13 @@ public:
 private:
     server_wire_container::unq_p_resultset_wires_conteiner data_channel_;
 
-    std::set<std::unique_ptr<ipc_writer>, pointer_comp<ipc_writer>> data_writers_{};
+    std::set<std::shared_ptr<ipc_writer>, pointer_comp<ipc_writer>> data_writers_{};
 };
 
 /**
  * @brief response object for ipc_endpoint
  */
-class ipc_response : public tateyama::api::endpoint::response {
+class ipc_response : public tateyama::api::server::response {
 public:
     ipc_response(ipc_request& request, std::size_t index) :
         ipc_request_(request),
@@ -119,20 +120,25 @@ public:
     void code(tateyama::api::endpoint::response_code code) override;
     tateyama::status body(std::string_view body) override;
     tateyama::status body_head(std::string_view body_head) override;
-    tateyama::status acquire_channel(std::string_view name, tateyama::api::endpoint::data_channel*& ch) override;
-    tateyama::status release_channel(tateyama::api::endpoint::data_channel& ch) override;
+    tateyama::status acquire_channel(std::string_view name, std::shared_ptr<tateyama::api::server::data_channel>& ch) override;
+    tateyama::status release_channel(tateyama::api::server::data_channel& ch) override;
     tateyama::status close_session() override;
 
+    void session_id(std::size_t id) override {
+        session_id_ = id;
+    }
 private:
     ipc_request& ipc_request_;
     server_wire_container& server_wire_;
     response_box::response& response_box_;
     tateyama::common::wire::garbage_collector* garbage_collector_;
 
-    tateyama::api::endpoint::response_code response_code_{tateyama::api::endpoint::response_code::unknown};
+    tateyama::api::server::response_code response_code_{tateyama::api::server::response_code::unknown};
     std::string message_{};
 
-    std::unique_ptr<ipc_data_channel> data_channel_{};
+    std::shared_ptr<ipc_data_channel> data_channel_{};
+
+    std::size_t session_id_{};
 };
 
 }  // tateyama::common::wire

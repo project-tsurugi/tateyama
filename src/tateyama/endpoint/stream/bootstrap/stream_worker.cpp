@@ -29,8 +29,8 @@ void stream_worker::run()
 
         auto request = std::make_shared<tateyama::common::stream::stream_request>(*session_stream_, payload);
         auto response = std::make_shared<tateyama::common::stream::stream_response>(*request, slot);
-        service_(static_cast<std::shared_ptr<tateyama::api::endpoint::request const>>(request),
-                 static_cast<std::shared_ptr<tateyama::api::endpoint::response>>(std::move(response)));
+        service_(static_cast<std::shared_ptr<tateyama::api::server::request>>(request),
+                 static_cast<std::shared_ptr<tateyama::api::server::response>>(std::move(response)));
         request = nullptr;
         if (session_stream_->is_session_closed()) { break; }
     }
