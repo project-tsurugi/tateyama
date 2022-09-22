@@ -38,7 +38,6 @@ tateyama::status ipc_response::body(std::string_view body) {
     }
     auto s = ss.str();
     server_wire_.get_response_wire().write(s.data(), response_header(index_, s.length(), RESPONSE_BODY));
-    response_box_.flush();
     return tateyama::status::ok;
 }
 
@@ -53,7 +52,6 @@ tateyama::status ipc_response::body_head(std::string_view body_head) {
     }
     auto s = ss.str();
     server_wire_.get_response_wire().write(s.data(), response_header(index_, s.length(), RESPONSE_BODYHEAD));
-    response_box_.flush();
     return tateyama::status::ok;
 }
 

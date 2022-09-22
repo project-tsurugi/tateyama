@@ -98,10 +98,13 @@ TEST_F(response_only_test, normal) {
     auto& response_wire = wire_->get_response_wire();
     auto header = response_wire.await();
     std::string r_msg;
+    r_msg.resize(response_wire.get_length());
+    response_wire.read(r_msg.data());
+
     std::stringstream expected{};
     tateyama::endpoint::common::header_content hc{10};
     tateyama::endpoint::common::append_response_header(expected, response_test_message_, hc);
-    EXPECT_EQ(std::string_view(r_msg.first, r_msg.second), expected.str());
+    EXPECT_EQ(r_msg, expected.str());
 }
 
 }  // namespace tateyama::api::endpoint::ipc
