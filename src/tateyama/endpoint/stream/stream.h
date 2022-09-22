@@ -21,7 +21,8 @@
 #include <unistd.h>
 #include <memory>
 #include <string_view>
-#include <array>
+// #include <array>
+#include <vector>
 #include <iterator>
 #include <mutex>
 #include <condition_variable>
@@ -49,17 +50,18 @@ class stream_socket
     static constexpr unsigned char RESPONSE_SESSION_HELLO_NG = 4;
     static constexpr unsigned char RESPONSE_RESULT_SET_HELLO = 5;
     static constexpr unsigned char RESPONSE_RESULT_SET_BYE = 6;
+    static constexpr unsigned char RESPONSE_SESSION_BODYHEAD = 7;
 
     static constexpr unsigned int SLOT_SIZE = 16;
 
     class recv_entry {
     public:
-        recv_entry(unsigned char info, unsigned char slot, std::string payload) : info_(info), slot_(slot), payload_(std::move(payload)) {
+        recv_entry(unsigned char info, std::uint16_t slot, std::string payload) : info_(info), slot_(slot), payload_(std::move(payload)) {
         }
         [[nodiscard]] unsigned char info() const {
             return info_;
         }
-        [[nodiscard]] unsigned char slot() const {
+        [[nodiscard]] std::uint16_t slot() const {
             return slot_;
         }
         [[nodiscard]] std::string payload() const {
@@ -67,18 +69,14 @@ class stream_socket
         }
     private:
         unsigned char info_;
-        unsigned char slot_;
+        std::uint16_t slot_;
         std::string payload_;
     };
 
 public:
     explicit stream_socket(int socket) : socket_(socket) {
-        for (unsigned int i = 0; i < SLOT_SIZE; i++) {
-            in_use.at(i) = false;
-        }
-
         unsigned char info{};
-        unsigned char slot{};
+        std::uint16_t slot{};
         std::string dummy;
 
         if (!await(info, slot, dummy)) {
@@ -86,6 +84,11 @@ public:
         }
         if (info != REQUEST_SESSION_HELLO) {
             std::abort();
+        }
+        slot_size_ = slot;
+        in_use_.resize(slot_size_);
+        for (unsigned int i = 0; i < slot_size_; i++) {
+            in_use_.at(i) = false;
         }
     }
     ~stream_socket() { close(socket_); }
@@ -95,7 +98,7 @@ public:
     stream_socket(stream_socket&& other) noexcept = delete;
     stream_socket& operator=(stream_socket&& other) noexcept = delete;
 
-    bool await(unsigned char& slot, std::string& payload) {
+    bool await(std::uint16_t& slot, std::string& payload) {
         unsigned char info{};
         return await(info, slot, payload);
     }
@@ -105,35 +108,44 @@ public:
         DVLOG(log_trace) << "<-- RESPONSE_SESSION_HELLO_OK ";  //NOLINT
         send_response(RESPONSE_SESSION_HELLO_OK, 0, payload);
     }
-    void send(unsigned char slot, std::string_view payload) {  // for RESPONSE_SESSION_PAYLOAD
-        DVLOG(log_trace) << "<-- RESPONSE_SESSION_PAYLOAD ";  //NOLINT
-        std::unique_lock<std::mutex> lock(mutex_);
-        send_response(RESPONSE_SESSION_PAYLOAD, slot, payload);
+    void send(std::uint16_t slot, std::string_view payload, bool body) {  // for RESPONSE_SESSION_PAYLOAD
+        if (body) {
+            DVLOG(log_trace) << "<-- RESPONSE_SESSION_PAYLOAD ";  //NOLINT
+            std::unique_lock<std::mutex> lock(mutex_);
+            send_response(RESPONSE_SESSION_PAYLOAD, slot, payload);
+        } else {
+            DVLOG(log_trace) << "<-- RESPONSE_SESSION_BODYHEAD ";  //NOLINT
+            std::unique_lock<std::mutex> lock(mutex_);
+            send_response(RESPONSE_SESSION_BODYHEAD, slot, payload);
+        }
     }
-    void send_result_set_hello(unsigned char slot, std::string_view name) {  // for RESPONSE_RESULT_SET_HELLO
+    void send_result_set_hello(std::uint16_t slot, std::string_view name) {  // for RESPONSE_RESULT_SET_HELLO
         DVLOG(log_trace)  << "<-- RESPONSE_RESULT_SET_HELLO " << static_cast<std::uint32_t>(slot) << ", " << name;  //NOLINT
         std::unique_lock<std::mutex> lock(mutex_);
         send_response(RESPONSE_RESULT_SET_HELLO, slot, name);
     }
-    void send_result_set_bye(unsigned char slot) {  // for RESPONSE_RESULT_SET_BYE
+    void send_result_set_bye(std::uint16_t slot) {  // for RESPONSE_RESULT_SET_BYE
         DVLOG(log_trace) << "<-- RESPONSE_RESULT_SET_BYE " << static_cast<std::uint32_t>(slot);  //NOLINT
         std::unique_lock<std::mutex> lock(mutex_);
         send_response(RESPONSE_RESULT_SET_BYE, slot, "");
     }
-    void send(unsigned char slot, unsigned char writer, std::string_view payload) { // for RESPONSE_RESULT_SET_PAYLOAD
+    void send(std::uint16_t slot, unsigned char writer, std::string_view payload) { // for RESPONSE_RESULT_SET_PAYLOAD
         DVLOG(log_trace) << "<-- RESPONSE_RESULT_SET_PAYLOAD " << static_cast<std::uint32_t>(slot) << ", " << static_cast<std::uint32_t>(writer);  //NOLINT
         std::unique_lock<std::mutex> lock(mutex_);
         unsigned char info = RESPONSE_RESULT_SET_PAYLOAD;
         ::send(socket_, &info, 1, 0);
-        ::send(socket_, &slot, 1, 0);
+        char buffer[sizeof(std::uint16_t)];  // NOLINT
+        buffer[0] = slot & 0xff;  // NOLINT
+        buffer[1] = (slot / 0x100) & 0xff;  // NOLINT
+        ::send(socket_, &buffer[0], sizeof(std::uint16_t), 0);
         ::send(socket_, &writer, 1, 0);
         send_payload(payload);
     }
 
     unsigned int look_for_slot() {
-        for (unsigned int i = 0; i < SLOT_SIZE; i++) {
-            if (!in_use.at(i)) {
-                in_use.at(i) = true;
+        for (unsigned int i = 0; i < slot_size_; i++) {  // FIXME more efficient
+            if (!in_use_.at(i)) {
+                in_use_.at(i) = true;
                 slot_using_++;
                 return i;
             }
@@ -149,16 +161,17 @@ public:
 private:
     int socket_;
     bool session_closed_{false};
-    std::array<bool, SLOT_SIZE> in_use{};
+    std::vector<bool> in_use_{};
     std::mutex mutex_{};
     std::atomic_uint slot_using_{};
     std::queue<recv_entry> queue_{};
+    std::size_t slot_size_{SLOT_SIZE};
 
-    bool await(unsigned char& info, unsigned char& slot, std::string& payload) {
+    bool await(unsigned char& info, std::uint16_t& slot, std::string& payload) {
         DVLOG(log_trace) << "-- enter waiting REQUEST --";  //NOLINT
 
         while (true) {
-            if (!queue_.empty() && slot_using_ < SLOT_SIZE) {
+            if (!queue_.empty() && slot_using_ < slot_size_) {
                 auto entry = queue_.front();
                 info = entry.info();
                 slot = entry.slot();
@@ -182,16 +195,19 @@ private:
                     DVLOG(log_trace) << "socket is closed by the client ";  //NOLINT
                     return false;
                 }
-                if (auto size_i = ::recv(socket_, &slot, 1, 0); size_i == 0) {
+
+                char buffer[sizeof(std::uint16_t)];  // NOLINT
+                if (auto size_i = ::recv(socket_, &buffer[0], sizeof(std::uint16_t), 0); size_i != sizeof(std::uint16_t)) {  // NOLINT
                     LOG(ERROR) << "received an incomplete message ";  //NOLINT
                     std::abort();
                 }
+                slot = (strip(buffer[1]) << 8) | strip(buffer[0]);  // NOLINT
             }
             switch (info) {
             case REQUEST_SESSION_PAYLOAD:
                 DVLOG(log_trace) << "--> REQUEST_SESSION_PAYLOAD " << static_cast<std::uint32_t>(slot);  //NOLINT
                 recv(payload);
-                if (slot_using_ < SLOT_SIZE) {
+                if (slot_using_ < slot_size_) {
                     return true;
                 }
                 queue_.push(recv_entry(info, slot, payload));
@@ -238,9 +254,12 @@ private:
         }
     }
 
-    void send_response(unsigned char info, unsigned char slot, std::string_view payload) {  // a support function, assumes caller hold lock
+    void send_response(unsigned char info, std::uint16_t slot, std::string_view payload) {  // a support function, assumes caller hold lock
         ::send(socket_, &info, 1, 0);
-        ::send(socket_, &slot, 1, 0);
+        char buffer[sizeof(std::uint16_t)];  // NOLINT
+        buffer[0] = slot & 0xff;  // NOLINT
+        buffer[1] = (slot / 0x100) & 0xff;  // NOLINT
+        ::send(socket_, &buffer[0], sizeof(std::uint16_t), 0);
         send_payload(payload);
     }
     void send_payload(std::string_view payload) const {  // a support function, assumes caller hold lock
@@ -257,11 +276,11 @@ private:
     }
 
     void release_slot(unsigned int slot) {
-        if (!in_use.at(slot)) {
+        if (!in_use_.at(slot)) {
             LOG(ERROR) << "slot " << slot << " is not using, abort due to inconsistent state";
             std::abort();
         }
-        in_use.at(slot) = false;
+        in_use_.at(slot) = false;
         slot_using_--;
     }
 };

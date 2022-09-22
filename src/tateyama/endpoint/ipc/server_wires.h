@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 tsurugi project.
+ * Copyright 2019-2022 tsurugi project.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,8 +32,19 @@ public:
         wire_container& operator = (wire_container&&) = default;
 
         virtual std::size_t read_point() = 0;
-        virtual const char* payload(std::size_t) = 0;
+        virtual std::string_view payload() = 0;
         virtual void dispose(std::size_t) = 0;
+    };
+    class response_wire_container {
+    public:
+        response_wire_container() = default;
+        virtual ~response_wire_container() = 0;
+        constexpr response_wire_container(response_wire_container const&) = delete;
+        constexpr response_wire_container(response_wire_container&&) = delete;
+        response_wire_container& operator = (response_wire_container const&) = default;
+        response_wire_container& operator = (response_wire_container&&) = default;
+
+        virtual void write(const char*, response_header) = 0;
     };
     class resultset_wires_container {
     public:
@@ -71,7 +82,7 @@ public:
     server_wire_container& operator = (server_wire_container&&) = delete;
 
     virtual wire_container* get_request_wire() = 0;
-    virtual response_box::response& get_response(std::size_t) = 0;
+    virtual response_wire_container& get_response_wire() = 0;
     virtual unq_p_resultset_wires_conteiner create_resultset_wires(std::string_view) = 0;
     virtual unq_p_resultset_wires_conteiner create_resultset_wires(std::string_view, std::size_t count) = 0;
     virtual garbage_collector* get_garbage_collector() = 0;
@@ -79,6 +90,7 @@ public:
 };
 inline server_wire_container::~server_wire_container() = default;
 inline server_wire_container::wire_container::~wire_container() = default;
+inline server_wire_container::response_wire_container::~response_wire_container() = default;
 inline server_wire_container::resultset_wires_container::~resultset_wires_container() = default;
 inline server_wire_container::garbage_collector::~garbage_collector() = default;
 

@@ -76,7 +76,7 @@ class stream_writer : public tateyama::api::server::writer {
     friend stream_data_channel;
 
 public:
-    explicit stream_writer(stream_socket& socket, unsigned int slot, unsigned char writer_id)
+    explicit stream_writer(stream_socket& socket, std::uint16_t slot, unsigned char writer_id)
         : resultset_socket_(socket), slot_(slot), writer_id_(writer_id) {}
 
     tateyama::status write(char const* data, std::size_t length) override;
@@ -84,7 +84,7 @@ public:
 
 private:
     stream_socket& resultset_socket_;
-    unsigned char slot_;
+    std::uint16_t slot_;
     unsigned char writer_id_;
 };
 
@@ -103,8 +103,6 @@ private:
     stream_socket& session_socket_;
     std::set<std::shared_ptr<stream_writer>, pointer_comp<stream_writer>> data_writers_{};
     unsigned int slot_;
-//    std::mutex mutex_{};
-//    std::condition_variable condition_{};
     unsigned char writer_id_{};
 };
 

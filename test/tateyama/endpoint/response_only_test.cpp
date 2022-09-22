@@ -21,7 +21,7 @@
 #include "tateyama/endpoint/ipc/ipc_request.h"
 #include "tateyama/endpoint/ipc/ipc_response.h"
 
-#include "server_wires_impl.h"
+#include "server_wires_test.h"
 #include "header_utils.h"
 
 #include <gtest/gtest.h>
@@ -80,11 +80,7 @@ TEST_F(response_only_test, normal) {
 
     auto h = request_wire->peep(true);
     EXPECT_EQ(index_, h.get_idx());
-    auto length = h.get_length();
-    std::string message;
-    message.resize(length);
-    memcpy(message.data(), request_wire->payload(length), length);
-    EXPECT_EQ(message, request_message);
+    EXPECT_EQ(request_wire->payload(), request_message);
 
     auto request = std::make_shared<tateyama::common::wire::ipc_request>(*wire_, h);
     auto response = std::make_shared<tateyama::common::wire::ipc_response>(*request, h.get_idx());
@@ -95,13 +91,16 @@ TEST_F(response_only_test, normal) {
     sv(static_cast<std::shared_ptr<tateyama::api::server::request>>(request),
              static_cast<std::shared_ptr<tateyama::api::server::response>>(response));
 
-    auto& r_box = wire_->get_response(h.get_idx());
-    auto r_msg = r_box.recv();
-    r_box.dispose();
+    auto& response_wire = wire_->get_response_wire();
+    auto header = response_wire.await();
+    std::string r_msg;
+    r_msg.resize(response_wire.get_length());
+    response_wire.read(r_msg.data());
+
     std::stringstream expected{};
     tateyama::endpoint::common::header_content hc{10};
     tateyama::endpoint::common::append_response_header(expected, response_test_message_, hc);
-    EXPECT_EQ(std::string_view(r_msg.first, r_msg.second), expected.str());
+    EXPECT_EQ(r_msg, expected.str());
 }
 
 }  // namespace tateyama::api::endpoint::ipc

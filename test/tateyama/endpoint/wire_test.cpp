@@ -17,7 +17,7 @@
 #include <tateyama/api/server/request.h>
 #include <tateyama/api/server/response.h>
 
-#include "server_wires_impl.h"
+#include "server_wires_test.h"
 
 #include <gtest/gtest.h>
 
@@ -64,7 +64,7 @@ TEST_F(wire_test, loop) {
         
         std::string message;
         message.resize(length);
-        memcpy(message.data(), request_wire->payload(length), length);
+        memcpy(message.data(), request_wire->payload().data(), length);
         EXPECT_EQ(memcmp(request_test_message_.data(), message.data(), length), 0);
 
         request_wire->dispose(read_point);

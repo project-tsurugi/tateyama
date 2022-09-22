@@ -31,9 +31,9 @@ class ipc_request : public tateyama::api::server::request {
 public:
     ipc_request(server_wire_container& server_wire, message_header& header)
         : server_wire_(server_wire), length_(header.get_length()), read_point(server_wire_.get_request_wire()->read_point()) {
-        auto address = server_wire_.get_request_wire()->payload(length_);
+        auto message = server_wire_.get_request_wire()->payload();
         endpoint::common::parse_result res{};
-        endpoint::common::parse_header(std::string_view(address, length_), res); // TODO handle error
+        endpoint::common::parse_header(message, res); // TODO handle error
         payload_ = res.payload_;
         session_id_ = res.session_id_;
         service_id_ = res.service_id_;
