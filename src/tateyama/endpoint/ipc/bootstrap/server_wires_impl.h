@@ -143,11 +143,8 @@ public:
         message_header peep(bool wait = false) {
             return wire_->peep(bip_buffer_, wait);
         }
-        const char* payload(std::size_t length) override {
-            return wire_->payload(bip_buffer_, length);
-        }
-        void read(char* to, std::size_t msg_len) {
-            wire_->read(to, bip_buffer_, msg_len);
+        std::string_view payload() override {
+            return wire_->payload(bip_buffer_);
         }
         std::size_t read_point() override { return wire_->read_point(); }
         void dispose(const std::size_t rp) override { wire_->dispose(bip_buffer_, rp); }

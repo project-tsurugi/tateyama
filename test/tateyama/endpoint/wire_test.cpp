@@ -64,7 +64,7 @@ TEST_F(wire_test, loop) {
         
         std::string message;
         message.resize(length);
-        memcpy(message.data(), request_wire->payload(length), length);
+        memcpy(message.data(), request_wire->payload().data(), length);
         EXPECT_EQ(memcmp(request_test_message_.data(), message.data(), length), 0);
 
         request_wire->dispose(read_point);

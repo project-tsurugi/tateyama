@@ -32,7 +32,7 @@ public:
         wire_container& operator = (wire_container&&) = default;
 
         virtual std::size_t read_point() = 0;
-        virtual const char* payload(std::size_t) = 0;
+        virtual std::string_view payload() = 0;
         virtual void dispose(std::size_t) = 0;
     };
     class response_wire_container {

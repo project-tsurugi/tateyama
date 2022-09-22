@@ -92,11 +92,7 @@ TEST_F(result_set_test, normal) {
 
     auto h = request_wire->peep(true);
     EXPECT_EQ(index_, h.get_idx());
-    auto length = h.get_length();
-    std::string message;
-    message.resize(length);
-    memcpy(message.data(), request_wire->payload(length), length);
-    EXPECT_EQ(message, request_message);
+    EXPECT_EQ(request_wire->payload(), request_message);
 
     auto request = std::make_shared<tateyama::common::wire::ipc_request>(*wire_, h);
     auto response = std::make_shared<tateyama::common::wire::ipc_response>(*request, h.get_idx());
