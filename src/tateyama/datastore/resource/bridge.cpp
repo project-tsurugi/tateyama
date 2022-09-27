@@ -64,8 +64,8 @@ limestone::api::backup& bridge::begin_backup() {
 void bridge::end_backup() {
 }
 
-limestone::status bridge::restore_backup(std::string_view from, bool overwrite) {
-    return datastore_->restore(from, overwrite);
+limestone::status bridge::restore_backup(std::string_view from, bool keep_backup) {
+    return datastore_->restore(from, keep_backup);
 }
 
 #if 0
