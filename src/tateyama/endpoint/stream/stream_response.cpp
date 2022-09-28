@@ -69,11 +69,15 @@ void stream_response::code(tateyama::api::server::response_code code) {
 tateyama::status stream_response::acquire_channel(std::string_view name, std::shared_ptr<tateyama::api::server::data_channel>& ch) {
     VLOG(log_trace) << __func__ << std::endl;  //NOLINT
 
-    auto slot = session_socket_.look_for_slot();
-    data_channel_ = std::make_unique<stream_data_channel>(session_socket_, slot);
-    if (ch = data_channel_; ch != nullptr) {
-        session_socket_.send_result_set_hello(slot, name);
-        return tateyama::status::ok;
+    try {
+        auto slot = session_socket_.look_for_slot();
+        data_channel_ = std::make_unique<stream_data_channel>(session_socket_, slot);
+        if (ch = data_channel_; ch != nullptr) {
+            session_socket_.send_result_set_hello(slot, name);
+            return tateyama::status::ok;
+        }
+    } catch (std::exception &ex) {
+        LOG(ERROR) << ex.what();
     }
     return tateyama::status::unknown;
 }

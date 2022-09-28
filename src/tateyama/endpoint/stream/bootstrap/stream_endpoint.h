@@ -29,12 +29,17 @@ class stream_endpoint : public endpoint {
      * @brief setup the component (the state will be `ready`)
      */
     bool setup(environment& env) override {
-        // create listener object
-        listener_ = std::make_unique<tateyama::server::stream_listener>(
-            env.configuration(),
-            env.service_repository().find<framework::routing_service>()
-        );
-        return true;
+        try {
+            // create listener object
+            listener_ = std::make_unique<tateyama::server::stream_listener>(
+                env.configuration(),
+                env.service_repository().find<framework::routing_service>()
+            );
+            return true;
+        } catch (std::exception &ex) {
+            LOG(ERROR) << ex.what();
+            return false;
+        }
     }
 
     /**

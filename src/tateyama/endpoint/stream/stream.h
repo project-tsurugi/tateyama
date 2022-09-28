@@ -21,7 +21,7 @@
 #include <unistd.h>
 #include <memory>
 #include <string_view>
-// #include <array>
+#include <stdexcept>
 #include <vector>
 #include <iterator>
 #include <mutex>
@@ -80,10 +80,10 @@ public:
         std::string dummy;
 
         if (!await(info, slot, dummy)) {
-            std::abort();
+            throw std::runtime_error("socket is closed by the client");  //NOLINT
         }
         if (info != REQUEST_SESSION_HELLO) {
-            std::abort();
+            throw std::runtime_error("connect request message from the client is not as specified");  //NOLINT
         }
         slot_size_ = slot;
         in_use_.resize(slot_size_);
@@ -150,8 +150,7 @@ public:
                 return i;
             }
         }
-        LOG(ERROR) << "running out the slots for result set";
-        std::abort();
+        throw std::runtime_error("running out the slots for result set");  //NOLINT
     }
 
 // for session stream
@@ -192,14 +191,13 @@ private:
 
             if (FD_ISSET(socket_, &fds)) {  // NOLINT
                 if (auto size_i = ::recv(socket_, &info, 1, 0); size_i == 0) {
-                    DVLOG(log_trace) << "socket is closed by the client ";  //NOLINT
+                    DVLOG(log_trace) << "socket is closed by the client";  //NOLINT
                     return false;
                 }
 
                 char buffer[sizeof(std::uint16_t)];  // NOLINT
                 if (auto size_i = ::recv(socket_, &buffer[0], sizeof(std::uint16_t), 0); size_i != sizeof(std::uint16_t)) {  // NOLINT
-                    LOG(ERROR) << "received an incomplete message ";  //NOLINT
-                    std::abort();
+                    throw std::runtime_error("received an incomplete message ");  //NOLINT
                 }
                 slot = (strip(buffer[1]) << 8) | strip(buffer[0]);  // NOLINT
             }
@@ -223,11 +221,10 @@ private:
             case REQUEST_SESSION_HELLO:
                 DVLOG(log_trace) << "--> REQUEST_SESSION_HELLO ";  //NOLINT
                 recv(payload);
-                return true;  // no need to care about overflow of result set slot
-                break;
+                return true;  // supposed to return to stream_socket()
             default:
                 LOG(ERROR) << "illegal message type " << static_cast<std::uint32_t>(info);  //NOLINT
-                std::abort();
+                return false;  // to exit this thread
             }
         }
     }
@@ -277,8 +274,8 @@ private:
 
     void release_slot(unsigned int slot) {
         if (!in_use_.at(slot)) {
-            LOG(ERROR) << "slot " << slot << " is not using, abort due to inconsistent state";
-            std::abort();
+            LOG(ERROR) << "slot " << slot << " is not using";
+            return;
         }
         in_use_.at(slot) = false;
         slot_using_--;
@@ -296,7 +293,7 @@ public:
     explicit connection_socket(std::uint32_t port) {
         // create a pipe
         if (pipe(&pair_[0]) != 0) {
-            std::abort();
+            throw std::runtime_error("cannot create a pipe");  //NOLINT
         }
 
         // create a socket
@@ -308,8 +305,7 @@ public:
         socket_address.sin_port = htons(port);
         socket_address.sin_addr.s_addr = INADDR_ANY;
         if (bind(socket_, (struct sockaddr *) &socket_address, sizeof(socket_address)) != 0) {  // NOLINT
-            LOG(ERROR) << "bind error, probably another server is running on port: " << port;
-            std::abort();
+            throw std::runtime_error("bind error, probably another server is running on the same port");  //NOLINT
         }
         // listen the port
         listen(socket_, SOMAXCONN);
@@ -341,16 +337,16 @@ public:
         if (FD_ISSET(pair_[0], &fds)) {  //  NOLINT
             char trash{};
             if (read(pair_[0], &trash, sizeof(trash)) <= 0) {
-                std::abort();
+                throw std::runtime_error("pipe connection error");  //NOLINT
             }
             return nullptr;
         }
-        std::abort();
+        throw std::runtime_error("select error");  //NOLINT
     }
 
     void request_terminate() {
         if (write(pair_[1], "q", 1) <= 0) {
-            std::abort();
+            LOG(ERROR) << "fail to request terminate";
         }
     }
 
