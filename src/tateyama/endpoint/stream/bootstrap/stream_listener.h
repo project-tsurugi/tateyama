@@ -86,7 +86,14 @@ public:
         std::size_t session_id = 0x1000000000000000LL;
 
         while(true) {
-            if (auto stream = connection_socket_->accept(); stream != nullptr) {
+            std::unique_ptr<tateyama::common::stream::stream_socket> stream{};
+            try {
+                stream = connection_socket_->accept();
+            } catch (std::exception &ex) {
+                LOG(ERROR) << ex.what();
+                continue;
+            }
+            if (stream != nullptr) {
                 std::string session_name = std::to_string(session_id);
                 stream->send(session_name);
                 VLOG(log_debug) << "created session stream: " << session_name;
@@ -99,19 +106,18 @@ public:
                 if (workers_.size() < (index + 1)) {
                     workers_.resize(index + 1);
                 }
+                std::unique_ptr<stream_worker> &worker = workers_.at(index);
                 try {
-                    std::unique_ptr<stream_worker> &worker = workers_.at(index);
                     worker = std::make_unique<stream_worker>(*router_, session_id, std::move(stream));
-                    worker->task_ = std::packaged_task<void()>([&]{worker->run();});
-                    worker->future_ = worker->task_.get_future();
-                    worker->thread_ = std::thread(std::move(worker->task_));
-                    session_id++;
                 } catch (std::exception &ex) {
                     LOG(ERROR) << ex.what();
-                    workers_.clear();
-                    break;
+                    continue;
                 }
-            } else {
+                worker->task_ = std::packaged_task<void()>([&]{worker->run();});
+                worker->future_ = worker->task_.get_future();
+                worker->thread_ = std::thread(std::move(worker->task_));
+                session_id++;
+            } else {  // connect via pipe (request_terminate)
                 break;
             }
         }
