@@ -66,6 +66,11 @@ bool server::setup() {
         if (! success) return;
         success = arg.setup(*environment_);
     });
+    if(! success) {
+        LOG(ERROR) << "framework server setup step failed.";
+        // shutdown started component
+        shutdown();
+    }
     setup_done_ = success;
     return success;
 }
@@ -87,6 +92,11 @@ bool server::start() {
         if (! success) return;
         success = arg.start(*environment_);
     });
+    if(! success) {
+        LOG(ERROR) << "framework server start step failed.";
+        // shutdown started component
+        shutdown();
+    }
     return success;
 }
 

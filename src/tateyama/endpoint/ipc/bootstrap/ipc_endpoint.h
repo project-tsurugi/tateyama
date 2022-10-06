@@ -51,8 +51,13 @@ public:
      * @brief shutdown the component (the state will be `deactivated`)
      */
     bool shutdown(environment&) override {
-        listener_->terminate();
-        listener_thread_.join();
+        if(listener_) {
+            listener_->terminate();
+            listener_.reset();
+        }
+        if(listener_thread_.joinable()) {
+            listener_thread_.join();
+        }
         return true;
     }
 
