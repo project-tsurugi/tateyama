@@ -29,11 +29,11 @@ namespace tateyama::api::endpoint::ipc {
 
 class result_set_test : public ::testing::Test {
     virtual void SetUp() {
-        rv_ = system("if [ -f /dev/shm/tateyama-test ]; then rm -f /dev/shm/tateyama-test; fi ");
-        wire_ = std::make_unique<tateyama::common::wire::server_wire_container_impl>("tateyama-test");
+        rv_ = system("if [ -f /dev/shm/tateyama-result_set_test ]; then rm -f /dev/shm/tateyama-result_set_test; fi ");
+        wire_ = std::make_unique<tateyama::common::wire::server_wire_container_impl>("tateyama-result_set_test");
     }
     virtual void TearDown() {
-        rv_ = system("if [ -f /dev/shm/tateyama-test ]; then rm -f /dev/shm/tateyama-test*; fi ");
+        rv_ = system("if [ -f /dev/shm/tateyama-result_set_test ]; then rm -f /dev/shm/tateyama-result_set_test*; fi ");
     }
 
     int rv_;
