@@ -63,6 +63,19 @@ parameter=value
 |port | 整数 | stream_endpointに接続する際のport番号、default値は12345
 |threads | 整数 | stream_endpointの最大同時接続数
 
+## fdwセクション
+
+セクション名
+  - fdw
+
+対象コンポーネント
+  - ogawayama
+
+|パラメーター名 | 型 | 値 |備考|
+|---:| :---: | :--- |---|
+|name | 整数 | 文字列 | ogawayamaと接続する際のurl名、default値はtateyama（参）この文字列は/dev/shmに作成されるファイル名のprefixとして使われる
+|threads | 整数 | fdwの最大同時接続数
+
 ## sessionセクション
 
 セクション名
