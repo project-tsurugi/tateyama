@@ -98,7 +98,7 @@ public:
     stream_socket(stream_socket&& other) noexcept = delete;
     stream_socket& operator=(stream_socket&& other) noexcept = delete;
 
-    bool await(std::uint16_t& slot, std::string& payload) {
+    [[nodiscard]] bool await(std::uint16_t& slot, std::string& payload) {
         unsigned char info{};
         return await(info, slot, payload);
     }
@@ -196,32 +196,42 @@ private:
                 }
 
                 char buffer[sizeof(std::uint16_t)];  // NOLINT
-                if (auto size_i = ::recv(socket_, &buffer[0], sizeof(std::uint16_t), 0); size_i != sizeof(std::uint16_t)) {  // NOLINT
-                    throw std::runtime_error("received an incomplete message ");  //NOLINT
+                if (!recv(&buffer[0], sizeof(std::uint16_t))) {
+                        DVLOG(log_trace) << "socket is closed by the client abnormally";  //NOLINT
+                        return false;
                 }
                 slot = (strip(buffer[1]) << 8) | strip(buffer[0]);  // NOLINT
             }
             switch (info) {
             case REQUEST_SESSION_PAYLOAD:
                 DVLOG(log_trace) << "--> REQUEST_SESSION_PAYLOAD " << static_cast<std::uint32_t>(slot);  //NOLINT
-                recv(payload);
-                if (slot_using_ < slot_size_) {
-                    return true;
+                if (recv(payload)) {
+                    if (slot_using_ < slot_size_) {
+                        return true;
+                    }
+                    queue_.push(recv_entry(info, slot, payload));
+                    break;
                 }
-                queue_.push(recv_entry(info, slot, payload));
-                break;
+                DVLOG(log_trace) << "socket is closed by the client abnormally";  //NOLINT
+                return false;
             case REQUEST_RESULT_SET_BYE_OK:
             {
                 DVLOG(log_trace) << "--> REQUEST_RESULT_SET_BYE_OK " << static_cast<std::uint32_t>(slot);  //NOLINT
                 std::string dummy;
-                recv(dummy);
-                release_slot(slot);
-                break;
+                if (recv(dummy)) {
+                    release_slot(slot);
+                    break;
+                }
+                DVLOG(log_trace) << "socket is closed by the client abnormally";  //NOLINT
+                return false;
             }
             case REQUEST_SESSION_HELLO:
                 DVLOG(log_trace) << "--> REQUEST_SESSION_HELLO ";  //NOLINT
-                recv(payload);
-                return true;  // supposed to return to stream_socket()
+                if (recv(payload)) {
+                    return true;  // supposed to return to stream_socket()
+                }
+                DVLOG(log_trace) << "socket is closed by the client abnormally";  //NOLINT
+                return false;
             default:
                 LOG(ERROR) << "illegal message type " << static_cast<std::uint32_t>(info);  //NOLINT
                 return false;  // to exit this thread
@@ -232,23 +242,35 @@ private:
         return (static_cast<std::uint32_t>(c) & 0xff);  // NOLINT
     }
 
-    void recv(std::string& payload) {
+    [[nodiscard]] bool recv(std::string& payload) {
         char buffer[4];  // NOLINT
-
-        std::int64_t size_l = ::recv(socket_, &buffer[0], sizeof(int), 0);
-        while (size_l < static_cast<std::int64_t>(sizeof(int))) {
-            size_l += ::recv(socket_, &buffer[size_l], sizeof(int) - size_l, 0);  // NOLINT
+        if (!recv(&buffer[0], sizeof(int))) {
+            return false;
         }
         unsigned int length = (strip(buffer[3]) << 24) | (strip(buffer[2]) << 16) | (strip(buffer[1]) << 8) | strip(buffer[0]);  // NOLINT
 
         if (length > 0) {
             payload.resize(length);
             char *data_buffer = payload.data();
-            auto size_v = ::recv(socket_, data_buffer, length, 0);
-            while (size_v < length) {
-                size_v += ::recv(socket_, data_buffer + size_v, length - size_v, 0);  // NOLINT
+            if (!recv(data_buffer, length)) {
+                return false;
             }
         }
+        return true;
+    }
+    [[nodiscard]] bool recv(char* to, const std::size_t size) {  // NOLINT
+        auto received = ::recv(socket_, to, size, 0);
+        if (received == 0) {
+            return false;
+        }
+        while (received < static_cast<std::int64_t>(size)) {
+            auto s = ::recv(socket_, to + received, size - received, 0);  // NOLINT
+            if (s == 0) {
+                return false;
+            }
+            received += s;
+        }
+        return true;
     }
 
     void send_response(unsigned char info, std::uint16_t slot, std::string_view payload) {  // a support function, assumes caller hold lock
