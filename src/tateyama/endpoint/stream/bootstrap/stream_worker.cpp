@@ -22,17 +22,22 @@ namespace tateyama::server {
 
 void stream_worker::run()
 {
-    while(true) {
-        std::uint16_t slot{};
-        std::string payload{};
-        if (!session_stream_->await(slot, payload)) { break; }
+    std::string session_name = std::to_string(session_id_);
+    if (session_stream_->wait_hello(session_name)) {
+        while(true) {
+            std::uint16_t slot{};
+            std::string payload{};
+            if (!session_stream_->await(slot, payload)) {
+                session_stream_->close();
+                break;
+            }
 
-        auto request = std::make_shared<tateyama::common::stream::stream_request>(*session_stream_, payload);
-        auto response = std::make_shared<tateyama::common::stream::stream_response>(*request, slot);
-        service_(static_cast<std::shared_ptr<tateyama::api::server::request>>(request),
-                 static_cast<std::shared_ptr<tateyama::api::server::response>>(std::move(response)));
-        request = nullptr;
-        if (session_stream_->is_session_closed()) { break; }
+            auto request = std::make_shared<tateyama::common::stream::stream_request>(*session_stream_, payload);
+            auto response = std::make_shared<tateyama::common::stream::stream_response>(*request, slot);
+            service_(static_cast<std::shared_ptr<tateyama::api::server::request>>(request),
+                     static_cast<std::shared_ptr<tateyama::api::server::response>>(std::move(response)));
+            request = nullptr;
+        }
     }
 }
 

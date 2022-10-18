@@ -94,9 +94,7 @@ public:
                 continue;
             }
             if (stream != nullptr) {
-                std::string session_name = std::to_string(session_id);
-                stream->send(session_name);
-                VLOG(log_debug) << "created session stream: " << session_name;
+                DVLOG(log_trace) << "created session stream: " << session_id;
                 std::size_t index = 0;
                 for (; index < workers_.size() ; index++) {
                     if (auto rv = workers_.at(index)->future_.wait_for(std::chrono::seconds(0)) ; rv == std::future_status::ready) {

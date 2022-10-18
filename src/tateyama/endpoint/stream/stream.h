@@ -43,6 +43,7 @@ class stream_socket
     static constexpr unsigned char REQUEST_SESSION_HELLO = 1;
     static constexpr unsigned char REQUEST_SESSION_PAYLOAD = 2;
     static constexpr unsigned char REQUEST_RESULT_SET_BYE_OK = 3;
+    static constexpr unsigned char REQUEST_SESSION_BYE = 4;
 
     static constexpr unsigned char RESPONSE_SESSION_PAYLOAD = 1;
     static constexpr unsigned char RESPONSE_RESULT_SET_PAYLOAD = 2;
@@ -74,29 +75,37 @@ class stream_socket
     };
 
 public:
-    explicit stream_socket(int socket) : socket_(socket) {
+    explicit stream_socket(int socket) noexcept : socket_(socket) {
+    }
+
+    ~stream_socket() {
+        close();
+    }
+
+    stream_socket(stream_socket const& other) = delete;
+    stream_socket& operator=(stream_socket const& other) = delete;
+    stream_socket(stream_socket&& other) noexcept = delete;
+    stream_socket& operator=(stream_socket&& other) noexcept = delete;
+
+    [[nodiscard]] bool wait_hello(std::string_view session_name) {
         unsigned char info{};
         std::uint16_t slot{};
         std::string dummy;
 
         if (!await(info, slot, dummy)) {
-            throw std::runtime_error("socket is closed by the client");  //NOLINT
+            return false;
         }
         if (info != REQUEST_SESSION_HELLO) {
-            throw std::runtime_error("connect request message from the client is not as specified");  //NOLINT
+            return false;
         }
         slot_size_ = slot;
         in_use_.resize(slot_size_);
         for (unsigned int i = 0; i < slot_size_; i++) {
             in_use_.at(i) = false;
         }
+        send(session_name);
+        return true;
     }
-    ~stream_socket() { close(socket_); }
-
-    stream_socket(stream_socket const& other) = delete;
-    stream_socket& operator=(stream_socket const& other) = delete;
-    stream_socket(stream_socket&& other) noexcept = delete;
-    stream_socket& operator=(stream_socket&& other) noexcept = delete;
 
     [[nodiscard]] bool await(std::uint16_t& slot, std::string& payload) {
         unsigned char info{};
@@ -142,6 +151,13 @@ public:
         send_payload(payload);
     }
 
+    void close() {
+        if (!session_closed_) {
+            ::close(socket_);
+            session_closed_ = true;
+        }
+    }
+
     unsigned int look_for_slot() {
         for (unsigned int i = 0; i < slot_size_; i++) {  // FIXME more efficient
             if (!in_use_.at(i)) {
@@ -152,10 +168,6 @@ public:
         }
         throw std::runtime_error("running out the slots for result set");  //NOLINT
     }
-
-// for session stream
-    void close_session() { session_closed_ = true; }
-    [[nodiscard]] bool is_session_closed() const { return session_closed_; }
 
 private:
     int socket_;
@@ -184,7 +196,7 @@ private:
             FD_ZERO(&fds);  // NOLINT
             FD_SET(socket_, &fds);  // NOLINT
             tv.tv_sec = 0;
-            tv.tv_usec = 50000;  // 50(mS)
+            tv.tv_usec = 500000;  // 500(mS)
             if (auto rv = select(socket_ + 1, &fds, nullptr, nullptr, &tv); rv == 0) {
                 continue;
             }
@@ -229,6 +241,13 @@ private:
                 DVLOG(log_trace) << "--> REQUEST_SESSION_HELLO ";  //NOLINT
                 if (recv(payload)) {
                     return true;  // supposed to return to stream_socket()
+                }
+                DVLOG(log_trace) << "socket is closed by the client abnormally";  //NOLINT
+                return false;
+            case REQUEST_SESSION_BYE:
+                DVLOG(log_trace) << "--> REQUEST_SESSION_BYE ";  //NOLINT
+                if (recv(payload)) {
+                    return false;
                 }
                 DVLOG(log_trace) << "socket is closed by the client abnormally";  //NOLINT
                 return false;
