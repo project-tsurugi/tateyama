@@ -45,6 +45,7 @@ bool transactional_kvs_resource::setup(environment& env) {
         LOG(ERROR) << "opening database failed";
         return false;
     }
+    db_opened_ = true;
     return true;
 }
 
@@ -54,6 +55,9 @@ bool transactional_kvs_resource::start(environment&) {
 }
 
 bool transactional_kvs_resource::shutdown(environment&) {
+    if(! db_opened_) {
+        return true;
+    }
     if(auto res = sharksfin::database_close(database_handle_); res != sharksfin::StatusCode::OK) {
         LOG(ERROR) << "closing database failed";
         // proceed to dispose db even on error
@@ -62,6 +66,7 @@ bool transactional_kvs_resource::shutdown(environment&) {
         LOG(ERROR) << "disposing database failed";
         return false;
     }
+    db_opened_ = false;
     return true;
 }
 

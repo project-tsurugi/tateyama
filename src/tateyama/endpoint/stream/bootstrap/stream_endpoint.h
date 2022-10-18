@@ -54,13 +54,13 @@ class stream_endpoint : public endpoint {
      * @brief shutdown the component (the state will be `deactivated`)
      */
     bool shutdown(environment&) override {
-        if(listener_) {
-            listener_->terminate();
-            listener_.reset();
-        }
         if(listener_thread_.joinable()) {
+            if(listener_) {
+                listener_->terminate();
+            }
             listener_thread_.join();
         }
+        listener_.reset();
         return true;
     }
 private:

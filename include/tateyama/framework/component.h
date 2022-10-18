@@ -55,16 +55,24 @@ public:
 
     /**
      * @brief setup the component (the state will be `ready`)
+     * @return true when setup completed successfully
+     * @return false otherwise
      */
     virtual bool setup(environment&) = 0;
 
     /**
      * @brief start the component (the state will be `activated`)
+     * @return true when start completed successfully
+     * @return false otherwise
      */
     virtual bool start(environment&) = 0;
 
     /**
      * @brief shutdown the component (the state will be `deactivated`)
+     * @return true when shutdown completed successfully, or component is already deactivated
+     * @return false otherwise
+     * @note shutdown is an idempotent operation, meaning second call to the already deactivated component should be
+     * simply ignored and return true.
      */
     virtual bool shutdown(environment&) = 0;
 
