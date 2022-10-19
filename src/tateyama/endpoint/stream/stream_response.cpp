@@ -94,10 +94,11 @@ tateyama::status stream_response::release_channel(tateyama::api::server::data_ch
     return tateyama::status::unknown;
 }
 
+
+// deprecated
 tateyama::status stream_response::close_session() {
     VLOG(log_trace) << __func__ << std::endl;  //NOLINT
 
-    session_socket_.close_session();
     return tateyama::status::ok;
 }
 
