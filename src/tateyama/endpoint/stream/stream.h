@@ -119,11 +119,11 @@ public:
     }
     void send(std::uint16_t slot, std::string_view payload, bool body) {  // for RESPONSE_SESSION_PAYLOAD
         if (body) {
-            DVLOG(log_trace) << "<-- RESPONSE_SESSION_PAYLOAD ";  //NOLINT
+            DVLOG(log_trace) << "<-- RESPONSE_SESSION_PAYLOAD " << static_cast<std::uint32_t>(slot);  //NOLINT
             std::unique_lock<std::mutex> lock(mutex_);
             send_response(RESPONSE_SESSION_PAYLOAD, slot, payload);
         } else {
-            DVLOG(log_trace) << "<-- RESPONSE_SESSION_BODYHEAD ";  //NOLINT
+            DVLOG(log_trace) << "<-- RESPONSE_SESSION_BODYHEAD " << static_cast<std::uint32_t>(slot);  //NOLINT
             std::unique_lock<std::mutex> lock(mutex_);
             send_response(RESPONSE_SESSION_BODYHEAD, slot, payload);
         }
