@@ -16,6 +16,7 @@
 #pragma once
 
 #include <string_view>
+#include <array>
 
 #include <tateyama/api/server/request.h>
 
@@ -28,15 +29,29 @@ namespace tateyama::common::wire {
  * @brief request object for ipc_endpoint
  */
 class ipc_request : public tateyama::api::server::request {
+    constexpr static std::size_t SPO_SIZE = 256;
+
 public:
     ipc_request(server_wire_container& server_wire, message_header& header)
-        : server_wire_(server_wire), length_(header.get_length()), read_point(server_wire_.get_request_wire()->read_point()) {
-        auto message = server_wire_.get_request_wire()->payload();
+        : server_wire_(server_wire), length_(header.get_length()) {
+        std::string_view message{};
+        auto *request_wire = server_wire_.get_request_wire();
+
+        read_point_ = request_wire->read_point();
+        if (length_ <= SPO_SIZE) {
+            request_wire->read(spo_.data());
+            message = std::string_view(spo_.data(), length_);
+        } else {
+            long_payload_.resize(length_);
+            request_wire->read(long_payload_.data());
+            message = std::string_view(long_payload_.data(), length_);
+        }
         endpoint::common::parse_result res{};
         endpoint::common::parse_header(message, res); // TODO handle error
         payload_ = res.payload_;
         session_id_ = res.session_id_;
         service_id_ = res.service_id_;
+        request_wire->dispose(read_point_);
     }
 
     ipc_request() = delete;
@@ -49,10 +64,12 @@ public:
 private:
     server_wire_container& server_wire_;
     const std::size_t length_;
-    const std::size_t read_point;
+    std::size_t read_point_;
     std::size_t session_id_{};
     std::size_t service_id_{};
     std::string_view payload_{};
+    std::array<char, SPO_SIZE> spo_{};
+    std::string long_payload_{};
 };
 
 }  // tateyama::common::wire
