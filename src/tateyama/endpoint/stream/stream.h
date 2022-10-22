@@ -43,7 +43,6 @@ class stream_socket
     static constexpr unsigned char REQUEST_SESSION_HELLO = 1;
     static constexpr unsigned char REQUEST_SESSION_PAYLOAD = 2;
     static constexpr unsigned char REQUEST_RESULT_SET_BYE_OK = 3;
-    static constexpr unsigned char REQUEST_SESSION_BYE = 4;
 
     static constexpr unsigned char RESPONSE_SESSION_PAYLOAD = 1;
     static constexpr unsigned char RESPONSE_RESULT_SET_PAYLOAD = 2;
@@ -241,13 +240,6 @@ private:
                 DVLOG(log_trace) << "--> REQUEST_SESSION_HELLO ";  //NOLINT
                 if (recv(payload)) {
                     return true;  // supposed to return to stream_socket()
-                }
-                DVLOG(log_trace) << "socket is closed by the client abnormally";  //NOLINT
-                return false;
-            case REQUEST_SESSION_BYE:
-                DVLOG(log_trace) << "--> REQUEST_SESSION_BYE ";  //NOLINT
-                if (recv(payload)) {
-                    return false;
                 }
                 DVLOG(log_trace) << "socket is closed by the client abnormally";  //NOLINT
                 return false;
