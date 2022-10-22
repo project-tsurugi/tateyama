@@ -58,6 +58,12 @@ void bridge::whole(state s) {
     }
 }
 
+void bridge::wait_for_shutdown() {
+    if (resource_status_memory_) {
+        resource_status_memory_->wait_for_shutdown();
+    }
+}
+
 void bridge::set_digest(const std::string& path_string) {
     MD5_CTX mdContext;
     unsigned int len = path_string.length();

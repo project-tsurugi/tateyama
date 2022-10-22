@@ -49,7 +49,7 @@ class bridge : public framework::resource {
         shm_remover& operator=(shm_remover const& other) = delete;
         shm_remover(shm_remover&& other) noexcept = delete;
         shm_remover& operator=(shm_remover&& other) noexcept = delete;
-        
+
     private:
         std::string name_;
     };
@@ -95,6 +95,11 @@ public:
      * @brief set status in resource_status_memory
      */
     void whole(state s);
+
+    /**
+     * @brief wait for a shutdown request
+     */
+    void wait_for_shutdown();
 
 private:
     bool deactivated_{false};

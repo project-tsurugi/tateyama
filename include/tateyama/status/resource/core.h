@@ -22,8 +22,11 @@
 #include <boost/interprocess/managed_shared_memory.hpp>
 #include <boost/interprocess/containers/map.hpp>
 #include <boost/interprocess/allocators/allocator.hpp>
-#include <boost/atomic/atomic_flag.hpp>
+#include <boost/atomic/atomic.hpp>
 #include <boost/memory_order.hpp>
+#include <boost/interprocess/sync/scoped_lock.hpp>
+#include <boost/interprocess/sync/interprocess_mutex.hpp>
+#include <boost/interprocess/sync/interprocess_condition.hpp>
 
 #include <tateyama/framework/component.h>
 
@@ -46,6 +49,7 @@ class resource_status_memory {
   public:
     static constexpr std::string_view area_name = "status_info";
 
+    // placed on a boost shared memory
     class resource_status {
       public:
         using void_allocator = boost::interprocess::allocator<void, boost::interprocess::managed_shared_memory::segment_manager>;
@@ -58,20 +62,44 @@ class resource_status_memory {
     
         explicit resource_status(const void_allocator& allocator)
             : resource_status_map_(allocator), service_status_map_(allocator), endpoint_status_map_(allocator) {
-            shutdown_.clear(boost::memory_order_relaxed);
+            shutdown_requested_.store(false, boost::memory_order_relaxed);
         }
     
       private:
+        [[nodiscard]] bool test_and_set_shutdown() {
+            bool expected = false;
+            return shutdown_requested_.compare_exchange_strong(expected, true, boost::memory_order_acq_rel);
+        }
+        [[nodiscard]] bool request_shutdown() {
+            boost::interprocess::scoped_lock lock(m_shutdown_);
+            if (!test_and_set_shutdown()) {
+                return false;
+            }
+            lock.unlock();
+            c_shutdown_.notify_one();
+            return true;
+        }
+        void wait_for_shutdown() {
+            boost::interprocess::scoped_lock lock(m_shutdown_);
+            while (!shutdown_requested_.load(boost::memory_order_acquire)) {
+                c_shutdown_.wait(lock);
+            }
+            lock.unlock();
+        }
+
         shared_memory_map resource_status_map_;
         shared_memory_map service_status_map_;
         shared_memory_map endpoint_status_map_;
         state whole_{};
         pid_t pid_{};
-        boost::atomic_flag shutdown_{};
+        boost::atomic<bool> shutdown_requested_{};
+        boost::interprocess::interprocess_mutex m_shutdown_{};
+        boost::interprocess::interprocess_condition c_shutdown_{};
 
         friend class resource_status_memory;
     };
 
+    // serves as a relay for access to resource_status
     explicit resource_status_memory(boost::interprocess::managed_shared_memory& mem, bool owner = true) : mem_(mem), owner_(owner) {
         std::string name(area_name);
         if (owner) {
@@ -104,12 +132,22 @@ class resource_status_memory {
     [[nodiscard]] state whole() const {
         return resource_status_->whole_;
     }
-    [[nodiscard]] bool shutdown() {
-        return resource_status_->shutdown_.test_and_set(boost::memory_order_relaxed);
-    }
     [[nodiscard]] bool valid() {
         return resource_status_ != nullptr;
     }
+    [[nodiscard]] bool is_shutdown_requested() {
+        return resource_status_->shutdown_requested_.load(boost::memory_order_acquire);
+    }
+    [[nodiscard]] bool request_shutdown() {
+        return resource_status_->request_shutdown();
+    }
+    void wait_for_shutdown() {
+        resource_status_->wait_for_shutdown();
+    }
+    // obsolete
+    [[nodiscard]] bool shutdown() {
+        return is_shutdown_requested();
+            }
 
 private:
     resource_status* resource_status_{};
