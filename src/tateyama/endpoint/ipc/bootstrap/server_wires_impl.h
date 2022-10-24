@@ -146,6 +146,9 @@ public:
         std::string_view payload() override {
             return wire_->payload(bip_buffer_);
         }
+        void read(char* to) override {
+            wire_->read(to, bip_buffer_);
+        }
         std::size_t read_point() override { return wire_->read_point(); }
         void dispose(const std::size_t rp) override { wire_->dispose(bip_buffer_, rp); }
 

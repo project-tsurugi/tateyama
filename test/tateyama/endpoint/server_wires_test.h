@@ -175,6 +175,9 @@ public:
         std::string_view payload() override {
             return wire_->payload(bip_buffer_);
         }
+        void read(char *to) override {
+            return wire_->read(to, bip_buffer_);
+        }
         void brand_new() {
             wire_->brand_new();
         }

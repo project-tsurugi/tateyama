@@ -36,8 +36,6 @@ ipc_request::payload() const {
 void
 ipc_request::dispose() {
     VLOG(log_trace) << __func__ << std::endl;  //NOLINT
-
-    server_wire_.get_request_wire()->dispose(read_point);
 }
 
 std::size_t ipc_request::session_id() const {

@@ -43,7 +43,6 @@ class stream_socket
     static constexpr unsigned char REQUEST_SESSION_HELLO = 1;
     static constexpr unsigned char REQUEST_SESSION_PAYLOAD = 2;
     static constexpr unsigned char REQUEST_RESULT_SET_BYE_OK = 3;
-    static constexpr unsigned char REQUEST_SESSION_BYE = 4;
 
     static constexpr unsigned char RESPONSE_SESSION_PAYLOAD = 1;
     static constexpr unsigned char RESPONSE_RESULT_SET_PAYLOAD = 2;
@@ -119,11 +118,11 @@ public:
     }
     void send(std::uint16_t slot, std::string_view payload, bool body) {  // for RESPONSE_SESSION_PAYLOAD
         if (body) {
-            DVLOG(log_trace) << "<-- RESPONSE_SESSION_PAYLOAD ";  //NOLINT
+            DVLOG(log_trace) << "<-- RESPONSE_SESSION_PAYLOAD " << static_cast<std::uint32_t>(slot);  //NOLINT
             std::unique_lock<std::mutex> lock(mutex_);
             send_response(RESPONSE_SESSION_PAYLOAD, slot, payload);
         } else {
-            DVLOG(log_trace) << "<-- RESPONSE_SESSION_BODYHEAD ";  //NOLINT
+            DVLOG(log_trace) << "<-- RESPONSE_SESSION_BODYHEAD " << static_cast<std::uint32_t>(slot);  //NOLINT
             std::unique_lock<std::mutex> lock(mutex_);
             send_response(RESPONSE_SESSION_BODYHEAD, slot, payload);
         }
@@ -241,13 +240,6 @@ private:
                 DVLOG(log_trace) << "--> REQUEST_SESSION_HELLO ";  //NOLINT
                 if (recv(payload)) {
                     return true;  // supposed to return to stream_socket()
-                }
-                DVLOG(log_trace) << "socket is closed by the client abnormally";  //NOLINT
-                return false;
-            case REQUEST_SESSION_BYE:
-                DVLOG(log_trace) << "--> REQUEST_SESSION_BYE ";  //NOLINT
-                if (recv(payload)) {
-                    return false;
                 }
                 DVLOG(log_trace) << "socket is closed by the client abnormally";  //NOLINT
                 return false;
