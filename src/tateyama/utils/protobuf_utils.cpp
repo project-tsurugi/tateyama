@@ -79,7 +79,7 @@ bool SerializeDelimitedToCodedStream(
     google::protobuf::io::CodedOutputStream* output
 ) {
     // Write the size.
-    size_t size = message.ByteSize();
+    size_t size = message.ByteSizeLong();
     if (size > INT_MAX) return false;
 
     output->WriteVarint32(size);
