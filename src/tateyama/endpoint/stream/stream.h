@@ -43,6 +43,7 @@ class stream_socket
     static constexpr unsigned char REQUEST_SESSION_HELLO = 1;
     static constexpr unsigned char REQUEST_SESSION_PAYLOAD = 2;
     static constexpr unsigned char REQUEST_RESULT_SET_BYE_OK = 3;
+    static constexpr unsigned char REQUEST_SESSION_BYE = 4;
 
     static constexpr unsigned char RESPONSE_SESSION_PAYLOAD = 1;
     static constexpr unsigned char RESPONSE_RESULT_SET_PAYLOAD = 2;
@@ -51,6 +52,7 @@ class stream_socket
     static constexpr unsigned char RESPONSE_RESULT_SET_HELLO = 5;
     static constexpr unsigned char RESPONSE_RESULT_SET_BYE = 6;
     static constexpr unsigned char RESPONSE_SESSION_BODYHEAD = 7;
+    static constexpr unsigned char RESPONSE_SESSION_BYE_OK = 8;
 
     static constexpr unsigned int SLOT_SIZE = 16;
 
@@ -112,34 +114,32 @@ public:
     }
 
     void send(std::string_view payload) {  // for RESPONSE_SESSION_HELLO_OK
-        std::unique_lock<std::mutex> lock(mutex_);
-        DVLOG(log_trace) << "<-- RESPONSE_SESSION_HELLO_OK ";  //NOLINT
+        VLOG(log_trace) << "<-- RESPONSE_SESSION_HELLO_OK ";  //NOLINT
         send_response(RESPONSE_SESSION_HELLO_OK, 0, payload);
     }
     void send(std::uint16_t slot, std::string_view payload, bool body) {  // for RESPONSE_SESSION_PAYLOAD
         if (body) {
-            DVLOG(log_trace) << "<-- RESPONSE_SESSION_PAYLOAD " << static_cast<std::uint32_t>(slot);  //NOLINT
-            std::unique_lock<std::mutex> lock(mutex_);
+            VLOG(log_trace) << "<-- RESPONSE_SESSION_PAYLOAD " << static_cast<std::uint32_t>(slot);  //NOLINT
             send_response(RESPONSE_SESSION_PAYLOAD, slot, payload);
         } else {
-            DVLOG(log_trace) << "<-- RESPONSE_SESSION_BODYHEAD " << static_cast<std::uint32_t>(slot);  //NOLINT
-            std::unique_lock<std::mutex> lock(mutex_);
+            VLOG(log_trace) << "<-- RESPONSE_SESSION_BODYHEAD " << static_cast<std::uint32_t>(slot);  //NOLINT
             send_response(RESPONSE_SESSION_BODYHEAD, slot, payload);
         }
     }
     void send_result_set_hello(std::uint16_t slot, std::string_view name) {  // for RESPONSE_RESULT_SET_HELLO
-        DVLOG(log_trace)  << "<-- RESPONSE_RESULT_SET_HELLO " << static_cast<std::uint32_t>(slot) << ", " << name;  //NOLINT
-        std::unique_lock<std::mutex> lock(mutex_);
+        VLOG(log_trace)  << "<-- RESPONSE_RESULT_SET_HELLO " << static_cast<std::uint32_t>(slot) << ", " << name;  //NOLINT
         send_response(RESPONSE_RESULT_SET_HELLO, slot, name);
     }
     void send_result_set_bye(std::uint16_t slot) {  // for RESPONSE_RESULT_SET_BYE
-        DVLOG(log_trace) << "<-- RESPONSE_RESULT_SET_BYE " << static_cast<std::uint32_t>(slot);  //NOLINT
-        std::unique_lock<std::mutex> lock(mutex_);
+        VLOG(log_trace) << "<-- RESPONSE_RESULT_SET_BYE " << static_cast<std::uint32_t>(slot);  //NOLINT
         send_response(RESPONSE_RESULT_SET_BYE, slot, "");
     }
     void send(std::uint16_t slot, unsigned char writer, std::string_view payload) { // for RESPONSE_RESULT_SET_PAYLOAD
-        DVLOG(log_trace) << "<-- RESPONSE_RESULT_SET_PAYLOAD " << static_cast<std::uint32_t>(slot) << ", " << static_cast<std::uint32_t>(writer);  //NOLINT
+        VLOG(log_trace) << "<-- RESPONSE_RESULT_SET_PAYLOAD " << static_cast<std::uint32_t>(slot) << ", " << static_cast<std::uint32_t>(writer);  //NOLINT
         std::unique_lock<std::mutex> lock(mutex_);
+        if (session_closed_) {
+            return;
+        }
         unsigned char info = RESPONSE_RESULT_SET_PAYLOAD;
         ::send(socket_, &info, 1, 0);
         char buffer[sizeof(std::uint16_t)];  // NOLINT
@@ -151,9 +151,10 @@ public:
     }
 
     void close() {
-        if (!session_closed_) {
+        std::unique_lock<std::mutex> lock(mutex_);
+        if (!socket_closed_) {
             ::close(socket_);
-            session_closed_ = true;
+            socket_closed_ = true;
         }
     }
 
@@ -171,6 +172,7 @@ public:
 private:
     int socket_;
     bool session_closed_{false};
+    bool socket_closed_{false};
     std::vector<bool> in_use_{};
     std::mutex mutex_{};
     std::atomic_uint slot_using_{};
@@ -178,7 +180,7 @@ private:
     std::size_t slot_size_{SLOT_SIZE};
 
     bool await(unsigned char& info, std::uint16_t& slot, std::string& payload) {
-        DVLOG(log_trace) << "-- enter waiting REQUEST --";  //NOLINT
+        VLOG(log_trace) << "-- enter waiting REQUEST --";  //NOLINT
 
         while (true) {
             if (!queue_.empty() && slot_using_ < slot_size_) {
@@ -202,20 +204,20 @@ private:
 
             if (FD_ISSET(socket_, &fds)) {  // NOLINT
                 if (auto size_i = ::recv(socket_, &info, 1, 0); size_i == 0) {
-                    DVLOG(log_trace) << "socket is closed by the client";  //NOLINT
+                    VLOG(log_trace) << "socket is closed by the client";  //NOLINT
                     return false;
                 }
 
                 char buffer[sizeof(std::uint16_t)];  // NOLINT
                 if (!recv(&buffer[0], sizeof(std::uint16_t))) {
-                        DVLOG(log_trace) << "socket is closed by the client abnormally";  //NOLINT
+                        VLOG(log_trace) << "socket is closed by the client abnormally";  //NOLINT
                         return false;
                 }
                 slot = (strip(buffer[1]) << 8) | strip(buffer[0]);  // NOLINT
             }
             switch (info) {
             case REQUEST_SESSION_PAYLOAD:
-                DVLOG(log_trace) << "--> REQUEST_SESSION_PAYLOAD " << static_cast<std::uint32_t>(slot);  //NOLINT
+                VLOG(log_trace) << "--> REQUEST_SESSION_PAYLOAD " << static_cast<std::uint32_t>(slot);  //NOLINT
                 if (recv(payload)) {
                     if (slot_using_ < slot_size_) {
                         return true;
@@ -223,25 +225,37 @@ private:
                     queue_.push(recv_entry(info, slot, payload));
                     break;
                 }
-                DVLOG(log_trace) << "socket is closed by the client abnormally";  //NOLINT
+                VLOG(log_trace) << "socket is closed by the client abnormally";  //NOLINT
                 return false;
             case REQUEST_RESULT_SET_BYE_OK:
             {
-                DVLOG(log_trace) << "--> REQUEST_RESULT_SET_BYE_OK " << static_cast<std::uint32_t>(slot);  //NOLINT
+                VLOG(log_trace) << "--> REQUEST_RESULT_SET_BYE_OK " << static_cast<std::uint32_t>(slot);  //NOLINT
                 std::string dummy;
                 if (recv(dummy)) {
                     release_slot(slot);
                     break;
                 }
-                DVLOG(log_trace) << "socket is closed by the client abnormally";  //NOLINT
+                VLOG(log_trace) << "socket is closed by the client abnormally";  //NOLINT
                 return false;
             }
             case REQUEST_SESSION_HELLO:
-                DVLOG(log_trace) << "--> REQUEST_SESSION_HELLO ";  //NOLINT
+                VLOG(log_trace) << "--> REQUEST_SESSION_HELLO ";  //NOLINT
                 if (recv(payload)) {
                     return true;  // supposed to return to stream_socket()
                 }
-                DVLOG(log_trace) << "socket is closed by the client abnormally";  //NOLINT
+                VLOG(log_trace) << "socket is closed by the client abnormally";  //NOLINT
+                return false;
+            case REQUEST_SESSION_BYE:
+                VLOG(log_trace) << "--> REQUEST_SESSION_BYE ";  //NOLINT
+                if (recv(payload)) {
+                    do {std::unique_lock<std::mutex> lock(mutex_);
+                        session_closed_ = true;
+                    } while (false);
+                    VLOG(log_trace) << "<-- RESPONSE_SESSION_BYE_OK ";  //NOLINT
+                    send_response(RESPONSE_SESSION_BYE_OK, 0, "", true);
+                    continue;
+                }
+                VLOG(log_trace) << "socket is closed by the client abnormally";  //NOLINT
                 return false;
             default:
                 LOG(ERROR) << "illegal message type " << static_cast<std::uint32_t>(info);  //NOLINT
@@ -284,9 +298,13 @@ private:
         return true;
     }
 
-    void send_response(unsigned char info, std::uint16_t slot, std::string_view payload) {  // a support function, assumes caller hold lock
-        ::send(socket_, &info, 1, 0);
+    void send_response(unsigned char info, std::uint16_t slot, std::string_view payload, bool force = false) {  // a support function, assumes caller hold lock
         char buffer[sizeof(std::uint16_t)];  // NOLINT
+        std::unique_lock<std::mutex> lock(mutex_);
+        if (session_closed_ && !force) {
+            return;
+        }
+        ::send(socket_, &info, 1, 0);
         buffer[0] = slot & 0xff;  // NOLINT
         buffer[1] = (slot / 0x100) & 0xff;  // NOLINT
         ::send(socket_, &buffer[0], sizeof(std::uint16_t), 0);

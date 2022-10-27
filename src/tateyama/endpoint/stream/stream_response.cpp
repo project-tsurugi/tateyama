@@ -33,12 +33,12 @@ stream_response::stream_response(stream_request& request, unsigned char index)
 }
 
 tateyama::status stream_response::body(std::string_view body) {
-    VLOG(log_trace) << __func__ << std::endl;  //NOLINT
+    DVLOG(log_trace) << __func__ << std::endl;  //NOLINT
     std::stringstream ss{};
     endpoint::common::header_content arg{};
     arg.session_id_ = session_id_;
     if(auto res = endpoint::common::append_response_header(ss, body, arg); ! res) {
-        VLOG(log_error) << "error formatting response message";
+        DVLOG(log_error) << "error formatting response message";
         return status::unknown;
     }
     auto s = ss.str();
@@ -47,12 +47,12 @@ tateyama::status stream_response::body(std::string_view body) {
 }
 
 tateyama::status stream_response::body_head(std::string_view body_head) {
-    VLOG(log_trace) << __func__ << std::endl;  //NOLINT
+    DVLOG(log_trace) << __func__ << std::endl;  //NOLINT
     std::stringstream ss{};
     endpoint::common::header_content arg{};
     arg.session_id_ = session_id_;
     if(auto res = endpoint::common::append_response_header(ss, body_head, arg); ! res) {
-        VLOG(log_error) << "error formatting response message";
+        DVLOG(log_error) << "error formatting response message";
         return status::unknown;
     }
     auto s = ss.str();
@@ -61,13 +61,13 @@ tateyama::status stream_response::body_head(std::string_view body_head) {
 }
 
 void stream_response::code(tateyama::api::server::response_code code) {
-    VLOG(log_trace) << __func__ << std::endl;  //NOLINT
+    DVLOG(log_trace) << __func__ << std::endl;  //NOLINT
 
     response_code_ = code;
 }
 
 tateyama::status stream_response::acquire_channel(std::string_view name, std::shared_ptr<tateyama::api::server::data_channel>& ch) {
-    VLOG(log_trace) << __func__ << std::endl;  //NOLINT
+    DVLOG(log_trace) << __func__ << std::endl;  //NOLINT
 
     try {
         auto slot = session_socket_.look_for_slot();
@@ -83,7 +83,7 @@ tateyama::status stream_response::acquire_channel(std::string_view name, std::sh
 }
 
 tateyama::status stream_response::release_channel(tateyama::api::server::data_channel& ch) {
-    VLOG(log_trace) << __func__ << std::endl;  //NOLINT
+    DVLOG(log_trace) << __func__ << std::endl;  //NOLINT
 
     if (auto dc = dynamic_cast<stream_data_channel*>(&ch); data_channel_.get() == dc) {
         auto slot = dc->get_slot();
@@ -97,14 +97,14 @@ tateyama::status stream_response::release_channel(tateyama::api::server::data_ch
 
 // deprecated
 tateyama::status stream_response::close_session() {
-    VLOG(log_trace) << __func__ << std::endl;  //NOLINT
+    DVLOG(log_trace) << __func__ << std::endl;  //NOLINT
 
     return tateyama::status::ok;
 }
 
 // class stream_data_channel
 tateyama::status stream_data_channel::acquire(std::shared_ptr<tateyama::api::server::writer>& wrt) {
-    VLOG(log_trace) << __func__ << std::endl;  //NOLINT
+    DVLOG(log_trace) << __func__ << std::endl;  //NOLINT
 
     if (auto stream_wrt = std::make_shared<stream_writer>(session_socket_, get_slot(), writer_id_++); stream_wrt != nullptr) {
         wrt = stream_wrt;
@@ -115,7 +115,7 @@ tateyama::status stream_data_channel::acquire(std::shared_ptr<tateyama::api::ser
 }
 
 tateyama::status stream_data_channel::release(tateyama::api::server::writer& wrt) {
-    VLOG(log_trace) << __func__ << std::endl;  //NOLINT
+    DVLOG(log_trace) << __func__ << std::endl;  //NOLINT
 
     if (auto itr = data_writers_.find(dynamic_cast<stream_writer*>(&wrt)); itr != data_writers_.end()) {
         data_writers_.erase(itr);
@@ -126,14 +126,14 @@ tateyama::status stream_data_channel::release(tateyama::api::server::writer& wrt
 
 // class writer
 tateyama::status stream_writer::write(char const* data, std::size_t length) {
-    VLOG(log_trace) << __func__ << std::endl;  //NOLINT
+    DVLOG(log_trace) << __func__ << std::endl;  //NOLINT
 
     resultset_socket_.send(slot_, writer_id_, std::string_view(data, length));
     return tateyama::status::ok;
 }
 
 tateyama::status stream_writer::commit() {
-    VLOG(log_trace) << __func__ << std::endl;  //NOLINT
+    DVLOG(log_trace) << __func__ << std::endl;  //NOLINT
 
     return tateyama::status::ok;
 }
