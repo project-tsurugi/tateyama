@@ -133,13 +133,16 @@ public:
     class wire_container_impl : public wire_container {
     public:
         wire_container_impl() = default;
-        wire_container_impl(unidirectional_message_wire* wire, char* bip_buffer) : wire_(wire), bip_buffer_(bip_buffer) {};
         ~wire_container_impl() override = default;
         wire_container_impl(wire_container_impl const&) = delete;
         wire_container_impl(wire_container_impl&&) = delete;
-        wire_container_impl& operator = (wire_container_impl const&) = default;
-        wire_container_impl& operator = (wire_container_impl&&) = default;
+        wire_container_impl& operator = (wire_container_impl const&) = delete;
+        wire_container_impl& operator = (wire_container_impl&&) = delete;
 
+        void initialize(unidirectional_message_wire* wire, char* bip_buffer) {
+            wire_ = wire;
+            bip_buffer_ = bip_buffer;
+        }
         message_header peep(bool wait = false) {
             return wire_->peep(bip_buffer_, wait);
         }
@@ -160,20 +163,25 @@ public:
     class response_wire_container_impl : public response_wire_container {
     public:
         response_wire_container_impl() = default;
-        response_wire_container_impl(unidirectional_response_wire* wire, char* bip_buffer) : wire_(wire), bip_buffer_(bip_buffer) {}
         ~response_wire_container_impl() override = default;
         response_wire_container_impl(response_wire_container_impl const&) = delete;
         response_wire_container_impl(response_wire_container_impl&&) = delete;
-        response_wire_container_impl& operator = (response_wire_container_impl const&) = default;
-        response_wire_container_impl& operator = (response_wire_container_impl&&) = default;
+        response_wire_container_impl& operator = (response_wire_container_impl const&) = delete;
+        response_wire_container_impl& operator = (response_wire_container_impl&&) = delete;
 
+        void initialize(unidirectional_response_wire* wire, char* bip_buffer) {
+            wire_ = wire;
+            bip_buffer_ = bip_buffer;
+        }
         void write(const char* from, response_header header) override {
+            std::lock_guard<std::mutex> lock(mtx_);
             wire_->write(bip_buffer_, from, header);
         }
 
     private:
         unidirectional_response_wire* wire_{};
         char* bip_buffer_{};
+        std::mutex mtx_{};
     };
 
     explicit server_wire_container_impl(std::string_view name) : name_(name), garbage_collector_impl_(std::make_unique<garbage_collector_impl>()) {
@@ -184,8 +192,8 @@ public:
             auto req_wire = managed_shared_memory_->construct<unidirectional_message_wire>(request_wire_name)(managed_shared_memory_.get(), request_buffer_size);
             auto res_wire = managed_shared_memory_->construct<unidirectional_response_wire>(response_wire_name)(managed_shared_memory_.get(), response_buffer_size);
 
-            request_wire_ = wire_container_impl(req_wire, req_wire->get_bip_address(managed_shared_memory_.get()));
-            response_wire_ = response_wire_container_impl(res_wire, res_wire->get_bip_address(managed_shared_memory_.get()));
+            request_wire_.initialize(req_wire, req_wire->get_bip_address(managed_shared_memory_.get()));
+            response_wire_.initialize(res_wire, res_wire->get_bip_address(managed_shared_memory_.get()));
         }
         catch(const boost::interprocess::interprocess_exception& ex) {
             LOG(ERROR) << "running out of boost managed shared memory" << std::endl;
@@ -231,8 +239,8 @@ public:
 private:
     std::string name_;
     std::unique_ptr<boost::interprocess::managed_shared_memory> managed_shared_memory_{};
-    wire_container_impl request_wire_;
-    response_wire_container_impl response_wire_;
+    wire_container_impl request_wire_{};
+    response_wire_container_impl response_wire_{};
     std::unique_ptr<garbage_collector_impl> garbage_collector_impl_;
     bool session_closed_{false};
     std::mutex mtx_shm_{};
