@@ -39,7 +39,7 @@ NOTE: for developers
 
 ```sh
 oltp start [--conf </path/to/conf>] [--recovery|--no-recovery]
-oltp shutdown [--conf </path/to/conf>]
+oltp shutdown [--conf </path/to/conf>] [--timeout <value>]
 oltp kill [--conf </path/to/conf>]
 oltp quiesce [--conf </path/to/conf>] [--label <text>]
 oltp status [--conf </path/to/conf>]
@@ -70,12 +70,12 @@ oltp status [--conf </path/to/conf>]
     * overview
       * データベースプロセスを安全に終了させる
     * options
-      * (N/A)
+      * `--timeout` 対象データベースの安全な終了の確認を中止して、安全な終了は失敗扱いとするまでの時間（単位：秒）、defaultは300秒
+      　valueに0を指定すると対象のデータベースが安全に終了するか、安全な終了に失敗するまで制御を返さない
     * note
       * 同一の設定ファイルを参照する、稼働中のデータベースを対象にとる
       * 対象のデータベースが未稼働の状態でこのコマンドを実行した場合、コマンドは失敗する場合がある
       * 対象のデータベースが安全かつ完全に終了した場合のみ、このコマンドの exit status は 0 になる
-      * 対象のデータベースが安全に終了するか、安全な終了に失敗するまで制御を返さない
     * impl memo
       * if service is ready
         * send `shutdown` to "control_service"
