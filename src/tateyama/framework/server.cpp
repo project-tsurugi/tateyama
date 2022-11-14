@@ -76,10 +76,13 @@ bool server::setup() {
 }
 
 bool server::start() {
-    bool success = true;
     if(! setup_done_) {
-        success = setup();
+        if(! setup()) {
+            // error logged in setup() already
+            return false;
+        }
     }
+    bool success = true;
     environment_->resource_repository().each([this, &success](resource& arg){
         if (! success) return;
         success = arg.start(*environment_);
