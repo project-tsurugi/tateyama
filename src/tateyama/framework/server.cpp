@@ -68,7 +68,7 @@ bool server::setup() {
     });
     if(! success) {
         LOG(ERROR) << "framework server setup step failed.";
-        // shutdown started component
+        // shutdown already setup components
         shutdown();
     }
     setup_done_ = success;
@@ -94,7 +94,7 @@ bool server::start() {
     });
     if(! success) {
         LOG(ERROR) << "framework server start step failed.";
-        // shutdown started component
+        // shutdown already started components
         shutdown();
     }
     return success;
