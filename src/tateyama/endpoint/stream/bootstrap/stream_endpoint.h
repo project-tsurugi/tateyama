@@ -54,6 +54,7 @@ class stream_endpoint : public endpoint {
      * @brief shutdown the component (the state will be `deactivated`)
      */
     bool shutdown(environment&) override {
+        // For clean up, shutdown can be called multiple times with/without setup()/start().
         if(listener_thread_.joinable()) {
             if(listener_) {
                 listener_->terminate();

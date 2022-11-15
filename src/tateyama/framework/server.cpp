@@ -67,7 +67,7 @@ bool server::setup() {
         success = arg.setup(*environment_);
     });
     if(! success) {
-        LOG(ERROR) << "framework server setup step failed.";
+        LOG(ERROR) << "Server application framework setup phase failed.";
         // shutdown already setup components
         shutdown();
     }
@@ -96,7 +96,7 @@ bool server::start() {
         success = arg.start(*environment_);
     });
     if(! success) {
-        LOG(ERROR) << "framework server start step failed.";
+        LOG(ERROR) << "Server application framework start phase failed.";
         // shutdown already started components
         shutdown();
     }
