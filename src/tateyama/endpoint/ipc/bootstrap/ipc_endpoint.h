@@ -51,8 +51,14 @@ public:
      * @brief shutdown the component (the state will be `deactivated`)
      */
     bool shutdown(environment&) override {
-        listener_->terminate();
-        listener_thread_.join();
+        // For clean up, shutdown can be called multiple times with/without setup()/start().
+        if(listener_thread_.joinable()) {
+            if(listener_) {
+                listener_->terminate();
+            }
+            listener_thread_.join();
+        }
+        listener_.reset();
         return true;
     }
 

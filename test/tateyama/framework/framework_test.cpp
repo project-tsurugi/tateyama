@@ -33,19 +33,28 @@ class framework_test : public ::testing::Test {
 public:
     class test_resource : public resource {
     public:
-        static constexpr id_type tag = 0;
+        static constexpr id_type tag = 1000;
         test_resource() = default;
         [[nodiscard]] id_type id() const noexcept override {
             return tag;
         }
-        bool setup(environment&) override { return true; }
-        bool start(environment&) override { return true; }
+        void set_setup_success(bool success) {
+            setup_success_ = success;
+        }
+        void set_start_success(bool success) {
+            start_success_ = success;
+        }
+        bool setup(environment&) override { return setup_success_; }
+        bool start(environment&) override { return start_success_; }
         bool shutdown(environment&) override { return true; }
+
+        bool setup_success_{true};
+        bool start_success_{true};
     };
 
     class test_service : public service {
     public:
-        static constexpr id_type tag = 0;
+        static constexpr id_type tag = 1000;
 
         test_service() = default;
 
@@ -60,21 +69,87 @@ public:
             (void)res;
             return true;
         }
-        bool setup(environment&) override { return true; }
-        bool start(environment&) override { return true; }
+        void set_setup_success(bool success) {
+            setup_success_ = success;
+        }
+        void set_start_success(bool success) {
+            start_success_ = success;
+        }
+        bool setup(environment&) override { return setup_success_; }
+        bool start(environment&) override { return start_success_; }
         bool shutdown(environment&) override { return true; }
+
+        bool setup_success_{true};
+        bool start_success_{true};
     };
 };
 
 TEST_F(framework_test, server_api) {
-    auto cfg = api::configuration::create_configuration("");
+    auto cfg = api::configuration::create_configuration();
     server sv{boot_mode::database_server, cfg};
-    //register_components(server);
     sv.add_resource(std::make_shared<test_resource>());
     sv.add_service(std::make_shared<test_service>());
 
-    sv.start();
-    sv.shutdown();
+    ASSERT_TRUE(sv.start());
+    ASSERT_TRUE(sv.shutdown());
+}
+
+TEST_F(framework_test, resource_setup_failure) {
+    // verify other components are shutdown when final resource failed to setup
+    auto cfg = api::configuration::create_configuration();
+    server sv{boot_mode::database_server, cfg};
+    add_core_components(sv);
+    auto res = std::make_shared<test_resource>();
+    res->set_setup_success(false);
+    sv.add_resource(res);
+    auto svc = std::make_shared<test_service>();
+    sv.add_service(svc);
+
+    ASSERT_FALSE(sv.start());
+    ASSERT_TRUE(sv.shutdown());
+}
+
+TEST_F(framework_test, resource_start_failure) {
+    // verify other components are shutdown when final resource failed to start
+    auto cfg = api::configuration::create_configuration();
+    server sv{boot_mode::database_server, cfg};
+    add_core_components(sv);
+    auto res = std::make_shared<test_resource>();
+    res->set_start_success(false);
+    sv.add_resource(res);
+    auto svc = std::make_shared<test_service>();
+    sv.add_service(svc);
+
+    ASSERT_FALSE(sv.start());
+    ASSERT_TRUE(sv.shutdown());
+}
+
+TEST_F(framework_test, server_setup_failure) {
+    // verify other components are shutdown when final service failed to setup
+    auto cfg = api::configuration::create_configuration();
+    server sv{boot_mode::database_server, cfg};
+    add_core_components(sv);
+    sv.add_resource(std::make_shared<test_resource>());
+    auto svc = std::make_shared<test_service>();
+    svc->set_setup_success(false);
+    sv.add_service(svc);
+
+    ASSERT_FALSE(sv.start());
+    ASSERT_TRUE(sv.shutdown());
+}
+
+TEST_F(framework_test, server_start_failure) {
+    // verify other components are shutdown when final service failed to start
+    auto cfg = api::configuration::create_configuration();
+    server sv{boot_mode::database_server, cfg};
+    add_core_components(sv);
+    sv.add_resource(std::make_shared<test_resource>());
+    auto svc = std::make_shared<test_service>();
+    svc->set_start_success(false);
+    sv.add_service(svc);
+
+    ASSERT_FALSE(sv.start());
+    ASSERT_TRUE(sv.shutdown());
 }
 
 }

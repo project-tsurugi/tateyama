@@ -77,6 +77,7 @@ public:
 
 private:
     sharksfin::DatabaseHandle database_handle_{};
+    bool db_opened_{};
 };
 
 }

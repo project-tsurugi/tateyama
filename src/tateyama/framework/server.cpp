@@ -66,13 +66,21 @@ bool server::setup() {
         if (! success) return;
         success = arg.setup(*environment_);
     });
+    if(! success) {
+        LOG(ERROR) << "Server application framework setup phase failed.";
+        // shutdown already setup components
+        shutdown();
+    }
     setup_done_ = success;
     return success;
 }
 
 bool server::start() {
     if(! setup_done_) {
-        setup();
+        if(! setup()) {
+            // error logged in setup() already
+            return false;
+        }
     }
     bool success = true;
     environment_->resource_repository().each([this, &success](resource& arg){
@@ -87,6 +95,11 @@ bool server::start() {
         if (! success) return;
         success = arg.start(*environment_);
     });
+    if(! success) {
+        LOG(ERROR) << "Server application framework start phase failed.";
+        // shutdown already started components
+        shutdown();
+    }
     return success;
 }
 
@@ -94,13 +107,13 @@ bool server::shutdown() {
     // even if some components fails, continue all shutdown for clean-up
     bool success = true;
     environment_->endpoint_repository().each([this, &success](endpoint& arg){
-        success = success && arg.shutdown(*environment_);
+        success = arg.shutdown(*environment_) && success;
     }, true);
     environment_->service_repository().each([this, &success](service& arg){
-        success = success && arg.shutdown(*environment_);
+        success = arg.shutdown(*environment_) && success;
     }, true);
     environment_->resource_repository().each([this, &success](resource& arg){
-        success = success && arg.shutdown(*environment_);
+        success = arg.shutdown(*environment_) && success;
     }, true);
     return success;
 }
