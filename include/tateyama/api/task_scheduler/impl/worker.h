@@ -159,7 +159,6 @@ private:
     }
 
     bool steal_and_execute(api::task_scheduler::context& ctx) {
-        auto index = ctx.index();
         std::size_t from = ctx.last_steal_from();
         task t{};
         for(auto idx = next(from, from); idx != from; idx = next(idx, from)) {
@@ -167,7 +166,6 @@ private:
             if(tgt.try_pop(t)) {
                 ++stat_->stolen_;
                 ctx.last_steal_from(idx);
-                DLOG(INFO) << "task stolen from queue " << idx << " to " << index;
                 t(ctx);
                 ++stat_->count_;
                 return true;
