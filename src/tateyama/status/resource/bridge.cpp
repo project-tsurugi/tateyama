@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <iostream>  // FIXME
+
 #include <openssl/md5.h>
 
 #include "tateyama/status/resource/bridge.h"
@@ -62,6 +62,19 @@ void bridge::wait_for_shutdown() {
     if (resource_status_memory_) {
         resource_status_memory_->wait_for_shutdown();
     }
+}
+
+void bridge::mutex_file(std::string_view file_name) {
+    if (resource_status_memory_) {
+        resource_status_memory_->mutex_file(file_name);
+    }
+}
+
+std::string_view bridge::mutex_file() {
+    if (resource_status_memory_) {
+        return resource_status_memory_->mutex_file();
+    }
+    return std::string_view();
 }
 
 void bridge::set_digest(const std::string& path_string) {

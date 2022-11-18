@@ -67,6 +67,10 @@ public:
         workers_.reserve(threads);
     }
 
+    void file_mutex(std::string_view mutex_file) {
+        proc_mutex_file_ = mutex_file;
+    }
+
     void operator()() {
         auto& connection_queue = container_->get_connection_queue();
 
@@ -87,7 +91,7 @@ public:
             std::string session_name = database_name_;
             session_name += "-";
             session_name += std::to_string(session_id);
-            auto wire = std::make_unique<tateyama::common::wire::server_wire_container_impl>(session_name);
+            auto wire = std::make_unique<tateyama::common::wire::server_wire_container_impl>(session_name, proc_mutex_file_);
             VLOG(log_debug) << "created session wire: " << session_name;
             connection_queue.accept(session_id);
             std::size_t index = 0;
@@ -123,6 +127,7 @@ private:
     std::unique_ptr<tateyama::common::wire::connection_container> container_{};
     std::vector<std::unique_ptr<Worker>> workers_{};
     std::string database_name_;
+    std::string proc_mutex_file_;
 };
 
 }

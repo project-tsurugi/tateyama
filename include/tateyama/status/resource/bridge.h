@@ -101,6 +101,16 @@ public:
      */
     void wait_for_shutdown();
 
+    /**
+     * @brief set proc_mutex file name
+     */
+    void mutex_file(std::string_view file_name);
+
+    /**
+     * @brief get proc_mutex file name
+     */
+    std::string_view mutex_file();
+
 private:
     bool deactivated_{false};
 

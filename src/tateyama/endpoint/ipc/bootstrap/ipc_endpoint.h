@@ -15,8 +15,9 @@
  */
 #pragma once
 
-#include <tateyama/framework/endpoint.h>
 #include <tateyama/framework/environment.h>
+#include <tateyama/framework/endpoint.h>
+#include <tateyama/status/resource/bridge.h>
 #include "ipc_listener.h"
 
 namespace tateyama::framework {
@@ -42,7 +43,8 @@ public:
     /**
      * @brief start the component (the state will be `activated`)
      */
-    bool start(environment&) override {
+    bool start(environment& env) override {
+        listener_->file_mutex((env.resource_repository().find<status_info::resource::bridge>())->mutex_file());
         listener_thread_ = std::thread(std::ref(*listener_));
         return true;
     }
