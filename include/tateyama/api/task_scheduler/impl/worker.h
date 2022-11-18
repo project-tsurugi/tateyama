@@ -98,21 +98,33 @@ public:
         s.clear();
     }
 
+    bool try_process(
+        api::task_scheduler::context& ctx,
+        basic_queue<task>& q
+    ) {
+        task t{};
+        if (q.active() && q.try_pop(t)) {
+            t(ctx);
+            ++stat_->count_;
+            return true;
+        }
+        return false;
+    }
+
     bool process_next(
         api::task_scheduler::context& ctx,
         basic_queue<task>& q,
         basic_queue<task>& sq
     ) {
-        task t{};
-        if (sq.active() && sq.try_pop(t)) {
-            t(ctx);
-            ++stat_->count_;
-            return true;
-        }
-        if (q.active() && q.try_pop(t)) {
-            t(ctx);
-            ++stat_->count_;
-            return true;
+        // alternatively check sticky and normal for fairness
+        if(sticky_task_checked_first_) {
+            sticky_task_checked_first_ = false;
+            if(try_process(ctx, q)) return true;
+            if(try_process(ctx, sq)) return true;
+        } else {
+            sticky_task_checked_first_ = true;
+            if(try_process(ctx, sq)) return true;
+            if(try_process(ctx, q)) return true;
         }
         if (cfg_ && cfg_->stealing_enabled()) {
             bool stolen = steal_and_execute(ctx);
@@ -148,6 +160,7 @@ private:
     std::vector<std::vector<task>>* initial_tasks_{};
     worker_stat* stat_{};
     backoff_waiter waiter_{0};
+    bool sticky_task_checked_first_{};
 
     std::size_t next(std::size_t current, std::size_t initial) {
         (void)initial;

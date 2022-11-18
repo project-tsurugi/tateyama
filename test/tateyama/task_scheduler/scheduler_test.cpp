@@ -118,7 +118,7 @@ public:
 };
 
 TEST_F(scheduler_test, sticky_task_simple) {
-    // sticky tasks are process first, then local queue tasks
+    // sticky task and local queue task are processed alternately in order to ensure fairness
     using task = tateyama::task_scheduler::basic_task<test_task, test_task_sticky>;
     task_scheduler_cfg cfg{};
     cfg.thread_count(1);
@@ -150,9 +150,9 @@ TEST_F(scheduler_test, sticky_task_simple) {
     w0.process_next(ctx0, lq0, sq0);
     EXPECT_TRUE(executed00);
     w0.process_next(ctx0, lq0, sq0);
-    EXPECT_TRUE(executed01);
-    w0.process_next(ctx0, lq0, sq0);
     EXPECT_TRUE(executed02);
+    w0.process_next(ctx0, lq0, sq0);
+    EXPECT_TRUE(executed01);
     w0.process_next(ctx0, lq0, sq0);
     EXPECT_TRUE(executed03);
 }
