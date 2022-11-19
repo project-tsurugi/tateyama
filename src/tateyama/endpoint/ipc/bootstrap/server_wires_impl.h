@@ -184,13 +184,14 @@ public:
         std::mutex mtx_{};
     };
 
-    explicit server_wire_container_impl(std::string_view name) : name_(name), garbage_collector_impl_(std::make_unique<garbage_collector_impl>()) {
+    explicit server_wire_container_impl(std::string_view name, std::string_view mutex_file) : name_(name), garbage_collector_impl_(std::make_unique<garbage_collector_impl>()) {
         boost::interprocess::shared_memory_object::remove(name_.c_str());
         try {
             managed_shared_memory_ =
                 std::make_unique<boost::interprocess::managed_shared_memory>(boost::interprocess::create_only, name_.c_str(), shm_size);
             auto req_wire = managed_shared_memory_->construct<unidirectional_message_wire>(request_wire_name)(managed_shared_memory_.get(), request_buffer_size);
             auto res_wire = managed_shared_memory_->construct<unidirectional_response_wire>(response_wire_name)(managed_shared_memory_.get(), response_buffer_size);
+            status_provider_ = managed_shared_memory_->construct<status_provider>(status_provider_name)(managed_shared_memory_.get(), mutex_file);
 
             request_wire_.initialize(req_wire, req_wire->get_bip_address(managed_shared_memory_.get()));
             response_wire_.initialize(res_wire, res_wire->get_bip_address(managed_shared_memory_.get()));
@@ -241,6 +242,7 @@ private:
     std::unique_ptr<boost::interprocess::managed_shared_memory> managed_shared_memory_{};
     wire_container_impl request_wire_{};
     response_wire_container_impl response_wire_{};
+    status_provider* status_provider_{};
     std::unique_ptr<garbage_collector_impl> garbage_collector_impl_;
     bool session_closed_{false};
     std::mutex mtx_shm_{};

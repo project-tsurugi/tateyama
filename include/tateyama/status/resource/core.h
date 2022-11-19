@@ -27,6 +27,7 @@
 #include <boost/interprocess/sync/scoped_lock.hpp>
 #include <boost/interprocess/sync/interprocess_mutex.hpp>
 #include <boost/interprocess/sync/interprocess_condition.hpp>
+#include <boost/interprocess/containers/string.hpp>
 
 #include <tateyama/framework/component.h>
 
@@ -53,6 +54,7 @@ class resource_status_memory {
     class resource_status {
       public:
         using void_allocator = boost::interprocess::allocator<void, boost::interprocess::managed_shared_memory::segment_manager>;
+        using char_allocator = boost::interprocess::allocator<char, boost::interprocess::managed_shared_memory::segment_manager>;
 
         using key_type = tateyama::framework::component::id_type;
         using value_type = state;
@@ -61,7 +63,7 @@ class resource_status_memory {
         using shared_memory_map = boost::interprocess::map<key_type, value_type, std::less<>, shmem_allocator>;
     
         explicit resource_status(const void_allocator& allocator)
-            : resource_status_map_(allocator), service_status_map_(allocator), endpoint_status_map_(allocator) {
+            : resource_status_map_(allocator), service_status_map_(allocator), endpoint_status_map_(allocator), mutex_file_(allocator) {
             shutdown_requested_.store(false, boost::memory_order_relaxed);
         }
     
@@ -86,6 +88,12 @@ class resource_status_memory {
             }
             lock.unlock();
         }
+        void mutex_file(std::string_view file) {
+            mutex_file_ = file;
+        }
+        [[nodiscard]] std::string_view mutex_file() const {
+            return std::string_view(mutex_file_.data(), mutex_file_.size());
+        }
 
         shared_memory_map resource_status_map_;
         shared_memory_map service_status_map_;
@@ -95,6 +103,7 @@ class resource_status_memory {
         boost::atomic<bool> shutdown_requested_{};
         boost::interprocess::interprocess_mutex m_shutdown_{};
         boost::interprocess::interprocess_condition c_shutdown_{};
+        boost::interprocess::basic_string<char, std::char_traits<char>, char_allocator> mutex_file_;
 
         friend class resource_status_memory;
     };
@@ -143,6 +152,12 @@ class resource_status_memory {
     }
     void wait_for_shutdown() {
         resource_status_->wait_for_shutdown();
+    }
+    void mutex_file(std::string_view file) {
+        resource_status_->mutex_file(file);
+    }
+    [[nodiscard]] std::string_view mutex_file() const {
+        return resource_status_->mutex_file();
     }
     // obsolete
     [[nodiscard]] bool shutdown() {
