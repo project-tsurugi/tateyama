@@ -18,6 +18,8 @@
 #include <cstddef>
 #include <iomanip>
 
+#include <boost/rational.hpp>
+
 namespace tateyama::api::task_scheduler {
 
 /**
@@ -26,6 +28,8 @@ namespace tateyama::api::task_scheduler {
  */
 class task_scheduler_cfg {
 public:
+    using rational = boost::rational<std::int64_t>;
+
     static constexpr std::size_t numa_node_unspecified = static_cast<std::size_t>(-1);
 
     [[nodiscard]] std::size_t thread_count() const noexcept {
@@ -101,6 +105,49 @@ public:
         lazy_worker_ = arg;
     }
 
+    /**
+     * @brief accessor for ratio_check_local_first configuration
+     * @return the ratio how frequently local task queue should be checked first.
+     * @details scheduler checks both sticky queue and local queue on process_next is called. For fairness, the order
+     * is changed whether sticky queue comes first or local queue does.
+     * The rational number N/M for this configuration indicates N times out of M process_next calls check local task first.
+     * This number must be in range [0, 1). If it's set to 0, only sticky queue is checked (no fairness).
+     * Normally this number is expected to be equal or less than 1/2 because sticky queue has higher priority than local.
+     */
+    [[nodiscard]] rational ratio_check_local_first() const noexcept {
+        return ratio_check_local_first_;
+    }
+
+    /**
+     * @brief setter for ratio_check_local_first
+     */
+    void ratio_check_local_first(rational arg) noexcept {
+        BOOST_ASSERT(ratio_check_local_first_ >= 0);  //NOLINT
+        BOOST_ASSERT(ratio_check_local_first_ < 1);  //NOLINT
+
+        ratio_check_local_first_ = arg;
+    }
+
+    /**
+     * @brief accessor for frequency_promoting_delayed configuration
+     * @return the ratio how frequently delayed tasks are promoted as local/sticky task
+     * @details The rational number N/M indicates N delayed tasks are promoted while task queues are checked M times.
+     * This number must be in range (0, 1).
+     * Normally this number is expected to be close to zero because delayed tasks should rarely be promoted.
+     */
+    [[nodiscard]] rational frequency_promoting_delayed() const noexcept {
+        return frequency_promoting_delayed_;
+    }
+
+    /**
+     * @brief setter for frequency_promoting_delayed
+     */
+    void frequency_promoting_delayed(rational arg) noexcept {
+        BOOST_ASSERT(frequency_promoting_delayed_ > 0);  //NOLINT
+        BOOST_ASSERT(frequency_promoting_delayed_ < 1);  //NOLINT
+        frequency_promoting_delayed_ = arg;
+    }
+
     friend inline std::ostream& operator<<(std::ostream& out, task_scheduler_cfg const& cfg) {
         return out << std::boolalpha <<
             "thread_count:" << cfg.thread_count() << " " <<
@@ -111,9 +158,11 @@ public:
             "stealing_enabled:" << cfg.stealing_enabled() << " " <<
             "round_robbin:" << cfg.round_robbin() << " " <<
             "lazy_worker:" << cfg.lazy_worker() << " " <<
+            "ratio_check_local_first:" << cfg.ratio_check_local_first() << " " <<
+            "frequency_promoting_delayed:" << cfg.frequency_promoting_delayed() << " " <<
             "";
     }
-    
+
 private:
     std::size_t thread_count_ = 5;
     bool set_core_affinity_ = true;
@@ -123,6 +172,8 @@ private:
     bool stealing_enabled_ = false;
     bool round_robbin_ = false;
     bool lazy_worker_ = false;
+    rational ratio_check_local_first_{1, 10};
+    rational frequency_promoting_delayed_{1, 1000};
 };
 
 }

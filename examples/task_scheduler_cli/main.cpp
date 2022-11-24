@@ -69,6 +69,10 @@ public:
         return false;
     }
 
+    [[nodiscard]] bool delayed() {
+        return false;
+    }
+
     task_scheduler_cfg const* cfg_{};
     scheduler<task>* scheduler_{};
     std::size_t generation_{};
@@ -92,6 +96,9 @@ public:
         scheduler_->schedule_at(task{test_task{*cfg_, *scheduler_, generation_+1}}, ctx.index());
     }
     [[nodiscard]] bool sticky() {
+        return false;
+    }
+    [[nodiscard]] bool delayed() {
         return false;
     }
 

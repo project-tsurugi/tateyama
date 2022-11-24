@@ -134,6 +134,12 @@ public:
             s.emplace_back(std::move(t));
             return;
         }
+        if(t.delayed()) {
+            // possibly including sticky && delayed
+            auto& q = delayed_task_queues_[index];
+            q.push(std::move(t));
+            return;
+        }
         if(t.sticky()) {
             auto& q = sticky_task_queues_[index];
             q.push(std::move(t));
@@ -216,6 +222,7 @@ private:
     std::size_t size_{};
     std::vector<queue> queues_{};
     std::vector<queue> sticky_task_queues_{};
+    std::vector<queue> delayed_task_queues_{};
     std::vector<worker> workers_{};
     std::vector<tateyama::task_scheduler::thread_control> threads_{};
     std::vector<tateyama::task_scheduler::worker_stat> worker_stats_{};
@@ -229,6 +236,7 @@ private:
         auto sz = cfg_.thread_count();
         queues_.resize(sz);
         sticky_task_queues_.resize(sz);
+        delayed_task_queues_.resize(sz);
         worker_stats_.resize(sz);
         initial_tasks_.resize(sz);
         contexts_.reserve(sz);
@@ -237,7 +245,7 @@ private:
         for(std::size_t i = 0; i < sz; ++i) {
             auto& ctx = contexts_.emplace_back(i);
             auto& worker = workers_.emplace_back(
-                queues_, sticky_task_queues_, initial_tasks_, worker_stats_[i], std::addressof(cfg_));
+                queues_, sticky_task_queues_, delayed_task_queues_, initial_tasks_, worker_stats_[i], std::addressof(cfg_));
             if (! empty_thread_) {
                 threads_.emplace_back(i, std::addressof(cfg_), worker, ctx);
             }

@@ -32,6 +32,8 @@ namespace tateyama::api::task_scheduler {
  */
 class cache_align context {
 public:
+    using rational = boost::rational<std::int64_t>;
+
     context() = default;
     ~context() = default;
     context(context const& other) = delete;
@@ -71,9 +73,27 @@ public:
         last_steal_from_ = arg;
     }
 
+    /**
+     * @brief accessor to the count_check_local_first parameter
+     * @return counter used to accumulate ratio_check_local_first
+     */
+    [[nodiscard]] rational& count_check_local_first() noexcept {
+        return count_check_local_first_;
+    }
+
+    /**
+     * @brief accessor to the count_promoting_sleep parameter
+     * @return counter used to accumulate frequentcy_promoting_delayed
+     */
+    [[nodiscard]] rational& count_promoting_delayed() noexcept {
+        return count_promoting_delayed_;
+    }
+
 private:
     std::size_t index_{};
     std::size_t last_steal_from_{};
+    rational count_check_local_first_{};
+    rational count_promoting_delayed_{};
 };
 
 }
