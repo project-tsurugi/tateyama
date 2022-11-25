@@ -117,7 +117,7 @@ public:
     ) {
         task t{};
         if (q.active() && q.try_pop(t)) {
-            t(ctx);
+            execute_task(t, ctx);
             ++stat_->count_;
             return true;
         }
@@ -215,12 +215,21 @@ private:
             if(tgt.try_pop(t)) {
                 ++stat_->stolen_;
                 ctx.last_steal_from(idx);
-                t(ctx);
+                execute_task(t, ctx);
                 ++stat_->count_;
                 return true;
             }
         }
         return false;
+    }
+
+    void execute_task(task& t, api::task_scheduler::context& ctx) {
+        try {
+            t(ctx);
+        } catch (std::exception& e) {
+            // even on fatal internal error, avoid server crash
+            LOG(ERROR) << "Unhandled exception caught: " << e.what();
+        }
     }
 
 };
