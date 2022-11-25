@@ -349,6 +349,10 @@ public:
 
         // create a socket
         socket_ = ::socket(AF_INET, SOCK_STREAM, 0);
+        const int enable = 1;
+        if (setsockopt(socket_, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(enable)) < 0) {
+            LOG(ERROR) << "setsockopt() fail";
+        }
 
         // Map the address and the port to the socket
         struct sockaddr_in socket_address{};
