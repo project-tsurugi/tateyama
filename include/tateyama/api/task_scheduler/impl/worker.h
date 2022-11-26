@@ -84,8 +84,8 @@ public:
     {}
 
     /**
-     * @brief the worker body
-     * @param ctx the worker context information
+     * @brief initialize the worker
+     * @param thread_id the thread index assigned for this worker
      */
     void init(std::size_t thread_id) {
         // reconstruct the queues so that they are on each numa node
@@ -111,52 +111,13 @@ public:
         s.clear();
     }
 
-    bool try_process(
-        api::task_scheduler::context& ctx,
-        basic_queue<task>& q
-    ) {
-        task t{};
-        if (q.active() && q.try_pop(t)) {
-            execute_task(t, ctx);
-            ++stat_->count_;
-            return true;
-        }
-        return false;
-    }
-
-    void promote_delayed_task_if_needed(
-        api::task_scheduler::context& ctx,
-        basic_queue<task>& q,
-        basic_queue<task>& sq
-    ) {
-        auto& cnt = ctx.count_promoting_delayed();
-        cnt += cfg_->frequency_promoting_delayed();
-        if(cnt >= 1) {
-            --cnt;
-            auto& dtq = (*delayed_task_queues_)[ctx.index()];
-            task dt{};
-            if(dtq.try_pop(dt)) {
-                if(dt.sticky()) {
-                    sq.push(std::move(dt));
-                } else {
-                    q.push(std::move(dt));
-                }
-            }
-        }
-    }
-
-    bool check_delayed_task_empty(
-        api::task_scheduler::context& ctx
-    ) {
-        auto& dtq = (*delayed_task_queues_)[ctx.index()];
-        task dt{};
-        if(dtq.try_pop(dt)) {
-            dtq.push(std::move(dt));
-            return true;
-        }
-        return false;
-    }
-
+    /**
+     * @brief proceed one step
+     * @param ctx the scheduler context
+     * @param q the local task queue for this worker
+     * @param sq the sticky task queue for this worker
+     * @note this function is kept public just for testing
+     */
     bool process_next(
         api::task_scheduler::context& ctx,
         basic_queue<task>& q,
@@ -247,6 +208,52 @@ private:
             // even on fatal internal error, avoid server crash
             LOG(ERROR) << "Unhandled exception caught: " << e.what();
         }
+    }
+
+    bool try_process(
+        api::task_scheduler::context& ctx,
+        basic_queue<task>& q
+    ) {
+        task t{};
+        if (q.active() && q.try_pop(t)) {
+            execute_task(t, ctx);
+            ++stat_->count_;
+            return true;
+        }
+        return false;
+    }
+
+    void promote_delayed_task_if_needed(
+        api::task_scheduler::context& ctx,
+        basic_queue<task>& q,
+        basic_queue<task>& sq
+    ) {
+        auto& cnt = ctx.count_promoting_delayed();
+        cnt += cfg_->frequency_promoting_delayed();
+        if(cnt >= 1) {
+            --cnt;
+            auto& dtq = (*delayed_task_queues_)[ctx.index()];
+            task dt{};
+            if(dtq.try_pop(dt)) {
+                if(dt.sticky()) {
+                    sq.push(std::move(dt));
+                } else {
+                    q.push(std::move(dt));
+                }
+            }
+        }
+    }
+
+    bool check_delayed_task_empty(
+        api::task_scheduler::context& ctx
+    ) {
+        auto& dtq = (*delayed_task_queues_)[ctx.index()];
+        task dt{};
+        if(dtq.try_pop(dt)) {
+            dtq.push(std::move(dt));
+            return true;
+        }
+        return false;
     }
 
 };
