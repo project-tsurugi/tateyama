@@ -145,6 +145,18 @@ public:
         }
     }
 
+    bool check_delayed_task_empty(
+        api::task_scheduler::context& ctx
+    ) {
+        auto& dtq = (*delayed_task_queues_)[ctx.index()];
+        task dt{};
+        if(dtq.try_pop(dt)) {
+            dtq.push(std::move(dt));
+            return true;
+        }
+        return false;
+    }
+
     bool process_next(
         api::task_scheduler::context& ctx,
         basic_queue<task>& q,
@@ -168,8 +180,13 @@ public:
                 return true;
             }
         }
+        if(check_delayed_task_empty(ctx)) {
+            // If delayed task exists, pretend as if its small slice is executed so that worker won't suspend.
+            return true;
+        }
         return false;
     }
+
     /**
      * @brief the worker body
      * @param ctx the worker context information

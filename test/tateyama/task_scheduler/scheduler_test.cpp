@@ -246,12 +246,12 @@ TEST_F(scheduler_test, delayed_tasks_only) {
     w0.init(0);
 
     context ctx0{0};
-    EXPECT_FALSE(w0.process_next(ctx0, lq0, sq0));
-    EXPECT_FALSE(w0.process_next(ctx0, lq0, sq0));
+    EXPECT_TRUE(w0.process_next(ctx0, lq0, sq0));
+    EXPECT_TRUE(w0.process_next(ctx0, lq0, sq0));
     EXPECT_TRUE(w0.process_next(ctx0, lq0, sq0)); // when checking 3-times, delayed task is promoted
     EXPECT_TRUE(executed00);
-    EXPECT_FALSE(w0.process_next(ctx0, lq0, sq0));
-    EXPECT_FALSE(w0.process_next(ctx0, lq0, sq0));
+    EXPECT_TRUE(w0.process_next(ctx0, lq0, sq0));
+    EXPECT_TRUE(w0.process_next(ctx0, lq0, sq0));
     EXPECT_TRUE(w0.process_next(ctx0, lq0, sq0)); // another delayed task is promoted
     EXPECT_TRUE(executed01);
 }
@@ -420,13 +420,13 @@ TEST_F(scheduler_test, task_sticky_and_delayed_only) {
     w0.init(0);
 
     context ctx0{0};
-    EXPECT_FALSE(w0.process_next(ctx0, lq0, sq0));
-    EXPECT_FALSE(executed00);
-    EXPECT_TRUE(w0.process_next(ctx0, lq0, sq0));  // sticky delayed task is promoted and executed
-    EXPECT_TRUE(executed00);
-    EXPECT_FALSE(w0.process_next(ctx0, lq0, sq0));
+    EXPECT_TRUE(w0.process_next(ctx0, lq0, sq0)); // by existence check, 01 comes first (i.e. not FIFO)
     EXPECT_FALSE(executed01);
     EXPECT_TRUE(w0.process_next(ctx0, lq0, sq0));  // sticky delayed task is promoted and executed
     EXPECT_TRUE(executed01);
+    EXPECT_TRUE(w0.process_next(ctx0, lq0, sq0));
+    EXPECT_FALSE(executed00);
+    EXPECT_TRUE(w0.process_next(ctx0, lq0, sq0));  // sticky delayed task is promoted and executed
+    EXPECT_TRUE(executed00);
 }
 }
