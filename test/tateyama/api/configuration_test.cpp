@@ -61,6 +61,24 @@ TEST_F(configuration_test, add_new_property_bool) {
     EXPECT_FALSE(vf.value());
 }
 
+TEST_F(configuration_test, add_new_property_size_t) {
+    auto cfg = api::configuration::create_configuration();
+    auto section = cfg->get_section("datastore"); // any section name is fine for testing
+    ASSERT_TRUE(section);
+    ASSERT_TRUE(section->set("test", "100"));
+    auto v = section->get<std::size_t>("test");
+    EXPECT_EQ(100, v);
+    EXPECT_EQ(100, v.value());
+    ASSERT_FALSE(section->set("test", "200"));
+    auto vf = section->get<std::size_t>("test");
+    EXPECT_EQ(200, vf);
+    EXPECT_EQ(200, vf.value());
+    ASSERT_FALSE(section->set("test", "300"));
+    auto ve = section->get<std::size_t>("test");
+    EXPECT_EQ(300, ve);
+    EXPECT_EQ(300, ve.value());
+}
+
 TEST_F(configuration_test, add_same_name_property_to_different_section) {
     auto cfg = api::configuration::create_configuration();
     auto section0 = cfg->get_section("datastore"); // any section name is fine for testing

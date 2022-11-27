@@ -58,7 +58,9 @@ public:
             VLOG(log_trace) << "property " << name << " exists but the value is empty";
             return std::nullopt;
         }
-        LOG(ERROR) << "both tree did not have such property: " << name;
+
+        // To support hidden configuration parameter, comment out the error msg for now.
+        // LOG(ERROR) << "both tree did not have such property: " << name;
         return std::nullopt;
     }
 
