@@ -24,6 +24,8 @@
 
 #include <glog/logging.h>
 #include <boost/rational.hpp>
+#include <boost/exception/all.hpp>
+#include <takatori/util/exception.h>
 
 #include <tateyama/common.h>
 #include <tateyama/api/task_scheduler/context.h>
@@ -203,10 +205,17 @@ private:
 
     void execute_task(task& t, api::task_scheduler::context& ctx) {
         try {
+            // use try-catch to avoid server crash even on fatal internal error
             t(ctx);
+        } catch (boost::exception& e) {
+            // currently find_trace() after catching std::exception doesn't work properly. So catch as boost exception. TODO
+            LOG(ERROR) << "Unhandled boost exception caught.";
+            LOG(ERROR) << boost::diagnostic_information(e);
         } catch (std::exception& e) {
-            // even on fatal internal error, avoid server crash
             LOG(ERROR) << "Unhandled exception caught: " << e.what();
+            if(auto* tr = takatori::util::find_trace(e); tr != nullptr) {
+                LOG(ERROR) << *tr;
+            }
         }
     }
 
