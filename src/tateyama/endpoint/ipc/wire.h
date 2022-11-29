@@ -915,10 +915,8 @@ public:
             if (n <= requested_.load()) {
                 accepted_ = n;
                 std::atomic_thread_fence(std::memory_order_acq_rel);
-                if (wait_for_accept_) {
-                    boost::interprocess::scoped_lock lock(m_mutex_);
-                    c_accepted_.notify_all();
-                }
+                boost::interprocess::scoped_lock lock(m_mutex_);
+                c_accepted_.notify_all();
                 return;
             }
             throw std::runtime_error("Received an session id that was not requested for connection");
