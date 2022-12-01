@@ -36,6 +36,8 @@ parameter=value
 |---:| :---: | :--- |---|
 |thread_pool_size | 整数 | SQLサービスが使用するタスクスケジューラの使用するスレッド数|開発用のため将来的に削除/変更される可能性あり|
 |lazy_worker | ブール(true/false) | SQLサービスが使用するタスクスケジューラが省CPUのためにワーカースレッドをスリープさせるかどうか|開発用のため将来的に削除される可能性あり|
+|prepare_qa_tables | ブール(true/false) | DB起動時にQA用のbuilt-inテーブル定義を追加するか。デフォルトはtrue|開発用のため将来的に削除される可能性あり|
+|prepare_phone_bill_tables | ブール(true/false) | DB起動時に電話料金計算バッチ用のbuilt-inテーブル定義を追加するか。デフォルトはfalse|開発用のため将来的に削除される可能性あり|
 
 ## ipc_endpointセクション
 
