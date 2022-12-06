@@ -149,6 +149,9 @@ public:
      */
     simple_wire(boost::interprocess::managed_shared_memory* managed_shm_ptr, std::size_t capacity) : capacity_(capacity) {
         auto buffer = static_cast<char*>(managed_shm_ptr->allocate_aligned(capacity_, Alignment));
+        if (!buffer) {
+            throw std::runtime_error("cannot allocate shared memory");
+        }
         buffer_handle_ = managed_shm_ptr->get_handle_from_address(buffer);
     }
 
@@ -616,6 +619,9 @@ public:
             wire.set_environments(this, managed_shm_ptr);
         }
         reserved_ = static_cast<char*>(managed_shm_ptr->allocate_aligned(wire_size, Alignment));
+        if (!reserved_) {
+            throw std::runtime_error("cannot allocate shared memory");
+        }
     }
     ~unidirectional_simple_wires() noexcept {
         if (reserved_ != nullptr) {
@@ -652,6 +658,9 @@ public:
             reserved_ = nullptr;
         } else {
             buffer = static_cast<char*>(managed_shm_ptr_->allocate_aligned(wire_size, Alignment));
+            if (!buffer) {
+                throw std::runtime_error("cannot allocate shared memory");
+            }
         }
         auto index = search_free_wire();
         unidirectional_simple_wires_.at(index).attach_buffer(managed_shm_ptr_->get_handle_from_address(buffer), wire_size);
