@@ -16,8 +16,10 @@
 #pragma once
 
 #include <string_view>
+#include <functional>
 #include <sys/types.h>
 #include <unistd.h>
+#include <signal.h>
 
 #include <boost/interprocess/managed_shared_memory.hpp>
 #include <boost/interprocess/containers/map.hpp>
@@ -28,6 +30,7 @@
 #include <boost/interprocess/sync/interprocess_mutex.hpp>
 #include <boost/interprocess/sync/interprocess_condition.hpp>
 #include <boost/interprocess/containers/string.hpp>
+#include <boost/interprocess/containers/set.hpp>
 
 #include <tateyama/framework/component.h>
 
@@ -55,15 +58,19 @@ class resource_status_memory {
       public:
         using void_allocator = boost::interprocess::allocator<void, boost::interprocess::managed_shared_memory::segment_manager>;
         using char_allocator = boost::interprocess::allocator<char, boost::interprocess::managed_shared_memory::segment_manager>;
+        using shm_string = boost::interprocess::basic_string<char, std::char_traits<char>, char_allocator>;
 
         using key_type = tateyama::framework::component::id_type;
         using value_type = state;
         using map_value_type = std::pair<const key_type, value_type>;
-        using shmem_allocator = boost::interprocess::allocator<map_value_type, boost::interprocess::managed_shared_memory::segment_manager>;
-        using shared_memory_map = boost::interprocess::map<key_type, value_type, std::less<>, shmem_allocator>;
-    
+        using value_allocator = boost::interprocess::allocator<map_value_type, boost::interprocess::managed_shared_memory::segment_manager>;
+        using shm_map = boost::interprocess::map<key_type, value_type, std::less<>, value_allocator>;
+
+        using string_allocator = boost::interprocess::allocator<shm_string, boost::interprocess::managed_shared_memory::segment_manager>;
+        using shm_set = boost::interprocess::set<shm_string, std::less<>, string_allocator>;
+
         explicit resource_status(const void_allocator& allocator)
-            : resource_status_map_(allocator), service_status_map_(allocator), endpoint_status_map_(allocator), mutex_file_(allocator) {
+            : resource_status_map_(allocator), service_status_map_(allocator), endpoint_status_map_(allocator), mutex_file_(allocator), sessions_(allocator), allocator_(allocator) {
             shutdown_requested_.store(false, boost::memory_order_relaxed);
         }
     
@@ -88,22 +95,39 @@ class resource_status_memory {
             }
             lock.unlock();
         }
+        [[nodiscard]] bool alive() {
+            return kill(pid_, 0) == 0;
+        }
         void mutex_file(std::string_view file) {
             mutex_file_ = file;
         }
         [[nodiscard]] std::string_view mutex_file() const {
             return std::string_view(mutex_file_.data(), mutex_file_.size());
         }
+        void add_shm_entry(std::string_view name) {
+            sessions_.emplace(shm_string(name, allocator_));
+        }
+        void remove_shm_entry(std::string_view name) {
+            sessions_.erase(shm_string(name, allocator_));
+        }
+        void apply_shm_entry(std::function<void(std::string_view)> f) {
+            for (auto &&e: sessions_) {
+                f(e);
+            }
+        }
 
-        shared_memory_map resource_status_map_;
-        shared_memory_map service_status_map_;
-        shared_memory_map endpoint_status_map_;
+        shm_map resource_status_map_;
+        shm_map service_status_map_;
+        shm_map endpoint_status_map_;
         state whole_{};
         pid_t pid_{};
         boost::atomic<bool> shutdown_requested_{};
         boost::interprocess::interprocess_mutex m_shutdown_{};
         boost::interprocess::interprocess_condition c_shutdown_{};
-        boost::interprocess::basic_string<char, std::char_traits<char>, char_allocator> mutex_file_;
+        shm_string mutex_file_;
+        shm_set sessions_;
+
+        const void_allocator allocator_;
 
         friend class resource_status_memory;
     };
@@ -159,10 +183,23 @@ class resource_status_memory {
     [[nodiscard]] std::string_view mutex_file() const {
         return resource_status_->mutex_file();
     }
+    void add_shm_entry(std::string_view name) {
+        resource_status_->add_shm_entry(name);
+    }
+    void remove_shm_entry(std::string_view name) {
+        resource_status_->add_shm_entry(name);
+    }
+    void apply_shm_entry(std::function<void(std::string_view)> f) {
+        resource_status_->apply_shm_entry(f);
+    }
+    [[nodiscard]] bool alive() {
+        return resource_status_->alive();
+    }
+
     // obsolete
     [[nodiscard]] bool shutdown() {
         return is_shutdown_requested();
-            }
+    }
 
 private:
     resource_status* resource_status_{};

@@ -30,6 +30,7 @@ bool bridge::setup(environment& env) {
     set_digest(env.configuration()->get_canonical_path().string());
 
     std::string status_file_name = (digest_ + ".stat");
+    boost::interprocess::shared_memory_object::remove(status_file_name.c_str());
     shm_remover_ = std::make_unique<shm_remover>(status_file_name);
     try {
         segment_ = std::make_unique<boost::interprocess::managed_shared_memory>(boost::interprocess::create_only, status_file_name.c_str(), shm_size);
@@ -59,9 +60,7 @@ void bridge::whole(state s) {
 }
 
 void bridge::wait_for_shutdown() {
-    if (resource_status_memory_) {
-        resource_status_memory_->wait_for_shutdown();
-    }
+    resource_status_memory_->wait_for_shutdown();
 }
 
 void bridge::mutex_file(std::string_view file_name) {
@@ -75,6 +74,18 @@ std::string_view bridge::mutex_file() {
         return resource_status_memory_->mutex_file();
     }
     return std::string_view();
+}
+
+void bridge::add_shm_entry(std::string_view name) {
+    if (resource_status_memory_) {
+        return resource_status_memory_->add_shm_entry(name);
+    }
+}
+
+void bridge::remove_shm_entry(std::string_view name) {
+    if (resource_status_memory_) {
+        return resource_status_memory_->remove_shm_entry(name);
+    }
 }
 
 void bridge::set_digest(const std::string& path_string) {

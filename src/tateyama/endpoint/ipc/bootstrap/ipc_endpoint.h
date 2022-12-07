@@ -35,7 +35,8 @@ public:
         // create listener object
         listener_ = std::make_unique<tateyama::server::ipc_listener>(
             env.configuration(),
-            env.service_repository().find<framework::routing_service>()
+            env.service_repository().find<framework::routing_service>(),
+            env.resource_repository().find<status_info::resource::bridge>()
         );
         return true;
     }
@@ -43,8 +44,7 @@ public:
     /**
      * @brief start the component (the state will be `activated`)
      */
-    bool start(environment& env) override {
-        listener_->file_mutex((env.resource_repository().find<status_info::resource::bridge>())->mutex_file());
+    bool start(environment&) override {
         listener_thread_ = std::thread(std::ref(*listener_));
         return true;
     }
