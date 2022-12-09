@@ -38,7 +38,7 @@ namespace tateyama::server {
  */
 class ipc_listener {
 public:
-    explicit ipc_listener(const std::shared_ptr<api::configuration::whole>& cfg, const std::shared_ptr<framework::routing_service> router, const std::shared_ptr<status_info::resource::bridge> status) :
+    explicit ipc_listener(const std::shared_ptr<api::configuration::whole>& cfg, std::shared_ptr<framework::routing_service> router, std::shared_ptr<status_info::resource::bridge> status) :
         cfg_(cfg), router_(std::move(router)), status_(std::move(status))
     {
         auto endpoint_config = cfg->get_section("ipc_endpoint");

@@ -17,9 +17,9 @@
 
 #include <string_view>
 #include <functional>
+#include <csignal>
 #include <sys/types.h>
 #include <unistd.h>
-#include <signal.h>
 
 #include <boost/interprocess/managed_shared_memory.hpp>
 #include <boost/interprocess/containers/map.hpp>
@@ -95,7 +95,7 @@ class resource_status_memory {
             }
             lock.unlock();
         }
-        [[nodiscard]] bool alive() {
+        [[nodiscard]] bool alive() const {
             return kill(pid_, 0) == 0;
         }
         void mutex_file(std::string_view file) {
@@ -110,7 +110,7 @@ class resource_status_memory {
         void remove_shm_entry(std::string_view name) {
             sessions_.erase(shm_string(name, allocator_));
         }
-        void apply_shm_entry(std::function<void(std::string_view)> f) {
+        void apply_shm_entry(std::function<void(std::string_view)>& f) {
             for (auto &&e: sessions_) {
                 f(e);
             }
