@@ -193,6 +193,7 @@ private:
             return true;
         }
 
+        bool rv = true;
         BOOST_FOREACH(const boost::property_tree::ptree::value_type &s, property_tree_) {
             try {
                 boost::property_tree::ptree& default_section = default_tree_.get_child(s.first);
@@ -201,17 +202,17 @@ private:
                         default_section.get<std::string>(p.first);
                     } catch (boost::property_tree::ptree_error &e) {
                         LOG(ERROR) << "property '" << p.first << "' is not in the '" << s.first << "' section in the default configuration.";
-//                        return false;  //  FIXME  As a provisional measure, continue processing even if this error occurs.
-                        return true;
+//                        rv = false;  //  FIXME  As a provisional measure, treat as not an error if the property is not in the default configuration.
+                        continue;
                     }
                 }
             } catch (boost::property_tree::ptree_error &e) {
                 LOG(ERROR) << "section '" << s.first << "' is not in the default configuration.";
-//                return false;  // FIXME  As a provisional measure, continue processing even if this error occurs.
-                return true;
+//                rv = false;  //  FIXME  As a provisional measure, treat as not an error if the property is not in the default configuration.
+                continue;
             }
         }
-        return true;
+        return rv;
     }
 
     void initialize(std::istream& content);
