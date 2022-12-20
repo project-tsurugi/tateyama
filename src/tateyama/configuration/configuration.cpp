@@ -25,6 +25,7 @@ static constexpr std::string_view default_configuration {  // NOLINT
     "[sql]\n"
         "thread_pool_size=5\n"
         "lazy_worker=false\n"
+        "prepare_qa_tables=false\n"
 
     "[ipc_endpoint]\n"
         "database_name=tateyama\n"
