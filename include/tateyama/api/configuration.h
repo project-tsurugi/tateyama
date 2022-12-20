@@ -185,13 +185,15 @@ private:
     boost::property_tree::ptree default_tree_;
     boost::filesystem::path file_{};
     bool property_file_exist_{};
+    bool check_done_{};
 
     std::unordered_map<std::string, std::unique_ptr<section>> map_;
 
     bool check() {
-        if (!property_file_exist_) {
+        if (!property_file_exist_ || check_done_) {
             return true;
         }
+        check_done_ = true;
 
         bool rv = true;
         BOOST_FOREACH(const boost::property_tree::ptree::value_type &s, property_tree_) {
