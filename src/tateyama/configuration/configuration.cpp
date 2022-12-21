@@ -26,6 +26,10 @@ static constexpr std::string_view default_configuration {  // NOLINT
         "thread_pool_size=5\n"
         "lazy_worker=false\n"
         "prepare_qa_tables=false\n"
+        "prepare_phone_bill_tables=false\n"
+        "enable_index_join=false\n"
+        "stealing_enabled=false\n"
+        "default_partitions=5\n"
 
     "[ipc_endpoint]\n"
         "database_name=tateyama\n"
