@@ -178,8 +178,7 @@ private:
     worker_stat* stat_{};
     backoff_waiter waiter_{0};
 
-    std::size_t next(std::size_t current, std::size_t initial) {
-        (void)initial;
+    std::size_t next(std::size_t current) {
         auto sz = queues_->size();
         if (current == sz - 1) {
             return 0;
@@ -188,11 +187,11 @@ private:
     }
 
     bool steal_and_execute(api::task_scheduler::context& ctx) {
-        std::size_t from = ctx.last_steal_from();
+        std::size_t last = ctx.last_steal_from();
         task t{};
-        for(auto idx = next(from, from); idx != from; idx = next(idx, from)) {
+        for(auto idx = next(last); idx != last; idx = next(idx)) {
             auto& tgt = (*queues_)[idx];
-            if(tgt.try_pop(t)) {
+            if(tgt.active() && tgt.try_pop(t)) {
                 ++stat_->stolen_;
                 ctx.last_steal_from(idx);
                 execute_task(t, ctx);

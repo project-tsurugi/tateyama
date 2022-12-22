@@ -169,7 +169,7 @@ private:
     std::size_t initial_core_ = 1;
     bool assign_numa_nodes_uniformly_ = true;
     std::size_t force_numa_node_ = numa_node_unspecified;
-    bool stealing_enabled_ = false;
+    bool stealing_enabled_ = true;
     bool round_robbin_ = false;
     bool lazy_worker_ = false;
     rational ratio_check_local_first_{1, 10};

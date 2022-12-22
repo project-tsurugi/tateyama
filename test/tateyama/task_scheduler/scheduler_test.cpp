@@ -148,7 +148,6 @@ TEST_F(scheduler_test, sticky_task_simple) {
     using task = tateyama::task_scheduler::basic_task<test_task, test_task_sticky>;
     task_scheduler_cfg cfg{};
     cfg.thread_count(1);
-    cfg.stealing_enabled(true);
     cfg.ratio_check_local_first({1, 2}); // sticky task and local queue task are processed alternately
     scheduler<task> sched{cfg, true};
 
@@ -188,7 +187,6 @@ TEST_F(scheduler_test, sticky_task_stealing) {
     using task = tateyama::task_scheduler::basic_task<test_task, test_task_sticky>;
     task_scheduler_cfg cfg{};
     cfg.thread_count(2);
-    cfg.stealing_enabled(true);
     scheduler<task> sched{cfg, true};
 
     auto& w0 = sched.workers()[0];
@@ -227,7 +225,6 @@ TEST_F(scheduler_test, delayed_tasks_only) {
     using task = tateyama::task_scheduler::basic_task<test_task, test_task_sticky, test_task_delayed>;
     task_scheduler_cfg cfg{};
     cfg.thread_count(1);
-    cfg.stealing_enabled(false);
     cfg.ratio_check_local_first({1, 2}); // sticky task and local queue task are processed alternately
     cfg.frequency_promoting_delayed({1, 3}); // checking 3 times, one delayed task is promoted
     scheduler<task> sched{cfg, true};
@@ -261,7 +258,6 @@ TEST_F(scheduler_test, sticky_tasks_delayed_tasks) {
     using task = tateyama::task_scheduler::basic_task<test_task, test_task_sticky, test_task_delayed>;
     task_scheduler_cfg cfg{};
     cfg.thread_count(1);
-    cfg.stealing_enabled(false);
     cfg.ratio_check_local_first({1, 2}); // sticky task and local queue task are processed alternately
     cfg.frequency_promoting_delayed({1, 6}); // when task is checked 6 times, one delayed task is promoted to local
     scheduler<task> sched{cfg, true};
@@ -353,7 +349,6 @@ TEST_F(scheduler_test, task_sticky_and_delayed) {
     using task = tateyama::task_scheduler::basic_task<test_task, test_task_sticky, test_task_delayed, test_task_sticky_delayed>;
     task_scheduler_cfg cfg{};
     cfg.thread_count(1);
-    cfg.stealing_enabled(false);
     cfg.ratio_check_local_first({1, 2}); // sticky task and local queue task are processed alternately
     cfg.frequency_promoting_delayed({1, 2}); // when task is checked 3 times, one delayed task is promoted
     scheduler<task> sched{cfg, true};
@@ -399,7 +394,6 @@ TEST_F(scheduler_test, task_sticky_and_delayed_only) {
     using task = tateyama::task_scheduler::basic_task<test_task, test_task_sticky, test_task_delayed, test_task_sticky_delayed>;
     task_scheduler_cfg cfg{};
     cfg.thread_count(1);
-    cfg.stealing_enabled(false);
     cfg.ratio_check_local_first({1, 2}); // sticky task and local queue task are processed alternately
     cfg.frequency_promoting_delayed({1, 2}); // when task is checked 3 times, one delayed task is promoted
     scheduler<task> sched{cfg, true};
@@ -409,8 +403,6 @@ TEST_F(scheduler_test, task_sticky_and_delayed_only) {
     auto& sq0 = sched.sticky_task_queues()[0];
     bool executed00 = false;
     bool executed01 = false;
-    bool executed02 = false;
-    bool executed03 = false;
     sched.schedule_at(task{test_task_sticky_delayed{[&](context& t) {
         executed00 = true;
     }}}, 0);
