@@ -39,7 +39,7 @@ parameter=value
 |prepare_qa_tables | ブール(true/false) | DB起動時にQA用のbuilt-inテーブル定義を追加するか。デフォルトはfalse|開発用のため将来的に削除される可能性あり|
 |prepare_phone_bill_tables | ブール(true/false) | DB起動時に電話料金計算バッチ用のbuilt-inテーブル定義を追加するか。デフォルトはfalse|開発用のため将来的に削除される可能性あり|
 |enable_index_join | ブール(true/false) | 性能向上のためインデックスを利用した結合処理を行うか。デフォルトはfalse|開発用のため将来的に削除される可能性あり|
-|stealing_enabled | ブール(true/false) | 空いたCPUコアを活用するためにスケジューラーがタスクのstealingを行うか。デフォルトはfalse|開発用のため将来的に削除される可能性あり|
+|stealing_enabled | ブール(true/false) | 空いたCPUコアを活用するためにスケジューラーがタスクのstealingを行うか。デフォルトはtrue|開発用のため将来的に削除される可能性あり|
 |default_partitions | 整数 | 並列化可能な関係演算子の実行においてデータ分割を行う際のパーティション数。デフォルトは5|開発用のため将来的に削除/変更される可能性あり|
 
 ## ipc_endpointセクション
