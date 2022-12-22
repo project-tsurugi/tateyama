@@ -63,7 +63,7 @@ public:
         container_ = std::make_unique<tateyama::common::wire::connection_container>(database_name_);
 
         // worker objects
-        workers_.reserve(threads);
+        workers_.resize(threads);
     }
 
     void operator()() {
@@ -75,9 +75,11 @@ public:
             auto session_id = connection_queue.listen(true);
             if (connection_queue.is_terminated()) {
                 VLOG(log_debug) << "receive terminate request";
-                for (auto & worker : workers_) {
-                    if (auto rv = worker->future_.wait_for(std::chrono::seconds(0)) ; rv != std::future_status::ready) {
-                        VLOG(log_debug) << "exit: remaining thread " << worker->session_id_;
+                for (auto& worker : workers_) {
+                    if (worker) {
+                        if (auto rv = worker->future_.wait_for(std::chrono::seconds(0)); rv != std::future_status::ready) {
+                            VLOG(log_debug) << "exit: remaining thread " << worker->session_id_;
+                        }
                     }
                 }
                 workers_.clear();
@@ -93,16 +95,24 @@ public:
             VLOG(log_debug) << "created session wire: " << session_name;
             connection_queue.accept(session_id);
             std::size_t index = 0;
+            bool found = false;
             for (; index < workers_.size() ; index++) {
-                if (auto rv = workers_.at(index)->future_.wait_for(std::chrono::seconds(0)) ; rv == std::future_status::ready) {
+                auto& worker = workers_.at(index);
+                if (!worker) {
+                    found = true;
+                    break;
+                }
+                if (auto rv = worker->future_.wait_for(std::chrono::seconds(0)); rv == std::future_status::ready) {
+                    found = true;
                     break;
                 }
             }
-            if (workers_.size() < (index + 1)) {
-                workers_.resize(index + 1);
+            if (!found) {
+                LOG(ERROR) << "the number of sessions exceeded the limit (" << workers_.size() << ")";
+                continue;
             }
             try {
-                std::unique_ptr<server::Worker> &worker = workers_.at(index);
+                auto& worker = workers_.at(index);
                 if (worker) {
                     if (auto name = worker->session_name(); !name.empty()) {
                         status_->remove_shm_entry(name);
@@ -112,7 +122,7 @@ public:
                 worker->task_ = std::packaged_task<void()>([&]{worker->run();});
                 worker->future_ = worker->task_.get_future();
                 worker->thread_ = std::thread(std::move(worker->task_));
-            } catch (std::exception &ex) {
+            } catch (std::exception& ex) {
                 LOG(ERROR) << ex.what();
                 workers_.clear();
                 break;
