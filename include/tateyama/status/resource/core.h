@@ -187,7 +187,7 @@ class resource_status_memory {
         resource_status_->add_shm_entry(name);
     }
     void remove_shm_entry(std::string_view name) {
-        resource_status_->add_shm_entry(name);
+        resource_status_->remove_shm_entry(name);
     }
     void apply_shm_entry(std::function<void(std::string_view)> f) {
         resource_status_->apply_shm_entry(f);
