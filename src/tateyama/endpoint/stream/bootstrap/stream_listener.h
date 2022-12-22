@@ -71,7 +71,7 @@ public:
         connection_socket_ = std::make_unique<tateyama::common::stream::connection_socket>(port);
 
         // worker objects
-        workers_.reserve(threads);
+        workers_.resize(threads);
     }
     ~stream_listener() {
         connection_socket_->close();
@@ -89,25 +89,33 @@ public:
             std::unique_ptr<tateyama::common::stream::stream_socket> stream{};
             try {
                 stream = connection_socket_->accept();
-            } catch (std::exception &ex) {
+            } catch (std::exception& ex) {
                 LOG(ERROR) << ex.what();
                 continue;
             }
             if (stream != nullptr) {
                 DVLOG(log_trace) << "created session stream: " << session_id;
                 std::size_t index = 0;
+                bool found = false;
                 for (; index < workers_.size() ; index++) {
-                    if (auto rv = workers_.at(index)->future_.wait_for(std::chrono::seconds(0)) ; rv == std::future_status::ready) {
+                    auto& worker = workers_.at(index);
+                    if (!worker) {
+                        found = true;
+                        break;
+                    }
+                    if (auto rv = worker->future_.wait_for(std::chrono::seconds(0)); rv == std::future_status::ready) {
+                        found = true;
                         break;
                     }
                 }
-                if (workers_.size() < (index + 1)) {
-                    workers_.resize(index + 1);
+                if (!found) {
+                    LOG(ERROR) << "the number of sessions exceeded the limit (" << workers_.size() << ")";
+                    continue;
                 }
-                std::unique_ptr<stream_worker> &worker = workers_.at(index);
+                auto& worker = workers_.at(index);
                 try {
                     worker = std::make_unique<stream_worker>(*router_, session_id, std::move(stream));
-                } catch (std::exception &ex) {
+                } catch (std::exception& ex) {
                     LOG(ERROR) << ex.what();
                     continue;
                 }
