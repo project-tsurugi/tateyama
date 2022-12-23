@@ -94,9 +94,17 @@ public:
         std::string dummy;
 
         if (!await(info, slot, dummy)) {
+            close();
             return false;
         }
         if (info != REQUEST_SESSION_HELLO) {
+            close();
+            return false;
+        }
+        if (decline_) {
+            VLOG(log_trace) << "<-- RESPONSE_SESSION_HELLO_NG";  //NOLINT
+            send_response(RESPONSE_SESSION_HELLO_NG, 0, "");
+            close();
             return false;
         }
         slot_size_ = slot;
@@ -169,10 +177,15 @@ public:
         throw std::runtime_error("running out the slots for result set");  //NOLINT
     }
 
+    void decline() {
+        decline_ = true;
+    }
+
 private:
     int socket_;
     bool session_closed_{false};
     bool socket_closed_{false};
+    bool decline_{false};
     std::vector<bool> in_use_{};
     std::mutex mutex_{};
     std::atomic_uint slot_using_{};

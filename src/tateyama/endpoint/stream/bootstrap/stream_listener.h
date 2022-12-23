@@ -45,6 +45,23 @@ struct stream_endpoint_context {
  */
 class stream_listener {
 public:
+
+    // in case for session limit
+    class undertaker {
+    public:
+        explicit undertaker(std::unique_ptr<tateyama::common::stream::stream_socket> stream) : stream_(std::move(stream)) {}
+        void operator()() {
+            while (stream_->wait_hello(""));
+            done = true;
+        }
+        [[nodiscard]] bool is_done() const {
+            return done;
+        }
+    private:
+        std::unique_ptr<tateyama::common::stream::stream_socket> stream_;
+        bool done{};
+    };
+
     explicit stream_listener(const std::shared_ptr<api::configuration::whole>& cfg, std::shared_ptr<framework::routing_service> router) :
         cfg_(cfg),
         router_(std::move(router))
@@ -86,6 +103,7 @@ public:
         std::size_t session_id = 0x1000000000000000LL;
 
         while(true) {
+            undertakers_.erase(std::remove_if(std::begin(undertakers_), std::end(undertakers_), [](std::unique_ptr<undertaker>& ut){ return ut->is_done(); }), std::cend(undertakers_));
             std::unique_ptr<tateyama::common::stream::stream_socket> stream{};
             try {
                 stream = connection_socket_->accept();
@@ -109,6 +127,11 @@ public:
                     }
                 }
                 if (!found) {
+                    stream->decline();
+                    auto ut = std::make_unique<undertaker>(std::move(stream));
+                    auto t = std::thread(std::ref(*ut));
+                    t.detach();
+                    undertakers_.emplace_back(std::move(ut));
                     LOG(ERROR) << "the number of sessions exceeded the limit (" << workers_.size() << ")";
                     continue;
                 }
@@ -138,6 +161,7 @@ private:
     std::shared_ptr<framework::routing_service> router_{};
     std::unique_ptr<tateyama::common::stream::connection_socket> connection_socket_{};
     std::vector<std::unique_ptr<stream_worker>> workers_{};
+    std::vector<std::unique_ptr<undertaker>> undertakers_{};
 };
 
 }  // tateyama::server
