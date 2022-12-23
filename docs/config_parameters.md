@@ -52,8 +52,8 @@ parameter=value
 
 |パラメーター名 | 型 | 値 |備考|
 |---:| :---: | :--- |---|
-|database_name | 文字列 | ipc_endpointに接続する際のurl名、default値はtateyama（参）この文字列は/dev/shmに作成されるファイル名のprefixとして使われる
-|threads | 整数 | ipc_endpointの最大同時接続数
+|database_name | 文字列 | ipc_endpointに接続する際のurl名、デフォルトはtateyama（参）この文字列は/dev/shmに作成されるファイル名のprefixとして使われる。
+|threads | 整数 | ipc_endpointの最大同時接続数、デフォルトは104。現在の実装では、threadsを超えた接続要求を受けたときの動作は不定。
 
 ## stream_endpointセクション
 
@@ -65,8 +65,8 @@ parameter=value
 
 |パラメーター名 | 型 | 値 |備考|
 |---:| :---: | :--- |---|
-|port | 整数 | stream_endpointに接続する際のport番号、default値は12345
-|threads | 整数 | stream_endpointの最大同時接続数
+|port | 整数 | stream_endpointに接続する際のport番号、デフォルトは12345
+|threads | 整数 | stream_endpointの最大同時接続数、デフォルトは104
 
 ## fdwセクション
 
@@ -79,7 +79,7 @@ parameter=value
 |パラメーター名 | 型 | 値 |備考|
 |---:| :---: | :--- |---|
 |name | 整数 | 文字列 | ogawayamaと接続する際のurl名、default値はtateyama（参）この文字列は/dev/shmに作成されるファイル名のprefixとして使われる
-|threads | 整数 | fdwの最大同時接続数
+|threads | 整数 | fdwの最大同時接続数、デフォルトは104
 
 ## sessionセクション
 

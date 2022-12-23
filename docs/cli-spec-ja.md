@@ -40,7 +40,7 @@ NOTE: for developers
 ```sh
 oltp start [--conf </path/to/conf>] [--recovery|--no-recovery]
 oltp shutdown [--conf </path/to/conf>] [--timeout <value>]
-oltp kill [--conf </path/to/conf>]
+oltp kill [--conf </path/to/conf>] [--timeout <value>]
 oltp quiesce [--conf </path/to/conf>] [--label <text>]
 oltp status [--conf </path/to/conf>]
 ```
@@ -88,7 +88,8 @@ oltp status [--conf </path/to/conf>]
     * overview
       * データベースプロセスを完全に終了させる
     * options
-      * (N/A)
+      * `--timeout` データベースプロセス終了を確認するまでの時間（単位：秒）、defaultは10秒
+      　valueに0を指定するとデータベースプロセス終了を確認するまで制御を返さない
     * note
       * 同一の設定ファイルを参照する、稼働中または完全に終了していないデータベースを対象にとる
       * 対象のデータベースがどのような状態であっても完全に終了する
