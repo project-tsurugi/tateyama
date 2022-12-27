@@ -68,6 +68,7 @@ public:
         resultset_wires_container_impl& operator = (resultset_wires_container_impl&&) = delete;
 
         shm_resultset_wire* acquire() override {
+            std::lock_guard<std::mutex> lock(mtx_shm_);
             try {
                 return shm_resultset_wires_->acquire();
             } catch(const boost::interprocess::interprocess_exception& ex) {
