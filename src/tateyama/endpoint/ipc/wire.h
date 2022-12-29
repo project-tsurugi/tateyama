@@ -922,7 +922,13 @@ public:
     }
     void accept(std::size_t n) {
         if (n == (accepted_ + 1)) {
-            if (n <= requested_.load()) {
+            if (n < requested_.load()) {  // bug or spec. of boost::interprocess::interprocess_mutex?
+                accepted_ = n;
+                std::atomic_thread_fence(std::memory_order_acq_rel);
+                c_accepted_.notify_all();
+                return;
+            }
+            if (n == requested_.load()) {
                 accepted_ = n;
                 std::atomic_thread_fence(std::memory_order_acq_rel);
                 boost::interprocess::scoped_lock lock(m_mutex_);
