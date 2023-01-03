@@ -300,6 +300,7 @@ private:
 class connection_container
 {
     static constexpr std::size_t request_queue_size = (1<<12);  // 4K bytes (tentative)  NOLINT
+    static constexpr std::size_t request_entry_size = 10;
 
 public:
     explicit connection_container(std::string_view name) : name_(name) {
@@ -308,7 +309,7 @@ public:
             managed_shared_memory_ =
                 std::make_unique<boost::interprocess::managed_shared_memory>(boost::interprocess::create_only, name_.c_str(), request_queue_size);
             managed_shared_memory_->destroy<connection_queue>(connection_queue::name);
-            connection_queue_ = managed_shared_memory_->construct<connection_queue>(connection_queue::name)();
+            connection_queue_ = managed_shared_memory_->construct<connection_queue>(connection_queue::name)(request_entry_size, managed_shared_memory_->get_segment_manager());
         }
         catch(const boost::interprocess::interprocess_exception& ex) {
             std::abort();  // FIXME

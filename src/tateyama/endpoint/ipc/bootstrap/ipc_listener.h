@@ -18,7 +18,6 @@
 #include <memory>
 #include <string>
 #include <exception>
-#include <iostream>
 #include <chrono>
 #include <csignal>
 
@@ -60,7 +59,7 @@ public:
         auto threads = threads_opt.value();
 
         // connection channel
-        container_ = std::make_unique<tateyama::common::wire::connection_container>(database_name_);
+        container_ = std::make_unique<tateyama::common::wire::connection_container>(database_name_, threads);
 
         // worker objects
         workers_.resize(threads);
@@ -72,7 +71,7 @@ public:
         status_->add_shm_entry(database_name_);
 
         while(true) {
-            auto session_id = connection_queue.listen(true);
+            auto session_id = connection_queue.listen();
             if (connection_queue.is_terminated()) {
                 VLOG(log_debug) << "receive terminate request";
                 for (auto& worker : workers_) {
