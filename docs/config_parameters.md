@@ -53,7 +53,7 @@ parameter=value
 |パラメーター名 | 型 | 値 |備考|
 |---:| :---: | :--- |---|
 |database_name | 文字列 | ipc_endpointに接続する際のurl名、デフォルトはtateyama（参）この文字列は/dev/shmに作成されるファイル名のprefixとして使われる。
-|threads | 整数 | ipc_endpointの最大同時接続数、デフォルトは104。現在の実装では、threadsを超えた接続要求を受けたときの動作は不定。
+|threads | 整数 | ipc_endpointの最大同時接続数、デフォルトは104。
 
 ## stream_endpointセクション
 
