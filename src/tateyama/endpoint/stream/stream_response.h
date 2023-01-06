@@ -102,8 +102,9 @@ public:
 private:
     stream_socket& session_socket_;
     std::set<std::shared_ptr<stream_writer>, pointer_comp<stream_writer>> data_writers_{};
+    std::mutex mutex_{};
     unsigned int slot_;
-    unsigned char writer_id_{};
+    std::atomic_char writer_id_{};
 };
 
 /**
