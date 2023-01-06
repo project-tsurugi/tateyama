@@ -135,6 +135,7 @@ tateyama::status stream_writer::write(char const* data, std::size_t length) {
 tateyama::status stream_writer::commit() {
     DVLOG(log_trace) << __func__ << std::endl;  //NOLINT
 
+    resultset_socket_.send(slot_, writer_id_, std::string_view());
     return tateyama::status::ok;
 }
 

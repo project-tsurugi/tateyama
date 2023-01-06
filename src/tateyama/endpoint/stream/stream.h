@@ -143,7 +143,7 @@ public:
         send_response(RESPONSE_RESULT_SET_BYE, slot, "");
     }
     void send(std::uint16_t slot, unsigned char writer, std::string_view payload) { // for RESPONSE_RESULT_SET_PAYLOAD
-        VLOG(log_trace) << "<-- RESPONSE_RESULT_SET_PAYLOAD " << static_cast<std::uint32_t>(slot) << ", " << static_cast<std::uint32_t>(writer);  //NOLINT
+        VLOG(log_trace) << (payload.length() > 0 ? "<-- RESPONSE_RESULT_SET_PAYLOAD " : "<-- RESPONSE_RESULT_SET_COMMIT ") << static_cast<std::uint32_t>(slot) << ", " << static_cast<std::uint32_t>(writer);  //NOLINT
         std::unique_lock<std::mutex> lock(mutex_);
         if (session_closed_) {
             return;
