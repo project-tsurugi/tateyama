@@ -98,7 +98,10 @@ tateyama::status ipc_data_channel::acquire(std::shared_ptr<tateyama::api::server
 
     if (auto ipc_wrt = std::make_shared<ipc_writer>(data_channel_->acquire()); ipc_wrt != nullptr) {
         wrt = ipc_wrt;
-        data_writers_.emplace(std::move(ipc_wrt));
+        {
+            std::unique_lock lock{mutex_};
+            data_writers_.emplace(std::move(ipc_wrt));
+        }
         return tateyama::status::ok;
     }
     return tateyama::status::unknown;
@@ -107,6 +110,7 @@ tateyama::status ipc_data_channel::acquire(std::shared_ptr<tateyama::api::server
 tateyama::status ipc_data_channel::release(tateyama::api::server::writer& wrt) {
     VLOG(log_trace) << __func__ << std::endl;  //NOLINT
 
+    std::unique_lock lock{mutex_};
     if (auto itr = data_writers_.find(dynamic_cast<ipc_writer*>(&wrt)); itr != data_writers_.end()) {
         data_writers_.erase(itr);
         return tateyama::status::ok;

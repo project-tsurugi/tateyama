@@ -17,6 +17,7 @@
 
 #include <set>
 #include <string_view>
+#include <mutex>
 
 #include <tateyama/api/server/response.h>
 #include <tateyama/api/server/response_code.h>
@@ -103,6 +104,7 @@ private:
     server_wire_container::unq_p_resultset_wires_conteiner data_channel_;
 
     std::set<std::shared_ptr<ipc_writer>, pointer_comp<ipc_writer>> data_writers_{};
+    std::mutex mutex_{};
 };
 
 /**
