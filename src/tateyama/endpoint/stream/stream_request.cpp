@@ -23,6 +23,7 @@ namespace tateyama::common::stream {
 
 std::string_view
 stream_request::payload() const {
+    VLOG_LP(log_trace) << static_cast<const void*>(&session_socket_) << " length = " << payload_.length();  //NOLINT
     return payload_;
 }
 

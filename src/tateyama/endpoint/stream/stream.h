@@ -102,7 +102,7 @@ public:
             return false;
         }
         if (decline_) {
-            VLOG(log_trace) << "<-- RESPONSE_SESSION_HELLO_NG";  //NOLINT
+            DVLOG_LP(log_trace) << "<-- RESPONSE_SESSION_HELLO_NG";  //NOLINT
             send_response(RESPONSE_SESSION_HELLO_NG, 0, "");
             close();
             return false;
@@ -122,28 +122,28 @@ public:
     }
 
     void send(std::string_view payload) {  // for RESPONSE_SESSION_HELLO_OK
-        VLOG(log_trace) << "<-- RESPONSE_SESSION_HELLO_OK ";  //NOLINT
+        DVLOG_LP(log_trace) << "<-- RESPONSE_SESSION_HELLO_OK ";  //NOLINT
         send_response(RESPONSE_SESSION_HELLO_OK, 0, payload);
     }
     void send(std::uint16_t slot, std::string_view payload, bool body) {  // for RESPONSE_SESSION_PAYLOAD
         if (body) {
-            VLOG(log_trace) << "<-- RESPONSE_SESSION_PAYLOAD " << static_cast<std::uint32_t>(slot);  //NOLINT
+            DVLOG_LP(log_trace) << "<-- RESPONSE_SESSION_PAYLOAD " << static_cast<std::uint32_t>(slot);  //NOLINT
             send_response(RESPONSE_SESSION_PAYLOAD, slot, payload);
         } else {
-            VLOG(log_trace) << "<-- RESPONSE_SESSION_BODYHEAD " << static_cast<std::uint32_t>(slot);  //NOLINT
+            DVLOG_LP(log_trace) << "<-- RESPONSE_SESSION_BODYHEAD " << static_cast<std::uint32_t>(slot);  //NOLINT
             send_response(RESPONSE_SESSION_BODYHEAD, slot, payload);
         }
     }
     void send_result_set_hello(std::uint16_t slot, std::string_view name) {  // for RESPONSE_RESULT_SET_HELLO
-        VLOG(log_trace)  << "<-- RESPONSE_RESULT_SET_HELLO " << static_cast<std::uint32_t>(slot) << ", " << name;  //NOLINT
+        DVLOG_LP(log_trace)  << "<-- RESPONSE_RESULT_SET_HELLO " << static_cast<std::uint32_t>(slot) << ", " << name;  //NOLINT
         send_response(RESPONSE_RESULT_SET_HELLO, slot, name);
     }
     void send_result_set_bye(std::uint16_t slot) {  // for RESPONSE_RESULT_SET_BYE
-        VLOG(log_trace) << "<-- RESPONSE_RESULT_SET_BYE " << static_cast<std::uint32_t>(slot);  //NOLINT
+        DVLOG_LP(log_trace) << "<-- RESPONSE_RESULT_SET_BYE " << static_cast<std::uint32_t>(slot);  //NOLINT
         send_response(RESPONSE_RESULT_SET_BYE, slot, "");
     }
     void send(std::uint16_t slot, unsigned char writer, std::string_view payload) { // for RESPONSE_RESULT_SET_PAYLOAD
-        VLOG(log_trace) << (payload.length() > 0 ? "<-- RESPONSE_RESULT_SET_PAYLOAD " : "<-- RESPONSE_RESULT_SET_COMMIT ") << static_cast<std::uint32_t>(slot) << ", " << static_cast<std::uint32_t>(writer);  //NOLINT
+        DVLOG_LP(log_trace) << (payload.length() > 0 ? "<-- RESPONSE_RESULT_SET_PAYLOAD " : "<-- RESPONSE_RESULT_SET_COMMIT ") << static_cast<std::uint32_t>(slot) << ", " << static_cast<std::uint32_t>(writer);  //NOLINT
         std::unique_lock<std::mutex> lock(mutex_);
         if (session_closed_) {
             return;
@@ -193,7 +193,7 @@ private:
     std::size_t slot_size_{SLOT_SIZE};
 
     bool await(unsigned char& info, std::uint16_t& slot, std::string& payload) {
-        VLOG(log_trace) << "-- enter waiting REQUEST --";  //NOLINT
+        DVLOG_LP(log_trace) << "-- enter waiting REQUEST --";  //NOLINT
 
         while (true) {
             if (!queue_.empty() && slot_using_ < slot_size_) {
@@ -217,20 +217,20 @@ private:
 
             if (FD_ISSET(socket_, &fds)) {  // NOLINT
                 if (auto size_i = ::recv(socket_, &info, 1, 0); size_i == 0) {
-                    VLOG(log_trace) << "socket is closed by the client";  //NOLINT
+                    DVLOG_LP(log_trace) << "socket is closed by the client";  //NOLINT
                     return false;
                 }
 
                 char buffer[sizeof(std::uint16_t)];  // NOLINT
                 if (!recv(&buffer[0], sizeof(std::uint16_t))) {
-                        VLOG(log_trace) << "socket is closed by the client abnormally";  //NOLINT
+                        DVLOG_LP(log_trace) << "socket is closed by the client abnormally";  //NOLINT
                         return false;
                 }
                 slot = (strip(buffer[1]) << 8) | strip(buffer[0]);  // NOLINT
             }
             switch (info) {
             case REQUEST_SESSION_PAYLOAD:
-                VLOG(log_trace) << "--> REQUEST_SESSION_PAYLOAD " << static_cast<std::uint32_t>(slot);  //NOLINT
+                DVLOG_LP(log_trace) << "--> REQUEST_SESSION_PAYLOAD " << static_cast<std::uint32_t>(slot);  //NOLINT
                 if (recv(payload)) {
                     if (slot_using_ < slot_size_) {
                         return true;
@@ -238,40 +238,40 @@ private:
                     queue_.push(recv_entry(info, slot, payload));
                     break;
                 }
-                VLOG(log_trace) << "socket is closed by the client abnormally";  //NOLINT
+                DVLOG_LP(log_trace) << "socket is closed by the client abnormally";  //NOLINT
                 return false;
             case REQUEST_RESULT_SET_BYE_OK:
             {
-                VLOG(log_trace) << "--> REQUEST_RESULT_SET_BYE_OK " << static_cast<std::uint32_t>(slot);  //NOLINT
+                DVLOG_LP(log_trace) << "--> REQUEST_RESULT_SET_BYE_OK " << static_cast<std::uint32_t>(slot);  //NOLINT
                 std::string dummy;
                 if (recv(dummy)) {
                     release_slot(slot);
                     break;
                 }
-                VLOG(log_trace) << "socket is closed by the client abnormally";  //NOLINT
+                DVLOG_LP(log_trace) << "socket is closed by the client abnormally";  //NOLINT
                 return false;
             }
             case REQUEST_SESSION_HELLO:
-                VLOG(log_trace) << "--> REQUEST_SESSION_HELLO ";  //NOLINT
+                DVLOG_LP(log_trace) << "--> REQUEST_SESSION_HELLO ";  //NOLINT
                 if (recv(payload)) {
                     return true;  // supposed to return to stream_socket()
                 }
-                VLOG(log_trace) << "socket is closed by the client abnormally";  //NOLINT
+                DVLOG_LP(log_trace) << "socket is closed by the client abnormally";  //NOLINT
                 return false;
             case REQUEST_SESSION_BYE:
-                VLOG(log_trace) << "--> REQUEST_SESSION_BYE ";  //NOLINT
+                DVLOG_LP(log_trace) << "--> REQUEST_SESSION_BYE ";  //NOLINT
                 if (recv(payload)) {
                     do {std::unique_lock<std::mutex> lock(mutex_);
                         session_closed_ = true;
                     } while (false);
-                    VLOG(log_trace) << "<-- RESPONSE_SESSION_BYE_OK ";  //NOLINT
+                    DVLOG_LP(log_trace) << "<-- RESPONSE_SESSION_BYE_OK ";  //NOLINT
                     send_response(RESPONSE_SESSION_BYE_OK, 0, "", true);
                     continue;
                 }
-                VLOG(log_trace) << "socket is closed by the client abnormally";  //NOLINT
+                DVLOG_LP(log_trace) << "socket is closed by the client abnormally";  //NOLINT
                 return false;
             default:
-                LOG(ERROR) << "illegal message type " << static_cast<std::uint32_t>(info);  //NOLINT
+                LOG_LP(ERROR) << "illegal message type " << static_cast<std::uint32_t>(info);  //NOLINT
                 return false;  // to exit this thread
             }
         }
@@ -338,7 +338,7 @@ private:
 
     void release_slot(unsigned int slot) {
         if (!in_use_.at(slot)) {
-            LOG(ERROR) << "slot " << slot << " is not using";
+            LOG_LP(ERROR) << "slot " << slot << " is not using";
             return;
         }
         in_use_.at(slot) = false;
@@ -364,7 +364,7 @@ public:
         socket_ = ::socket(AF_INET, SOCK_STREAM, 0);
         const int enable = 1;
         if (setsockopt(socket_, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(enable)) < 0) {
-            LOG(ERROR) << "setsockopt() fail";
+            LOG_LP(ERROR) << "setsockopt() fail";
         }
 
         // Map the address and the port to the socket
@@ -414,7 +414,7 @@ public:
 
     void request_terminate() {
         if (write(pair_[1], "q", 1) <= 0) {
-            LOG(ERROR) << "fail to request terminate";
+            LOG_LP(ERROR) << "fail to request terminate";
         }
     }
 

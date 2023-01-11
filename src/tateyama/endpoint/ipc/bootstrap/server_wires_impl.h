@@ -45,10 +45,10 @@ public:
             try {
                 shm_resultset_wires_ = managed_shm_ptr_->construct<shm_resultset_wires>(rsw_name_.c_str())(managed_shm_ptr_, count);
             } catch(const boost::interprocess::interprocess_exception& ex) {
-                LOG(ERROR) << ex.what() << " on resultset_wires_container_impl::resultset_wires_container_impl()" << std::endl;
+                LOG_LP(ERROR) << ex.what() << " on resultset_wires_container_impl::resultset_wires_container_impl()" << std::endl;
                 pthread_exit(nullptr);  // FIXME
             } catch (std::runtime_error &ex) {
-                LOG(ERROR) << "running out of boost managed shared memory" << std::endl;
+                LOG_LP(ERROR) << "running out of boost managed shared memory" << std::endl;
                 pthread_exit(nullptr);  // FIXME
             }
         }
@@ -72,10 +72,10 @@ public:
             try {
                 return shm_resultset_wires_->acquire();
             } catch(const boost::interprocess::interprocess_exception& ex) {
-                LOG(ERROR) << ex.what() << " on resultset_wires_container_impl::acquire()" << std::endl;
+                LOG_LP(ERROR) << ex.what() << " on resultset_wires_container_impl::acquire()" << std::endl;
                 pthread_exit(nullptr);  // FIXME
             } catch (std::runtime_error &ex) {
-                LOG(ERROR) << "running out of boost managed shared memory" << std::endl;
+                LOG_LP(ERROR) << "running out of boost managed shared memory" << std::endl;
                 pthread_exit(nullptr);  // FIXME
             }
         }
@@ -207,10 +207,10 @@ public:
             request_wire_.initialize(req_wire, req_wire->get_bip_address(managed_shared_memory_.get()));
             response_wire_.initialize(res_wire, res_wire->get_bip_address(managed_shared_memory_.get()));
         } catch(const boost::interprocess::interprocess_exception& ex) {
-            LOG(ERROR) << ex.what() << " on server_wire_container_impl::server_wire_container_impl()" << std::endl;
+            LOG_LP(ERROR) << ex.what() << " on server_wire_container_impl::server_wire_container_impl()" << std::endl;
             pthread_exit(nullptr);  // FIXME
         } catch (std::runtime_error &ex) {
-            LOG(ERROR) << "running out of boost managed shared memory" << std::endl;
+            LOG_LP(ERROR) << "running out of boost managed shared memory" << std::endl;
             pthread_exit(nullptr);  // FIXME
         }
     }
@@ -236,7 +236,7 @@ public:
                 new resultset_wires_container_impl{managed_shared_memory_.get(), name, count, mtx_shm_}, resultset_deleter_impl };
         }
         catch(const boost::interprocess::interprocess_exception& ex) {
-            LOG(ERROR) << "running out of boost managed shared memory" << std::endl;
+            LOG_LP(ERROR) << "running out of boost managed shared memory" << std::endl;
             pthread_exit(nullptr);  // FIXME
         }
     }

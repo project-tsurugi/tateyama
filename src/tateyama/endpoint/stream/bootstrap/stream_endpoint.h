@@ -37,7 +37,7 @@ class stream_endpoint : public endpoint {
             );
             return true;
         } catch (std::exception &ex) {
-            LOG(ERROR) << ex.what();
+            LOG_LP(ERROR) << ex.what();
             return false;
         }
     }
