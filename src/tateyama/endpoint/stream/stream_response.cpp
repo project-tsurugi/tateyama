@@ -108,7 +108,7 @@ tateyama::status stream_response::close_session() {
 tateyama::status stream_data_channel::acquire(std::shared_ptr<tateyama::api::server::writer>& wrt) {
     if (auto stream_wrt = std::make_shared<stream_writer>(session_socket_, get_slot(), writer_id_.fetch_add(1)); stream_wrt != nullptr) {
         wrt = stream_wrt;
-        VLOG_LP(log_trace) << static_cast<const void*>(this) << " writer = " << static_cast<const void*>(&wrt);  //NOLINT
+        VLOG_LP(log_trace) << " data_channel_ = " << static_cast<const void*>(this) << " writer = " << static_cast<const void*>(wrt.get());  //NOLINT
 
         {
             std::unique_lock lock{mutex_};
@@ -120,7 +120,7 @@ tateyama::status stream_data_channel::acquire(std::shared_ptr<tateyama::api::ser
 }
 
 tateyama::status stream_data_channel::release(tateyama::api::server::writer& wrt) {
-    VLOG_LP(log_trace) << static_cast<const void*>(this) << " writer = " << static_cast<const void*>(&wrt);  //NOLINT
+    VLOG_LP(log_trace) << " data_channel_ = " << static_cast<const void*>(this) << " writer = " << static_cast<const void*>(&wrt);  //NOLINT
     {
         std::unique_lock lock{mutex_};
         if (auto itr = data_writers_.find(dynamic_cast<stream_writer*>(&wrt)); itr != data_writers_.end()) {

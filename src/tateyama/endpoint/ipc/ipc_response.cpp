@@ -98,7 +98,7 @@ tateyama::status ipc_response::close_session() {
 tateyama::status ipc_data_channel::acquire(std::shared_ptr<tateyama::api::server::writer>& wrt) {
     if (auto ipc_wrt = std::make_shared<ipc_writer>(data_channel_->acquire()); ipc_wrt != nullptr) {
         wrt = ipc_wrt;
-        VLOG_LP(log_trace) << static_cast<const void*>(this) << " writer = " << static_cast<const void*>(&wrt);  //NOLINT
+        VLOG_LP(log_trace) << " data_channel_ = " << static_cast<const void*>(this) << " writer = " << static_cast<const void*>(wrt.get());  //NOLINT
         {
             std::unique_lock lock{mutex_};
             data_writers_.emplace(std::move(ipc_wrt));
@@ -109,7 +109,7 @@ tateyama::status ipc_data_channel::acquire(std::shared_ptr<tateyama::api::server
 }
 
 tateyama::status ipc_data_channel::release(tateyama::api::server::writer& wrt) {
-    VLOG_LP(log_trace) << static_cast<const void*>(this) << " writer = " << static_cast<const void*>(&wrt);  //NOLINT
+    VLOG_LP(log_trace) << " data_channel_ = " << static_cast<const void*>(this) << " writer = " << static_cast<const void*>(&wrt);  //NOLINT
     {
         std::unique_lock lock{mutex_};
         if (auto itr = data_writers_.find(dynamic_cast<ipc_writer*>(&wrt)); itr != data_writers_.end()) {
