@@ -18,7 +18,6 @@
 #include <tateyama/logging.h>
 
 #include "ipc_request.h"
-#include "../common/endpoint_proto_utils.h"
 
 namespace tateyama::common::wire {
 

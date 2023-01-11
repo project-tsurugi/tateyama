@@ -16,6 +16,7 @@
 #pragma once
 
 #include "wire.h"
+#include "../common/logging_helper.h"
 
 namespace tateyama::common::wire {
 
