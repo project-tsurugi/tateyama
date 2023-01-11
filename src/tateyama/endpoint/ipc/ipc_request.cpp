@@ -29,22 +29,20 @@ ipc_request::get_server_wire_container() {
 
 std::string_view
 ipc_request::payload() const {
-    VLOG(log_trace) << __func__ << ": payload = \"" << payload_ << "\"" << std::endl;  //NOLINT
+    VLOG_LP(log_trace) << static_cast<const void*>(this) << " length = " << payload_.length();  //NOLINT
     return payload_;
 }
 
 void
 ipc_request::dispose() {
-    VLOG(log_trace) << __func__ << std::endl;  //NOLINT
+    VLOG_LP(log_trace) << static_cast<const void*>(this);  //NOLINT
 }
 
 std::size_t ipc_request::session_id() const {
-    VLOG(log_trace) << __func__ << ": session_id = " << session_id_ << std::endl;  //NOLINT
     return session_id_;
 }
 
 std::size_t ipc_request::service_id() const {
-    VLOG(log_trace) << __func__ << ": service_id = " << service_id_ << std::endl;  //NOLINT
     return service_id_;
 }
 

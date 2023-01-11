@@ -68,18 +68,18 @@ public:
     {
         auto endpoint_config = cfg->get_section("stream_endpoint");
         if (endpoint_config == nullptr) {
-            LOG(ERROR) << "cannot find stream_endpoint section in the configuration";
+            LOG_LP(ERROR) << "cannot find stream_endpoint section in the configuration";
             exit(1);
         }
         auto port_opt = endpoint_config->get<int>("port");
         if (!port_opt) {
-            LOG(ERROR) << "cannot port at the section in the configuration";
+            LOG_LP(ERROR) << "cannot port at the section in the configuration";
             exit(1);
         }
         auto port = port_opt.value();
         auto threads_opt = endpoint_config->get<std::size_t>("threads");
         if (!threads_opt) {
-            LOG(ERROR) << "cannot find thread_pool_size at the section in the configuration";
+            LOG_LP(ERROR) << "cannot find thread_pool_size at the section in the configuration";
             exit(1);
         }
         auto threads = threads_opt.value();
@@ -108,11 +108,11 @@ public:
             try {
                 stream = connection_socket_->accept();
             } catch (std::exception& ex) {
-                LOG(ERROR) << ex.what();
+                LOG_LP(ERROR) << ex.what();
                 continue;
             }
             if (stream != nullptr) {
-                DVLOG(log_trace) << "created session stream: " << session_id;
+                DVLOG_LP(log_trace) << "created session stream: " << session_id;
                 std::size_t index = 0;
                 bool found = false;
                 for (; index < workers_.size() ; index++) {
@@ -132,14 +132,14 @@ public:
                     auto t = std::thread(std::ref(*ut));
                     t.detach();
                     undertakers_.emplace_back(std::move(ut));
-                    LOG(ERROR) << "the number of sessions exceeded the limit (" << workers_.size() << ")";
+                    LOG_LP(ERROR) << "the number of sessions exceeded the limit (" << workers_.size() << ")";
                     continue;
                 }
                 auto& worker = workers_.at(index);
                 try {
                     worker = std::make_unique<stream_worker>(*router_, session_id, std::move(stream));
                 } catch (std::exception& ex) {
-                    LOG(ERROR) << ex.what();
+                    LOG_LP(ERROR) << ex.what();
                     continue;
                 }
                 worker->task_ = std::packaged_task<void()>([&]{worker->run();});

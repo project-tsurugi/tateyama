@@ -42,18 +42,18 @@ public:
     {
         auto endpoint_config = cfg->get_section("ipc_endpoint");
         if (endpoint_config == nullptr) {
-            LOG(ERROR) << "cannot find ipc_endpoint section in the configuration";
+            LOG_LP(ERROR) << "cannot find ipc_endpoint section in the configuration";
             exit(1);
         }
         auto database_name_opt = endpoint_config->get<std::string>("database_name");
         if (!database_name_opt) {
-            LOG(ERROR) << "cannot find database_name at the section in the configuration";
+            LOG_LP(ERROR) << "cannot find database_name at the section in the configuration";
             exit(1);
         }
         database_name_ = database_name_opt.value();
         auto threads_opt = endpoint_config->get<std::size_t>("threads");
         if (!threads_opt) {
-            LOG(ERROR) << "cannot find thread_pool_size at the section in the configuration";
+            LOG_LP(ERROR) << "cannot find thread_pool_size at the section in the configuration";
             exit(1);
         }
         auto threads = threads_opt.value();
@@ -73,11 +73,11 @@ public:
         while(true) {
             auto session_id = connection_queue.listen();
             if (connection_queue.is_terminated()) {
-                VLOG(log_debug) << "receive terminate request";
+                DVLOG_LP(log_trace) << "receive terminate request";
                 for (auto& worker : workers_) {
                     if (worker) {
                         if (auto rv = worker->future_.wait_for(std::chrono::seconds(0)); rv != std::future_status::ready) {
-                            VLOG(log_debug) << "exit: remaining thread " << worker->session_id_;
+                            DVLOG_LP(log_trace) << "exit: remaining thread " << worker->session_id_;
                         }
                     }
                 }
@@ -85,13 +85,13 @@ public:
                 connection_queue.confirm_terminated();
                 break;
             }
-            VLOG(log_debug) << "connect request: " << session_id;
+            DVLOG_LP(log_trace) << "connect request: " << session_id;
             std::string session_name = database_name_;
             session_name += "-";
             session_name += std::to_string(session_id);
             auto wire = std::make_unique<tateyama::common::wire::server_wire_container_impl>(session_name, proc_mutex_file_);
             status_->add_shm_entry(session_name);
-            VLOG(log_debug) << "created session wire: " << session_name;
+            DVLOG_LP(log_trace) << "created session wire: " << session_name;
             connection_queue.accept(session_id);
             std::size_t index = 0;
             bool found = false;
@@ -107,7 +107,7 @@ public:
                 }
             }
             if (!found) {
-                LOG(ERROR) << "the number of sessions exceeded the limit (" << workers_.size() << ")";
+                LOG_LP(ERROR) << "the number of sessions exceeded the limit (" << workers_.size() << ")";
                 continue;
             }
             try {
@@ -122,7 +122,7 @@ public:
                 worker->future_ = worker->task_.get_future();
                 worker->thread_ = std::thread(std::move(worker->task_));
             } catch (std::exception& ex) {
-                LOG(ERROR) << ex.what();
+                LOG_LP(ERROR) << ex.what();
                 workers_.clear();
                 break;
             }

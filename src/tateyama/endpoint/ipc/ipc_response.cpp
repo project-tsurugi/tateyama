@@ -28,12 +28,13 @@ namespace tateyama::common::wire {
 
 // class ipc_response
 tateyama::status ipc_response::body(std::string_view body) {
-    VLOG(log_trace) << __func__ << std::endl;  //NOLINT
+    VLOG_LP(log_trace) << static_cast<const void*>(&ipc_request_) << " length = " << body.length();  //NOLINT
+
     std::stringstream ss{};
     endpoint::common::header_content arg{};
     arg.session_id_ = session_id_;
     if(auto res = endpoint::common::append_response_header(ss, body, arg); ! res) {
-        VLOG(log_error) << "error formatting response message";
+        LOG_LP(ERROR) << "error formatting response message";
         return status::unknown;
     }
     auto s = ss.str();
@@ -42,12 +43,13 @@ tateyama::status ipc_response::body(std::string_view body) {
 }
 
 tateyama::status ipc_response::body_head(std::string_view body_head) {
-    VLOG(log_trace) << __func__ << std::endl;  //NOLINT
+    VLOG_LP(log_trace) << static_cast<const void*>(&ipc_request_);  //NOLINT
+
     std::stringstream ss{};
     endpoint::common::header_content arg{};
     arg.session_id_ = session_id_;
     if(auto res = endpoint::common::append_response_header(ss, body_head, arg); ! res) {
-        VLOG(log_error) << "error formatting response message";
+        LOG_LP(ERROR) << "error formatting response message";
         return status::unknown;
     }
     auto s = ss.str();
@@ -56,15 +58,15 @@ tateyama::status ipc_response::body_head(std::string_view body_head) {
 }
 
 void ipc_response::code(tateyama::api::server::response_code code) {
-    VLOG(log_trace) << __func__ << std::endl;  //NOLINT
+    VLOG_LP(log_trace) << static_cast<const void*>(&ipc_request_);  //NOLINT
 
     response_code_ = code;
 }
 
 tateyama::status ipc_response::acquire_channel(std::string_view name, std::shared_ptr<tateyama::api::server::data_channel>& ch) {
-    VLOG(log_trace) << __func__ << std::endl;  //NOLINT
-
     data_channel_ = std::make_shared<ipc_data_channel>(server_wire_.create_resultset_wires(name));
+    VLOG_LP(log_trace) << static_cast<const void*>(&ipc_request_) << " data_channel_ = " << static_cast<const void*>(data_channel_.get());  //NOLINT
+
     if (ch = data_channel_; ch != nullptr) {
         return tateyama::status::ok;
     }
@@ -72,7 +74,7 @@ tateyama::status ipc_response::acquire_channel(std::string_view name, std::share
 }
 
 tateyama::status ipc_response::release_channel(tateyama::api::server::data_channel& ch) {
-    VLOG(log_trace) << __func__ << std::endl;  //NOLINT
+    VLOG_LP(log_trace) << static_cast<const void*>(&ipc_request_) << " data_channel_ = " << static_cast<const void*>(data_channel_.get());  //NOLINT
 
     data_channel_->set_eor();
     if (data_channel_.get() == dynamic_cast<ipc_data_channel*>(&ch)) {
@@ -86,7 +88,7 @@ tateyama::status ipc_response::release_channel(tateyama::api::server::data_chann
 }
 
 tateyama::status ipc_response::close_session() {
-    VLOG(log_trace) << __func__ << std::endl;  //NOLINT
+    VLOG_LP(log_trace) << static_cast<const void*>(&ipc_request_);  //NOLINT
 
     server_wire_.close_session();
     return tateyama::status::ok;
@@ -94,10 +96,9 @@ tateyama::status ipc_response::close_session() {
 
 // class ipc_data_channel
 tateyama::status ipc_data_channel::acquire(std::shared_ptr<tateyama::api::server::writer>& wrt) {
-    VLOG(log_trace) << __func__ << std::endl;  //NOLINT
-
     if (auto ipc_wrt = std::make_shared<ipc_writer>(data_channel_->acquire()); ipc_wrt != nullptr) {
         wrt = ipc_wrt;
+        VLOG_LP(log_trace) << static_cast<const void*>(this) << " writer = " << static_cast<const void*>(&wrt);  //NOLINT
         {
             std::unique_lock lock{mutex_};
             data_writers_.emplace(std::move(ipc_wrt));
@@ -108,26 +109,27 @@ tateyama::status ipc_data_channel::acquire(std::shared_ptr<tateyama::api::server
 }
 
 tateyama::status ipc_data_channel::release(tateyama::api::server::writer& wrt) {
-    VLOG(log_trace) << __func__ << std::endl;  //NOLINT
-
-    std::unique_lock lock{mutex_};
-    if (auto itr = data_writers_.find(dynamic_cast<ipc_writer*>(&wrt)); itr != data_writers_.end()) {
-        data_writers_.erase(itr);
-        return tateyama::status::ok;
+    VLOG_LP(log_trace) << static_cast<const void*>(this) << " writer = " << static_cast<const void*>(&wrt);  //NOLINT
+    {
+        std::unique_lock lock{mutex_};
+        if (auto itr = data_writers_.find(dynamic_cast<ipc_writer*>(&wrt)); itr != data_writers_.end()) {
+            data_writers_.erase(itr);
+            return tateyama::status::ok;
+        }
     }
     return tateyama::status::unknown;
 }
 
 // class writer
 tateyama::status ipc_writer::write(char const* data, std::size_t length) {
-    VLOG(log_trace) << __func__ << std::endl;  //NOLINT
+    VLOG_LP(log_trace) << static_cast<const void*>(this);  //NOLINT
 
     resultset_wire_->write(data, length);
     return tateyama::status::ok;
 }
 
 tateyama::status ipc_writer::commit() {
-    VLOG(log_trace) << __func__ << std::endl;  //NOLINT
+    VLOG_LP(log_trace) << static_cast<const void*>(this);  //NOLINT
 
     resultset_wire_->flush();
     return tateyama::status::ok;
