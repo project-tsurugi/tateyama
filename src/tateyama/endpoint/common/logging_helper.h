@@ -16,6 +16,7 @@
 #pragma once
 
 #include <array>
+#include <string_view>
 
 namespace tateyama {
 
@@ -89,13 +90,26 @@ constexpr auto location_prefix(const char (&prettyname)[N], const char (&funcnam
     return location_prefix<std::max(N, M)>(sv);
 }
 
+// To force compile-time evaluation of constexpr location_prefix in C++17,
+// the result is once stored to the temporary constexpr variable.
+
+// NOTE: restriction of this implementation
+// side effect: If used in the form:
+//    if (cond) LOG_LP(ERROR) << "message";
+// your C++ compiler may warn that this statement contains dangling-else.
+//
+// workaround: rewrite like:
+//    if (cond) { LOG_LP(ERROR) << "message"; }
+
+// N.B. use consteval in C++20
+
 // NOLINTNEXTLINE
-#define _LOCATION_PREFIX_ location_prefix(__PRETTY_FUNCTION__, __FUNCTION__).data()
+#define _LOCATION_PREFIX_TO_STREAM(stream)  if (constexpr auto __tmplp = location_prefix(__PRETTY_FUNCTION__, __FUNCTION__); false) {} else stream << __tmplp.data()
 // NOLINTNEXTLINE
-#define LOG_LP(x)   LOG(x)   << _LOCATION_PREFIX_
+#define LOG_LP(x)   _LOCATION_PREFIX_TO_STREAM(LOG(x))
 // NOLINTNEXTLINE
-#define VLOG_LP(x)  VLOG(x)  << _LOCATION_PREFIX_
+#define VLOG_LP(x)  _LOCATION_PREFIX_TO_STREAM(VLOG(x))
 // NOLINTNEXTLINE
-#define DVLOG_LP(x) DVLOG(x) << _LOCATION_PREFIX_
+#define DVLOG_LP(x) _LOCATION_PREFIX_TO_STREAM(DVLOG(x))
 
 } // namespace

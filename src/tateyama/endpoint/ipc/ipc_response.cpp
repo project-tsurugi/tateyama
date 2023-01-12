@@ -26,9 +26,9 @@
 namespace tateyama::common::wire {
 
 
-// class ipc_response
+// class server_wire
 tateyama::status ipc_response::body(std::string_view body) {
-    VLOG_LP(log_trace) << static_cast<const void*>(&ipc_request_) << " length = " << body.length();  //NOLINT
+    VLOG_LP(log_trace) << static_cast<const void*>(&server_wire_) << " length = " << body.length();  //NOLINT
 
     std::stringstream ss{};
     endpoint::common::header_content arg{};
@@ -43,7 +43,7 @@ tateyama::status ipc_response::body(std::string_view body) {
 }
 
 tateyama::status ipc_response::body_head(std::string_view body_head) {
-    VLOG_LP(log_trace) << static_cast<const void*>(&ipc_request_);  //NOLINT
+    VLOG_LP(log_trace) << static_cast<const void*>(&server_wire_);  //NOLINT
 
     std::stringstream ss{};
     endpoint::common::header_content arg{};
@@ -58,14 +58,14 @@ tateyama::status ipc_response::body_head(std::string_view body_head) {
 }
 
 void ipc_response::code(tateyama::api::server::response_code code) {
-    VLOG_LP(log_trace) << static_cast<const void*>(&ipc_request_);  //NOLINT
+    VLOG_LP(log_trace) << static_cast<const void*>(&server_wire_);  //NOLINT
 
     response_code_ = code;
 }
 
 tateyama::status ipc_response::acquire_channel(std::string_view name, std::shared_ptr<tateyama::api::server::data_channel>& ch) {
     data_channel_ = std::make_shared<ipc_data_channel>(server_wire_.create_resultset_wires(name));
-    VLOG_LP(log_trace) << static_cast<const void*>(&ipc_request_) << " data_channel_ = " << static_cast<const void*>(data_channel_.get());  //NOLINT
+    VLOG_LP(log_trace) << static_cast<const void*>(&server_wire_) << " data_channel_ = " << static_cast<const void*>(data_channel_.get());  //NOLINT
 
     if (ch = data_channel_; ch != nullptr) {
         return tateyama::status::ok;
@@ -74,7 +74,7 @@ tateyama::status ipc_response::acquire_channel(std::string_view name, std::share
 }
 
 tateyama::status ipc_response::release_channel(tateyama::api::server::data_channel& ch) {
-    VLOG_LP(log_trace) << static_cast<const void*>(&ipc_request_) << " data_channel_ = " << static_cast<const void*>(data_channel_.get());  //NOLINT
+    VLOG_LP(log_trace) << static_cast<const void*>(&server_wire_) << " data_channel_ = " << static_cast<const void*>(data_channel_.get());  //NOLINT
 
     data_channel_->set_eor();
     if (data_channel_.get() == dynamic_cast<ipc_data_channel*>(&ch)) {
@@ -88,7 +88,7 @@ tateyama::status ipc_response::release_channel(tateyama::api::server::data_chann
 }
 
 tateyama::status ipc_response::close_session() {
-    VLOG_LP(log_trace) << static_cast<const void*>(&ipc_request_);  //NOLINT
+    VLOG_LP(log_trace) << static_cast<const void*>(&server_wire_);  //NOLINT
 
     server_wire_.close_session();
     return tateyama::status::ok;
