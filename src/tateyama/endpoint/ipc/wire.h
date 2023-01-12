@@ -324,11 +324,6 @@ public:
     void read(char* to, const char* base) noexcept {
         std::size_t length = peep(base).get_length();
         read_from_buffer(to, base, read_address(base, message_header::size), length);
-        std::atomic_thread_fence(std::memory_order_acq_rel);
-        if (wait_for_write_) {
-            boost::interprocess::scoped_lock lock(m_mutex_);
-            c_full_.notify_one();
-        }
     }
 
     /**
@@ -338,12 +333,16 @@ public:
     void dispose(const char* base, const std::size_t read_point) noexcept {
         if (poped_.load() == read_point) {
             poped_ += (peep(base).get_length() + message_header::size);
+            std::atomic_thread_fence(std::memory_order_acq_rel);
+            if (wait_for_write_) {
+                boost::interprocess::scoped_lock lock(m_mutex_);
+                c_full_.notify_one();
+            }
             if (copy_of_payload_) {
                 copy_of_payload_ = nullptr;
             }
             return;
         }
-        //  FIXME (Processing when a message located later is discarded first)
     }
 
 private:
