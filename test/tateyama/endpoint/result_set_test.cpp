@@ -83,12 +83,7 @@ TEST_F(result_set_test, normal) {
     append_request_header(ss, request_test_message_, hdr);
     auto request_message = ss.str();
 
-    request_wire->brand_new();
-    const char *ptr = request_message.data();
-    for (std::size_t i = 0; i < request_message.length(); ptr++, i++) {
-        request_wire->write(*ptr);
-    }
-    request_wire->flush(index_);
+    request_wire->write(request_message.data(), request_message.length(), index_);
 
     auto h = request_wire->peep(true);
     EXPECT_EQ(index_, h.get_idx());

@@ -38,7 +38,6 @@ public:
         std::string_view message{};
         auto *request_wire = server_wire_.get_request_wire();
 
-        read_point_ = request_wire->read_point();
         if (length_ <= SPO_SIZE) {
             request_wire->read(spo_.data());
             message = std::string_view(spo_.data(), length_);
@@ -52,7 +51,7 @@ public:
         payload_ = res.payload_;
         session_id_ = res.session_id_;
         service_id_ = res.service_id_;
-        request_wire->dispose(read_point_);
+        request_wire->dispose();
     }
 
     ipc_request() = delete;
@@ -65,7 +64,6 @@ public:
 private:
     server_wire_container& server_wire_;
     const std::size_t length_;
-    std::size_t read_point_;
     std::size_t session_id_{};
     std::size_t service_id_{};
     std::string_view payload_{};
