@@ -74,6 +74,7 @@ private:
 
     std::unique_ptr<limestone_backup> backup_{};
     std::uint64_t backup_id_{};
+//    limestone::api::backup_detail backup_detail_;
 };
 
 }

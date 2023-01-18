@@ -61,11 +61,23 @@ bridge::~bridge() = default;
 limestone::api::backup& bridge::begin_backup() {
     return datastore_->begin_backup();
 }
+
+limestone::api::backup_detail bridge::begin_backup(limestone::api::backup_type type, const std::string& label) {
+    if (!label.empty()) {
+        return datastore_->begin_backup(type, label);
+    }
+    return datastore_->begin_backup(type);
+}
+
 void bridge::end_backup() {
 }
 
 limestone::status bridge::restore_backup(std::string_view from, bool keep_backup) {
     return datastore_->restore(from, keep_backup);
+}
+
+limestone::status bridge::restore_backup(std::string_view from, std::vector<limestone::api::backup_detail::entry>& entries) {
+    return datastore_->restore(from, entries);
 }
 
 #if 0
