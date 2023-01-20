@@ -35,7 +35,7 @@ bool tateyama::datastore::service::core::operator()(const std::shared_ptr<reques
 
     auto data = req->payload();
     ns::Request rq{};
-    if(! rq.ParseFromArray(data.data(), data.size())) {
+    if(!rq.ParseFromArray(data.data(), data.size())) {
         LOG(ERROR) << "request parse error";
         return false;
     }
@@ -49,13 +49,46 @@ bool tateyama::datastore::service::core::operator()(const std::shared_ptr<reques
             tateyama::proto::datastore::response::BackupBegin rp{};
             auto success = rp.mutable_success();
             success->set_id(backup_id_);
+            auto simple_source = success->mutable_simple_source();
             for(auto&& f : backup_->backup().files()) {
-                success->add_files(f.string());
+                simple_source->add_files(f.string());
             }
             res->session_id(req->session_id());
             auto body = rp.SerializeAsString();
             res->body(body);
             rp.clear_success();
+            break;
+        }
+        case ns::Request::kDifferentialBackupBegin: {
+            auto& rb = rq.differential_backup_begin();
+            auto type = (rb.type() == ns::BackupType::STANDARD) ?
+                limestone::api::backup_type::standard :
+                limestone::api::backup_type::transaction;
+            backup_detail_ = resource_->begin_backup(type);
+
+            tateyama::proto::datastore::response::BackupBegin rp{};
+            auto success = rp.mutable_success();
+            success->set_id(backup_id_);
+            auto differential_source = success->mutable_differential_source();
+            differential_source->set_log_begin(backup_detail_->log_start());
+            differential_source->set_log_end(backup_detail_->log_finish());
+            if (auto image_finish = backup_detail_->image_finish(); image_finish) {
+                differential_source->set_image_finish(image_finish.value());
+            }
+            auto entries = differential_source->mutable_differential_files();
+            for (auto&& e : backup_detail_->entries()) {
+                auto* entry = entries->Add();
+                entry->set_source(e.source_path().string());
+                entry->set_destination(e.destination_path().string());
+                entry->set_mutable_(e.is_mutable());
+                entry->set_detached(e.is_detached());
+            }
+            res->session_id(req->session_id());
+            auto body = rp.SerializeAsString();
+            res->body(body);
+            success->clear_differential_source();
+            rp.clear_success();
+            break;
             break;
         }
         case ns::Request::kBackupEnd: {
@@ -72,6 +105,7 @@ bool tateyama::datastore::service::core::operator()(const std::shared_ptr<reques
             }
             break;
         }
+#if 0
         case ns::Request::kBackupContine: {
             tateyama::proto::datastore::response::BackupContinue rp{};
             rp.mutable_success();
@@ -81,6 +115,7 @@ bool tateyama::datastore::service::core::operator()(const std::shared_ptr<reques
             rp.clear_success();
             break;
         }
+#endif
         case ns::Request::kBackupEstimate: {
             tateyama::proto::datastore::response::BackupEstimate rp{};
             auto success = rp.mutable_success();
@@ -92,10 +127,36 @@ bool tateyama::datastore::service::core::operator()(const std::shared_ptr<reques
             rp.clear_success();
             break;
         }
-        case ns::Request::kRestoreBackup: {
-            auto& rb = rq.restore_backup();
-            tateyama::proto::datastore::response::RestoreBackup rp{};
-            switch (resource_->restore_backup(rb.path(), rb.keep_backup())) {
+        case ns::Request::kRestoreBegin: {
+            auto& rb = rq.restore_begin();
+            tateyama::proto::datastore::response::RestoreBegin rp{};
+            limestone::status rc{};
+            switch (rb.source_case()) {
+            case ns::RestoreBegin::kBackupDirectory:
+                rc = resource_->restore_backup(rb.backup_directory(), rb.keep_backup());
+                break;
+            case ns::RestoreBegin::kTagName:
+                LOG(ERROR) << "restore tag is not implemented";
+                break;
+            case ns::RestoreBegin::kEntries:
+            {
+                std::vector<limestone::api::file_set_entry> entries{};
+                for (auto&& f: rb.entries().file_set_entry()) {
+                    entries.emplace_back(limestone::api::file_set_entry(
+                                             boost::filesystem::path(f.source_path()),
+                                             boost::filesystem::path(f.destination_path()),
+                                             f.detached()
+                                         )
+                    );
+                }
+                rc = resource_->restore_backup(rb.entries().directory(), entries);
+                break;
+            }
+            default:
+                LOG(ERROR) << "source is not specified";
+                break;
+            }
+            switch (rc) {
             case limestone::status::ok:
                 rp.mutable_success();
                 break;
@@ -120,15 +181,6 @@ bool tateyama::datastore::service::core::operator()(const std::shared_ptr<reques
         }
 
 #if 0
-    case ns::Request::kRestoreTag: {
-            tateyama::proto::datastore::response::RestoreTag rp{};
-            rp.mutable_success();
-            res->session_id(this_request_does_not_use_session_id);
-            auto body = rp.SerializeAsString();
-            res->body(body);
-            rp.clear_success();
-            break;
-        }
         case ns::Request::kTagList: {
             auto tags = resource_->list_tags();
             tateyama::proto::datastore::response::TagList rp{};
@@ -210,13 +262,15 @@ bool tateyama::datastore::service::core::operator()(const std::shared_ptr<reques
             break;
         }
 #else
-    case ns::Request::kRestoreTag:
     case ns::Request::kTagList:
     case ns::Request::kTagAdd:
     case ns::Request::kTagGet:
     case ns::Request::kTagRemove:
-        break;
 #endif
+    case ns::Request::kRestoreStatus:
+    case ns::Request::kRestoreCancel:
+    case ns::Request::kRestoreDispose:
+        break;
         case ns::Request::COMMAND_NOT_SET: break;
     }
     return true;

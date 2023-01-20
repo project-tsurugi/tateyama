@@ -67,8 +67,10 @@ public:
     bridge() = default;
 
     limestone::api::backup& begin_backup();
+    std::unique_ptr<limestone::api::backup_detail> begin_backup(limestone::api::backup_type);
     void end_backup();
     limestone::status restore_backup(std::string_view, bool);
+    limestone::status restore_backup(std::string_view, std::vector<limestone::api::file_set_entry>&);
 
 #if 0
     /**

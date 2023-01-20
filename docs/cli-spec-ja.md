@@ -205,7 +205,7 @@ oltp backup estimate [--conf </path/to/conf>]
 ### restore サブコマンド
 
 ```sh
-oltp restore backup </path/to/backup> [--conf </path/to/conf>] [--keep-backup|--no-keep-backup] [--label <text>] [-f|--force]
+oltp restore backup </path/to/backup> [--conf </path/to/conf>] [--keep-backup|--no-keep-backup] [--label <text>] [-f|--force] [--use-file-list </path/to/file-list>]
 oltp restore tag <tag-name> [--conf </path/to/conf>] [--label <text>] [-f|--force]
 ```
 
@@ -230,6 +230,9 @@ oltp restore tag <tag-name> [--conf </path/to/conf>] [--label <text>] [-f|--forc
       * `</path/to/backup>` - バックアップファイルの位置
       * `--keep-backup` (default) - 入力したバックアップファイルをコピーして利用する
       * `--no-keep-backup` - 入力したバックアップをリストア時に削除する
+      * `--use-file-list </path/to/file-list>` - バックアップ対象ファイルは、ファイルリストを記述したjsonファイルにより指定する
+    * note
+      * --use-file-listオプションを指定した場合、--no-keep-backupオプションは無視される
     * impl memo
       * if service is absent
         * (A)
