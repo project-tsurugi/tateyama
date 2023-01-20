@@ -64,19 +64,19 @@ bool tateyama::datastore::service::core::operator()(const std::shared_ptr<reques
             auto type = (rb.type() == ns::BackupType::STANDARD) ?
                 limestone::api::backup_type::standard :
                 limestone::api::backup_type::transaction;
-            auto backup_detail = resource_->begin_backup(type, rb.label());
+            backup_detail_ = resource_->begin_backup(type);
 
             tateyama::proto::datastore::response::BackupBegin rp{};
             auto success = rp.mutable_success();
             success->set_id(backup_id_);
             auto differential_source = success->mutable_differential_source();
-            differential_source->set_log_begin(backup_detail.log_start());
-            differential_source->set_log_end(backup_detail.log_finish());
-            if (auto image_finish = backup_detail.image_finish(); image_finish) {
+            differential_source->set_log_begin(backup_detail_->log_start());
+            differential_source->set_log_end(backup_detail_->log_finish());
+            if (auto image_finish = backup_detail_->image_finish(); image_finish) {
                 differential_source->set_image_finish(image_finish.value());
             }
             auto entries = differential_source->mutable_differential_files();
-            for (auto&& e : backup_detail.entries()) {
+            for (auto&& e : backup_detail_->entries()) {
                 auto* entry = entries->Add();
                 entry->set_source(e.source_path().string());
                 entry->set_destination(e.destination_path().string());
@@ -140,14 +140,14 @@ bool tateyama::datastore::service::core::operator()(const std::shared_ptr<reques
                 break;
             case ns::RestoreBegin::kEntries:
             {
-                std::vector<limestone::api::backup_detail::entry> entries{};
+                std::vector<limestone::api::file_set_entry> entries{};
                 for (auto&& f: rb.entries().file_set_entry()) {
-                    entries.emplace_back(limestone::api::backup_detail::entry());
-                    std::cout <<
-                        f.source_path() << ":" <<
-                        f.destination_path() << ":" <<
-                        (f.detached() ? "true" : "false") << ":" <<
-                        (rb.keep_backup() ? "true" : "false") << std::endl;
+                    entries.emplace_back(limestone::api::file_set_entry(
+                                             boost::filesystem::path(f.source_path()),
+                                             boost::filesystem::path(f.destination_path()),
+                                             f.detached()
+                                         )
+                    );
                 }
                 rc = resource_->restore_backup(rb.entries().directory(), entries);
                 break;

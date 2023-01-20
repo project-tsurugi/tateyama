@@ -15,6 +15,8 @@
  */
 #pragma once
 
+#include <boost/filesystem/path.hpp>
+
 #include <tateyama/api/configuration.h>
 #include <tateyama/framework/component_ids.h>
 #include <tateyama/framework/service.h>
@@ -74,7 +76,7 @@ private:
 
     std::unique_ptr<limestone_backup> backup_{};
     std::uint64_t backup_id_{};
-//    limestone::api::backup_detail backup_detail_;
+    std::unique_ptr<limestone::api::backup_detail> backup_detail_{};
 };
 
 }
