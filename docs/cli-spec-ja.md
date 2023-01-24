@@ -49,7 +49,7 @@ oltp status [--conf </path/to/conf>]
   * データベースのライフサイクルを制御する
 * 共通
   * options
-    * `--conf` - 設定ファイルのパス、未指定の場合は既定の設定パスを利用
+    * `--conf` - 設定ファイルのパス。未指定の場合は環境変数TGDIRで指定されるディレクトリ下のtsurugi.iniを利用する。環境変数が設定されていない場合や${TGDIR}/tsurugi.iniが存在しない場合はエラーとなる。
 * サブコマンド
   * `start`
     * overview
