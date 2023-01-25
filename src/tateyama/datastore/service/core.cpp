@@ -59,8 +59,8 @@ bool tateyama::datastore::service::core::operator()(const std::shared_ptr<reques
             rp.clear_success();
             break;
         }
-        case ns::Request::kDifferentialBackupBegin: {
-            auto& rb = rq.differential_backup_begin();
+        case ns::Request::kBackupDetailBegin: {
+            auto& rb = rq.backup_detail_begin();
             auto type = (rb.type() == ns::BackupType::STANDARD) ?
                 limestone::api::backup_type::standard :
                 limestone::api::backup_type::transaction;
@@ -69,13 +69,15 @@ bool tateyama::datastore::service::core::operator()(const std::shared_ptr<reques
             tateyama::proto::datastore::response::BackupBegin rp{};
             auto success = rp.mutable_success();
             success->set_id(backup_id_);
-            auto differential_source = success->mutable_differential_source();
-            differential_source->set_log_begin(backup_detail_->log_start());
-            differential_source->set_log_end(backup_detail_->log_finish());
+            auto detail_source = success->mutable_detail_source();
+            detail_source->set_log_begin(backup_detail_->log_start());
+            detail_source->set_log_end(backup_detail_->log_finish());
             if (auto image_finish = backup_detail_->image_finish(); image_finish) {
-                differential_source->set_image_finish(image_finish.value());
+                detail_source->set_image_finish_value(image_finish.value());
+            } else {
+                detail_source->set_image_finish_is_not_set(0);
             }
-            auto entries = differential_source->mutable_differential_files();
+            auto entries = detail_source->mutable_detail_files();
             for (auto&& e : backup_detail_->entries()) {
                 auto* entry = entries->Add();
                 entry->set_source(e.source_path().string());
@@ -86,7 +88,7 @@ bool tateyama::datastore::service::core::operator()(const std::shared_ptr<reques
             res->session_id(req->session_id());
             auto body = rp.SerializeAsString();
             res->body(body);
-            success->clear_differential_source();
+            success->clear_detail_source();
             rp.clear_success();
             break;
             break;
