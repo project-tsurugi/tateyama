@@ -25,6 +25,7 @@ file(GLOB SOURCES
         "tateyama/datastore/resource/*.cpp"
         "tateyama/datastore/service/*.cpp"
         "tateyama/status/resource/*.cpp"
+        "tateyama/diagnostic/resource/*.cpp"
         "tateyama/endpoint/service/*.cpp"
         "tateyama/endpoint/service/impl/*.cpp"
         "tateyama/endpoint/ipc/*.cpp"

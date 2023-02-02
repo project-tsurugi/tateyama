@@ -27,6 +27,7 @@ constexpr inline component::id_type resource_id_datastore = 3;
 //constexpr inline component::id_type resource_id_session = 4;
 constexpr inline component::id_type resource_id_status = 5;
 //constexpr inline component::id_type resource_id_mutex = 6;
+constexpr inline component::id_type resource_id_diagnostic = 7;
 
 // service
 constexpr inline component::id_type service_id_routing = 0;
