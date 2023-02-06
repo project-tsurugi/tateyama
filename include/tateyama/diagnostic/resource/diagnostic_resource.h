@@ -16,12 +16,11 @@
 #pragma once
 
 #include <csignal>
+#include <iostream>
 #include <functional>
 #include <vector>
 #include <utility>
 #include <mutex>
-
-#include <sharksfin/api.h>
 
 #include <tateyama/framework/component_ids.h>
 #include <tateyama/framework/resource.h>
@@ -69,6 +68,7 @@ public:
      * @brief create empty object
      */
     diagnostic_resource();
+    explicit diagnostic_resource(std::ostream&);
 
     /**
      * @brief destructor the object
@@ -86,9 +86,9 @@ public:
     void sighup_handler(int);
 
 private:
-    std::mutex mutex_{};
-    std::vector<std::pair<std::string, std::function<void(std::ostream&)>>> handlers_;
     std::ostream &out_;
+    std::mutex mutex_{};
+    std::vector<std::pair<std::string, std::function<void(std::ostream&)>>> handlers_{};
 };
 
 } // namespace tateyama::diagnostic::resource

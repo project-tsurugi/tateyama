@@ -24,9 +24,6 @@ component::id_type diagnostic_resource::id() const noexcept {
     return tag;
 }
 
-diagnostic_resource::diagnostic_resource() : out_(LOG(INFO)) {
-}
-
 bool diagnostic_resource::setup(environment&) {
     return true;
 }
@@ -38,6 +35,14 @@ bool diagnostic_resource::start(environment&) {
 bool diagnostic_resource::shutdown(environment&) {
     return true;
 }
+
+diagnostic_resource::diagnostic_resource() : out_(std::cout) {
+}
+
+diagnostic_resource::diagnostic_resource(std::ostream& out) : out_(out) {
+}
+
+diagnostic_resource::~diagnostic_resource() = default;
 
 void diagnostic_resource::add_print_callback(std::string_view id, const std::function<void(std::ostream&)>& func) {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -55,14 +60,12 @@ void diagnostic_resource::add_print_callback(std::string_view id, const std::fun
 
 void diagnostic_resource::diagnostic_resource::remove_print_callback(std::string_view id) {
     std::lock_guard<std::mutex> lock(mutex_);
-    std::remove_if(handlers_.begin(), handlers_.end(), [id](std::pair<std::string, std::function<void(std::ostream&)>> e) { return e.first == id; });
+    std::remove_if(handlers_.begin(), handlers_.end(), [id](const std::pair<std::string, std::function<void(std::ostream&)>>& e) { return e.first == id; });
 }
 
-diagnostic_resource::~diagnostic_resource() = default;
-
 void diagnostic_resource::sighup_handler(int) {
-    for (auto&& f : handlers_) {
-        f.second(out_);
+    for (auto& e : handlers_) {
+        e.second(out_);
     }
 }
 
