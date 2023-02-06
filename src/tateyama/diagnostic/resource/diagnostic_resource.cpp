@@ -60,7 +60,8 @@ void diagnostic_resource::add_print_callback(std::string_view id, const std::fun
 
 void diagnostic_resource::diagnostic_resource::remove_print_callback(std::string_view id) {
     std::lock_guard<std::mutex> lock(mutex_);
-    std::remove_if(handlers_.begin(), handlers_.end(), [id](const std::pair<std::string, std::function<void(std::ostream&)>>& e) { return e.first == id; });
+    auto r = std::remove_if(handlers_.begin(), handlers_.end(), [id](const std::pair<std::string, std::function<void(std::ostream&)>>& e) { return e.first == id; });
+    handlers_.erase(r, handlers_.end());
 }
 
 void diagnostic_resource::sighup_handler(int) {
