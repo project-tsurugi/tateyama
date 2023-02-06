@@ -91,11 +91,10 @@ bool tateyama::datastore::service::core::operator()(const std::shared_ptr<reques
             success->clear_detail_source();
             rp.clear_success();
             break;
-            break;
         }
         case ns::Request::kBackupEnd: {
             tateyama::proto::datastore::response::BackupEnd rp{};
-            if (backup_) {
+            if (backup_ || backup_detail_) {
                 rp.mutable_success();
                 res->session_id(req->session_id());
                 auto body = rp.SerializeAsString();
