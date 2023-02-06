@@ -582,13 +582,6 @@ public:
             if (!closed_) {
                 write_in_buffer(base, buffer_address(base, pushed_.load()), from, length);
                 pushed_.fetch_add(length);
-                std::atomic_thread_fence(std::memory_order_acq_rel);
-                if (wait_for_read_) {
-                    boost::interprocess::scoped_lock lock(m_mutex_);
-                    c_empty_.notify_one();
-                } else {
-                    envelope_->notify_record_arrival();
-                }
             }
         }
 
@@ -600,6 +593,8 @@ public:
             if (wait_for_read_) {
                 boost::interprocess::scoped_lock lock(m_mutex_);
                 c_empty_.notify_one();
+            } else {
+                envelope_->notify_record_arrival();
             }
             continued_ = false;
         }
@@ -711,46 +706,40 @@ public:
                     return &wire;
                 }
             }
-            if (timeout <= 0) {
+            {
                 boost::interprocess::scoped_lock lock(m_record_);
                 wait_for_record_ = true;
                 std::atomic_thread_fence(std::memory_order_acq_rel);
                 unidirectional_simple_wire* active_wire = nullptr;
-                c_record_.wait(lock,
-                               [this, &active_wire](){
-                                   for (auto&& wire: unidirectional_simple_wires_) {
-                                       if (wire.has_record()) {
-                                           active_wire = &wire;
-                                           return true;
+                if (timeout <= 0) {
+                    c_record_.wait(lock,
+                                   [this, &active_wire](){
+                                       for (auto&& wire: unidirectional_simple_wires_) {
+                                           if (wire.has_record()) {
+                                               active_wire = &wire;
+                                               return true;
+                                           }
                                        }
-                                   }
-                                   return is_eor();
-                               });
-                wait_for_record_ = false;
-                if (active_wire != nullptr) {
-                    return active_wire;
-                }
-            } else {
-                boost::interprocess::scoped_lock lock(m_record_);
-                wait_for_record_ = true;
-                std::atomic_thread_fence(std::memory_order_acq_rel);
-                unidirectional_simple_wire* active_wire = nullptr;
-                if (!c_record_.timed_wait(lock,
+                                       return is_eor();
+                                   });
+                } else {
+                    if (!c_record_.timed_wait(lock,
 #ifdef BOOST_DATE_TIME_HAS_NANOSECONDS
-                                                boost::get_system_time() + boost::posix_time::nanoseconds(timeout),
+                                              boost::get_system_time() + boost::posix_time::nanoseconds(timeout),
 #else
-                                                boost::get_system_time() + boost::posix_time::microseconds(((timeout-500)/1000)+1),
+                                              boost::get_system_time() + boost::posix_time::microseconds(((timeout-500)/1000)+1),
 #endif
-                                          [this, &active_wire](){
-                                              for (auto&& wire: unidirectional_simple_wires_) {
-                                                  if (wire.has_record()) {
-                                                      active_wire = &wire;
-                                                      return true;
+                                              [this, &active_wire](){
+                                                  for (auto&& wire: unidirectional_simple_wires_) {
+                                                      if (wire.has_record()) {
+                                                          active_wire = &wire;
+                                                          return true;
+                                                      }
                                                   }
-                                              }
-                                              return is_eor();
-                                          })) {
-                    throw std::runtime_error("record has not been received within the specified time");
+                                                  return is_eor();
+                                              })) {
+                        throw std::runtime_error("record has not been received within the specified time");
+                    }
                 }
                 wait_for_record_ = false;
                 if (active_wire != nullptr) {

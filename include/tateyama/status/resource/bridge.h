@@ -55,7 +55,7 @@ class bridge : public framework::resource {
     };
 
 public:
-    static constexpr std::size_t shm_size = 16384;
+    static constexpr std::size_t shm_size = 32768;
 
     static constexpr id_type tag = framework::resource_id_status;
 
