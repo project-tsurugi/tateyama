@@ -139,6 +139,13 @@ oltp status [--conf </path/to/conf>]
           * tell it is absent as 'Tsurugi OLTP database is INACTIVE'
         * if service is unknown
           * tell it is unknown as 'Tsurugi OLTP database is UNKNOWN'
+  * `diagnostic`
+    * overview
+      * データベース内部コンポーネントの状態や診断情報を出力する
+    * options
+      * (N/A)
+    * note
+      * 現時点ではexperimental実装
 
 ### backup サブコマンド
 
