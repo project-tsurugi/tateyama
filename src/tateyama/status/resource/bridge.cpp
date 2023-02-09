@@ -76,15 +76,21 @@ std::string_view bridge::mutex_file() {
     return std::string_view();
 }
 
-void bridge::add_shm_entry(std::string_view name) {
+void bridge::set_maximum_sessions(std::size_t n) {
     if (resource_status_memory_) {
-        return resource_status_memory_->add_shm_entry(name);
+        return resource_status_memory_->set_maximum_sessions(n);
     }
 }
 
-void bridge::remove_shm_entry(std::string_view name) {
+void bridge::set_database_name(std::string_view name) {
     if (resource_status_memory_) {
-        return resource_status_memory_->remove_shm_entry(name);
+        resource_status_memory_->set_database_name(name);
+    }
+}
+
+void bridge::add_shm_entry(std::size_t session_id, std::size_t index) {
+    if (resource_status_memory_) {
+        return resource_status_memory_->add_shm_entry(session_id, index);
     }
 }
 

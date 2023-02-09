@@ -63,12 +63,15 @@ public:
 
         // worker objects
         workers_.resize(threads);
+
+        // set maximum thread size to status objects
+        status_->set_maximum_sessions(threads);
     }
 
     void operator()() {
         auto& connection_queue = container_->get_connection_queue();
         proc_mutex_file_ = status_->mutex_file();
-        status_->add_shm_entry(database_name_);
+        status_->set_database_name(database_name_);
 
         while(true) {
             auto session_id = connection_queue.listen();
@@ -90,7 +93,6 @@ public:
             session_name += "-";
             session_name += std::to_string(session_id);
             auto wire = std::make_unique<tateyama::common::wire::server_wire_container_impl>(session_name, proc_mutex_file_);
-            status_->add_shm_entry(session_name);
             DVLOG_LP(log_trace) << "created session wire: " << session_name;
             connection_queue.accept(session_id);
             std::size_t index = 0;
@@ -111,13 +113,9 @@ public:
                 continue;
             }
             try {
+                status_->add_shm_entry(session_id, index);
                 auto& worker = workers_.at(index);
-                if (worker) {
-                    if (auto name = worker->session_name(); !name.empty()) {
-                        status_->remove_shm_entry(name);
-                    }
-                }
-                worker = std::make_unique<server::Worker>(*router_, session_id, std::move(wire), session_name);
+                worker = std::make_unique<server::Worker>(*router_, session_id, std::move(wire));
                 worker->task_ = std::packaged_task<void()>([&]{worker->run();});
                 worker->future_ = worker->task_.get_future();
                 worker->thread_ = std::thread(std::move(worker->task_));

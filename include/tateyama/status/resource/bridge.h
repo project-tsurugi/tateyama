@@ -55,7 +55,7 @@ class bridge : public framework::resource {
     };
 
 public:
-    static constexpr std::size_t shm_size = 32768;
+    static constexpr std::size_t shm_size = 16384;
 
     static constexpr id_type tag = framework::resource_id_status;
 
@@ -112,14 +112,19 @@ public:
     std::string_view mutex_file();
 
     /**
-     * @brief add session to ipc sessions
-     */
-    void add_shm_entry(std::string_view name);
-
-    /**
      * @brief remove session from ipc sessions
      */
-    void remove_shm_entry(std::string_view name);
+    void set_maximum_sessions(std::size_t n);
+
+    /**
+     * @brief set database name of ipc sessions
+     */
+    void set_database_name(std::string_view name);
+
+    /**
+     * @brief add session to ipc sessions
+     */
+    void add_shm_entry(std::size_t session_id, std::size_t index);
 
 private:
     bool deactivated_{false};
