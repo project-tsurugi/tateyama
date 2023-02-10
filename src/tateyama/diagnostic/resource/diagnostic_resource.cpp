@@ -36,8 +36,7 @@ bool diagnostic_resource::shutdown(environment&) {
     return true;
 }
 
-diagnostic_resource::diagnostic_resource() {
-}
+diagnostic_resource::diagnostic_resource() = default;
 
 diagnostic_resource::~diagnostic_resource() = default;
 
