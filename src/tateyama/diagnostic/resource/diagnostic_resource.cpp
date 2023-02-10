@@ -36,10 +36,7 @@ bool diagnostic_resource::shutdown(environment&) {
     return true;
 }
 
-diagnostic_resource::diagnostic_resource() : out_(std::cout) {
-}
-
-diagnostic_resource::diagnostic_resource(std::ostream& out) : out_(out) {
+diagnostic_resource::diagnostic_resource() {
 }
 
 diagnostic_resource::~diagnostic_resource() = default;
@@ -64,9 +61,9 @@ void diagnostic_resource::diagnostic_resource::remove_print_callback(std::string
     handlers_.erase(r, handlers_.end());
 }
 
-void diagnostic_resource::sighup_handler(int) {
+void diagnostic_resource::print_diagnostics(std::ostream& out) {
     for (auto& e : handlers_) {
-        e.second(out_);
+        e.second(out);
     }
 }
 

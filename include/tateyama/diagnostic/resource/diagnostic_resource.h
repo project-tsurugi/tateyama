@@ -68,7 +68,6 @@ public:
      * @brief create empty object
      */
     diagnostic_resource();
-    explicit diagnostic_resource(std::ostream&);
 
     /**
      * @brief destructor the object
@@ -81,12 +80,11 @@ public:
     diagnostic_resource& operator=(diagnostic_resource&& other) noexcept = delete;
 
     /**
-     * @brief signal handler calls sharksfin::print_diagnostics(std::ostream&)
+     * @brief print diagnostics message to the std::ostream& given
      */
-    void sighup_handler(int);
+    void print_diagnostics(std::ostream&);
 
 private:
-    std::ostream &out_;
     std::mutex mutex_{};
     std::vector<std::pair<std::string, std::function<void(std::ostream&)>>> handlers_{};
 };
