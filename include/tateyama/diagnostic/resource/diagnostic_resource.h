@@ -57,7 +57,7 @@ public:
     /**
      * @brief add a diagnostic handler
      */
-    void add_print_callback(std::string_view, const std::function<void(std::ostream&)>&);
+    void add_print_callback(std::string_view, std::function<void(std::ostream&)>);
 
     /**
      * @brief remove the diagnostic handler

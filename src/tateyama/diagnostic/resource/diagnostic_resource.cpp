@@ -40,7 +40,7 @@ diagnostic_resource::diagnostic_resource() = default;
 
 diagnostic_resource::~diagnostic_resource() = default;
 
-void diagnostic_resource::add_print_callback(std::string_view id, const std::function<void(std::ostream&)>& func) {
+void diagnostic_resource::add_print_callback(std::string_view id, std::function<void(std::ostream&)> func) {
     std::lock_guard<std::mutex> lock(mutex_);
     bool found = false;
     for (auto&& e : handlers_) {
@@ -50,7 +50,7 @@ void diagnostic_resource::add_print_callback(std::string_view id, const std::fun
         }
     }
     if (!found) {
-        handlers_.emplace_back(std::string(id), func);
+        handlers_.emplace_back(std::string(id), std::move(func));
     }
 }
 
