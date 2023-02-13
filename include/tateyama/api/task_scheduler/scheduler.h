@@ -217,6 +217,29 @@ public:
         return workers_;
     }
 
+    /**
+     * @brief print diagnostics
+     */
+    void print_diagnostic(std::ostream& os) {
+        if (! started_) {
+            // print nothing if not started yet
+            return;
+        }
+        auto count = workers_.size();
+        os << "worker_count: " << count << std::endl;
+        os << "workers:" << std::endl;
+        for(std::size_t i=0; i<count; ++i) {
+            os << "  - worker_index: " << i << std::endl;
+            os << "    queues:" << std::endl;
+            auto&& w = workers_[i];
+            os << "      local:" << std::endl;
+            print_queue_diagnostic(queues_[i], os);
+            os << "      sticky:" << std::endl;
+            print_queue_diagnostic(sticky_task_queues_[i], os);
+            os << "      delayed:" << std::endl;
+            print_queue_diagnostic(delayed_task_queues_[i], os);
+        }
+    }
 private:
     task_scheduler_cfg cfg_{};
     std::size_t size_{};
@@ -255,6 +278,26 @@ private:
     std::size_t increment(std::atomic_size_t& index, std::size_t mod) {
         auto ret = index++;
         return ret % mod;
+    }
+    
+    /**
+     * @brief print queue diagnostics
+     */
+    void print_queue_diagnostic(queue& q, std::ostream& os) {
+        os << "        task_count: " << q.size() << std::endl;
+        if(q.empty()) {
+            return;
+        }
+        os << "        tasks:" << std::endl;
+        queue backup{};
+        task t{};
+        while(q.try_pop(t)) {
+            print_task_diagnostic(t, os);
+            backup.push(std::move(t));
+        }
+        while(backup.try_pop(t)) {
+            q.push(std::move(t));
+        }
     }
 
     static_assert(std::is_default_constructible_v<task>);
