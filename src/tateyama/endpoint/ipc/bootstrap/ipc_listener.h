@@ -94,28 +94,12 @@ public:
             session_name += std::to_string(session_id);
             auto wire = std::make_unique<tateyama::common::wire::server_wire_container_impl>(session_name, proc_mutex_file_);
             DVLOG_LP(log_trace) << "created session wire: " << session_name;
-            connection_queue.accept(session_id);
-            std::size_t index = 0;
-            bool found = false;
-            for (; index < workers_.size() ; index++) {
-                auto& worker = workers_.at(index);
-                if (!worker) {
-                    found = true;
-                    break;
-                }
-                if (auto rv = worker->future_.wait_for(std::chrono::seconds(0)); rv == std::future_status::ready) {
-                    found = true;
-                    break;
-                }
-            }
-            if (!found) {
-                LOG_LP(ERROR) << "the number of sessions exceeded the limit (" << workers_.size() << ")";
-                continue;
-            }
+            std::size_t index = connection_queue.accept(session_id);
+            VLOG_LP(log_debug) << "created session wire: " << session_name << " at index " << index;
             try {
                 status_->add_shm_entry(session_id, index);
                 auto& worker = workers_.at(index);
-                worker = std::make_unique<server::Worker>(*router_, session_id, std::move(wire));
+                worker = std::make_unique<server::Worker>(*router_, session_id, std::move(wire), connection_queue, index);
                 worker->task_ = std::packaged_task<void()>([&]{worker->run();});
                 worker->future_ = worker->task_.get_future();
                 worker->thread_ = std::thread(std::move(worker->task_));
