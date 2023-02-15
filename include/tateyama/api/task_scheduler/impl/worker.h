@@ -143,7 +143,7 @@ public:
                 return true;
             }
         }
-        if(check_delayed_task_empty(ctx)) {
+        if(cfg_ && cfg_->lazy_worker() && check_delayed_task_empty(ctx)) {
             // If delayed task exists, pretend as if its small slice is executed so that worker won't suspend.
             return true;
         }
