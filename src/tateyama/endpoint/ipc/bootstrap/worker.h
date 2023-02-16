@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2019 tsurugi project.
+ * Copyright 2019-2023 tsurugi project.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 
 #include <future>
 #include <thread>
+#include <functional>
 
 #include <tateyama/status.h>
 #include <tateyama/api/server/request.h>
@@ -31,12 +32,11 @@ class ipc_provider;
 
 class Worker {
  public:
-    Worker(tateyama::framework::routing_service& service, std::size_t session_id, std::unique_ptr<tateyama::common::wire::server_wire_container_impl> wire, tateyama::common::wire::connection_queue& queue, std::size_t id)
+    Worker(tateyama::framework::routing_service& service, std::size_t session_id, std::unique_ptr<tateyama::common::wire::server_wire_container_impl> wire, std::function<void(void)> clean_up)
         : service_(service), wire_(std::move(wire)),
           request_wire_container_(dynamic_cast<tateyama::common::wire::server_wire_container_impl::wire_container_impl*>(wire_->get_request_wire())),
           session_id_(session_id),
-          connection_queue_(queue),
-          id_(id) {
+          clean_up_(std::move(clean_up)) {
     }
     ~Worker() {
         if(thread_.joinable()) thread_.join();
@@ -60,8 +60,7 @@ class Worker {
     std::unique_ptr<tateyama::common::wire::server_wire_container_impl> wire_;
     tateyama::common::wire::server_wire_container_impl::wire_container_impl* request_wire_container_;
     std::size_t session_id_;
-    tateyama::common::wire::connection_queue& connection_queue_;
-    std::size_t id_;
+    std::function<void(void)> clean_up_;
 
     // for future
     std::packaged_task<void()> task_;

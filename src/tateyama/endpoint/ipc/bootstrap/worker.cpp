@@ -34,7 +34,7 @@ void Worker::run()
         request = nullptr;
         if (wire_->is_session_closed()) { break; }
     }
-    connection_queue_.disconnect(id_);
+    clean_up_();
 }
 
 }  // tateyama::server
