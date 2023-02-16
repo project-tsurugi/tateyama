@@ -48,6 +48,18 @@ public:
 
         virtual void write(const char*, response_header) = 0;
     };
+    class resultset_wire_container {
+    public:
+        resultset_wire_container() = default;
+        virtual ~resultset_wire_container() = 0;
+        constexpr resultset_wire_container(resultset_wire_container const&) = delete;
+        constexpr resultset_wire_container(resultset_wire_container&&) = delete;
+        resultset_wire_container& operator = (resultset_wire_container const&) = delete;
+        resultset_wire_container& operator = (resultset_wire_container&&) = delete;
+
+        virtual void write(char const*, std::size_t) = 0;
+        virtual void flush() = 0;
+    };
     class resultset_wires_container {
     public:
         resultset_wires_container() = default;
@@ -57,7 +69,7 @@ public:
         resultset_wires_container& operator = (resultset_wires_container const&) = delete;
         resultset_wires_container& operator = (resultset_wires_container&&) = delete;
 
-        virtual shm_resultset_wire* acquire() = 0;
+        virtual std::unique_ptr<resultset_wire_container> acquire() = 0;
         virtual void set_eor() = 0;
         virtual bool is_closed() = 0;
     };
@@ -93,6 +105,7 @@ public:
 inline server_wire_container::~server_wire_container() = default;
 inline server_wire_container::wire_container::~wire_container() = default;
 inline server_wire_container::response_wire_container::~response_wire_container() = default;
+inline server_wire_container::resultset_wire_container::~resultset_wire_container() = default;
 inline server_wire_container::resultset_wires_container::~resultset_wires_container() = default;
 inline server_wire_container::garbage_collector::~garbage_collector() = default;
 

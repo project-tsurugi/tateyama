@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 tsurugi project.
+ * Copyright 2019-2023 tsurugi project.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,20 @@ class server_wire_container_impl : public server_wire_container
     static constexpr std::size_t resultset_buffer_size = (1<<17); //  128K bytes NOLINT
 
 public:
+    // resultset_wire_container
+    class resultset_wire_container_impl : public resultset_wire_container {
+    public:
+        resultset_wire_container_impl(shm_resultset_wire* resultset_wire) : shm_resultset_wire_(resultset_wire) {
+        }
+        void write(char const* data, std::size_t length) override {
+            shm_resultset_wire_->write(data, length);
+        }
+        void flush() override {
+            shm_resultset_wire_->flush();
+        }
+    private:
+        shm_resultset_wire* shm_resultset_wire_;
+    };
     // resultset_wires_container
     class resultset_wires_container_impl : public resultset_wires_container {
     public:
@@ -66,9 +80,9 @@ public:
         resultset_wires_container_impl& operator = (resultset_wires_container_impl const&) = delete;
         resultset_wires_container_impl& operator = (resultset_wires_container_impl&&) = delete;
 
-        shm_resultset_wire* acquire() override {
+        std::unique_ptr<resultset_wire_container> acquire() override {
             try {
-                return shm_resultset_wires_->acquire();
+                return std::make_unique<resultset_wire_container_impl>(shm_resultset_wires_->acquire());
             }
             catch(const boost::interprocess::interprocess_exception& ex) {
                 LOG(FATAL) << "running out of boost managed shared memory" << std::endl;

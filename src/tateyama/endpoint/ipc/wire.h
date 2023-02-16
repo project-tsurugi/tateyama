@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 tsurugi project.
+ * Copyright 2019-2023 tsurugi project.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -507,6 +507,16 @@ public:
                 flush(get_bip_address(managed_shm_ptr_));
             }
         }
+        /**
+         * @brief check whether data of length l can be written.
+         *  used by server
+         */
+        [[nodiscard]] bool check_room(std::size_t length) noexcept {
+            if (continued_) {
+                return room() >= length;
+            }
+            return room() >= (length + length_header::size);
+        }
 
         /**
          * @brief provide the current chunk.
@@ -848,8 +858,10 @@ public:
         }
         if (flock(fd, LOCK_EX | LOCK_NB) == 0) {  // NOLINT
             flock(fd, LOCK_UN);
+            close(fd);
             return false;
         }
+        close(fd);
         return true;
     }
 

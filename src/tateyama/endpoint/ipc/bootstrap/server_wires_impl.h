@@ -27,14 +27,43 @@ namespace tateyama::common::wire {
 
 class server_wire_container_impl : public server_wire_container
 {
-    static constexpr std::size_t shm_size = ((1<<16) * 16 * 16);  // 8M (= 64K * 16writes * 16result_sets) (tentative)  NOLINT
+    static constexpr std::size_t shm_size = ((1<<16) * 16 * 16);  // 16M (= 64K * 16writes * 16result_sets) (tentative)  NOLINT
     static constexpr std::size_t request_buffer_size = (1<<12);   //  4K bytes NOLINT
     static constexpr std::size_t response_buffer_size = (1<<13);  //  8K bytes NOLINT
     static constexpr std::size_t resultset_vector_size = (1<<12); //  4K bytes NOLINT
     static constexpr std::size_t writer_count = 16;
-    static constexpr std::size_t resultset_buffer_size = (1<<17); //  128K bytes NOLINT
+    static constexpr std::size_t resultset_buffer_size = (1<<16); //  64K bytes NOLINT
 
 public:
+    // resultset_wire_container
+    class resultset_wire_container_impl : public resultset_wire_container {
+    public:
+        explicit resultset_wire_container_impl(shm_resultset_wire* resultset_wire) : shm_resultset_wire_(resultset_wire) {
+        }
+        ~resultset_wire_container_impl() override = default;
+
+        /**
+         * @brief Copy and move constructers are delete.
+         */
+        resultset_wire_container_impl(resultset_wire_container_impl const&) = delete;
+        resultset_wire_container_impl(resultset_wire_container_impl&&) = delete;
+        resultset_wire_container_impl& operator = (resultset_wire_container_impl const&) = delete;
+        resultset_wire_container_impl& operator = (resultset_wire_container_impl&&) = delete;
+
+        void write(char const* data, std::size_t length) override {
+            if (shm_resultset_wire_->check_room(length)) {
+                shm_resultset_wire_->write(data, length);
+                return;
+            }
+            LOG_LP(ERROR) << "there is no room for writing data of length " << length;
+            pthread_exit(nullptr);  // FIXME
+        }
+        void flush() override {
+            shm_resultset_wire_->flush();
+        }
+    private:
+        shm_resultset_wire* shm_resultset_wire_;
+    };
     // resultset_wires_container
     class resultset_wires_container_impl : public resultset_wires_container {
     public:
@@ -46,10 +75,10 @@ public:
             try {
                 shm_resultset_wires_ = managed_shm_ptr_->construct<shm_resultset_wires>(rsw_name_.c_str())(managed_shm_ptr_, count, resultset_buffer_size);
             } catch(const boost::interprocess::interprocess_exception& ex) {
-                LOG_LP(ERROR) << ex.what() << " on resultset_wires_container_impl::resultset_wires_container_impl()" << std::endl;
+                LOG_LP(ERROR) << ex.what() << " on resultset_wires_container_impl::resultset_wires_container_impl()";
                 pthread_exit(nullptr);  // FIXME
             } catch (std::runtime_error &ex) {
-                LOG_LP(ERROR) << "running out of boost managed shared memory" << std::endl;
+                LOG_LP(ERROR) << "running out of boost managed shared memory";
                 pthread_exit(nullptr);  // FIXME
             }
         }
@@ -68,15 +97,15 @@ public:
         resultset_wires_container_impl& operator = (resultset_wires_container_impl const&) = delete;
         resultset_wires_container_impl& operator = (resultset_wires_container_impl&&) = delete;
 
-        shm_resultset_wire* acquire() override {
+        std::unique_ptr<resultset_wire_container> acquire() override {
             std::lock_guard<std::mutex> lock(mtx_shm_);
             try {
-                return shm_resultset_wires_->acquire();
+                return std::make_unique<resultset_wire_container_impl>(shm_resultset_wires_->acquire());
             } catch(const boost::interprocess::interprocess_exception& ex) {
-                LOG_LP(ERROR) << ex.what() << " on resultset_wires_container_impl::acquire()" << std::endl;
+                LOG_LP(ERROR) << ex.what() << " on resultset_wires_container_impl::acquire()";
                 pthread_exit(nullptr);  // FIXME
             } catch (std::runtime_error &ex) {
-                LOG_LP(ERROR) << "running out of boost managed shared memory" << std::endl;
+                LOG_LP(ERROR) << "running out of boost managed shared memory";
                 pthread_exit(nullptr);  // FIXME
             }
         }
@@ -208,10 +237,10 @@ public:
             request_wire_.initialize(req_wire, req_wire->get_bip_address(managed_shared_memory_.get()));
             response_wire_.initialize(res_wire, res_wire->get_bip_address(managed_shared_memory_.get()));
         } catch(const boost::interprocess::interprocess_exception& ex) {
-            LOG_LP(ERROR) << ex.what() << " on server_wire_container_impl::server_wire_container_impl()" << std::endl;
+            LOG_LP(ERROR) << ex.what() << " on server_wire_container_impl::server_wire_container_impl()";
             pthread_exit(nullptr);  // FIXME
         } catch (std::runtime_error &ex) {
-            LOG_LP(ERROR) << "running out of boost managed shared memory" << std::endl;
+            LOG_LP(ERROR) << "running out of boost managed shared memory";
             pthread_exit(nullptr);  // FIXME
         }
     }
@@ -237,7 +266,7 @@ public:
                 new resultset_wires_container_impl{managed_shared_memory_.get(), name, count, mtx_shm_}, resultset_deleter_impl };
         }
         catch(const boost::interprocess::interprocess_exception& ex) {
-            LOG_LP(ERROR) << "running out of boost managed shared memory" << std::endl;
+            LOG_LP(ERROR) << "running out of boost managed shared memory";
             pthread_exit(nullptr);  // FIXME
         }
     }
