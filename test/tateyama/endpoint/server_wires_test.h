@@ -27,11 +27,12 @@ namespace tateyama::common::wire {
 
 class server_wire_container_impl : public server_wire_container
 {
-    static constexpr std::size_t shm_size = (1<<21) * 104;  // 2M(64K * 8writes * 4result_sets) * 104threads bytes (tentative)  NOLINT
+    static constexpr std::size_t shm_size = ((1<<16) * 16 * 16);  // 8M (= 64K * 16writes * 16result_sets) (tentative)  NOLINT
     static constexpr std::size_t request_buffer_size = (1<<12);   //  4K bytes NOLINT
     static constexpr std::size_t response_buffer_size = (1<<13);  //  8K bytes NOLINT
     static constexpr std::size_t resultset_vector_size = (1<<12); //  4K bytes NOLINT
     static constexpr std::size_t writer_count = 8;
+    static constexpr std::size_t resultset_buffer_size = (1<<17); //  128K bytes NOLINT
 
 public:
     // resultset_wires_container
@@ -41,7 +42,7 @@ public:
         resultset_wires_container_impl(boost::interprocess::managed_shared_memory* managed_shm_ptr, std::string_view name, std::size_t count)
             : managed_shm_ptr_(managed_shm_ptr), rsw_name_(name), server_(true) {
             managed_shm_ptr_->destroy<shm_resultset_wires>(rsw_name_.c_str());
-            shm_resultset_wires_ = managed_shm_ptr_->construct<shm_resultset_wires>(rsw_name_.c_str())(managed_shm_ptr_, count);
+            shm_resultset_wires_ = managed_shm_ptr_->construct<shm_resultset_wires>(rsw_name_.c_str())(managed_shm_ptr_, count, resultset_buffer_size);
         }
         //   for client (test purpose)
         resultset_wires_container_impl(boost::interprocess::managed_shared_memory* managed_shm_ptr, std::string_view name)

@@ -27,11 +27,12 @@ namespace tateyama::common::wire {
 
 class server_wire_container_impl : public server_wire_container
 {
-    static constexpr std::size_t shm_size = ((1<<16) * 16 * 8);  // 8M (= 64K * 16writes * 8result_sets) (tentative)  NOLINT
+    static constexpr std::size_t shm_size = ((1<<16) * 16 * 16);  // 8M (= 64K * 16writes * 16result_sets) (tentative)  NOLINT
     static constexpr std::size_t request_buffer_size = (1<<12);   //  4K bytes NOLINT
     static constexpr std::size_t response_buffer_size = (1<<13);  //  8K bytes NOLINT
     static constexpr std::size_t resultset_vector_size = (1<<12); //  4K bytes NOLINT
     static constexpr std::size_t writer_count = 16;
+    static constexpr std::size_t resultset_buffer_size = (1<<17); //  128K bytes NOLINT
 
 public:
     // resultset_wires_container
@@ -43,7 +44,7 @@ public:
             std::lock_guard<std::mutex> lock(mtx_shm_);
             managed_shm_ptr_->destroy<shm_resultset_wires>(rsw_name_.c_str());
             try {
-                shm_resultset_wires_ = managed_shm_ptr_->construct<shm_resultset_wires>(rsw_name_.c_str())(managed_shm_ptr_, count);
+                shm_resultset_wires_ = managed_shm_ptr_->construct<shm_resultset_wires>(rsw_name_.c_str())(managed_shm_ptr_, count, resultset_buffer_size);
             } catch(const boost::interprocess::interprocess_exception& ex) {
                 LOG_LP(ERROR) << ex.what() << " on resultset_wires_container_impl::resultset_wires_container_impl()" << std::endl;
                 pthread_exit(nullptr);  // FIXME
