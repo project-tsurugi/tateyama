@@ -98,10 +98,7 @@ public:
                 status_->add_shm_entry(session_id, index);
                 auto& worker = workers_.at(index);
                 worker = std::make_unique<server::Worker>(*router_, session_id, std::move(wire),
-                                                          [&connection_queue, index, session_name](){
-                                                              connection_queue.disconnect(index);
-                                                              VLOG_LP(log_trace) << "destroy session wire: " << session_name << " at index " << index;
-                                                          });
+                                                          [&connection_queue, index](){ connection_queue.disconnect(index); });
                 worker->task_ = std::packaged_task<void()>([&]{worker->run();});
                 worker->future_ = worker->task_.get_future();
                 worker->thread_ = std::thread(std::move(worker->task_));

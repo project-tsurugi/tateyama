@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2019 tsurugi project.
+ * Copyright 2019-2023 tsurugi project.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ void Worker::run()
         if (wire_->is_session_closed()) { break; }
     }
     clean_up_();
+    VLOG_LP(log_trace) << "destroy session wire: session_id = " << std::to_string(session_id_);
 }
 
 }  // tateyama::server
