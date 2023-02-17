@@ -76,11 +76,11 @@ public:
         while(true) {
             auto session_id = connection_queue.listen();
             if (connection_queue.is_terminated()) {
-                DVLOG_LP(log_trace) << "receive terminate request";
+                VLOG_LP(log_trace) << "receive terminate request";
                 for (auto& worker : workers_) {
                     if (worker) {
                         if (auto rv = worker->future_.wait_for(std::chrono::seconds(0)); rv != std::future_status::ready) {
-                            DVLOG_LP(log_trace) << "exit: remaining thread " << worker->session_id_;
+                            VLOG_LP(log_trace) << "exit: remaining thread " << worker->session_id_;
                         }
                     }
                 }
@@ -88,18 +88,20 @@ public:
                 connection_queue.confirm_terminated();
                 break;
             }
-            DVLOG_LP(log_trace) << "connect request: " << session_id;
             std::string session_name = database_name_;
             session_name += "-";
             session_name += std::to_string(session_id);
             auto wire = std::make_unique<tateyama::common::wire::server_wire_container_impl>(session_name, proc_mutex_file_);
-            DVLOG_LP(log_trace) << "created session wire: " << session_name;
             std::size_t index = connection_queue.accept(session_id);
-            VLOG_LP(log_debug) << "created session wire: " << session_name << " at index " << index;
+            VLOG_LP(log_trace) << "create session wire: " << session_name << " at index " << index;
             try {
                 status_->add_shm_entry(session_id, index);
                 auto& worker = workers_.at(index);
-                worker = std::make_unique<server::Worker>(*router_, session_id, std::move(wire), [&connection_queue, index](){ connection_queue.disconnect(index); });
+                worker = std::make_unique<server::Worker>(*router_, session_id, std::move(wire),
+                                                          [&connection_queue, index, session_name](){
+                                                              connection_queue.disconnect(index);
+                                                              VLOG_LP(log_trace) << "destroy session wire: " << session_name << " at index " << index;
+                                                          });
                 worker->task_ = std::packaged_task<void()>([&]{worker->run();});
                 worker->future_ = worker->task_.get_future();
                 worker->thread_ = std::thread(std::move(worker->task_));
