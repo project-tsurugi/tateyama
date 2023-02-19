@@ -113,6 +113,7 @@ tateyama::status ipc_data_channel::release(tateyama::api::server::writer& wrt) {
     {
         std::unique_lock lock{mutex_};
         if (auto itr = data_writers_.find(dynamic_cast<ipc_writer*>(&wrt)); itr != data_writers_.end()) {
+            (*itr)->release();
             data_writers_.erase(itr);
             return tateyama::status::ok;
         }
@@ -133,6 +134,10 @@ tateyama::status ipc_writer::commit() {
 
     resultset_wire_->flush();
     return tateyama::status::ok;
+}
+
+void ipc_writer::release() {
+    resultset_wire_->release(std::move(resultset_wire_));
 }
 
 }  // tateyama::common::wire

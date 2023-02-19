@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 tsurugi project.
+ * Copyright 2019-2023 tsurugi project.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,6 +48,9 @@ public:
 
         virtual void write(const char*, response_header) = 0;
     };
+    class resultset_wire_container;
+    using resultset_wire_deleter_type = void(*)(resultset_wire_container*);
+    using unq_p_resultset_wire_conteiner = std::unique_ptr<resultset_wire_container, resultset_wire_deleter_type>;
     class resultset_wire_container {
     public:
         resultset_wire_container() = default;
@@ -59,6 +62,7 @@ public:
 
         virtual void write(char const*, std::size_t) = 0;
         virtual void flush() = 0;
+        virtual void release(unq_p_resultset_wire_conteiner) = 0;
     };
     class resultset_wires_container {
     public:
@@ -69,7 +73,7 @@ public:
         resultset_wires_container& operator = (resultset_wires_container const&) = delete;
         resultset_wires_container& operator = (resultset_wires_container&&) = delete;
 
-        virtual std::unique_ptr<resultset_wire_container> acquire() = 0;
+        virtual unq_p_resultset_wire_conteiner acquire() = 0;
         virtual void set_eor() = 0;
         virtual bool is_closed() = 0;
     };

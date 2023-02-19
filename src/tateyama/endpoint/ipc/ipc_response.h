@@ -76,13 +76,14 @@ class ipc_writer : public tateyama::api::server::writer {
     friend ipc_data_channel;
 
 public:
-    explicit ipc_writer(std::unique_ptr<server_wire_container::resultset_wire_container> wire) : resultset_wire_(std::move(wire)) {}
+    explicit ipc_writer(server_wire_container::unq_p_resultset_wire_conteiner wire) : resultset_wire_(std::move(wire)) {}
 
     tateyama::status write(char const* data, std::size_t length) override;
     tateyama::status commit() override;
+    void release();
 
 private:
-    std::unique_ptr<server_wire_container::resultset_wire_container> resultset_wire_;
+    server_wire_container::unq_p_resultset_wire_conteiner resultset_wire_;
 };
 
 /**

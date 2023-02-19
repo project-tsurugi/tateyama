@@ -21,7 +21,7 @@
 #include "tateyama/endpoint/ipc/ipc_request.h"
 #include "tateyama/endpoint/ipc/ipc_response.h"
 
-#include "server_wires_test.h"
+#include <tateyama/endpoint/ipc/bootstrap/server_wires_impl.h>
 #include "header_utils.h"
 
 #include <gtest/gtest.h>
@@ -31,7 +31,7 @@ namespace tateyama::api::endpoint::ipc {
 class response_only_test : public ::testing::Test {
     virtual void SetUp() {
         rv_ = system("if [ -f /dev/shm/tateyama-response_only_test ]; then rm -f /dev/shm/tateyama-response_only_test; fi ");
-        wire_ = std::make_unique<tateyama::common::wire::server_wire_container_impl>("tateyama-response_only_test");
+        wire_ = std::make_unique<tateyama::common::wire::server_wire_container_impl>("tateyama-response_only_test", "dummy_mutex_file_name");
     }
     virtual void TearDown() {
         rv_ = system("if [ -f /dev/shm/tateyama-response_only_test ]; then rm -f /dev/shm/tateyama-response_only_test; fi ");
@@ -86,7 +86,7 @@ TEST_F(response_only_test, normal) {
     sv(static_cast<std::shared_ptr<tateyama::api::server::request>>(request),
              static_cast<std::shared_ptr<tateyama::api::server::response>>(response));
 
-    auto& response_wire = wire_->get_response_wire();
+    auto& response_wire = static_cast<tateyama::common::wire::server_wire_container_impl::response_wire_container_impl&>(wire_->get_response_wire());
     auto header = response_wire.await();
     std::string r_msg;
     r_msg.resize(response_wire.get_length());
