@@ -230,6 +230,8 @@ public:
         os << "workers:" << std::endl;
         for(std::size_t i=0; i<count; ++i) {
             os << "  - worker_index: " << i << std::endl;
+            os << "    thread: " << std::endl;
+            threads_[i].print_diagnostic(os);
             os << "    queues:" << std::endl;
             auto&& w = workers_[i];
             os << "      local:" << std::endl;

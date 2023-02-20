@@ -26,6 +26,7 @@
 #include <tateyama/api/task_scheduler/task_scheduler_cfg.h>
 #include <tateyama/utils/thread_affinity.h>
 #include <tateyama/utils/cache_align.h>
+#include <tateyama/utils/hex.h>
 #include "utils.h"
 #include <tateyama/common.h>
 
@@ -90,6 +91,10 @@ public:
             return active_;
         });
     }
+
+    void print_diagnostic(std::ostream& os) {
+        os << "      physical_id: " << utils::hex(origin_.get_id()) << std::endl;
+    }
 private:
     std::unique_ptr<cv> sleep_cv_{std::make_unique<cv>()};
     bool active_{};
@@ -139,6 +144,7 @@ private:
                 });
             }
             DLOG(INFO) << "thread " << thread_id
+                << " physical_id:" << utils::hex(boost::this_thread::get_id())
                 << " runs on cpu:" << sched_getcpu()
                 << " node:" << numa_node_of_cpu(sched_getcpu());
             std::apply([&callable](auto&& ...args) {
