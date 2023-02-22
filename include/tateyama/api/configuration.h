@@ -163,6 +163,15 @@ public:
         return boost::filesystem::path("");
     }
 
+
+    /**
+     * @brief get the ptree containing the properties
+     * @return ptree containing the properties specified by the config file
+     */
+    [[nodiscard]] boost::property_tree::ptree& get_ptree() {
+        return property_tree_;
+    }
+
     /**
      * @brief equality comparison operator
      */
