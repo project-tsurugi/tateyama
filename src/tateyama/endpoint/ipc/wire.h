@@ -478,7 +478,7 @@ public:
          *  used by server
          */
         void write(const char* from, std::size_t length) {
-            if (!closed_) {
+            if (!closed_ && (length > 0)) {
                 if (!continued_) {
                     brand_new();
                     continued_ = true;
