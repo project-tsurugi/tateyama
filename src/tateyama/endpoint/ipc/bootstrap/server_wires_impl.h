@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 tsurugi project.
+ * Copyright 2019-2023 tsurugi project.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,13 @@
 
 #include <set>
 #include <mutex>
+#include <condition_variable>
+#include <string>
+#include <queue>
+#include <thread>
 
 #include <glog/logging.h>
+#include <tateyama/logging.h>
 
 #include <tateyama/endpoint/ipc/wire.h>
 #include <tateyama/endpoint/ipc/server_wires.h>
@@ -27,14 +32,132 @@ namespace tateyama::common::wire {
 
 class server_wire_container_impl : public server_wire_container
 {
-    static constexpr std::size_t shm_size = ((1<<16) * 16 * 16);  // 8M (= 64K * 16writes * 16result_sets) (tentative)  NOLINT
+    static constexpr std::size_t shm_size = ((1<<16) * 16 * 16);  // 16M (= 64K * 16writes * 16result_sets) (tentative)  NOLINT
     static constexpr std::size_t request_buffer_size = (1<<12);   //  4K bytes NOLINT
     static constexpr std::size_t response_buffer_size = (1<<13);  //  8K bytes NOLINT
     static constexpr std::size_t resultset_vector_size = (1<<12); //  4K bytes NOLINT
     static constexpr std::size_t writer_count = 16;
-    static constexpr std::size_t resultset_buffer_size = (1<<17); //  128K bytes NOLINT
+    static constexpr std::size_t resultset_buffer_size = (1<<16); //  64K bytes NOLINT
 
 public:
+    class resultset_wires_container_impl;
+
+    // resultset_wire_container
+    class resultset_wire_container_impl : public resultset_wire_container {
+    public:
+        resultset_wire_container_impl(shm_resultset_wire* resultset_wire, resultset_wires_container_impl& resultset_wires_container_impl)
+            : shm_resultset_wire_(resultset_wire), resultset_wires_container_impl_(resultset_wires_container_impl) {
+        }
+        ~resultset_wire_container_impl() override {
+            if (thread_active_) {
+                if(writer_thread_.joinable()) {
+                    writer_thread_.join();
+                }
+            }
+        }
+
+        /**
+         * @brief Copy and move constructers are delete.
+         */
+        resultset_wire_container_impl(resultset_wire_container_impl const&) = delete;
+        resultset_wire_container_impl(resultset_wire_container_impl&&) = delete;
+        resultset_wire_container_impl& operator = (resultset_wire_container_impl const&) = delete;
+        resultset_wire_container_impl& operator = (resultset_wire_container_impl&&) = delete;
+
+        void operator()() {
+            while (true) {
+                std::unique_lock<std::mutex> lock_queue(mtx_queue_);
+                if (queue_.empty() && !released_) {
+                    cnd_.wait(lock_queue, [this]{ return !queue_.empty() || released_; });
+                }
+                if (queue_.empty() && released_) {
+                    VLOG_LP(log_trace) << "exit writer annex mode because the end of the records";
+                    annex_.clear();
+                    write_complete();
+                    return;
+                }
+                std::size_t chunk_size = queue_.front();
+                queue_.pop();
+                lock_queue.unlock();
+                if (shm_resultset_wire_->wait_room(chunk_size)) {
+                    VLOG_LP(log_trace) << "exit writer annex mode because the result set is closed by the client";
+                    annex_.clear();
+                    return;
+                }
+                if (chunk_size > 0) {
+                    std::unique_lock<std::mutex> lock_buffer(mtx_buffer_);
+                    shm_resultset_wire_->write(annex_.substr(read_pos_).data(), chunk_size);
+                }
+                shm_resultset_wire_->flush();
+                read_pos_ += chunk_size;
+            }
+        }
+        void write(char const* data, std::size_t length) override {
+            if (!annex_mode_) {
+                if (shm_resultset_wire_->check_room(length)) {
+                    shm_resultset_wire_->write(data, length);
+                    return;
+                }
+                VLOG_LP(log_trace) << "enter writer annex mode";
+                annex_mode_ = true;
+                write_pos_ = 0;
+                read_pos_ = 0;
+                chunk_size_ = 0;
+                if (!thread_active_) {
+                    writer_thread_ = std::thread(std::ref(*this));
+                    thread_active_ = true;
+                }
+            }
+            if (annex_.capacity() < (write_pos_ + chunk_size_ + length)) {
+                std::size_t size = ((annex_.capacity() / resultset_buffer_size) + 1) * resultset_buffer_size;
+                VLOG_LP(log_trace) << "enlarge annex buffer to " << size << " bytes";
+                {
+                    std::unique_lock<std::mutex> lock(mtx_buffer_);
+                    annex_.reserve(size);
+                }
+            }
+            annex_.insert(write_pos_ + chunk_size_, data, length);
+            chunk_size_ += length;
+        }
+        void flush() override {
+            if (!annex_mode_) {
+                shm_resultset_wire_->flush();
+                return;
+            }
+            if (chunk_size_ > 0) {
+                std::unique_lock<std::mutex> lock(mtx_queue_);
+                queue_.push(chunk_size_);
+                cnd_.notify_one();
+            }
+            write_pos_ += chunk_size_;
+            chunk_size_ = 0;
+        }
+        void release(unq_p_resultset_wire_conteiner resultset_wire) override;
+
+    private:
+        shm_resultset_wire* shm_resultset_wire_;
+        resultset_wires_container_impl &resultset_wires_container_impl_;
+
+        std::string annex_{};
+        std::queue<std::size_t> queue_{};
+        std::thread writer_thread_{};
+        std::size_t write_pos_{};
+        std::size_t chunk_size_{};
+        std::size_t read_pos_{};
+        bool annex_mode_{};
+        bool thread_active_{};
+        bool released_{};
+
+        std::mutex mtx_queue_{};
+        std::mutex mtx_buffer_{};
+        std::condition_variable cnd_{};
+
+        void write_complete();
+    };
+    static void resultset_wire_deleter_impl(resultset_wire_container* resultset_wire) {
+        delete dynamic_cast<resultset_wire_container_impl*>(resultset_wire);  // NOLINT
+    }
+
     // resultset_wires_container
     class resultset_wires_container_impl : public resultset_wires_container {
     public:
@@ -46,11 +169,19 @@ public:
             try {
                 shm_resultset_wires_ = managed_shm_ptr_->construct<shm_resultset_wires>(rsw_name_.c_str())(managed_shm_ptr_, count, resultset_buffer_size);
             } catch(const boost::interprocess::interprocess_exception& ex) {
-                LOG_LP(ERROR) << ex.what() << " on resultset_wires_container_impl::resultset_wires_container_impl()" << std::endl;
+                LOG_LP(ERROR) << ex.what() << " on resultset_wires_container_impl::resultset_wires_container_impl()";
                 pthread_exit(nullptr);  // FIXME
             } catch (std::runtime_error &ex) {
-                LOG_LP(ERROR) << "running out of boost managed shared memory" << std::endl;
+                LOG_LP(ERROR) << "running out of boost managed shared memory";
                 pthread_exit(nullptr);  // FIXME
+            }
+        }
+        //  constructor for client
+        resultset_wires_container_impl(boost::interprocess::managed_shared_memory* managed_shm_ptr, std::string_view name, std::mutex& mtx_shm)
+            : managed_shm_ptr_(managed_shm_ptr), rsw_name_(name), server_(false), mtx_shm_(mtx_shm) {
+            shm_resultset_wires_ = managed_shm_ptr_->find<shm_resultset_wires>(rsw_name_.c_str()).first;
+            if (shm_resultset_wires_ == nullptr) {
+                throw std::runtime_error("cannot find the resultset wire");
             }
         }
         ~resultset_wires_container_impl() override {
@@ -68,24 +199,65 @@ public:
         resultset_wires_container_impl& operator = (resultset_wires_container_impl const&) = delete;
         resultset_wires_container_impl& operator = (resultset_wires_container_impl&&) = delete;
 
-        shm_resultset_wire* acquire() override {
+        unq_p_resultset_wire_conteiner acquire() override {
             std::lock_guard<std::mutex> lock(mtx_shm_);
             try {
-                return shm_resultset_wires_->acquire();
+                return std::unique_ptr<resultset_wire_container_impl, resultset_wire_deleter_type>{
+                    new resultset_wire_container_impl{shm_resultset_wires_->acquire(), *this}, resultset_wire_deleter_impl};
             } catch(const boost::interprocess::interprocess_exception& ex) {
-                LOG_LP(ERROR) << ex.what() << " on resultset_wires_container_impl::acquire()" << std::endl;
+                LOG_LP(ERROR) << ex.what() << " on resultset_wires_container_impl::acquire()";
                 pthread_exit(nullptr);  // FIXME
             } catch (std::runtime_error &ex) {
-                LOG_LP(ERROR) << "running out of boost managed shared memory" << std::endl;
+                LOG_LP(ERROR) << "running out of boost managed shared memory";
                 pthread_exit(nullptr);  // FIXME
             }
         }
 
         void set_eor() override {
-            shm_resultset_wires_->set_eor();
+            if (deffered_writers_ == 0) {
+                shm_resultset_wires_->set_eor();
+            }
         }
         bool is_closed() override {
             return shm_resultset_wires_->is_closed();
+        }
+
+        void add_deffered_delete(unq_p_resultset_wire_conteiner resultset_wire) {
+            deffered_delete_.emplace(std::move(resultset_wire));
+            deffered_writers_++;
+        }
+        void write_complete() {
+            deffered_writers_--;
+            if (deffered_writers_ == 0) {
+                shm_resultset_wires_->set_eor();
+            }
+        }
+
+        // for client
+        std::string_view get_chunk() {
+            if (wrap_around_.data()) {
+                auto rv = wrap_around_;
+                wrap_around_ = std::string_view();
+                return rv;
+            }
+            if (current_wire_ == nullptr) {
+                current_wire_ = active_wire();
+            }
+            if (current_wire_ != nullptr) {
+                return current_wire_->get_chunk(current_wire_->get_bip_address(managed_shm_ptr_), wrap_around_);
+            }
+            return std::string_view();
+        }
+        void dispose(std::size_t) {
+            if (current_wire_ != nullptr) {
+                current_wire_->dispose(current_wire_->get_bip_address(managed_shm_ptr_));
+                current_wire_ = nullptr;
+                return;
+            }
+            std::abort();
+        }
+        bool is_eor() {
+            return shm_resultset_wires_->is_eor();
         }
 
     private:
@@ -94,6 +266,16 @@ public:
         shm_resultset_wires* shm_resultset_wires_{};
         bool server_;
         std::mutex& mtx_shm_;
+        std::set<unq_p_resultset_wire_conteiner> deffered_delete_{};
+        std::size_t deffered_writers_{};
+
+        //   for client
+        std::string_view wrap_around_{};
+        shm_resultset_wire* current_wire_{};
+
+        shm_resultset_wire* active_wire() {
+            return shm_resultset_wires_->active_wire();
+        }
     };
     static void resultset_deleter_impl(resultset_wires_container* resultset) {
         delete dynamic_cast<resultset_wires_container_impl*>(resultset);  // NOLINT
@@ -167,6 +349,11 @@ public:
         std::size_t read_point() override { return wire_->read_point(); }
         void dispose() override { wire_->dispose(); }
 
+        // for client
+        void write(const char* from, const std::size_t len, message_header::index_type index) {
+            wire_->write(bip_buffer_, from, message_header(index, len));
+        }
+
     private:
         unidirectional_message_wire* wire_{};
         char* bip_buffer_{};
@@ -190,6 +377,26 @@ public:
             wire_->write(bip_buffer_, from, header);
         }
 
+        // for client
+        response_header await() {
+            return wire_->await(bip_buffer_);
+        }
+        [[nodiscard]] response_header::length_type get_length() const {
+            return wire_->get_length();
+        }
+        [[nodiscard]] response_header::index_type get_idx() const {
+            return wire_->get_idx();
+        }
+        [[nodiscard]] response_header::msg_type get_type() const {
+            return wire_->get_type();
+        }
+        void read(char* to) {
+            wire_->read(to, bip_buffer_);
+        }
+        void close() {
+            wire_->close();
+        }
+
     private:
         unidirectional_response_wire* wire_{};
         char* bip_buffer_{};
@@ -208,10 +415,10 @@ public:
             request_wire_.initialize(req_wire, req_wire->get_bip_address(managed_shared_memory_.get()));
             response_wire_.initialize(res_wire, res_wire->get_bip_address(managed_shared_memory_.get()));
         } catch(const boost::interprocess::interprocess_exception& ex) {
-            LOG_LP(ERROR) << ex.what() << " on server_wire_container_impl::server_wire_container_impl()" << std::endl;
+            LOG_LP(ERROR) << ex.what() << " on server_wire_container_impl::server_wire_container_impl()";
             pthread_exit(nullptr);  // FIXME
         } catch (std::runtime_error &ex) {
-            LOG_LP(ERROR) << "running out of boost managed shared memory" << std::endl;
+            LOG_LP(ERROR) << "running out of boost managed shared memory";
             pthread_exit(nullptr);  // FIXME
         }
     }
@@ -234,10 +441,10 @@ public:
     unq_p_resultset_wires_conteiner create_resultset_wires(std::string_view name, std::size_t count) override {
         try {
             return std::unique_ptr<resultset_wires_container_impl, resultset_deleter_type>{
-                new resultset_wires_container_impl{managed_shared_memory_.get(), name, count, mtx_shm_}, resultset_deleter_impl };
+                new resultset_wires_container_impl{managed_shared_memory_.get(), name, count, mtx_shm_}, resultset_deleter_impl};
         }
         catch(const boost::interprocess::interprocess_exception& ex) {
-            LOG_LP(ERROR) << "running out of boost managed shared memory" << std::endl;
+            LOG_LP(ERROR) << "running out of boost managed shared memory";
             pthread_exit(nullptr);  // FIXME
         }
     }
@@ -251,6 +458,11 @@ public:
 
     [[nodiscard]] bool is_session_closed() const { return session_closed_; }
 
+    // for client
+    std::unique_ptr<resultset_wires_container_impl> create_resultset_wires_for_client(std::string_view name) {
+        return std::make_unique<resultset_wires_container_impl>(managed_shared_memory_.get(), name, mtx_shm_);
+    }
+
 private:
     std::string name_;
     std::unique_ptr<boost::interprocess::managed_shared_memory> managed_shared_memory_{};
@@ -262,6 +474,16 @@ private:
     std::mutex mtx_shm_{};
 };
 
+inline void server_wire_container_impl::resultset_wire_container_impl::release(unq_p_resultset_wire_conteiner resultset_wire_conteiner) {
+    if (thread_active_) {
+        released_ = true;
+        cnd_.notify_one();
+        resultset_wires_container_impl_.add_deffered_delete(std::move(resultset_wire_conteiner));
+    }
+}
+inline void server_wire_container_impl::resultset_wire_container_impl::write_complete() {
+    resultset_wires_container_impl_.write_complete();
+}
 
 class connection_container
 {
