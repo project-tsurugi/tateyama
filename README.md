@@ -48,6 +48,7 @@ available options:
 * `-DSHARKSFIN_IMPLEMENTATION=<implementation name>` - switch sharksfin implementation. Available options are `memory` and `shirakami` (default: `memory`)
 * `-DPERFORMANCE_TOOLS=ON` - enable performance tooling to measure engine performance
 * `-DMC_QUEUE=ON` - use moody camel queue instead of tbb queue to store tasks in tateyama task scheduler.
+* `-DENABLE_JEMALLOC` - use jemalloc instead of default `malloc`
 * for debugging only
   * `-DENABLE_SANITIZER=OFF` - disable sanitizers (requires `-DCMAKE_BUILD_TYPE=Debug`)
   * `-DENABLE_UB_SANITIZER=ON` - enable undefined behavior sanitizer (requires `-DENABLE_SANITIZER=ON`)

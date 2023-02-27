@@ -36,6 +36,7 @@ option(BUILD_SHARED_LIBS "build shared libraries instead of static" ON)
 option(ENABLE_CACHE_ALIGN "enable optional cache align requirement" OFF)
 option(MC_QUEUE "use moody-camel queue" OFF)
 option(TRACY_ENABLE "enable tracy profiler" OFF)
+option(ENABLE_JEMALLOC "use jemalloc instead of default malloc" OFF)
 
 if(NOT DEFINED SHARKSFIN_IMPLEMENTATION)
     set(
@@ -63,6 +64,11 @@ find_package(TBB REQUIRED)
 find_package(Protobuf REQUIRED)
 find_package(msgpack REQUIRED)
 find_package(mpdecpp REQUIRED)
+
+if (ENABLE_JEMALLOC)
+    find_package(jemalloc REQUIRED)
+endif (ENABLE_JEMALLOC)
+
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 include(CompileOptions)
