@@ -194,8 +194,7 @@ TEST_F(result_set_test, large) {
         auto chunk = resultset_wires->get_chunk();
         ASSERT_NE(chunk.data(), nullptr);
         std::string r(r_);
-//        std::cout << __func__ << ": length = " << r.length() << std::endl;
-//        EXPECT_EQ(r, chunk);
+        EXPECT_EQ(r, chunk);
         resultset_wires->dispose(r.length());
     }
 
