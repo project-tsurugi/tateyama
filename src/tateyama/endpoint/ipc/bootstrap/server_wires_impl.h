@@ -44,7 +44,7 @@ public:
 
     class annex {
     public:
-        annex(std::size_t size) {
+        explicit annex(std::size_t size) {
             buffer_.reserve(size);
             read_point_ = buffer_.cbegin();
         }
