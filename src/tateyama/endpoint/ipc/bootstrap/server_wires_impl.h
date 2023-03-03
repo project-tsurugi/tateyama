@@ -42,6 +42,85 @@ class server_wire_container_impl : public server_wire_container
 public:
     class resultset_wires_container_impl;
 
+    class annex {
+    public:
+        explicit annex(std::size_t size) {
+            buffer_.reserve(size);
+            read_point_ = buffer_.cbegin();
+        }
+        annex() : annex(resultset_buffer_size) {
+        }
+
+        bool is_room(std::size_t length) {
+            if (buffer_.capacity() < (write_pos_ + chunk_size_ + length)) {
+                std::unique_lock<std::mutex> lock(mtx_chunks_);
+                no_room_ = true;
+                cnd_chunks_.notify_one();
+                return false;
+            }
+            return true;
+        }
+        void write(char const* data, std::size_t length) {
+            buffer_.insert(write_pos_ + chunk_size_, data, length);
+            chunk_size_ += length;
+        }
+        void flush() {
+            if (chunk_size_ > 0) {
+                std::unique_lock<std::mutex> lock(mtx_chunks_);
+                chunks_.push(chunk_size_);
+                cnd_chunks_.notify_one();
+            }
+            write_pos_ += chunk_size_;
+            chunk_size_ = 0;
+        }
+        void notify() {
+            std::unique_lock<std::mutex> lock(mtx_chunks_);
+            cnd_chunks_.notify_one();
+        }
+        bool transfer(shm_resultset_wire* wire, bool& released) {
+            while (!exhausted()) {
+                std::unique_lock<std::mutex> lock(mtx_chunks_);
+                if (chunks_.empty() && !no_room_ && !released) {
+                    cnd_chunks_.wait(lock, [this, &released]{ return !chunks_.empty() || no_room_ || released; });
+                }
+                if (chunks_.empty()) {
+                    if (chunk_size_ > 0) {
+                        if (wire->wait_room(chunk_size_)) {
+                            return false;
+                        }
+                        wire->write(std::addressof(*read_point_), chunk_size_);
+                        read_point_ += chunk_size_;
+                    }
+                    return true;
+                }
+                std::size_t record_size = chunks_.front();
+                chunks_.pop();
+                lock.unlock();
+                if (wire->wait_room(record_size)) {
+                    return false;
+                }
+                wire->write(std::addressof(*read_point_), record_size);
+                wire->flush();
+                read_point_ += record_size;
+            }
+            return true;
+        }
+        bool exhausted() {
+            return no_room_ && (read_point_ == buffer_.cend());
+        }
+
+    private:
+        std::string buffer_{};
+        std::string::const_iterator read_point_{};
+        std::queue<std::size_t> chunks_{};
+        std::size_t write_pos_{};
+        std::size_t chunk_size_{};
+        bool no_room_{};
+
+        std::mutex mtx_chunks_{};
+        std::condition_variable cnd_chunks_{};
+    };
+
     // resultset_wire_container
     class resultset_wire_container_impl : public resultset_wire_container {
     public:
@@ -66,30 +145,20 @@ public:
 
         void operator()() {
             while (true) {
-                std::unique_lock<std::mutex> lock_queue(mtx_queue_);
-                if (queue_.empty() && !released_) {
-                    cnd_.wait(lock_queue, [this]{ return !queue_.empty() || released_; });
-                }
+                std::unique_lock<std::mutex> lock(mtx_queue_);
+                cnd_queue_.wait(lock, [this]{ return !queue_.empty() || released_; });
                 if (queue_.empty() && released_) {
                     VLOG_LP(log_trace) << "exit writer annex mode because the end of the records";
-                    annex_.clear();
                     write_complete();
                     return;
                 }
-                std::size_t chunk_size = queue_.front();
+                auto annex = std::move(queue_.front());
                 queue_.pop();
-                lock_queue.unlock();
-                if (shm_resultset_wire_->wait_room(chunk_size)) {
+                lock.unlock();
+                if (auto rv = annex->transfer(shm_resultset_wire_, released_); !rv) {
                     VLOG_LP(log_trace) << "exit writer annex mode because the result set is closed by the client";
-                    annex_.clear();
                     return;
                 }
-                if (chunk_size > 0) {
-                    std::unique_lock<std::mutex> lock_buffer(mtx_buffer_);
-                    shm_resultset_wire_->write(annex_.substr(read_pos_).data(), chunk_size);
-                }
-                shm_resultset_wire_->flush();
-                read_pos_ += chunk_size;
             }
         }
         void write(char const* data, std::size_t length) override {
@@ -100,37 +169,30 @@ public:
                 }
                 VLOG_LP(log_trace) << "enter writer annex mode";
                 annex_mode_ = true;
-                write_pos_ = 0;
-                read_pos_ = 0;
-                chunk_size_ = 0;
+                queue_.emplace(std::make_unique<annex>());
+                current_annex_ = queue_.back().get();
                 if (!thread_active_) {
                     writer_thread_ = std::thread(std::ref(*this));
                     thread_active_ = true;
                 }
             }
-            if (annex_.capacity() < (write_pos_ + chunk_size_ + length)) {
-                std::size_t size = ((annex_.capacity() / resultset_buffer_size) + 1) * resultset_buffer_size;
-                VLOG_LP(log_trace) << "enlarge annex buffer to " << size << " bytes";
+            if (!current_annex_->is_room(length)) {
+                VLOG_LP(log_trace) << "extend annex";
                 {
-                    std::unique_lock<std::mutex> lock(mtx_buffer_);
-                    annex_.reserve(size);
+                    std::unique_lock<std::mutex> lock(mtx_queue_);
+                    queue_.emplace(std::make_unique<annex>());
+                    current_annex_ = queue_.back().get();
+                    cnd_queue_.notify_one();
                 }
             }
-            annex_.insert(write_pos_ + chunk_size_, data, length);
-            chunk_size_ += length;
+            current_annex_->write(data, length);
         }
         void flush() override {
             if (!annex_mode_) {
                 shm_resultset_wire_->flush();
                 return;
             }
-            if (chunk_size_ > 0) {
-                std::unique_lock<std::mutex> lock(mtx_queue_);
-                queue_.push(chunk_size_);
-                cnd_.notify_one();
-            }
-            write_pos_ += chunk_size_;
-            chunk_size_ = 0;
+            current_annex_->flush();
         }
         void release(unq_p_resultset_wire_conteiner resultset_wire) override;
 
@@ -138,19 +200,15 @@ public:
         shm_resultset_wire* shm_resultset_wire_;
         resultset_wires_container_impl &resultset_wires_container_impl_;
 
-        std::string annex_{};
-        std::queue<std::size_t> queue_{};
+        std::queue<std::unique_ptr<annex>> queue_{};
+        annex* current_annex_{};
         std::thread writer_thread_{};
-        std::size_t write_pos_{};
-        std::size_t chunk_size_{};
-        std::size_t read_pos_{};
         bool annex_mode_{};
         bool thread_active_{};
         bool released_{};
 
         std::mutex mtx_queue_{};
-        std::mutex mtx_buffer_{};
-        std::condition_variable cnd_{};
+        std::condition_variable cnd_queue_{};
 
         void write_complete();
     };
@@ -477,7 +535,10 @@ private:
 inline void server_wire_container_impl::resultset_wire_container_impl::release(unq_p_resultset_wire_conteiner resultset_wire_conteiner) {
     if (thread_active_) {
         released_ = true;
-        cnd_.notify_one();
+        cnd_queue_.notify_one();
+        if (current_annex_) {
+            current_annex_->notify();
+        }
         resultset_wires_container_impl_.add_deffered_delete(std::move(resultset_wire_conteiner));
     }
 }
