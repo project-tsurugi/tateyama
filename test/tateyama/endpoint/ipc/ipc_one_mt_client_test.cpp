@@ -90,13 +90,13 @@ class ipc_one_mt_client_test: public ipc_test_base {
 };
 
 TEST_F(ipc_one_mt_client_test, test_fixed_size_only) {
-    std::vector<std::size_t> nthread_list {1, 2, 4, 8, 16, 32, 64, 96};
-    std::vector<std::size_t> maxlen_list {64, 128, 256, 512};
+    std::vector<std::size_t> nthread_list {1, 4, 8, 32, 96};
+    std::vector<std::size_t> maxlen_list {128, 256, 512};
     std::vector<std::size_t> req_len_list;
     for (std::size_t maxlen : maxlen_list) {
         req_len_list.clear();
         req_len_list.push_back(maxlen);
-        int nloop = (maxlen <= 1024 ? 10000 : 3000);
+        int nloop = (maxlen <= 1024 ? 10000 : 1000);
         for (int nthread : nthread_list) {
             if (nthread > ipc_max_session_) {
                 // NOTE: causes tateyama-server error

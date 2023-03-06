@@ -46,10 +46,17 @@ void server_client_base::wait_client_exit() {
 }
 
 void server_client_base::server() {
+    elapse e;
+    e.start();
     tateyama::framework::server sv { tateyama::framework::boot_mode::database_server, cfg_ };
     add_core_components(sv);
     sv.add_service(create_server_service());
     ASSERT_TRUE(sv.start());
+    e.stop();
+    std::int64_t msec = e.msec();
+    if (msec >= 5) {
+        std::cout << "server startup took " << msec << "[msec]" << std::endl;
+    }
     server_elapse_.start();
     wait_client_exit();
     server_elapse_.stop();
