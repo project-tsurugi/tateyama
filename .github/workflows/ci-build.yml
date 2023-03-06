@@ -121,7 +121,7 @@ jobs:
           ASAN_OPTIONS: detect_stack_use_after_return=true
         run: |
           cd build-shirakami
-          ctest --verbose -j 100
+          ctest --verbose
 
       - id: Clang-Tidy
         name: Clang-Tidy
