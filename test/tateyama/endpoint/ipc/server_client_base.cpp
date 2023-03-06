@@ -46,25 +46,20 @@ void server_client_base::wait_client_exit() {
 }
 
 void server_client_base::server() {
-    elapse e;
-    e.start();
     tateyama::framework::server sv { tateyama::framework::boot_mode::database_server, cfg_ };
     add_core_components(sv);
     sv.add_service(create_server_service());
     ASSERT_TRUE(sv.start());
-    e.stop();
-    std::int64_t msec = e.msec();
-    if (msec >= 5) {
-        std::cout << "server startup took " << msec << "[msec]" << std::endl;
-    }
     server_elapse_.start();
     wait_client_exit();
     server_elapse_.stop();
     EXPECT_TRUE(sv.shutdown());
 }
 
+static constexpr std::int64_t client_wait_msec = 100;
+
 void server_client_base::server_dump(const std::size_t msg_num, const std::size_t len_sum) {
-    std::int64_t msec = server_elapse_.msec();
+    std::int64_t msec = std::max(server_elapse_.msec() - client_wait_msec, 1L);
     double sec = msec / 1000.0;
     double mb_len = len_sum / (1024.0 * 1024.0);
     std::cout << "elapse=" << std::fixed << std::setprecision(3) << sec << "[sec]";
@@ -85,7 +80,7 @@ void server_client_base::start_server_client() {
             client_pids_.push_back(pid);
         } else if (pid == 0) {
             //child: wait server startup and go!
-            std::this_thread::sleep_for(std::chrono::milliseconds(10 * nclient_));
+            std::this_thread::sleep_for(std::chrono::milliseconds(client_wait_msec));
             client();
             exit(testing::Test::HasFailure() ? 1 : 0); // IMPORTANT!!!
             return; // not reach here
