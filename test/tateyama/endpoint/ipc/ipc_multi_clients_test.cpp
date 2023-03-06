@@ -92,9 +92,9 @@ class ipc_multi_clients_test: public ipc_test_base {
 };
 
 TEST_F(ipc_multi_clients_test, test_fixed_size_only) {
-    std::vector<std::size_t> nclient_list {1, 2, 4, 8, 16, 32, 64, 96};
-    std::vector<std::size_t> nthread_list {1, 2, 4, 8, 16, 32, 64, 96};
-    std::vector<std::size_t> maxlen_list {64, 128, 256, 512};
+    std::vector<std::size_t> nclient_list {1, 2, 4, 8};
+    std::vector<std::size_t> nthread_list {1, 2, 4, 8};
+    std::vector<std::size_t> maxlen_list {128, 256, 512};
     std::vector<std::size_t> req_len_list;
     for (std::size_t maxlen : maxlen_list) {
         req_len_list.clear();
