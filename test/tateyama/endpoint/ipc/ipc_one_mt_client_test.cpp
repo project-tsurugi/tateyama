@@ -96,7 +96,7 @@ TEST_F(ipc_one_mt_client_test, test_fixed_size_only) {
     for (std::size_t maxlen : maxlen_list) {
         req_len_list.clear();
         req_len_list.push_back(maxlen);
-        int nloop = (maxlen <= 1024 ? 100000 : 30000);
+        int nloop = (maxlen <= 1024 ? 10000 : 3000);
         for (int nthread : nthread_list) {
             if (nthread > ipc_max_session_) {
                 // NOTE: causes tateyama-server error

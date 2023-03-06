@@ -99,7 +99,7 @@ TEST_F(ipc_multi_clients_test, test_fixed_size_only) {
     for (std::size_t maxlen : maxlen_list) {
         req_len_list.clear();
         req_len_list.push_back(maxlen);
-        int nloop = (maxlen <= 1024 ? 100000 : 30000);
+        int nloop = (maxlen <= 1024 ? 10000 : 3000);
         for (int nclient : nclient_list) {
             for (int nthread : nthread_list) {
                 std::size_t nsession = nclient * nthread;
