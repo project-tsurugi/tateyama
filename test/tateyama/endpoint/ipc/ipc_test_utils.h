@@ -77,7 +77,7 @@ public:
         }
     }
 private:
-    std::chrono::milliseconds start_, end_;
+    std::chrono::milliseconds start_ { }, end_ { };
 };
 
 class server_service_base: public tateyama::framework::service {

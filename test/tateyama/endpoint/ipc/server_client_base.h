@@ -16,6 +16,9 @@
 #pragma
 #include <tateyama/framework/server.h>
 #include "ipc_test_utils.h"
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 namespace tateyama::api::endpoint::ipc {
 
@@ -34,10 +37,17 @@ public:
 protected:
     std::shared_ptr<tateyama::api::configuration::whole> const &cfg_;
     int nclient_ { };
-    std::vector<pid_t> client_pids_ { };
-    elapse server_elapse_;
 
+private:
     void wait_client_exit();
+    void server_startup_start();
+    void server_startup_end();
+    void wait_server_startup_end();
+
+    std::vector<pid_t> client_pids_ { };
+    elapse server_elapse_ { };
+    std::string lock_filename_ { };
+    int fd_ { };
 };
 
 } // namespace tateyama::api::endpoint::ipc
