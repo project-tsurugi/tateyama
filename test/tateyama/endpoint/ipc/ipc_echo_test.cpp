@@ -27,11 +27,12 @@ public:
 
     bool operator ()(std::shared_ptr<tateyama::api::server::request> req,
             std::shared_ptr<tateyama::api::server::response> res) override {
+        size_t req_len = len_list_[index_ % len_list_.size()];
+        index_++;
         // make another string object to reply
         std::string payload { req->payload() };
         EXPECT_TRUE(check_dummy_message(req->session_id(), payload));
-        size_t req_len = len_list_[index_ % len_list_.size()];
-        index_++;
+        EXPECT_EQ(req_len, payload.length());
         res->session_id(req->session_id());
         EXPECT_EQ(tateyama::status::ok, res->body(payload));
         return true;
