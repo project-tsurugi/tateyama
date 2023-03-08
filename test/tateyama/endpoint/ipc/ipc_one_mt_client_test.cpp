@@ -73,8 +73,10 @@ public:
                 }
             });
         }
-        for (int i = 0; i < nthread_; i++) {
-            threads[i].join();
+        for (std::thread &th : threads) {
+            if (th.joinable()) {
+                th.join();
+            }
         }
     }
 
