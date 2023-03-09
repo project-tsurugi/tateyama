@@ -94,7 +94,7 @@ void server_client_base::start_server_client() {
 
 void server_client_base::server_startup_start() {
     boost::filesystem::path path = boost::filesystem::temp_directory_path();
-    path /= "ipc-test-" + std::to_string(getpid()) + "-" + std::to_string(server_elapse_.now().count());
+    path /= "ipc-test-" + std::to_string(getpid()) + "-" + std::to_string(server_elapse_.now_msec().count());
     lock_filename_ = path.string();
     fd_ = open(lock_filename_.c_str(), O_CREAT | O_RDWR, S_IRUSR | S_IWUSR); // NOLINT
     if (fd_ < 0) {
