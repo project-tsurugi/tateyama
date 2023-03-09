@@ -57,7 +57,7 @@ public:
 
     void client() override {
         watch_dog wd { max_sec };
-        std::vector < std::thread > threads;
+        std::vector<std::thread> threads;
         threads.reserve(nthread_);
         for (int i = 0; i < nthread_; i++) {
             threads.emplace_back([this] {
@@ -94,9 +94,9 @@ class ipc_multi_clients_test: public ipc_test_base {
 };
 
 TEST_F(ipc_multi_clients_test, test_fixed_size_only) {
-    std::vector<std::size_t> nclient_list {1, 2, 4, 8};
-    std::vector<std::size_t> nthread_list {1, 2, 4, 8};
-    std::vector<std::size_t> maxlen_list {128, 256, 512};
+    std::vector<std::size_t> nclient_list { 1, 2, 4, 8 };
+    std::vector<std::size_t> nthread_list { 1, 2, 4, 8 };
+    std::vector<std::size_t> maxlen_list { 128, 256, 512 };
     std::vector<std::size_t> req_len_list;
     for (std::size_t maxlen : maxlen_list) {
         req_len_list.clear();
@@ -109,7 +109,7 @@ TEST_F(ipc_multi_clients_test, test_fixed_size_only) {
                     // NOTE: causes tateyama-server error
                     continue;
                 }
-                ipc_multi_clients_test_server_client sc {cfg_, nclient, req_len_list, nthread, nloop};
+                ipc_multi_clients_test_server_client sc { cfg_, nclient, req_len_list, nthread, nloop };
                 sc.start_server_client();
             }
         }
