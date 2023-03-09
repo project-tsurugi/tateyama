@@ -54,20 +54,24 @@ void make_power2_length_list(std::vector<std::size_t> &vec, std::size_t max);
 void dump_length_list(std::vector<std::size_t> &vec);
 
 void make_dummy_message(std::size_t start_idx, std::size_t len, std::string &message);
-bool check_dummy_message(std::size_t start_idx, std::string &message);
+bool check_dummy_message(std::size_t start_idx, const std::string_view message);
 void make_printable_dummy_message(std::size_t start_idx, std::size_t len, std::string &message);
 
 class elapse {
 public:
     void start() {
-        start_ = end_ = now();
+        start_ = end_ = now_msec();
     }
     void stop() {
-        end_ = now();
+        end_ = now_msec();
     }
-    std::chrono::milliseconds now() {
-        return std::chrono::duration_cast < std::chrono::milliseconds
-                > (std::chrono::system_clock::now().time_since_epoch());
+    std::chrono::milliseconds now_msec() {
+        return std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::system_clock::now().time_since_epoch());
+    }
+    std::chrono::nanoseconds now_nsec() {
+        return std::chrono::duration_cast<std::chrono::nanoseconds>(
+                std::chrono::system_clock::now().time_since_epoch());
     }
     std::int64_t msec() {
         if (end_ >= start_) {
@@ -115,6 +119,21 @@ class ipc_test_base: public ::testing::Test, public test::test_utils {
 protected:
     std::shared_ptr<tateyama::api::configuration::whole> cfg_ { };
     std::size_t ipc_max_session_ { };
+};
+
+class resultset_param {
+public:
+    resultset_param(const std::string &name, std::vector<std::size_t> &write_lens, std::size_t write_nloop) :
+            name_(name), write_nloop_(write_nloop), write_lens_(write_lens) {
+    }
+    resultset_param(const std::string &text);
+    void to_string(std::string &text);
+
+    std::string name_ { };
+    std::size_t write_nloop_ { };
+    std::vector<std::size_t> write_lens_ { };
+private:
+    static constexpr char delim = ',';
 };
 
 } // namespace tateyama::api::endpoint::ipc

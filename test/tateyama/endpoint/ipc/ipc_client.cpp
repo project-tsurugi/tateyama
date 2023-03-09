@@ -21,12 +21,12 @@ namespace tateyama::api::endpoint::ipc {
 
 ipc_client::ipc_client(std::shared_ptr<tateyama::api::configuration::whole> const &cfg) {
     get_ipc_database_name(cfg, database_name_);
-    container_ = std::make_unique < tsubakuro::common::wire::connection_container > (database_name_);
+    container_ = std::make_unique<tsubakuro::common::wire::connection_container>(database_name_);
     id_ = container_->get_connection_queue().request();
     session_id_ = container_->get_connection_queue().wait(id_);
     //
     session_name_ = database_name_ + "-" + std::to_string(session_id_);
-    swc_ = std::make_unique < tsubakuro::common::wire::session_wire_container > (session_name_);
+    swc_ = std::make_unique<tsubakuro::common::wire::session_wire_container>(session_name_);
     request_wire_ = &swc_->get_request_wire();
     response_wire_ = &swc_->get_response_wire();
 }
@@ -74,6 +74,16 @@ void ipc_client::receive(std::string &message) {
     ASSERT_TRUE(parse_response_header(r_msg, result));
     EXPECT_EQ(session_id_, result.session_id_);
     message = result.payload_;
+}
+
+resultset_wires_container *ipc_client::get_resultset_wire(const std::string &name) {
+    resultset_wires_container *rwc = swc_->create_resultset_wire();
+    rwc->connect(name);
+    return rwc;
+}
+
+void ipc_client::dispose_resultset_wire(resultset_wires_container *rwc) {
+    swc_->dispose_resultset_wire(rwc);
 }
 
 } // namespace tateyama::api::endpoint::ipc

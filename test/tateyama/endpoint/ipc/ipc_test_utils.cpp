@@ -17,6 +17,8 @@
 #include <cstring>
 
 #include "ipc_test_utils.h"
+#include <sstream>
+#include <istream>
 
 namespace tateyama::api::endpoint::ipc {
 
@@ -24,7 +26,7 @@ void get_ipc_database_name(std::shared_ptr<tateyama::api::configuration::whole> 
         std::string &ipc_database_name) {
     auto endpoint_config = cfg->get_section("ipc_endpoint");
     ASSERT_TRUE(endpoint_config);
-    auto database_name_opt = endpoint_config->get < std::string > ("database_name");
+    auto database_name_opt = endpoint_config->get<std::string>("database_name");
     ASSERT_TRUE(database_name_opt.has_value());
     ipc_database_name = database_name_opt.value();
     ASSERT_GT(ipc_database_name.size(), 0);
@@ -33,7 +35,7 @@ void get_ipc_database_name(std::shared_ptr<tateyama::api::configuration::whole> 
 void get_ipc_max_session(std::shared_ptr<tateyama::api::configuration::whole> const &cfg, std::size_t &max_session) {
     auto endpoint_config = cfg->get_section("ipc_endpoint");
     ASSERT_TRUE(endpoint_config);
-    auto threads_opt = endpoint_config->get < std::size_t > ("threads");
+    auto threads_opt = endpoint_config->get<std::size_t>("threads");
     ASSERT_TRUE(threads_opt.has_value());
     max_session = threads_opt.value();
     ASSERT_GT(max_session, 0);
@@ -79,7 +81,7 @@ void make_dummy_message(std::size_t start_idx, std::size_t len, std::string &mes
 #endif
 }
 
-bool check_dummy_message(std::size_t start_idx, std::string &message) {
+bool check_dummy_message(std::size_t start_idx, const std::string_view message) {
 #ifdef REAL_CHECK
     size_t len = message.length();
     for (std::size_t i = 0, j = start_idx; i < len; i++, j++) {
@@ -96,6 +98,30 @@ void make_printable_dummy_message(std::size_t start_idx, std::size_t len, std::s
     message.resize(len);
     for (std::size_t i = 0, j = start_idx; i < len; i++, j++) {
         message[i] = printable[static_cast<int>(j % printable.size())];
+    }
+}
+
+resultset_param::resultset_param(const std::string &text) {
+    std::stringstream ss { text };
+    std::getline(ss, name_, delim);
+    std::string buf;
+    bool bFirst = true;
+    while (std::getline(ss, buf, delim)) {
+        std::size_t len = std::stoul(buf);
+        if (bFirst) {
+            write_nloop_ = len;
+            bFirst = false;
+        } else {
+            write_lens_.push_back(len);
+        }
+    }
+}
+
+void resultset_param::to_string(std::string &text) {
+    text = name_;
+    text += delim + std::to_string(write_nloop_);
+    for (std::size_t size : write_lens_) {
+        text += delim + std::to_string(size);
     }
 }
 

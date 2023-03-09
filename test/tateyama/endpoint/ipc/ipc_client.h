@@ -27,15 +27,32 @@
 
 namespace tateyama::api::endpoint::ipc {
 
+using resultset_wires_container = tsubakuro::common::wire::session_wire_container::resultset_wires_container;
+
 class ipc_client {
 public:
     explicit ipc_client(std::shared_ptr<tateyama::api::configuration::whole> const &cfg);
     void send(const std::size_t tag, const std::string &message);
     void receive(std::string &message);
 
+    resultset_wires_container* get_resultset_wire(const std::string &name);
+    void dispose_resultset_wire(resultset_wires_container *rwc);
+
     std::size_t session_id() const {
         return session_id_;
     }
+
+    std::string session_name() const {
+        return session_name_;
+    }
+
+    // tateyama/src/tateyama/endpoint/ipc/bootstrap/server_wires_impl.h
+    // - private server_wire_container_impl::resultset_buffer_size = 64KB
+    // tateyama/src/tateyama/endpoint/ipc/wire.h
+    // - public tateyama::common::wire::length_header::length_type = std::uint32_t
+    // - public tateyama::common::wire::length_header::size = sizeof(length_type)
+    // recoed_max = 64 KB - 4
+    static constexpr std::size_t resultset_record_maxlen = 64 * 1024 - tateyama::common::wire::length_header::size;
 
 private:
     std::string database_name_ { };
