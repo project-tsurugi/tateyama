@@ -44,7 +44,7 @@ jobs:
           rm -rf build
           mkdir -p build
           cd build
-          cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/.local ..
+          cmake -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTS=OFF -DBUILD_DOCUMENTS=OFF -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/.local ..
           cmake --build . --target install --clean-first -- -j
 
       - id: Install_shirakami
@@ -54,7 +54,7 @@ jobs:
           rm -rf build
           mkdir -p build
           cd build
-          cmake -DBUILD_WP=ON -DBUILD_PWAL=ON -DCMAKE_BUILD_TYPE=Debug -DENABLE_SANITIZER=ON -DFORCE_INSTALL_RPATH=ON -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/.local ..
+          cmake -DBUILD_WP=ON -DBUILD_PWAL=ON -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTS=OFF -DBUILD_DOCUMENTS=OFF -DBUILD_BENCHMARK=OFF -DFORCE_INSTALL_RPATH=ON -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/.local ..
           cmake --build . --target install --clean-first -- -j
 
       - id: Install_sharksfin
