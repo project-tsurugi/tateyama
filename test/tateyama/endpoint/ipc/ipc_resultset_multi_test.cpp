@@ -18,7 +18,7 @@
 
 namespace tateyama::api::endpoint::ipc {
 
-class resultset_single_service: public server_service_base {
+class resultset_multi_service: public server_service_base {
 public:
     bool operator ()(std::shared_ptr<tateyama::api::server::request> req,
             std::shared_ptr<tateyama::api::server::response> res) override {
@@ -26,6 +26,7 @@ public:
         resultset_param param { payload };
         EXPECT_GT(param.name_.length(), 0);
         EXPECT_GT(param.write_nloop_, 0);
+        EXPECT_GT(param.nchannel_, 0);
         EXPECT_GT(param.write_lens_.size(), 0);
         //
         std::shared_ptr<tateyama::api::server::data_channel> channel;
@@ -45,53 +46,54 @@ public:
                 writer->commit();
             }
         }
-        // auto ipc_channel = dynamic_cast<tateyama::common::wire::ipc_data_channel*>(channel.get());
-        // ipc_channel->set_eor();
-        //
         EXPECT_EQ(tateyama::status::ok, channel->release(*writer));
         EXPECT_EQ(tateyama::status::ok, res->release_channel(*channel));
         return true;
     }
 };
 
-class ipc_resultset_single_test_server_client: public server_client_base {
+class ipc_resultset_multi_test_server_client: public server_client_base {
 public:
-    ipc_resultset_single_test_server_client(std::shared_ptr<tateyama::api::configuration::whole> const &cfg,
-            std::vector<std::size_t> &len_list, int nloop = 1000, std::size_t write_nloop = 1) :
-            server_client_base(cfg), len_list_(len_list), nloop_(nloop), write_nloop_(write_nloop) {
+    ipc_resultset_multi_test_server_client(std::shared_ptr<tateyama::api::configuration::whole> const &cfg, int nclient,
+            int nthread, std::vector<std::size_t> &len_list, int nloop, std::size_t write_nloop, std::size_t nchannel =
+                    1) :
+            server_client_base(cfg, nclient, nthread), len_list_(len_list), nloop_(nloop), write_nloop_(write_nloop), nchannel_(
+                    nchannel) {
     }
 
     std::shared_ptr<tateyama::framework::service> create_server_service() override {
-        return std::make_shared<resultset_single_service>();
+        return std::make_shared<resultset_multi_service>();
     }
 
     void server() override {
-        watch_dog wd { max_sec };
-        //
         server_client_base::server();
         //
-        std::size_t msg_num = nloop_ * write_nloop_ * len_list_.size();
-        std::size_t len_sum = nloop_ * write_nloop_ * std::reduce(len_list_.cbegin(), len_list_.cend());
+        std::size_t msg_num = nworker_ * nloop_ * write_nloop_ * nchannel_ * len_list_.size();
+        std::size_t len_sum = nworker_ * nloop_ * write_nloop_ * nchannel_
+                * std::reduce(len_list_.cbegin(), len_list_.cend());
         std::cout << "nloop=" << nloop_;
         std::cout << ", write_nloop=" << write_nloop_;
+        // std::cout << ", nchannel=" << nchannel_;
         std::cout << ", max_len=" << len_list_.back() << ", ";
         server_client_base::server_dump(msg_num, len_sum);
     }
 
-    void client() override {
-        watch_dog wd { max_sec };
+    void client_thread() override {
         ipc_client client { cfg_ };
         std::string resultset_name { "resultset-" + client.session_name() };
-        resultset_param param { resultset_name, len_list_, write_nloop_ };
+        resultset_param param { resultset_name, len_list_, write_nloop_, nchannel_ };
         std::size_t len_sum = std::reduce(len_list_.cbegin(), len_list_.cend());
-        std::string req_message, res_message;
+        std::string req_message;
         param.to_string(req_message);
+        std::string res_message;
+        //
         for (int i = 0; i < nloop_; i++) {
-            client.send(resultset_single_service::tag, req_message);
+            client.send(resultset_multi_service::tag, req_message);
             client.receive(res_message);
             EXPECT_EQ(req_message, res_message);
             //
-            resultset_wires_container *rwc = client.get_resultset_wire(resultset_name);
+            resultset_wires_container *rwc = client.create_resultset_wires();
+            rwc->connect(resultset_name);
             for (std::size_t j = 0; j < write_nloop_; j++) {
                 for (std::size_t len : len_list_) {
                     std::string data { };
@@ -116,73 +118,79 @@ public:
             }
             EXPECT_TRUE(rwc->is_eor());
             EXPECT_EQ(rwc->get_chunk().length(), 0);
-            client.dispose_resultset_wire(rwc);
+            client.dispose_resultset_wires(rwc);
         }
     }
 
-    static constexpr int max_sec = 60;
 private:
     int nloop_ { };
     std::size_t write_nloop_ { };
+    std::size_t nchannel_ { };
     std::vector<std::size_t> &len_list_;
 };
 
-class ipc_resultset_single_test: public ipc_test_base {
+class ipc_resultset_multi_test: public ipc_test_base {
 };
 
-static const std::vector<std::size_t> default_write_nloops { 1, 2, 1000 };
+static const std::vector<std::size_t> nclient_list { 1, 2 }; // NOLINT
+static const std::vector<std::size_t> nthread_list { 0, 1, 2 }; // NOLINT
 
-TEST_F(ipc_resultset_single_test, power2_one_size) {
+TEST_F(ipc_resultset_multi_test, fixed_size_only) {
+    const std::size_t maxlen = ipc_client::resultset_record_maxlen;
+    std::vector<std::size_t> len_list { 1, 128, 1024, 4 * 1024, maxlen };
+    for (int nclient : nclient_list) {
+        for (int nthread : nthread_list) {
+            for (std::size_t len : len_list) {
+                std::vector<std::size_t> list { len };
+                ipc_resultset_multi_test_server_client sc { cfg_, nclient, nthread, list, 10, 100, 2 };
+                sc.start_server_client();
+            }
+        }
+    }
+}
+
+TEST_F(ipc_resultset_multi_test, power2_mixture) {
     const std::size_t maxlen = ipc_client::resultset_record_maxlen;
     std::vector<std::size_t> len_list { };
     make_power2_length_list(len_list, maxlen);
     len_list.push_back(maxlen);
-    for (std::size_t write_nloop : default_write_nloops) {
-        for (std::size_t len : len_list) {
-            std::vector<std::size_t> list { len };
-            ipc_resultset_single_test_server_client sc { cfg_, list, 10, write_nloop };
+    dump_length_list(len_list);
+    for (int nclient : nclient_list) {
+        for (int nthread : nthread_list) {
+            ipc_resultset_multi_test_server_client sc { cfg_, nclient, nthread, len_list, 10, 100 };
             sc.start_server_client();
         }
     }
 }
 
-TEST_F(ipc_resultset_single_test, power2_mixture) {
-    const std::size_t maxlen = ipc_client::resultset_record_maxlen;
-    std::vector<std::size_t> len_list { };
-    make_power2_length_list(len_list, maxlen);
-    len_list.push_back(maxlen);
-    dump_length_list(len_list);
-    for (std::size_t write_nloop : default_write_nloops) {
-        ipc_resultset_single_test_server_client sc { cfg_, len_list, 10, write_nloop };
-        sc.start_server_client();
-    }
-}
-
-TEST_F(ipc_resultset_single_test, power2_mixture_reverse) {
-    const std::size_t maxlen = ipc_client::resultset_record_maxlen;
-    std::vector<std::size_t> len_list { };
-    make_power2_length_list(len_list, maxlen);
-    len_list.push_back(maxlen);
-    std::reverse(len_list.begin(), len_list.end());
-    dump_length_list(len_list);
-    for (std::size_t write_nloop : default_write_nloops) {
-        ipc_resultset_single_test_server_client sc { cfg_, len_list, 10, write_nloop };
-        sc.start_server_client();
-    }
-}
-
-TEST_F(ipc_resultset_single_test, around_record_max) {
+TEST_F(ipc_resultset_multi_test, around_record_max) {
     const std::size_t maxlen = ipc_client::resultset_record_maxlen;
     const std::size_t range = 10;
     std::vector<std::size_t> len_list { };
     // NOTE: len should be <= ipc_client::resultset_record_maxlen.
     // get_chunk() never wakeup if len > resultset_record_maxlen.
     // It's limitation of current implementation.
-    for (std::size_t write_nloop : default_write_nloops) {
-        for (std::size_t len = maxlen - range; len <= maxlen; len++) {
-            std::vector<std::size_t> list { len };
-            ipc_resultset_single_test_server_client sc { cfg_, list, 10, write_nloop };
-            sc.start_server_client();
+    for (int nclient : nclient_list) {
+        for (int nthread : nthread_list) {
+            for (std::size_t len = maxlen - range; len <= maxlen; len++) {
+                std::vector<std::size_t> list { len };
+                ipc_resultset_multi_test_server_client sc { cfg_, nclient, nthread, list, 10, 10 };
+                sc.start_server_client();
+            }
+        }
+    }
+}
+
+TEST_F(ipc_resultset_multi_test, many_send) {
+    const std::size_t maxlen = ipc_client::resultset_record_maxlen;
+    std::vector<std::size_t> len_list { 1, 128, maxlen };
+    for (std::size_t len : len_list) {
+        std::vector<std::size_t> list { len };
+        for (int nclient : nclient_list) {
+            for (int nthread : nthread_list) {
+                ipc_resultset_multi_test_server_client sc { cfg_, nclient, nthread, list, 2, 10000 };
+                sc.start_server_client();
+            }
         }
     }
 }

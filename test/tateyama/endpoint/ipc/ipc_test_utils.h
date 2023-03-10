@@ -48,7 +48,7 @@ namespace tateyama::api::endpoint::ipc {
 
 void get_ipc_database_name(std::shared_ptr<tateyama::api::configuration::whole> const &cfg,
         std::string &ipc_database_name);
-void get_ipc_max_session(std::shared_ptr<tateyama::api::configuration::whole> const &cfg, std::size_t &max_session);
+void get_ipc_max_session(std::shared_ptr<tateyama::api::configuration::whole> const &cfg, int &max_session);
 
 void make_power2_length_list(std::vector<std::size_t> &vec, std::size_t max);
 void dump_length_list(std::vector<std::size_t> &vec);
@@ -70,8 +70,7 @@ public:
                 std::chrono::system_clock::now().time_since_epoch());
     }
     std::chrono::nanoseconds now_nsec() {
-        return std::chrono::duration_cast<std::chrono::nanoseconds>(
-                std::chrono::system_clock::now().time_since_epoch());
+        return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch());
     }
     std::int64_t msec() {
         if (end_ >= start_) {
@@ -118,19 +117,21 @@ class ipc_test_base: public ::testing::Test, public test::test_utils {
 
 protected:
     std::shared_ptr<tateyama::api::configuration::whole> cfg_ { };
-    std::size_t ipc_max_session_ { };
+    int ipc_max_session_ { };
 };
 
 class resultset_param {
 public:
-    resultset_param(const std::string &name, std::vector<std::size_t> &write_lens, std::size_t write_nloop) :
-            name_(name), write_nloop_(write_nloop), write_lens_(write_lens) {
+    resultset_param(const std::string &name, std::vector<std::size_t> &write_lens, std::size_t write_nloop,
+            std::size_t nchannel = 1) :
+            name_(name), write_nloop_(write_nloop), write_lens_(write_lens), nchannel_(nchannel) {
     }
     resultset_param(const std::string &text);
     void to_string(std::string &text);
 
     std::string name_ { };
     std::size_t write_nloop_ { };
+    std::size_t nchannel_ { };
     std::vector<std::size_t> write_lens_ { };
 private:
     static constexpr char delim = ',';

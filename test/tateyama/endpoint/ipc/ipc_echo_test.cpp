@@ -55,8 +55,6 @@ public:
     }
 
     void server() override {
-        watch_dog wd { max_sec };
-        //
         server_client_base::server();
         //
         std::size_t msg_num = nloop_ * 2 * len_list_.size();
@@ -66,10 +64,8 @@ public:
         server_client_base::server_dump(msg_num, len_sum);
     }
 
-    void client() override {
-        watch_dog wd { max_sec };
+    void client_thread() override {
         ipc_client client { cfg_ };
-
         for (int i = 0; i < nloop_; i++) {
             for (std::size_t len : len_list_) {
                 std::string req_message;
@@ -82,7 +78,6 @@ public:
         }
     }
 
-    static constexpr int max_sec = 60;
 private:
     int nloop_ { };
     std::vector<std::size_t> &len_list_;

@@ -35,8 +35,8 @@ public:
     void send(const std::size_t tag, const std::string &message);
     void receive(std::string &message);
 
-    resultset_wires_container* get_resultset_wire(const std::string &name);
-    void dispose_resultset_wire(resultset_wires_container *rwc);
+    resultset_wires_container* create_resultset_wires();
+    void dispose_resultset_wires(resultset_wires_container *rwc);
 
     std::size_t session_id() const {
         return session_id_;

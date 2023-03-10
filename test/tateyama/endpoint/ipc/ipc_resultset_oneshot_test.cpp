@@ -17,7 +17,7 @@
 
 namespace tateyama::api::endpoint::ipc {
 
-static const std::string resultset_name { "resultset_1" };
+static const std::string resultset_name { "resultset_1" }; // NOLINT
 
 class resultset_oneshot_service: public server_service_base {
 public:
@@ -56,6 +56,7 @@ public:
     ipc_resultset_oneshot_test_server_client(std::shared_ptr<tateyama::api::configuration::whole> const &cfg,
             std::size_t datalen) :
             server_client_base(cfg), datalen_(datalen) {
+        maxsec = 3;
     }
 
     std::shared_ptr<tateyama::framework::service> create_server_service() override {
@@ -63,18 +64,18 @@ public:
     }
 
     void server() override {
-        watch_dog wd { max_sec };
         server_client_base::server();
     }
 
-    void client() override {
-        watch_dog wd { max_sec };
+    void client_thread() override {
         ipc_client client { cfg_ };
-        std::string req_message { std::to_string(datalen_) }, res_message;
+        std::string req_message { std::to_string(datalen_) };
+        std::string res_message;
         client.send(resultset_oneshot_service::tag, req_message);
         client.receive(res_message);
         //
-        resultset_wires_container *rwc = client.get_resultset_wire(resultset_name);
+        resultset_wires_container *rwc = client.create_resultset_wires();
+        rwc->connect(resultset_name);
         std::string data { };
         data.reserve(datalen_);
         // NOTE: One call of writer->write(data, len) (>= 16KB or so) may be gotten
@@ -90,13 +91,17 @@ public:
             rwc->dispose();
             std::cout << "client : dispose() done" << std::endl;
         }
+        // just wait until is_eor() is true
+        while (!rwc->is_eor()) {
+            EXPECT_EQ(rwc->get_chunk().length(), 0);
+        }
         EXPECT_TRUE(rwc->is_eor());
+        EXPECT_EQ(rwc->get_chunk().length(), 0);
         EXPECT_EQ(datalen_, data.length());
         EXPECT_TRUE(check_dummy_message(client.session_id(), data));
-        client.dispose_resultset_wire(rwc);
+        client.dispose_resultset_wires(rwc);
     }
 
-    static constexpr int max_sec = 3;
 private:
     std::size_t datalen_;
 };

@@ -23,6 +23,7 @@
 #include <unistd.h>
 
 #include "server_client_base.h"
+#include "watch_dog.h"
 
 namespace tateyama::api::endpoint::ipc {
 
@@ -47,6 +48,7 @@ void server_client_base::wait_client_exit() {
 }
 
 void server_client_base::server() {
+    watch_dog wd { maxsec };
     tateyama::framework::server sv { tateyama::framework::boot_mode::database_server, cfg_ };
     add_core_components(sv);
     sv.add_service(create_server_service());
@@ -62,7 +64,9 @@ void server_client_base::server_dump(const std::size_t msg_num, const std::size_
     std::int64_t msec = server_elapse_.msec();
     double sec = msec / 1000.0;
     double mb_len = len_sum / (1024.0 * 1024.0);
-    std::cout << "elapse=" << std::fixed << std::setprecision(3) << sec << "[sec]";
+    std::cout << "nclient=" << nclient_;
+    std::cout << ", nthread/client=" << nthread_;
+    std::cout << ", elapse=" << std::fixed << std::setprecision(3) << sec << "[sec]";
     std::cout << ", msg_num=" << msg_num;
     std::cout << ", " << std::fixed << std::setprecision(1) << msg_num / sec / 1000.0 << "[Kmsg/sec]";
     std::cout << ", " << std::fixed << std::setprecision(1) << 1000.0 * msec / msg_num << "[usec/msg]";
@@ -70,6 +74,28 @@ void server_client_base::server_dump(const std::size_t msg_num, const std::size_
     std::cout << "=" << std::fixed << std::setprecision(1) << mb_len << "[MB]";
     std::cout << ", speed=" << std::fixed << std::setprecision(1) << mb_len / sec << "[MB/sec]";
     std::cout << std::endl;
+}
+
+void server_client_base::client() {
+    watch_dog wd { maxsec };
+    if (nthread_ == 0) {
+        // use main thread, not make another working thread
+        client_thread();
+        return;
+    }
+    //
+    threads_.clear();
+    threads_.reserve(nthread_);
+    for (int i = 0; i < nthread_; i++) {
+        threads_.emplace_back([this] {
+            client_thread();
+        });
+    }
+    for (std::thread &th : threads_) {
+        if (th.joinable()) {
+            th.join();
+        }
+    }
 }
 
 void server_client_base::start_server_client() {

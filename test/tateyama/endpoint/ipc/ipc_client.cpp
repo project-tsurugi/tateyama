@@ -76,13 +76,11 @@ void ipc_client::receive(std::string &message) {
     message = result.payload_;
 }
 
-resultset_wires_container *ipc_client::get_resultset_wire(const std::string &name) {
-    resultset_wires_container *rwc = swc_->create_resultset_wire();
-    rwc->connect(name);
-    return rwc;
+resultset_wires_container *ipc_client::create_resultset_wires() {
+    return swc_->create_resultset_wire();
 }
 
-void ipc_client::dispose_resultset_wire(resultset_wires_container *rwc) {
+void ipc_client::dispose_resultset_wires(resultset_wires_container *rwc) {
     swc_->dispose_resultset_wire(rwc);
 }
 

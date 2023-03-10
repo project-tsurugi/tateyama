@@ -32,12 +32,12 @@ void get_ipc_database_name(std::shared_ptr<tateyama::api::configuration::whole> 
     ASSERT_GT(ipc_database_name.size(), 0);
 }
 
-void get_ipc_max_session(std::shared_ptr<tateyama::api::configuration::whole> const &cfg, std::size_t &max_session) {
+void get_ipc_max_session(std::shared_ptr<tateyama::api::configuration::whole> const &cfg, int &max_session) {
     auto endpoint_config = cfg->get_section("ipc_endpoint");
     ASSERT_TRUE(endpoint_config);
     auto threads_opt = endpoint_config->get<std::size_t>("threads");
     ASSERT_TRUE(threads_opt.has_value());
-    max_session = threads_opt.value();
+    max_session = static_cast<int>(threads_opt.value());
     ASSERT_GT(max_session, 0);
 }
 
@@ -105,14 +105,18 @@ resultset_param::resultset_param(const std::string &text) {
     std::stringstream ss { text };
     std::getline(ss, name_, delim);
     std::string buf;
-    bool bFirst = true;
-    while (std::getline(ss, buf, delim)) {
+    for (int i = 0; std::getline(ss, buf, delim); i++) {
         std::size_t len = std::stoul(buf);
-        if (bFirst) {
+        switch(i) {
+        case 0:
             write_nloop_ = len;
-            bFirst = false;
-        } else {
+            break;
+        case 1:
+            nchannel_ = len;
+            break;
+        default:
             write_lens_.push_back(len);
+            break;
         }
     }
 }
@@ -120,6 +124,7 @@ resultset_param::resultset_param(const std::string &text) {
 void resultset_param::to_string(std::string &text) {
     text = name_;
     text += delim + std::to_string(write_nloop_);
+    text += delim + std::to_string(nchannel_);
     for (std::size_t size : write_lens_) {
         text += delim + std::to_string(size);
     }

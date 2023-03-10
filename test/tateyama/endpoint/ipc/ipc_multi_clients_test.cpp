@@ -32,8 +32,8 @@ public:
 class ipc_multi_clients_test_server_client: public server_client_base {
 public:
     ipc_multi_clients_test_server_client(std::shared_ptr<tateyama::api::configuration::whole> const &cfg, int nclient,
-            std::vector<std::size_t> &req_len_list, int nthread = 2, int nloop = 1000) :
-            server_client_base(cfg, nclient), req_len_list_(req_len_list), nthread_(nthread), nloop_(nloop) {
+            int nthread, std::vector<std::size_t> &req_len_list, int nloop) :
+            server_client_base(cfg, nclient, nthread), req_len_list_(req_len_list), nloop_(nloop) {
     }
 
     std::shared_ptr<tateyama::framework::service> create_server_service() override {
@@ -41,51 +41,32 @@ public:
     }
 
     void server() override {
-        watch_dog wd { max_sec };
-        //
         server_client_base::server();
         //
-        std::size_t msg_num = nclient_ * nthread_ * nloop_ * 2 * req_len_list_.size();
-        std::size_t len_sum = nclient_ * nthread_ * nloop_ * 2
+        std::size_t msg_num = nworker_ * nloop_ * 2 * req_len_list_.size();
+        std::size_t len_sum = nworker_ * nloop_ * 2
                 * std::reduce(req_len_list_.cbegin(), req_len_list_.cend());
-        std::cout << "nclient=" << nclient_;
-        std::cout << ", nthread=" << nthread_;
-        std::cout << ", nloop=" << nloop_;
+        std::cout << "nloop=" << nloop_;
         std::cout << ", max_len=" << req_len_list_.back() << ", ";
         server_client_base::server_dump(msg_num, len_sum);
     }
 
-    void client() override {
-        watch_dog wd { max_sec };
-        std::vector<std::thread> threads;
-        threads.reserve(nthread_);
-        for (int i = 0; i < nthread_; i++) {
-            threads.emplace_back([this] {
-                ipc_client client { cfg_ };
-                for (int i = 0; i < nloop_; i++) {
-                    for (std::size_t req_len : req_len_list_) {
-                        std::string req_message;
-                        make_dummy_message(client.session_id(), req_len, req_message);
-                        client.send(multi_clients_service::tag, req_message);
-                        //
-                        std::string res_message;
-                        client.receive(res_message);
-                        EXPECT_EQ(req_message, res_message);
-                    }
-                }
-            });
-        }
-        for (std::thread &th : threads) {
-            if (th.joinable()) {
-                th.join();
+    void client_thread() override {
+        ipc_client client { cfg_ };
+        for (int i = 0; i < nloop_; i++) {
+            for (std::size_t req_len : req_len_list_) {
+                std::string req_message;
+                make_dummy_message(client.session_id(), req_len, req_message);
+                client.send(multi_clients_service::tag, req_message);
+                //
+                std::string res_message;
+                client.receive(res_message);
+                EXPECT_EQ(req_message, res_message);
             }
         }
     }
 
 private:
-    static constexpr int max_sec = 60;
-
-    int nthread_ { };
     std::vector<std::size_t> req_len_list_;
     int nloop_ { };
 };
@@ -95,7 +76,7 @@ class ipc_multi_clients_test: public ipc_test_base {
 
 TEST_F(ipc_multi_clients_test, test_fixed_size_only) {
     std::vector<std::size_t> nclient_list { 1, 2, 4, 8 };
-    std::vector<std::size_t> nthread_list { 1, 2, 4, 8 };
+    std::vector<std::size_t> nthread_list { 0, 1, 2, 4, 8 };
     std::vector<std::size_t> maxlen_list { 128, 256, 512 };
     std::vector<std::size_t> req_len_list;
     for (std::size_t maxlen : maxlen_list) {
@@ -109,7 +90,7 @@ TEST_F(ipc_multi_clients_test, test_fixed_size_only) {
                     // NOTE: causes tateyama-server error
                     continue;
                 }
-                ipc_multi_clients_test_server_client sc { cfg_, nclient, req_len_list, nthread, nloop };
+                ipc_multi_clients_test_server_client sc { cfg_, nclient, nthread, req_len_list, nloop };
                 sc.start_server_client();
             }
         }
