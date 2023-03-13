@@ -27,7 +27,7 @@ public:
     server_client_base(std::shared_ptr<tateyama::api::configuration::whole> const &cfg, int nclient = 1,
             int nthread = 0) :
             cfg_(cfg), nclient_(nclient), nthread_(nthread) {
-        // nthread_ == 0 means not invoke a woker thread (i.e. using main thread)
+        // nthread_ == 0 means not invoke a worker thread (i.e. using main thread)
         nworker_ = nclient_ * std::max(nthread_, 1);
     }
 
@@ -44,7 +44,7 @@ protected:
     int nthread_;
     int nworker_;
 
-    int maxsec = 60;
+    int maxsec_ = 60;
 
 private:
     // for server process

@@ -50,12 +50,16 @@ void get_ipc_database_name(std::shared_ptr<tateyama::api::configuration::whole> 
         std::string &ipc_database_name);
 void get_ipc_max_session(std::shared_ptr<tateyama::api::configuration::whole> const &cfg, int &max_session);
 
-void make_power2_length_list(std::vector<std::size_t> &vec, std::size_t max);
+void make_power2_length_list(std::vector<std::size_t> &vec, const std::size_t max);
 void dump_length_list(std::vector<std::size_t> &vec);
 
-void make_dummy_message(std::size_t start_idx, std::size_t len, std::string &message);
-bool check_dummy_message(std::size_t start_idx, const std::string_view message);
-void make_printable_dummy_message(std::size_t start_idx, std::size_t len, std::string &message);
+void make_dummy_message(const std::size_t start_idx, const std::size_t len, std::string &message);
+bool check_dummy_message(const std::size_t start_idx, const std::string_view message);
+
+void params_to_string(const std::size_t len, const std::vector<std::size_t> &msg_params, std::string &text);
+std::size_t get_message_len(const std::string_view message);
+void make_dummy_message(const std::string part, const std::size_t len, std::string &message);
+bool check_dummy_message(const std::string_view message);
 
 class elapse {
 public:
@@ -123,8 +127,8 @@ protected:
 class resultset_param {
 public:
     resultset_param(const std::string &name, std::vector<std::size_t> &write_lens, std::size_t write_nloop,
-            std::size_t nchannel = 1) :
-            name_(name), write_nloop_(write_nloop), write_lens_(write_lens), nchannel_(nchannel) {
+            std::size_t nchannel = 1, std::size_t nwriter = 1) :
+            name_(name), write_nloop_(write_nloop), write_lens_(write_lens), nchannel_(nchannel), nwriter_(nwriter) {
     }
     resultset_param(const std::string &text);
     void to_string(std::string &text);
@@ -132,6 +136,7 @@ public:
     std::string name_ { };
     std::size_t write_nloop_ { };
     std::size_t nchannel_ { };
+    std::size_t nwriter_ { };
     std::vector<std::size_t> write_lens_ { };
 private:
     static constexpr char delim = ',';

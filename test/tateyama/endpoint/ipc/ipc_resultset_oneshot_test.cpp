@@ -56,7 +56,7 @@ public:
     ipc_resultset_oneshot_test_server_client(std::shared_ptr<tateyama::api::configuration::whole> const &cfg,
             std::size_t datalen) :
             server_client_base(cfg), datalen_(datalen) {
-        maxsec = 3;
+        maxsec_ = 3;
     }
 
     std::shared_ptr<tateyama::framework::service> create_server_service() override {
