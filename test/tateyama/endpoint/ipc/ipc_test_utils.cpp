@@ -183,7 +183,7 @@ resultset_param::resultset_param(const std::string &text) {
     }
 }
 
-void resultset_param::to_string(std::string &text) {
+void resultset_param::to_string(std::string &text) noexcept {
     text = name_;
     text += delim + std::to_string(write_nloop_);
     text += delim + std::to_string(ch_index_);

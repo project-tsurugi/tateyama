@@ -38,11 +38,11 @@ public:
     resultset_wires_container* create_resultset_wires();
     void dispose_resultset_wires(resultset_wires_container *rwc);
 
-    std::size_t session_id() const {
+    std::size_t session_id() const noexcept {
         return session_id_;
     }
 
-    std::string session_name() const {
+    std::string session_name() const noexcept {
         return session_name_;
     }
 
@@ -51,7 +51,7 @@ public:
     // tateyama/src/tateyama/endpoint/ipc/wire.h
     // - public tateyama::common::wire::length_header::length_type = std::uint32_t
     // - public tateyama::common::wire::length_header::size = sizeof(length_type)
-    // recoed_max = 64 KB - 4
+    // record_max = 64 KB - 4
     static constexpr std::size_t resultset_record_maxlen = 64 * 1024 - tateyama::common::wire::length_header::size;
 
 private:

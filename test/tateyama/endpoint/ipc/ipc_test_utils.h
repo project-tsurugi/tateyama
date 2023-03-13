@@ -63,20 +63,20 @@ bool check_dummy_message(const std::string_view message);
 
 class elapse {
 public:
-    void start() {
+    void start() noexcept {
         start_ = end_ = now_msec();
     }
-    void stop() {
+    void stop() noexcept {
         end_ = now_msec();
     }
-    std::chrono::milliseconds now_msec() {
+    std::chrono::milliseconds now_msec() noexcept {
         return std::chrono::duration_cast<std::chrono::milliseconds>(
                 std::chrono::system_clock::now().time_since_epoch());
     }
-    std::chrono::nanoseconds now_nsec() {
+    std::chrono::nanoseconds now_nsec() noexcept {
         return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch());
     }
-    std::int64_t msec() {
+    std::int64_t msec() noexcept {
         if (end_ >= start_) {
             return static_cast<std::int64_t>((end_ - start_).count());
         } else {
@@ -131,7 +131,7 @@ public:
             name_(name), write_nloop_(write_nloop), write_lens_(write_lens), ch_index_(ch_index), nwriter_(nwriter) {
     }
     resultset_param(const std::string &text);
-    void to_string(std::string &text);
+    void to_string(std::string &text) noexcept;
 
     std::string name_ { };
     std::size_t write_nloop_ { };
@@ -146,17 +146,17 @@ class msg_info {
 private:
     std::vector<std::size_t> params { };
 public:
-    msg_info(const std::shared_ptr<tateyama::api::server::request> &req, const std::size_t idx) {
+    msg_info(const std::shared_ptr<tateyama::api::server::request> &req, const std::size_t idx) noexcept {
         params.push_back(req->session_id());
         params.push_back(idx);
         params.push_back(0);
     }
 
-    void set_i(std::size_t i) {
+    void set_i(std::size_t i) noexcept {
         params[2] = i;
     }
 
-    void to_string(std::size_t len, std::string &text) {
+    void to_string(std::size_t len, std::string &text) noexcept {
         return params_to_string(len, params, text);
     }
 };
