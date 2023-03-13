@@ -35,7 +35,7 @@ public:
             }
             if (!quit_) {
                 std::cout << "pid=" << getpid() << " has run over " << max_sec << "[sec], abort it!" << std::endl;
-                abort();
+                std::exit(1);
             }
         });
     }
