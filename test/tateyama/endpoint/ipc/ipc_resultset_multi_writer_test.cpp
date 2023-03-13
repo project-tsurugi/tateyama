@@ -18,29 +18,10 @@
 
 namespace tateyama::api::endpoint::ipc {
 
-class msg_info {
-private:
-    std::vector<std::size_t> params { };
-public:
-    msg_info(const std::shared_ptr<tateyama::api::server::request> &req, const int idx) {
-        params.push_back(req->session_id());
-        params.push_back(static_cast<std::size_t>(idx));
-        params.push_back(0);
-    }
-
-    void set_i(std::size_t i) {
-        params[2] = i;
-    }
-
-    void to_string(std::size_t len, std::string &text) {
-        return params_to_string(len, params, text);
-    }
-};
-
 class resultset_multi_writer_service: public server_service_base {
 private:
     void writer_thread(const std::shared_ptr<tateyama::api::server::request> &req, const resultset_param &param,
-            const std::shared_ptr<tateyama::api::server::data_channel> &channel, const int idx) {
+            const std::shared_ptr<tateyama::api::server::data_channel> &channel, const std::size_t idx) {
         std::shared_ptr<tateyama::api::server::writer> writer;
         EXPECT_EQ(tateyama::status::ok, channel->acquire(writer));
         msg_info info { req, idx };
@@ -66,7 +47,6 @@ public:
         resultset_param param { payload };
         EXPECT_GT(param.name_.length(), 0);
         EXPECT_GT(param.write_nloop_, 0);
-        EXPECT_GT(param.nchannel_, 0);
         EXPECT_GT(param.nwriter_, 0);
         EXPECT_GT(param.write_lens_.size(), 0);
         //
@@ -76,7 +56,7 @@ public:
         //
         std::vector<std::thread> threads { };
         threads.reserve(param.nwriter_);
-        for (int i = 0; i < param.nwriter_; i++) {
+        for (std::size_t i = 0; i < param.nwriter_; i++) {
             threads.emplace_back([this, req, param, channel, i] {
                 writer_thread(req, param, channel, i);
             });
@@ -123,8 +103,8 @@ public:
 
     void client_thread() override {
         ipc_client client { cfg_ };
-        std::string resultset_name { "resultset-" + client.session_name() };
-        resultset_param param { resultset_name, len_list_, write_nloop_, 1, nwriter_ };
+        std::string channel_name { "resultset-" + client.session_name() };
+        resultset_param param { channel_name, len_list_, write_nloop_, 1, nwriter_ };
         std::size_t len_sum = std::reduce(len_list_.cbegin(), len_list_.cend());
         std::string req_message;
         param.to_string(req_message);
@@ -140,7 +120,7 @@ public:
                 read_counts[len] = 0;
             }
             resultset_wires_container *rwc = client.create_resultset_wires();
-            rwc->connect(resultset_name);
+            rwc->connect(channel_name);
             const std::size_t nserver_msg_num = nwriter_ * write_nloop_ * len_list_.size();
             for (std::size_t k = 0; k < nserver_msg_num; k++) {
                 std::string_view chunk = rwc->get_chunk();

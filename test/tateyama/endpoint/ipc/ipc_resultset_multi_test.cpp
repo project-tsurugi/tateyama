@@ -26,7 +26,6 @@ public:
         resultset_param param { payload };
         EXPECT_GT(param.name_.length(), 0);
         EXPECT_GT(param.write_nloop_, 0);
-        EXPECT_GT(param.nchannel_, 0);
         EXPECT_GT(param.write_lens_.size(), 0);
         //
         std::shared_ptr<tateyama::api::server::data_channel> channel;
@@ -53,12 +52,9 @@ public:
 };
 
 class ipc_resultset_multi_test_server_client: public server_client_base {
-public:
-    ipc_resultset_multi_test_server_client(std::shared_ptr<tateyama::api::configuration::whole> const &cfg, int nclient,
-            int nthread, std::vector<std::size_t> &len_list, int nloop, std::size_t write_nloop, std::size_t nchannel =
-                    1) :
-            server_client_base(cfg, nclient, nthread), len_list_(len_list), nloop_(nloop), write_nloop_(write_nloop), nchannel_(
-                    nchannel) {
+public:ipc_resultset_multi_test_server_client(std::shared_ptr<tateyama::api::configuration::whole> const &cfg, int nclient,
+            int nthread, std::vector<std::size_t> &len_list, int nloop, std::size_t write_nloop) :
+    server_client_base(cfg, nclient, nthread), len_list_(len_list), nloop_(nloop), write_nloop_(write_nloop) {
     }
 
     std::shared_ptr<tateyama::framework::service> create_server_service() override {
@@ -68,12 +64,10 @@ public:
     void server() override {
         server_client_base::server();
         //
-        std::size_t msg_num = nworker_ * nloop_ * write_nloop_ * nchannel_ * len_list_.size();
-        std::size_t len_sum = nworker_ * nloop_ * write_nloop_ * nchannel_
-                * std::reduce(len_list_.cbegin(), len_list_.cend());
+        std::size_t msg_num = nworker_ * nloop_ * write_nloop_ * len_list_.size();
+        std::size_t len_sum = nworker_ * nloop_ * write_nloop_ * std::reduce(len_list_.cbegin(), len_list_.cend());
         std::cout << "nloop=" << nloop_;
         std::cout << ", write_nloop=" << write_nloop_;
-        // std::cout << ", nchannel=" << nchannel_;
         std::cout << ", max_len=" << len_list_.back() << ", ";
         server_client_base::server_dump(msg_num, len_sum);
     }
@@ -81,7 +75,7 @@ public:
     void client_thread() override {
         ipc_client client { cfg_ };
         std::string resultset_name { "resultset-" + client.session_name() };
-        resultset_param param { resultset_name, len_list_, write_nloop_, nchannel_ };
+        resultset_param param { resultset_name, len_list_, write_nloop_ };
         std::size_t len_sum = std::reduce(len_list_.cbegin(), len_list_.cend());
         std::string req_message;
         param.to_string(req_message);
@@ -125,7 +119,6 @@ public:
 private:
     int nloop_ { };
     std::size_t write_nloop_ { };
-    std::size_t nchannel_ { };
     std::vector<std::size_t> &len_list_;
 };
 
@@ -142,7 +135,7 @@ TEST_F(ipc_resultset_multi_test, fixed_size_only) {
         for (int nthread : nthread_list) {
             for (std::size_t len : len_list) {
                 std::vector<std::size_t> list { len };
-                ipc_resultset_multi_test_server_client sc { cfg_, nclient, nthread, list, 10, 100, 2 };
+                ipc_resultset_multi_test_server_client sc { cfg_, nclient, nthread, list, 10, 100 };
                 sc.start_server_client();
             }
         }
