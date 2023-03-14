@@ -57,6 +57,12 @@ public:
             exit(1);
         }
         auto threads = threads_opt.value();
+        auto datachannel_buffer_size_opt = endpoint_config->get<std::size_t>("datachannel_buffer_size");
+        if (!datachannel_buffer_size_opt) {
+            LOG_LP(ERROR) << "cannot find thread_pool_size at the section in the configuration";
+            exit(1);
+        }
+        datachannel_buffer_size_ = datachannel_buffer_size_opt.value() * 1024;  // in KB
 
         // connection channel
         container_ = std::make_unique<tateyama::common::wire::connection_container>(database_name_, threads);
@@ -91,7 +97,7 @@ public:
             std::string session_name = database_name_;
             session_name += "-";
             session_name += std::to_string(session_id);
-            auto wire = std::make_unique<tateyama::common::wire::server_wire_container_impl>(session_name, proc_mutex_file_);
+            auto wire = std::make_unique<tateyama::common::wire::server_wire_container_impl>(session_name, proc_mutex_file_, datachannel_buffer_size_);
             std::size_t index = connection_queue.accept(session_id);
             VLOG_LP(log_trace) << "create session wire: " << session_name << " at index " << index;
             try {
@@ -122,6 +128,7 @@ private:
     std::vector<std::unique_ptr<Worker>> workers_{};
     std::string database_name_;
     std::string proc_mutex_file_;
+    std::size_t datachannel_buffer_size_{};
 };
 
 }
