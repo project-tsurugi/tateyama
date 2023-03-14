@@ -234,7 +234,7 @@ public:
         }
         //  constructor for client
         resultset_wires_container_impl(boost::interprocess::managed_shared_memory* managed_shm_ptr, std::string_view name, std::mutex& mtx_shm)
-            : managed_shm_ptr_(managed_shm_ptr), rsw_name_(name), server_(false), mtx_shm_(mtx_shm) {
+            : managed_shm_ptr_(managed_shm_ptr), rsw_name_(name), server_(false), mtx_shm_(mtx_shm), datachannel_buffer_size_(0) {
             shm_resultset_wires_ = managed_shm_ptr_->find<shm_resultset_wires>(rsw_name_.c_str()).first;
             if (shm_resultset_wires_ == nullptr) {
                 throw std::runtime_error("cannot find the resultset wire");
@@ -325,12 +325,11 @@ public:
 
         std::set<unq_p_resultset_wire_conteiner> deffered_delete_{};
         std::size_t deffered_writers_{};
+        std::size_t datachannel_buffer_size_;
 
         //   for client
         std::string_view wrap_around_{};
         shm_resultset_wire* current_wire_{};
-
-        std::size_t datachannel_buffer_size_;
 
         shm_resultset_wire* active_wire() {
             return shm_resultset_wires_->active_wire();
