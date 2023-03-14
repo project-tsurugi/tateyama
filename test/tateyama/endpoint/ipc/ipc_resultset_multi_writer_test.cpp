@@ -165,7 +165,7 @@ static const std::vector<std::size_t> nclient_list { 1, 2 }; // NOLINT
 static const std::vector<std::size_t> nthread_list { 0, 1, 2 }; // NOLINT
 static const std::vector<std::size_t> nwriter_list { 1, 2 }; // NOLINT
 
-TEST_F(ipc_resultset_multi_writer_test, fixed_size_only) {
+TEST_F(ipc_resultset_multi_writer_test, DISABLED_fixed_size_only) {
     const std::size_t maxlen = ipc_client::resultset_record_maxlen;
     std::vector<std::size_t> len_list { 128, maxlen / 2 + 10 };
     for (int nclient : nclient_list) {

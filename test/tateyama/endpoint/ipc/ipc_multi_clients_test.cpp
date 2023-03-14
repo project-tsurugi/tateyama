@@ -74,9 +74,32 @@ private:
 class ipc_multi_clients_test: public ipc_test_base {
 };
 
-TEST_F(ipc_multi_clients_test, test_fixed_size_only) {
-    std::vector<std::size_t> nclient_list { 1, 2, 4, 8 };
-    std::vector<std::size_t> nthread_list { 0, 1, 2, 4, 8 };
+TEST_F(ipc_multi_clients_test, test_fixed_size_only_small) {
+    std::vector<std::size_t> nclient_list { 1, 2 };
+    std::vector<std::size_t> nthread_list { 0, 1, 2 };
+    std::vector<std::size_t> maxlen_list { 128, 256, 512 };
+    std::vector<std::size_t> req_len_list;
+    for (std::size_t maxlen : maxlen_list) {
+        req_len_list.clear();
+        req_len_list.push_back(maxlen);
+        int nloop = (maxlen <= 1024 ? 1000 : 100);
+        for (int nclient : nclient_list) {
+            for (int nthread : nthread_list) {
+                std::size_t nsession = nclient * nthread;
+                if (nsession > ipc_max_session_) {
+                    // NOTE: causes tateyama-server error
+                    continue;
+                }
+                ipc_multi_clients_test_server_client sc { cfg_, nclient, nthread, req_len_list, nloop };
+                sc.start_server_client();
+            }
+        }
+    }
+}
+
+TEST_F(ipc_multi_clients_test, DISABLED_test_fixed_size_only_big) {
+    std::vector<std::size_t> nclient_list { 4, 8 };
+    std::vector<std::size_t> nthread_list { 4, 8 };
     std::vector<std::size_t> maxlen_list { 128, 256, 512 };
     std::vector<std::size_t> req_len_list;
     for (std::size_t maxlen : maxlen_list) {

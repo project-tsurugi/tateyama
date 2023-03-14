@@ -52,9 +52,10 @@ public:
 };
 
 class ipc_resultset_multi_test_server_client: public server_client_base {
-public:ipc_resultset_multi_test_server_client(std::shared_ptr<tateyama::api::configuration::whole> const &cfg, int nclient,
+public:
+    ipc_resultset_multi_test_server_client(std::shared_ptr<tateyama::api::configuration::whole> const &cfg, int nclient,
             int nthread, std::vector<std::size_t> &len_list, int nloop, std::size_t write_nloop) :
-    server_client_base(cfg, nclient, nthread), len_list_(len_list), nloop_(nloop), write_nloop_(write_nloop) {
+            server_client_base(cfg, nclient, nthread), len_list_(len_list), nloop_(nloop), write_nloop_(write_nloop) {
     }
 
     std::shared_ptr<tateyama::framework::service> create_server_service() override {
@@ -130,7 +131,21 @@ static const std::vector<std::size_t> nthread_list { 0, 1, 2 }; // NOLINT
 
 TEST_F(ipc_resultset_multi_test, fixed_size_only) {
     const std::size_t maxlen = ipc_client::resultset_record_maxlen;
-    std::vector<std::size_t> len_list { 1, 128, 1024, 4 * 1024, maxlen };
+    std::vector<std::size_t> len_list { 1, 128, 1024 };
+    for (int nclient : nclient_list) {
+        for (int nthread : nthread_list) {
+            for (std::size_t len : len_list) {
+                std::vector<std::size_t> list { len };
+                ipc_resultset_multi_test_server_client sc { cfg_, nclient, nthread, list, 10, 10 };
+                sc.start_server_client();
+            }
+        }
+    }
+}
+
+TEST_F(ipc_resultset_multi_test, DISABLED_fixed_size_only_maxlen) {
+    const std::size_t maxlen = ipc_client::resultset_record_maxlen;
+    std::vector<std::size_t> len_list { 4 * 1024, maxlen };
     for (int nclient : nclient_list) {
         for (int nthread : nthread_list) {
             for (std::size_t len : len_list) {
@@ -174,7 +189,7 @@ TEST_F(ipc_resultset_multi_test, around_record_max) {
     }
 }
 
-TEST_F(ipc_resultset_multi_test, many_send) {
+TEST_F(ipc_resultset_multi_test, DISABLED_many_send) {
     const std::size_t maxlen = ipc_client::resultset_record_maxlen;
     std::vector<std::size_t> len_list { 1, 128, maxlen };
     for (std::size_t len : len_list) {

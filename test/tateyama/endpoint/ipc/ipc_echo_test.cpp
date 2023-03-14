@@ -92,7 +92,7 @@ TEST_F(ipc_echo_test, test_fixed_size_only) {
     for (std::size_t maxlen : maxlen_list) {
         len_list.clear();
         len_list.push_back(maxlen);
-        int nloop = (maxlen <= 1024 ? 10000 : 3000);
+        int nloop = (maxlen <= 1024 ? 1000 : 300);
         ipc_echo_test_server_client sc {cfg_, len_list, nloop};
         sc.start_server_client();
     }

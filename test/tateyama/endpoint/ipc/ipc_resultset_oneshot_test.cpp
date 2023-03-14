@@ -119,12 +119,10 @@ TEST_F(ipc_resultset_oneshot_test, test_record_max) {
     sc.start_server_client();
 }
 
-#ifdef NOT_PASS
 // get_chunk() never wakeup. It's limitation of current implementation.
-TEST_F(ipc_resultset_oneshot_test, test_record_max_plus_1) {
+TEST_F(ipc_resultset_oneshot_test, DISABLED_test_record_max_plus_1) {
     ipc_resultset_oneshot_test_server_client sc {cfg_, ipc_client::resultset_record_maxlen + 1};
     sc.start_server_client();
 }
-#endif
 
 } // namespace tateyama::api::endpoint::ipc
