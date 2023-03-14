@@ -464,6 +464,9 @@ public:
     explicit server_wire_container_impl(std::string_view name, std::string_view mutex_file) : name_(name), garbage_collector_impl_(std::make_unique<garbage_collector_impl>()) {
         boost::interprocess::shared_memory_object::remove(name_.c_str());
         try {
+            boost::interprocess::permissions  unrestricted_permissions;
+            unrestricted_permissions.set_unrestricted();
+
             managed_shared_memory_ =
                 std::make_unique<boost::interprocess::managed_shared_memory>(boost::interprocess::create_only, name_.c_str(), shm_size);
             auto req_wire = managed_shared_memory_->construct<unidirectional_message_wire>(request_wire_name)(managed_shared_memory_.get(), request_buffer_size);
@@ -554,6 +557,9 @@ public:
     explicit connection_container(std::string_view name, std::size_t n) : name_(name) {
         boost::interprocess::shared_memory_object::remove(name_.c_str());
         try {
+            boost::interprocess::permissions  unrestricted_permissions;
+            unrestricted_permissions.set_unrestricted();
+
             managed_shared_memory_ =
                 std::make_unique<boost::interprocess::managed_shared_memory>(boost::interprocess::create_only, name_.c_str(), request_queue_size);
             managed_shared_memory_->destroy<connection_queue>(connection_queue::name);
