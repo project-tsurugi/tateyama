@@ -16,6 +16,13 @@ cmake-build-*
 .idea
 *.tokens
 
+# Eclipse
+/.project
+/.classpath
+/.settings
+/.cproject
+/.externalToolBuilders/
+
 # work in progress files
 *.wip
 

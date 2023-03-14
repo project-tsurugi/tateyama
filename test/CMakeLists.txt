@@ -65,6 +65,7 @@ file(GLOB SRCS
         "tateyama/api/*.cpp"
         "tateyama/datastore/*.cpp"
         "tateyama/endpoint/*.cpp"
+        "tateyama/endpoint/ipc/*.cpp"
         "tateyama/task_scheduler/*.cpp"
         "tateyama/registry/*.cpp"
         "tateyama/common/*.cpp"
