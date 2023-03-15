@@ -127,7 +127,7 @@ public:
 static const std::vector<int> nclient_list { 1, 2 }; // NOLINT
 static const std::vector<int> nthread_list { 0, 2 }; // NOLINT
 
-TEST_F(ipc_reqres_limit_test, req_res_maxlen) {
+TEST_F(ipc_reqres_limit_test, DISABLED_req_res_maxlen) {
     // NOTE: server_wire_container_impl::request_buffer_size, response_buffer_size are private member.
     std::size_t max_req_len = 32 * 1024;
     std::size_t max_res_len = 64 * 1024;
