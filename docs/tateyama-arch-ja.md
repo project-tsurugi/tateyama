@@ -112,6 +112,7 @@ public:
     virtual void shutdown(environment&) = 0; // -> deactivated
     virtual ~component() = default; // -> disposed
 
+    virtual std::string_view label() const noexcept = 0;
     virtual std::vector<std::string> configuration_sections() = 0;
 }
 ```
@@ -134,6 +135,7 @@ public:
 
 * コメント
   * `id()` は resource 間でユニークであればいい
+  * `label()` は英数とアンダースコアからなる文字列で、厳密なユニーク性は要求しない (人間用)
   * resource は基本的に具象型を把握したうえで利用するため、この抽象クラスに特別な機能はない
 
 #### service
@@ -152,6 +154,7 @@ public:
 
 * コメント
   * `id()` は service 間でユニークであればいい
+  * `label()` は英数とアンダースコアからなる文字列で、厳密なユニーク性は要求しない (人間用)
   * service はメッセージを受け取る口がある
 
 #### end point
@@ -165,6 +168,7 @@ class endpoint : public component {};
   * end point は今のところ識別する必然性がないため ID がない
     * 必要ならば別途用意する
     * 入れた方が `repository` の API を統一できて楽だが、IDを重複なく降るという苦行が待ち受ける
+  * `label()` は英数とアンダースコアからなる文字列で、厳密なユニーク性は要求しない (人間用)
   * end point は能動的に動作するため、この抽象クラスに特別な機能はない
 
 #### router
@@ -177,6 +181,10 @@ public:
 
     id_type id() const noexcept override {
         return tag;
+    }
+
+    std::string_view label() override const noexcept {
+        return "...";
     }
 
     void setup(environment& env) override {
