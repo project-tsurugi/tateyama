@@ -124,14 +124,32 @@ public:
     }
 };
 
+// NOTE: server_wire_container_impl::request_buffer_size, response_buffer_size are private member.
+static const std::size_t max_req_len = 32 * 1024;
+static const std::size_t max_res_len = 64 * 1024;
+
 static const std::vector<int> nclient_list { 1, 2 }; // NOLINT
 static const std::vector<int> nthread_list { 0, 2 }; // NOLINT
 
-TEST_F(ipc_reqres_limit_test, DISABLED_req_res_maxlen) {
-    // NOTE: server_wire_container_impl::request_buffer_size, response_buffer_size are private member.
-    std::size_t max_req_len = 32 * 1024;
-    std::size_t max_res_len = 64 * 1024;
-    std::size_t range = 9;
+TEST_F(ipc_reqres_limit_test, req_res_maxlen_half) {
+    std::size_t range = sizeof(std::size_t) + 1;
+    std::vector<std::size_t> req_len_list { };
+    std::vector<std::size_t> res_len_list { };
+    make_list(max_req_len / 2, range, req_len_list);
+    make_list(max_res_len / 2, range, res_len_list);
+    dump_length_list(req_len_list);
+    dump_length_list(res_len_list);
+    const int nloop = 2;
+    for (int nclient : nclient_list) {
+        for (int nthread : nthread_list) {
+            ipc_reqres_limit_test_server_client sc { cfg_, nclient, nthread, req_len_list, res_len_list, nloop };
+            sc.start_server_client();
+        }
+    }
+}
+
+TEST_F(ipc_reqres_limit_test, req_res_maxlen) {
+    std::size_t range = sizeof(std::size_t) + 1;
     std::vector<std::size_t> req_len_list { };
     std::vector<std::size_t> res_len_list { };
     make_list(max_req_len, range, req_len_list);
