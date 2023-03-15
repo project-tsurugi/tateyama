@@ -91,7 +91,7 @@ public:
 
     void channel_test(ipc_client &client, resultset_wires_container *rwc, const std::string &channel_prefix,
             const std::size_t ch_index) {
-        resultset_param param { channel_prefix, len_list_, write_nloop_, ch_index, 1 };
+        resultset_param param { channel_prefix, len_list_, write_nloop_, ch_index };
         std::string req_message;
         param.to_string(req_message);
         std::string res_message;

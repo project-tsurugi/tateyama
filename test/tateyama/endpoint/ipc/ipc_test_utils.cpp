@@ -185,9 +185,6 @@ resultset_param::resultset_param(const std::string &text) {
         case 1:
             ch_index_ = len;
             break;
-        case 2:
-            nwriter_ = len;
-            break;
         default:
             write_lens_.push_back(len);
             break;
@@ -199,7 +196,6 @@ void resultset_param::to_string(std::string &text) noexcept {
     text = name_;
     text += delim + std::to_string(write_nloop_);
     text += delim + std::to_string(ch_index_);
-    text += delim + std::to_string(nwriter_);
     for (std::size_t size : write_lens_) {
         text += delim + std::to_string(size);
     }
