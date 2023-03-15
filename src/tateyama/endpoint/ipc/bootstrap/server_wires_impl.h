@@ -37,7 +37,6 @@ class server_wire_container_impl : public server_wire_container
     static constexpr std::size_t response_buffer_size = (1<<13);  //  8K bytes NOLINT
     static constexpr std::size_t resultset_vector_size = (1<<12); //  4K bytes NOLINT
     static constexpr std::size_t writer_count = 16;
-    static constexpr std::size_t resultset_buffer_size = (1<<16); //  64K bytes NOLINT
 
 public:
     class resultset_wires_container_impl;
@@ -48,9 +47,6 @@ public:
             buffer_.reserve(size);
             read_point_ = buffer_.cbegin();
         }
-        annex() : annex(resultset_buffer_size) {
-        }
-
         bool is_room(std::size_t length) {
             if (buffer_.capacity() < (write_pos_ + chunk_size_ + length)) {
                 std::unique_lock<std::mutex> lock(mtx_chunks_);
@@ -124,8 +120,8 @@ public:
     // resultset_wire_container
     class resultset_wire_container_impl : public resultset_wire_container {
     public:
-        resultset_wire_container_impl(shm_resultset_wire* resultset_wire, resultset_wires_container_impl& resultset_wires_container_impl)
-            : shm_resultset_wire_(resultset_wire), resultset_wires_container_impl_(resultset_wires_container_impl) {
+        resultset_wire_container_impl(shm_resultset_wire* resultset_wire, resultset_wires_container_impl& resultset_wires_container_impl, std::size_t datachannel_buffer_size)
+            : shm_resultset_wire_(resultset_wire), resultset_wires_container_impl_(resultset_wires_container_impl), datachannel_buffer_size_(datachannel_buffer_size) {
         }
         ~resultset_wire_container_impl() override {
             if (thread_active_) {
@@ -169,7 +165,7 @@ public:
                 }
                 VLOG_LP(log_trace) << "enter writer annex mode";
                 annex_mode_ = true;
-                queue_.emplace(std::make_unique<annex>());
+                queue_.emplace(std::make_unique<annex>(datachannel_buffer_size_));
                 current_annex_ = queue_.back().get();
                 if (!thread_active_) {
                     writer_thread_ = std::thread(std::ref(*this));
@@ -180,7 +176,7 @@ public:
                 VLOG_LP(log_trace) << "extend annex";
                 {
                     std::unique_lock<std::mutex> lock(mtx_queue_);
-                    queue_.emplace(std::make_unique<annex>());
+                    queue_.emplace(std::make_unique<annex>(datachannel_buffer_size_));
                     current_annex_ = queue_.back().get();
                     cnd_queue_.notify_one();
                 }
@@ -210,6 +206,8 @@ public:
         std::mutex mtx_queue_{};
         std::condition_variable cnd_queue_{};
 
+        std::size_t datachannel_buffer_size_;
+
         void write_complete();
     };
     static void resultset_wire_deleter_impl(resultset_wire_container* resultset_wire) {
@@ -220,12 +218,12 @@ public:
     class resultset_wires_container_impl : public resultset_wires_container {
     public:
         //   for server
-        resultset_wires_container_impl(boost::interprocess::managed_shared_memory* managed_shm_ptr, std::string_view name, std::size_t count, std::mutex& mtx_shm)
-            : managed_shm_ptr_(managed_shm_ptr), rsw_name_(name), server_(true), mtx_shm_(mtx_shm) {
+        resultset_wires_container_impl(boost::interprocess::managed_shared_memory* managed_shm_ptr, std::string_view name, std::size_t count, std::mutex& mtx_shm, std::size_t datachannel_buffer_size)
+            : managed_shm_ptr_(managed_shm_ptr), rsw_name_(name), server_(true), mtx_shm_(mtx_shm), datachannel_buffer_size_(datachannel_buffer_size) {
             std::lock_guard<std::mutex> lock(mtx_shm_);
             managed_shm_ptr_->destroy<shm_resultset_wires>(rsw_name_.c_str());
             try {
-                shm_resultset_wires_ = managed_shm_ptr_->construct<shm_resultset_wires>(rsw_name_.c_str())(managed_shm_ptr_, count, resultset_buffer_size);
+                shm_resultset_wires_ = managed_shm_ptr_->construct<shm_resultset_wires>(rsw_name_.c_str())(managed_shm_ptr_, count, datachannel_buffer_size_);
             } catch(const boost::interprocess::interprocess_exception& ex) {
                 LOG_LP(ERROR) << ex.what() << " on resultset_wires_container_impl::resultset_wires_container_impl()";
                 pthread_exit(nullptr);  // FIXME
@@ -236,7 +234,7 @@ public:
         }
         //  constructor for client
         resultset_wires_container_impl(boost::interprocess::managed_shared_memory* managed_shm_ptr, std::string_view name, std::mutex& mtx_shm)
-            : managed_shm_ptr_(managed_shm_ptr), rsw_name_(name), server_(false), mtx_shm_(mtx_shm) {
+            : managed_shm_ptr_(managed_shm_ptr), rsw_name_(name), server_(false), mtx_shm_(mtx_shm), datachannel_buffer_size_(0) {
             shm_resultset_wires_ = managed_shm_ptr_->find<shm_resultset_wires>(rsw_name_.c_str()).first;
             if (shm_resultset_wires_ == nullptr) {
                 throw std::runtime_error("cannot find the resultset wire");
@@ -261,7 +259,7 @@ public:
             std::lock_guard<std::mutex> lock(mtx_shm_);
             try {
                 return std::unique_ptr<resultset_wire_container_impl, resultset_wire_deleter_type>{
-                    new resultset_wire_container_impl{shm_resultset_wires_->acquire(), *this}, resultset_wire_deleter_impl};
+                    new resultset_wire_container_impl{shm_resultset_wires_->acquire(), *this, datachannel_buffer_size_}, resultset_wire_deleter_impl};
             } catch(const boost::interprocess::interprocess_exception& ex) {
                 LOG_LP(ERROR) << ex.what() << " on resultset_wires_container_impl::acquire()";
                 pthread_exit(nullptr);  // FIXME
@@ -272,7 +270,7 @@ public:
         }
 
         void set_eor() override {
-            if (deffered_writers_ == 0) {
+            if (deffered_writers_.load() == 0) {
                 shm_resultset_wires_->set_eor();
             }
         }
@@ -282,11 +280,10 @@ public:
 
         void add_deffered_delete(unq_p_resultset_wire_conteiner resultset_wire) {
             deffered_delete_.emplace(std::move(resultset_wire));
-            deffered_writers_++;
+            deffered_writers_.fetch_add(1);
         }
         void write_complete() {
-            deffered_writers_--;
-            if (deffered_writers_ == 0) {
+            if (deffered_writers_.fetch_sub(1) == 1) {  // means deffered_writers_ has become 0
                 shm_resultset_wires_->set_eor();
             }
         }
@@ -324,8 +321,10 @@ public:
         shm_resultset_wires* shm_resultset_wires_{};
         bool server_;
         std::mutex& mtx_shm_;
+
         std::set<unq_p_resultset_wire_conteiner> deffered_delete_{};
-        std::size_t deffered_writers_{};
+        std::atomic_ulong deffered_writers_{};
+        std::size_t datachannel_buffer_size_;
 
         //   for client
         std::string_view wrap_around_{};
@@ -461,11 +460,15 @@ public:
         std::mutex mtx_{};
     };
 
-    explicit server_wire_container_impl(std::string_view name, std::string_view mutex_file) : name_(name), garbage_collector_impl_(std::make_unique<garbage_collector_impl>()) {
+    server_wire_container_impl(std::string_view name, std::string_view mutex_file, std::size_t datachannel_buffer_size)
+        : name_(name), garbage_collector_impl_(std::make_unique<garbage_collector_impl>()), datachannel_buffer_size_(datachannel_buffer_size) {
         boost::interprocess::shared_memory_object::remove(name_.c_str());
         try {
+            boost::interprocess::permissions  unrestricted_permissions;
+            unrestricted_permissions.set_unrestricted();
+
             managed_shared_memory_ =
-                std::make_unique<boost::interprocess::managed_shared_memory>(boost::interprocess::create_only, name_.c_str(), shm_size);
+                std::make_unique<boost::interprocess::managed_shared_memory>(boost::interprocess::create_only, name_.c_str(), shm_size, nullptr, unrestricted_permissions);
             auto req_wire = managed_shared_memory_->construct<unidirectional_message_wire>(request_wire_name)(managed_shared_memory_.get(), request_buffer_size);
             auto res_wire = managed_shared_memory_->construct<unidirectional_response_wire>(response_wire_name)(managed_shared_memory_.get(), response_buffer_size);
             status_provider_ = managed_shared_memory_->construct<status_provider>(status_provider_name)(managed_shared_memory_.get(), mutex_file);
@@ -499,7 +502,7 @@ public:
     unq_p_resultset_wires_conteiner create_resultset_wires(std::string_view name, std::size_t count) override {
         try {
             return std::unique_ptr<resultset_wires_container_impl, resultset_deleter_type>{
-                new resultset_wires_container_impl{managed_shared_memory_.get(), name, count, mtx_shm_}, resultset_deleter_impl};
+                new resultset_wires_container_impl{managed_shared_memory_.get(), name, count, mtx_shm_, datachannel_buffer_size_}, resultset_deleter_impl};
         }
         catch(const boost::interprocess::interprocess_exception& ex) {
             LOG_LP(ERROR) << "running out of boost managed shared memory";
@@ -530,6 +533,8 @@ private:
     std::unique_ptr<garbage_collector_impl> garbage_collector_impl_;
     bool session_closed_{false};
     std::mutex mtx_shm_{};
+
+    std::size_t datachannel_buffer_size_;
 };
 
 inline void server_wire_container_impl::resultset_wire_container_impl::release(unq_p_resultset_wire_conteiner resultset_wire_conteiner) {
@@ -554,8 +559,11 @@ public:
     explicit connection_container(std::string_view name, std::size_t n) : name_(name) {
         boost::interprocess::shared_memory_object::remove(name_.c_str());
         try {
+            boost::interprocess::permissions  unrestricted_permissions;
+            unrestricted_permissions.set_unrestricted();
+
             managed_shared_memory_ =
-                std::make_unique<boost::interprocess::managed_shared_memory>(boost::interprocess::create_only, name_.c_str(), request_queue_size);
+                std::make_unique<boost::interprocess::managed_shared_memory>(boost::interprocess::create_only, name_.c_str(), request_queue_size, nullptr, unrestricted_permissions);
             managed_shared_memory_->destroy<connection_queue>(connection_queue::name);
             connection_queue_ = managed_shared_memory_->construct<connection_queue>(connection_queue::name)(n, managed_shared_memory_->get_segment_manager());
         }
