@@ -270,7 +270,7 @@ public:
         }
 
         void set_eor() override {
-            if (deffered_writers_ == 0) {
+            if (deffered_writers_.load() == 0) {
                 shm_resultset_wires_->set_eor();
             }
         }
@@ -280,11 +280,10 @@ public:
 
         void add_deffered_delete(unq_p_resultset_wire_conteiner resultset_wire) {
             deffered_delete_.emplace(std::move(resultset_wire));
-            deffered_writers_++;
+            deffered_writers_.fetch_add(1);
         }
         void write_complete() {
-            deffered_writers_--;
-            if (deffered_writers_ == 0) {
+            if (deffered_writers_.fetch_sub(1) == 1) {  // means deffered_writers_ has become 0
                 shm_resultset_wires_->set_eor();
             }
         }
@@ -324,7 +323,7 @@ public:
         std::mutex& mtx_shm_;
 
         std::set<unq_p_resultset_wire_conteiner> deffered_delete_{};
-        std::size_t deffered_writers_{};
+        std::atomic_ulong deffered_writers_{};
         std::size_t datachannel_buffer_size_;
 
         //   for client
