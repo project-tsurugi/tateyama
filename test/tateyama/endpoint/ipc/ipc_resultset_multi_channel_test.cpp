@@ -96,17 +96,30 @@ public:
         param.to_string(req_message);
         std::string res_message;
         client.send(resultset_multi_channel_service::tag, req_message);
-        client.receive(res_message);
+        int receive_count = 0;
+        bool receive_ok = false;
+        do {
+            try {
+                client.receive(res_message);
+                receive_ok = true;
+            } catch (std::exception &e) {
+                std::cout << e.what() << std::endl;
+                receive_count++;
+                if (receive_count > 10) {
+                    FAIL();
+                }
+                std::cout << "retry receive response : " << receive_count << std::endl;
+            }
+        } while (!receive_ok);
         EXPECT_EQ(req_message, res_message);
         //
         std::string channel_name;
         make_channel_name(channel_prefix, ch_index, channel_name);
         rwc->connect(channel_name);
-        const std::size_t nserver_msg_num = write_nloop_ * len_list_.size();
         std::size_t nread = 0;
-        for (std::size_t k = 0; k < nserver_msg_num; k++) {
+        while (true) {
             std::string_view chunk = rwc->get_chunk();
-            if (chunk.length() == 0) {
+            if (chunk.length() == 0 && rwc->is_eor()) {
                 break;
             }
             std::size_t len = get_message_len(chunk);
@@ -121,7 +134,7 @@ public:
             EXPECT_TRUE(check_dummy_message(data));
             nread++;
         }
-        EXPECT_EQ(write_nloop_, nread);
+        EXPECT_EQ(write_nloop_ * len_list_.size(), nread);
     }
 
     void client_thread() override {
@@ -132,10 +145,6 @@ public:
             resultset_wires_container *rwc = client.create_resultset_wires();
             for (std::size_t ch_index = 0; ch_index < nchannel_; ch_index++) {
                 channel_test(client, rwc, channel_prefix, ch_index);
-            }
-            // just wait until is_eor() is true
-            while (!rwc->is_eor()) {
-                EXPECT_EQ(rwc->get_chunk().length(), 0);
             }
             EXPECT_TRUE(rwc->is_eor());
             EXPECT_EQ(rwc->get_chunk().length(), 0);

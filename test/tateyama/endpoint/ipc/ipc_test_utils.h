@@ -53,7 +53,9 @@ bool check_dummy_message(const std::size_t start_idx, const std::string_view mes
 
 void params_to_string(const std::size_t len, const std::vector<std::size_t> &msg_params, std::string &text);
 std::size_t get_message_len(const std::string_view message);
-void make_dummy_message(const std::string part, const std::size_t len, std::string &message);
+std::string_view get_message_part(const std::string_view message);
+std::string_view get_message_part_without_len(const std::string_view message);
+void make_dummy_message(const std::string &part, const std::size_t len, std::string &message);
 bool check_dummy_message(const std::string_view message);
 
 class elapse {

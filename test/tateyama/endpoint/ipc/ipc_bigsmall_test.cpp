@@ -20,8 +20,8 @@ namespace tateyama::api::endpoint::ipc {
 
 class bigsmall_service: public server_service_base {
 public:
-    bigsmall_service(int nloop, std::vector<std::size_t> &req_len_list, std::vector<std::size_t> &res_len_list) :
-            nloop_(nloop), req_len_list_(req_len_list), res_len_list_(res_len_list) {
+    bigsmall_service(std::vector<std::size_t> &req_len_list, std::vector<std::size_t> &res_len_list) :
+            req_len_list_(req_len_list), res_len_list_(res_len_list) {
         EXPECT_GT(req_len_list_.size(), 0);
         EXPECT_GT(res_len_list_.size(), 0);
     }
@@ -44,7 +44,6 @@ public:
     }
 
 private:
-    int nloop_;
     std::vector<std::size_t> &req_len_list_;
     std::vector<std::size_t> &res_len_list_;
     int index_ = 0;
@@ -62,7 +61,7 @@ public:
     }
 
     std::shared_ptr<tateyama::framework::service> create_server_service() override {
-        return std::make_shared < bigsmall_service > (nloop_, req_len_list_, res_len_list_);
+        return std::make_shared < bigsmall_service > (req_len_list_, res_len_list_);
     }
 
     void server() override {

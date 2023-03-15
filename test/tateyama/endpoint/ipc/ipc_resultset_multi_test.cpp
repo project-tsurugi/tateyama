@@ -144,13 +144,15 @@ TEST_F(ipc_resultset_multi_test, fixed_size_only) {
 }
 
 TEST_F(ipc_resultset_multi_test, DISABLED_fixed_size_only_maxlen) {
+    const std::vector<std::size_t> nclient_big_list { 1, 2, 4 }; // NOLINT
+    const std::vector<std::size_t> nthread_big_list { 1, 2, 4 }; // NOLINT
     const std::size_t maxlen = ipc_client::resultset_record_maxlen;
-    std::vector<std::size_t> len_list { 4 * 1024, maxlen };
-    for (int nclient : nclient_list) {
-        for (int nthread : nthread_list) {
+    std::vector<std::size_t> len_list { 2 * maxlen / 3, maxlen };
+    for (int nclient : nclient_big_list) {
+        for (int nthread : nthread_big_list) {
             for (std::size_t len : len_list) {
                 std::vector<std::size_t> list { len };
-                ipc_resultset_multi_test_server_client sc { cfg_, nclient, nthread, list, 10, 100 };
+                ipc_resultset_multi_test_server_client sc { cfg_, nclient, nthread, list, 10, 1000 };
                 sc.start_server_client();
             }
         }

@@ -51,7 +51,7 @@ public:
     }
 
     std::shared_ptr<tateyama::framework::service> create_server_service() override {
-        return std::make_shared < echo_service > (len_list_);
+        return std::make_shared<echo_service>(len_list_);
     }
 
     void server() override {
@@ -87,25 +87,25 @@ class ipc_echo_test: public ipc_test_base {
 };
 
 TEST_F(ipc_echo_test, test_fixed_size_only) {
-    std::vector<std::size_t> maxlen_list {32, 64, 128, 256, 512, 1024, 4 * 1024};
+    std::vector<std::size_t> maxlen_list { 32, 64, 128, 256, 512, 1024, 4 * 1024 };
     std::vector<std::size_t> len_list;
     for (std::size_t maxlen : maxlen_list) {
         len_list.clear();
         len_list.push_back(maxlen);
         int nloop = (maxlen <= 1024 ? 1000 : 300);
-        ipc_echo_test_server_client sc {cfg_, len_list, nloop};
+        ipc_echo_test_server_client sc { cfg_, len_list, nloop };
         sc.start_server_client();
     }
 }
 
 TEST_F(ipc_echo_test, test_power2_mixture) {
     // NOTE: server_wire_container_impl::request_buffer_size, response_buffer_size are private member.
-    std::vector<std::size_t> maxlen_list {128, 256, 1024, 4 * 1024, 32 * 1024};
+    std::vector<std::size_t> maxlen_list { 128, 256, 1024, 4 * 1024, 32 * 1024 };
     std::vector<std::size_t> len_list;
     for (std::size_t maxlen : maxlen_list) {
         make_power2_length_list(len_list, maxlen + 1);
         int nloop = (maxlen <= 1024 ? 1000 : 300);
-        ipc_echo_test_server_client sc {cfg_, len_list, nloop};
+        ipc_echo_test_server_client sc { cfg_, len_list, nloop };
         sc.start_server_client();
     }
 }

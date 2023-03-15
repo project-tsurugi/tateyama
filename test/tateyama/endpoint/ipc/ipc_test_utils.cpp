@@ -121,7 +121,19 @@ std::string_view get_message_part(const std::string_view message) {
     return "";
 }
 
-void make_dummy_message(const std::string part, const std::size_t len, std::string &message) {
+std::string_view get_message_part_without_len(const std::string_view message) {
+    auto pos_start = message.find_first_of(msg_params_delim);
+    auto pos_end = message.find_first_of(msg_params_end);
+    if (pos_start > 0 && pos_end > 0) {
+        auto start = pos_start;
+        auto end = pos_end + msg_params_end.length();
+        auto n = end - start;
+        return message.substr(start, n);
+    }
+    return "";
+}
+
+void make_dummy_message(const std::string &part, const std::size_t len, std::string &message) {
     std::size_t endlen = len - part.length();
     message = "";
     message.reserve(len);
@@ -146,8 +158,8 @@ bool check_dummy_message(const std::string_view message) {
         return false;
     }
     std::size_t endlen = message.length() - part.length();
-    std::size_t start;
-    for (start = 0; start < endlen; start += part.length()) {
+    std::size_t start = 0;
+    for (; start < endlen; start += part.length()) {
         if (part != message.substr(start, part.length())) {
             return false;
         }
