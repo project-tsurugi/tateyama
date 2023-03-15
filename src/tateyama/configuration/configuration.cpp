@@ -34,6 +34,7 @@ static constexpr std::string_view default_configuration {  // NOLINT
     "[ipc_endpoint]\n"
         "database_name=tateyama\n"
         "threads=104\n"
+        "datachannel_buffer_size=64\n"
 
     "[stream_endpoint]\n"
         "port=12345\n"
@@ -46,6 +47,9 @@ static constexpr std::string_view default_configuration {  // NOLINT
     "[datastore]\n"
         "log_location=\n"
         "logging_max_parallelism=112\n"
+
+    "[cc]\n"
+        "epoch_duration=40000\n"
 
 };
 
