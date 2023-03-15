@@ -468,7 +468,7 @@ public:
             unrestricted_permissions.set_unrestricted();
 
             managed_shared_memory_ =
-                std::make_unique<boost::interprocess::managed_shared_memory>(boost::interprocess::create_only, name_.c_str(), shm_size);
+                std::make_unique<boost::interprocess::managed_shared_memory>(boost::interprocess::create_only, name_.c_str(), shm_size, nullptr, unrestricted_permissions);
             auto req_wire = managed_shared_memory_->construct<unidirectional_message_wire>(request_wire_name)(managed_shared_memory_.get(), request_buffer_size);
             auto res_wire = managed_shared_memory_->construct<unidirectional_response_wire>(response_wire_name)(managed_shared_memory_.get(), response_buffer_size);
             status_provider_ = managed_shared_memory_->construct<status_provider>(status_provider_name)(managed_shared_memory_.get(), mutex_file);
@@ -563,7 +563,7 @@ public:
             unrestricted_permissions.set_unrestricted();
 
             managed_shared_memory_ =
-                std::make_unique<boost::interprocess::managed_shared_memory>(boost::interprocess::create_only, name_.c_str(), request_queue_size);
+                std::make_unique<boost::interprocess::managed_shared_memory>(boost::interprocess::create_only, name_.c_str(), request_queue_size, nullptr, unrestricted_permissions);
             managed_shared_memory_->destroy<connection_queue>(connection_queue::name);
             connection_queue_ = managed_shared_memory_->construct<connection_queue>(connection_queue::name)(n, managed_shared_memory_->get_segment_manager());
         }
