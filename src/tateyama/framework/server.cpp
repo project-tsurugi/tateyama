@@ -19,6 +19,7 @@
 #include <memory>
 #include <type_traits>
 
+#include <tateyama/logging.h>
 #include <tateyama/framework/component.h>
 #include <tateyama/framework/resource.h>
 #include <tateyama/framework/service.h>
@@ -33,6 +34,7 @@
 #include <tateyama/datastore/resource/bridge.h>
 #include <tateyama/status/resource/bridge.h>
 #include <tateyama/diagnostic/resource/diagnostic_resource.h>
+#include <tateyama/utils/boolalpha.h>
 
 namespace tateyama::framework {
 
@@ -57,15 +59,21 @@ bool server::setup() {
     bool success = true;
     environment_->resource_repository().each([this, &success](resource& arg){
         if (! success) return;
+        VLOG(log_info) << "/:tateyama:lifecycle:component:setup_begin " << arg.label();
         success = arg.setup(*environment_);
+        VLOG(log_info) << "/:tateyama:lifecycle:component:setup_end " << arg.label() << " success:" << utils::boolalpha(success);
     });
     environment_->service_repository().each([this, &success](service& arg){
         if (! success) return;
+        VLOG(log_info) << "/:tateyama:lifecycle:component:setup_begin " << arg.label();
         success = arg.setup(*environment_);
+        VLOG(log_info) << "/:tateyama:lifecycle:component:setup_end " << arg.label() << " success:" << utils::boolalpha(success);
     });
     environment_->endpoint_repository().each([this, &success](endpoint& arg){
         if (! success) return;
+        VLOG(log_info) << "/:tateyama:lifecycle:component:setup_begin " << arg.label();
         success = arg.setup(*environment_);
+        VLOG(log_info) << "/:tateyama:lifecycle:component:setup_end " << arg.label() << " success:" << utils::boolalpha(success);
     });
     if(! success) {
         LOG(ERROR) << "Server application framework setup phase failed.";
@@ -86,15 +94,21 @@ bool server::start() {
     bool success = true;
     environment_->resource_repository().each([this, &success](resource& arg){
         if (! success) return;
+        VLOG(log_info) << "/:tateyama:lifecycle:component:start_begin " << arg.label();
         success = arg.start(*environment_);
+        VLOG(log_info) << "/:tateyama:lifecycle:component:start_end " << arg.label() << " success:" << utils::boolalpha(success);
     });
     environment_->service_repository().each([this, &success](service& arg){
         if (! success) return;
+        VLOG(log_info) << "/:tateyama:lifecycle:component:start_begin " << arg.label();
         success = arg.start(*environment_);
+        VLOG(log_info) << "/:tateyama:lifecycle:component:start_end " << arg.label() << " success:" << utils::boolalpha(success);
     });
     environment_->endpoint_repository().each([this, &success](endpoint& arg){
         if (! success) return;
+        VLOG(log_info) << "/:tateyama:lifecycle:component:start_begin " << arg.label();
         success = arg.start(*environment_);
+        VLOG(log_info) << "/:tateyama:lifecycle:component:start_end " << arg.label() << " success:" << utils::boolalpha(success);
     });
     if(! success) {
         LOG(ERROR) << "Server application framework start phase failed.";
@@ -108,13 +122,19 @@ bool server::shutdown() {
     // even if some components fails, continue all shutdown for clean-up
     bool success = true;
     environment_->endpoint_repository().each([this, &success](endpoint& arg){
+        VLOG(log_info) << "/:tateyama:lifecycle:component:shutdown_begin " << arg.label();
         success = arg.shutdown(*environment_) && success;
+        VLOG(log_info) << "/:tateyama:lifecycle:component:shutdown_end " << arg.label();
     }, true);
     environment_->service_repository().each([this, &success](service& arg){
+        VLOG(log_info) << "/:tateyama:lifecycle:component:shutdown_begin " << arg.label();
         success = arg.shutdown(*environment_) && success;
+        VLOG(log_info) << "/:tateyama:lifecycle:component:shutdown_end " << arg.label();
     }, true);
     environment_->resource_repository().each([this, &success](resource& arg){
+        VLOG(log_info) << "/:tateyama:lifecycle:component:shutdown_begin " << arg.label();
         success = arg.shutdown(*environment_) && success;
+        VLOG(log_info) << "/:tateyama:lifecycle:component:shutdown_end " << arg.label();
     }, true);
     return success;
 }
