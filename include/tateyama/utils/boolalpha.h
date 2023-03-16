@@ -38,14 +38,14 @@ private:
     bool value_;
 };
 
-std::ostream& operator<<(std::ostream& stream, details::boolalpha const& value) {
+inline std::ostream& operator<<(std::ostream& stream, details::boolalpha const& value) {
     value.write(stream);
     return stream;
 }
 
 } // namespace details
 
-details::boolalpha boolalpha(bool value) {
+inline details::boolalpha boolalpha(bool value) {
     return details::boolalpha(value);
 }
 
