@@ -72,6 +72,11 @@ public:
     limestone::status restore_backup(std::string_view, bool);
     limestone::status restore_backup(std::string_view, std::vector<limestone::api::file_set_entry>&);
 
+    /**
+     * @see `tateyama::framework::component::label()`
+     */
+    [[nodiscard]] std::string_view label() const noexcept override;
+
 #if 0
     /**
      * @brief bridge to the limestone::api::datastore

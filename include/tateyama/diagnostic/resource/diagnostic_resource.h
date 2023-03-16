@@ -84,6 +84,11 @@ public:
      */
     void print_diagnostics(std::ostream&);
 
+    /**
+     * @see `tateyama::framework::component::label()`
+     */
+    [[nodiscard]] std::string_view label() const noexcept override;
+
 private:
     std::mutex mutex_{};
     std::vector<std::pair<std::string, std::function<void(std::ostream&)>>> handlers_{};

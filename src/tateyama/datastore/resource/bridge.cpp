@@ -77,6 +77,10 @@ limestone::status bridge::restore_backup(std::string_view from, std::vector<lime
     return datastore_->restore(from, entries);
 }
 
+std::string_view bridge::label() const noexcept {
+    return "datastore_resource";
+}
+
 #if 0
 std::vector<std::string> bridge::list_backup_files() {
     // mock implementation TODO

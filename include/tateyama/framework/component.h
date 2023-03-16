@@ -87,6 +87,12 @@ public:
      */
     // TODO implement to validate config file
     //virtual std::vector<std::string> configuration_sections() = 0;
+
+    /**
+     * @brief fetch human readable label of this component (not necessarily unique)
+     * @return the label for this component
+     */
+    virtual std::string_view label() const noexcept = 0;
 };
 
 }

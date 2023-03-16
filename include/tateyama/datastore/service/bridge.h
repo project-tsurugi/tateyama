@@ -78,6 +78,10 @@ public:
      */
     ~bridge() override;
 
+    /**
+     * @see `tateyama::framework::component::label()`
+     */
+    [[nodiscard]] std::string_view label() const noexcept override;
 private:
     std::unique_ptr<core> core_{};
     bool deactivated_{false};
