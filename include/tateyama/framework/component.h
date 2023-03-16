@@ -92,7 +92,7 @@ public:
      * @brief fetch human readable label of this component (not necessarily unique)
      * @return the label for this component
      */
-    virtual std::string_view label() const noexcept = 0;
+    [[nodiscard]] virtual std::string_view label() const noexcept = 0;
 };
 
 }
