@@ -38,6 +38,24 @@ class routing_service : public service {
 public:
     static constexpr id_type tag = service_id_routing;
 
+    //@brief human readable label of this component
+    static constexpr std::string_view component_label = "routing_service";
+
+    /**
+     * @brief construct the object
+     */
+    routing_service() = default;
+
+    /**
+     * @brief destruct the object
+     */
+    ~routing_service() override;
+
+    routing_service(routing_service const& other) = delete;
+    routing_service& operator=(routing_service const& other) = delete;
+    routing_service(routing_service&& other) noexcept = delete;
+    routing_service& operator=(routing_service&& other) noexcept = delete;
+
     [[nodiscard]] id_type id() const noexcept override;
 
     bool setup(environment& env) override;

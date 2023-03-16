@@ -59,6 +59,9 @@ public:
 
     static constexpr id_type tag = framework::resource_id_status;
 
+    //@brief human readable label of this component
+    static constexpr std::string_view component_label = "status_resource";
+
     [[nodiscard]] id_type id() const noexcept override;
 
     /**

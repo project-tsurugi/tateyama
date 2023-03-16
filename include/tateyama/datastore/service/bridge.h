@@ -44,6 +44,9 @@ public:
 
     [[nodiscard]] id_type id() const noexcept override;
 
+    //@brief human readable label of this component
+    static constexpr std::string_view component_label = "datastore_service";
+
     /**
      * @brief setup the component (the state will be `ready`)
      */

@@ -83,7 +83,11 @@ transactional_kvs_resource::transactional_kvs_resource(sharksfin::DatabaseHandle
 {}
 
 std::string_view transactional_kvs_resource::label() const noexcept {
-    return "transactional_kvs_resource";
+    return component_label;
+}
+
+transactional_kvs_resource::~transactional_kvs_resource() {
+    VLOG(log_info) << "/:tateyama:lifecycle:component:<dtor> " << component_label;
 }
 }
 

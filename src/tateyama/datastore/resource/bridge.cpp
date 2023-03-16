@@ -56,7 +56,9 @@ bool bridge::shutdown(environment&) {
     return true;
 }
 
-bridge::~bridge() = default;
+bridge::~bridge() {
+    VLOG(log_info) << "/:tateyama:lifecycle:component:<dtor> " << component_label;
+};
 
 limestone::api::backup& bridge::begin_backup() {
     return datastore_->begin_backup();
@@ -78,7 +80,7 @@ limestone::status bridge::restore_backup(std::string_view from, std::vector<lime
 }
 
 std::string_view bridge::label() const noexcept {
-    return "datastore_resource";
+    return component_label;
 }
 
 #if 0

@@ -34,6 +34,9 @@ class bridge : public framework::resource {
 public:
     static constexpr id_type tag = framework::resource_id_datastore;
 
+    //@brief human readable label of this component
+    static constexpr std::string_view component_label = "datastore_resource";
+
     [[nodiscard]] id_type id() const noexcept override;
 
     /**

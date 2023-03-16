@@ -109,7 +109,11 @@ bool routing_service::operator()(std::shared_ptr<request> req, std::shared_ptr<r
 }
 
 std::string_view routing_service::label() const noexcept {
-    return "routing_service";
+    return component_label;
+}
+
+routing_service::~routing_service() {
+    VLOG(log_info) << "/:tateyama:lifecycle:component:<dtor> " << component_label;
 }
 
 }

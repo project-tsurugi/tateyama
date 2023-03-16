@@ -29,6 +29,9 @@ class transactional_kvs_resource : public resource {
 public:
     static constexpr id_type tag = resource_id_transactional_kvs;
 
+    //@brief human readable label of this component
+    static constexpr std::string_view component_label = "transactional_kvs_resource";
+
     /**
      * @brief create empty object
      */
@@ -42,7 +45,7 @@ public:
     /**
      * @brief destruct object
      */
-    ~transactional_kvs_resource() override = default;
+    ~transactional_kvs_resource() override;
 
     /**
      * @brief create new object
