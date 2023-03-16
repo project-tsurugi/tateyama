@@ -128,8 +128,8 @@ protected:
 class resultset_param {
 public:
     resultset_param(const std::string &name, std::vector<std::size_t> &write_lens, std::size_t write_nloop,
-            std::size_t ch_index = 1, std::size_t nwriter = 1) :
-            name_(name), write_nloop_(write_nloop), write_lens_(write_lens), ch_index_(ch_index), nwriter_(nwriter) {
+            std::size_t ch_index = 1) :
+            name_(name), write_nloop_(write_nloop), write_lens_(write_lens), ch_index_(ch_index) {
     }
     resultset_param(const std::string &text);
     void to_string(std::string &text) noexcept;
@@ -137,7 +137,6 @@ public:
     std::string name_ { };
     std::size_t write_nloop_ { };
     std::size_t ch_index_ { };
-    std::size_t nwriter_ { };
     std::vector<std::size_t> write_lens_ { };
 private:
     static constexpr char delim = ',';
