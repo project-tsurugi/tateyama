@@ -124,15 +124,15 @@ protected:
 class resultset_param {
 public:
     resultset_param(const std::string &name, std::vector<std::size_t> &write_lens, std::size_t write_nloop,
-            std::size_t ch_index = 1) :
-            name_(name), write_nloop_(write_nloop), write_lens_(write_lens), ch_index_(ch_index) {
+            std::size_t value = 1) :
+            name_(name), write_nloop_(write_nloop), write_lens_(write_lens), value_(value) {
     }
     resultset_param(const std::string &text);
     void to_string(std::string &text) noexcept;
 
     std::string name_ { };
     std::size_t write_nloop_ { };
-    std::size_t ch_index_ { };
+    std::size_t value_ { };
     std::vector<std::size_t> write_lens_ { };
 private:
     static constexpr char delim = ',';
@@ -142,17 +142,21 @@ class msg_info {
 private:
     std::vector<std::size_t> params { };
 public:
-    msg_info(const std::shared_ptr<tateyama::api::server::request> &req, const std::size_t idx) noexcept {
-        params.push_back(req->session_id());
+    msg_info(const std::size_t session_id, const std::size_t idx) noexcept {
+        params.push_back(session_id);
         params.push_back(idx);
         params.push_back(0);
     }
 
-    void set_i(std::size_t i) noexcept {
-        params[2] = i;
+    msg_info(const std::shared_ptr<tateyama::api::server::request> &req, const std::size_t idx) noexcept :
+            msg_info(req->session_id(), idx) {
     }
 
-    void to_string(std::size_t len, std::string &text) noexcept {
+    void set_index(const std::size_t sub_idx) noexcept {
+        params[2] = sub_idx;
+    }
+
+    void to_string(const std::size_t len, std::string &text) noexcept {
         return params_to_string(len, params, text);
     }
 };
