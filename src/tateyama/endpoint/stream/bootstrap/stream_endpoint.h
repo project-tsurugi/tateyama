@@ -64,6 +64,13 @@ class stream_endpoint : public endpoint {
         listener_.reset();
         return true;
     }
+
+    /**
+     * @see `tateyama::framework::component::label()`
+     */
+    [[nodiscard]] std::string_view label() const noexcept override {
+        return "stream_endpoint";
+    }
 private:
     std::unique_ptr<tateyama::server::stream_listener> listener_;
     std::thread listener_thread_;

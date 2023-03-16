@@ -50,6 +50,10 @@ public:
         std::shared_ptr<request> req,
         std::shared_ptr<response> res) override;
 
+    /**
+     * @see `tateyama::framework::component::label()`
+     */
+    [[nodiscard]] std::string_view label() const noexcept override;
 private:
     repository<service>* services_{};
 };

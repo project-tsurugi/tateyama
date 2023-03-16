@@ -118,4 +118,8 @@ void bridge::set_digest(const std::string& path_string) {
     }
 }
 
+std::string_view bridge::label() const noexcept {
+    return "status_resource";
+}
+
 } // namespace tateyama::status_info::resource

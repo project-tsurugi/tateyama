@@ -66,5 +66,9 @@ bridge::~bridge() {
     }
 }
 
+std::string_view bridge::label() const noexcept {
+    return "datastore_service";
+}
+
 }
 

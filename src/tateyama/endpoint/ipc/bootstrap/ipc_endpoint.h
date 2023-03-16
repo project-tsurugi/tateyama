@@ -64,6 +64,13 @@ public:
         return true;
     }
 
+    /**
+     * @see `tateyama::framework::component::label()`
+     */
+    [[nodiscard]] std::string_view label() const noexcept override {
+        return "ipc_endpoint";
+    }
+
 private:
     std::unique_ptr<tateyama::server::ipc_listener> listener_;
     std::thread listener_thread_;

@@ -75,6 +75,10 @@ public:
      */
     [[nodiscard]] sharksfin::DatabaseHandle core_object() const noexcept;
 
+    /**
+     * @see `tateyama::framework::component::label()`
+     */
+    [[nodiscard]] std::string_view label() const noexcept override;
 private:
     sharksfin::DatabaseHandle database_handle_{};
     bool db_opened_{};

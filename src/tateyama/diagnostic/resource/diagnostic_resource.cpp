@@ -66,4 +66,8 @@ void diagnostic_resource::print_diagnostics(std::ostream& out) {
     }
 }
 
+std::string_view diagnostic_resource::label() const noexcept {
+    return "diagnostic_resource";
+}
+
 } // namespace tateyama::diagnostic::resource
