@@ -165,6 +165,7 @@ public:
                 }
                 VLOG_LP(log_trace) << "enter writer annex mode";
                 annex_mode_ = true;
+                add_deffered_count();
                 queue_.emplace(std::make_unique<annex>(datachannel_buffer_size_));
                 current_annex_ = queue_.back().get();
                 if (!thread_active_) {
@@ -208,6 +209,7 @@ public:
 
         std::size_t datachannel_buffer_size_;
 
+        void add_deffered_count();
         void write_complete();
     };
     static void resultset_wire_deleter_impl(resultset_wire_container* resultset_wire) {
@@ -278,9 +280,11 @@ public:
             return shm_resultset_wires_->is_closed();
         }
 
+        void add_deffered_count() {
+            deffered_writers_.fetch_add(1);
+        }
         void add_deffered_delete(unq_p_resultset_wire_conteiner resultset_wire) {
             deffered_delete_.emplace(std::move(resultset_wire));
-            deffered_writers_.fetch_add(1);
         }
         void write_complete() {
             if (deffered_writers_.fetch_sub(1) == 1) {  // means deffered_writers_ has become 0
@@ -537,6 +541,9 @@ private:
     std::size_t datachannel_buffer_size_;
 };
 
+inline void server_wire_container_impl::resultset_wire_container_impl::add_deffered_count() {
+    resultset_wires_container_impl_.add_deffered_count();
+}
 inline void server_wire_container_impl::resultset_wire_container_impl::release(unq_p_resultset_wire_conteiner resultset_wire_conteiner) {
     if (thread_active_) {
         released_ = true;

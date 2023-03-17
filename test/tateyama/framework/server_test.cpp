@@ -54,6 +54,7 @@ public:
     bool setup(environment&) override { return true; }
     bool start(environment&) override { return true; }
     bool shutdown(environment&) override { return true; }
+    std::string_view label() const noexcept override { return "test_resource0"; }
 };
 
 class test_resource1 : public resource {
@@ -66,6 +67,7 @@ public:
     bool setup(environment&) override { return true; }
     bool start(environment&) override { return true; }
     bool shutdown(environment&) override { return true; }
+    std::string_view label() const noexcept override { return "test_resource1"; }
 };
 
 class test_service0 : public service {
@@ -79,6 +81,7 @@ public:
     bool setup(environment&) override { return true; }
     bool start(environment&) override { return true; }
     bool shutdown(environment&) override { return true; }
+    std::string_view label() const noexcept override { return "test_service0"; }
 };
 
 class test_service1 : public service {
@@ -92,6 +95,7 @@ public:
     bool setup(environment&) override { return true; }
     bool start(environment&) override { return true; }
     bool shutdown(environment&) override { return true; }
+    std::string_view label() const noexcept override { return "test_service1"; }
 };
 
 TEST_F(server_test, basic) {

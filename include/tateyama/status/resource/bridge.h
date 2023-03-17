@@ -59,6 +59,9 @@ public:
 
     static constexpr id_type tag = framework::resource_id_status;
 
+    //@brief human readable label of this component
+    static constexpr std::string_view component_label = "status_resource";
+
     [[nodiscard]] id_type id() const noexcept override;
 
     /**
@@ -126,6 +129,10 @@ public:
      */
     void add_shm_entry(std::size_t session_id, std::size_t index);
 
+    /**
+     * @see `tateyama::framework::component::label()`
+     */
+    [[nodiscard]] std::string_view label() const noexcept override;
 private:
     bool deactivated_{false};
 

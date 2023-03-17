@@ -28,6 +28,26 @@ namespace tateyama::framework {
 class ipc_endpoint : public endpoint {
 public:
 
+    //@brief human readable label of this component
+    static constexpr std::string_view component_label = "ipc_endpoint";
+
+    /**
+     * @brief construct the object
+     */
+    ipc_endpoint() = default;
+
+    /**
+     * @brief destruct the object
+     */
+    ~ipc_endpoint() override {
+        VLOG(log_info) << "/:tateyama:lifecycle:component:<dtor> " << component_label;
+    }
+
+    ipc_endpoint(ipc_endpoint const& other) = delete;
+    ipc_endpoint& operator=(ipc_endpoint const& other) = delete;
+    ipc_endpoint(ipc_endpoint&& other) noexcept = delete;
+    ipc_endpoint& operator=(ipc_endpoint&& other) noexcept = delete;
+
     /**
      * @brief setup the component (the state will be `ready`)
      */
@@ -62,6 +82,13 @@ public:
         }
         listener_.reset();
         return true;
+    }
+
+    /**
+     * @see `tateyama::framework::component::label()`
+     */
+    [[nodiscard]] std::string_view label() const noexcept override {
+        return component_label;
     }
 
 private:

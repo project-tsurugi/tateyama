@@ -47,6 +47,7 @@ public:
         bool setup(environment&) override { return setup_success_; }
         bool start(environment&) override { return start_success_; }
         bool shutdown(environment&) override { return true; }
+        std::string_view label() const noexcept override { return "test_resource"; }
 
         bool setup_success_{true};
         bool start_success_{true};
@@ -78,6 +79,7 @@ public:
         bool setup(environment&) override { return setup_success_; }
         bool start(environment&) override { return start_success_; }
         bool shutdown(environment&) override { return true; }
+        std::string_view label() const noexcept override { return "test_service"; }
 
         bool setup_success_{true};
         bool start_success_{true};

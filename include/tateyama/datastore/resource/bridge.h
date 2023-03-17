@@ -34,6 +34,9 @@ class bridge : public framework::resource {
 public:
     static constexpr id_type tag = framework::resource_id_datastore;
 
+    //@brief human readable label of this component
+    static constexpr std::string_view component_label = "datastore_resource";
+
     [[nodiscard]] id_type id() const noexcept override;
 
     /**
@@ -71,6 +74,11 @@ public:
     void end_backup();
     limestone::status restore_backup(std::string_view, bool);
     limestone::status restore_backup(std::string_view, std::vector<limestone::api::file_set_entry>&);
+
+    /**
+     * @see `tateyama::framework::component::label()`
+     */
+    [[nodiscard]] std::string_view label() const noexcept override;
 
 #if 0
     /**

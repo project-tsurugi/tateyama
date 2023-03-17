@@ -64,6 +64,11 @@ bridge::~bridge() {
     if(core_ && ! deactivated_) {
         core_->shutdown(true);
     }
+    VLOG(log_info) << "/:tateyama:lifecycle:component:<dtor> " << component_label;
+}
+
+std::string_view bridge::label() const noexcept {
+    return component_label;
 }
 
 }

@@ -51,7 +51,9 @@ bool bridge::shutdown([[maybe_unused]] environment&) {
     return true;
 }
 
-bridge::~bridge() = default;
+bridge::~bridge() {
+    VLOG(log_info) << "/:tateyama:lifecycle:component:<dtor> " << component_label;
+}
 
 void bridge::whole(state s) {
     if (resource_status_memory_) {
@@ -116,6 +118,10 @@ void bridge::set_digest(const std::string& path_string) {
         n = c & 0xfU;
         *(it++) = (n < 0xa) ? ('0' + n) : ('a' + (n - 0xa));
     }
+}
+
+std::string_view bridge::label() const noexcept {
+    return component_label;
 }
 
 } // namespace tateyama::status_info::resource

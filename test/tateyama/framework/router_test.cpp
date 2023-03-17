@@ -60,6 +60,7 @@ public:
         bool setup(environment&) override { return true;}
         bool start(environment&) override { return true;}
         bool shutdown(environment&) override { return true;}
+        std::string_view label() const noexcept override { return "test_service"; }
         bool called_{false};
     };
 

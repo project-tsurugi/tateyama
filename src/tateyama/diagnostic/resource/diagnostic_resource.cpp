@@ -38,7 +38,9 @@ bool diagnostic_resource::shutdown(environment&) {
 
 diagnostic_resource::diagnostic_resource() = default;
 
-diagnostic_resource::~diagnostic_resource() = default;
+diagnostic_resource::~diagnostic_resource() {
+    VLOG(log_info) << "/:tateyama:lifecycle:component:<dtor> " << component_label;
+}
 
 void diagnostic_resource::add_print_callback(std::string_view id, std::function<void(std::ostream&)> func) {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -64,6 +66,10 @@ void diagnostic_resource::print_diagnostics(std::ostream& out) {
     for (auto& e : handlers_) {
         e.second(out);
     }
+}
+
+std::string_view diagnostic_resource::label() const noexcept {
+    return component_label;
 }
 
 } // namespace tateyama::diagnostic::resource

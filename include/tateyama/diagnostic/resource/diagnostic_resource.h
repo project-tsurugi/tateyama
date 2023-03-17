@@ -39,6 +39,9 @@ public:
 
     [[nodiscard]] id_type id() const noexcept override;
 
+    //@brief human readable label of this component
+    static constexpr std::string_view component_label = "diagnostic_resource";
+
     /**
      * @brief setup the component (the state will be `ready`)
      */
@@ -83,6 +86,11 @@ public:
      * @brief print diagnostics message to the std::ostream& given
      */
     void print_diagnostics(std::ostream&);
+
+    /**
+     * @see `tateyama::framework::component::label()`
+     */
+    [[nodiscard]] std::string_view label() const noexcept override;
 
 private:
     std::mutex mutex_{};

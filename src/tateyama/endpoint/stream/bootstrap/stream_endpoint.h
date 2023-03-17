@@ -25,6 +25,28 @@ namespace tateyama::framework {
  * @brief stream endpoint component
  */
 class stream_endpoint : public endpoint {
+public:
+
+    //@brief human readable label of this component
+    static constexpr std::string_view component_label = "stream_endpoint";
+
+    /**
+     * @brief construct the object
+     */
+    stream_endpoint() = default;
+
+    /**
+     * @brief destruct the object
+     */
+    ~stream_endpoint() override {
+        VLOG(log_info) << "/:tateyama:lifecycle:component:<dtor> " << component_label;
+    }
+
+    stream_endpoint(stream_endpoint const& other) = delete;
+    stream_endpoint& operator=(stream_endpoint const& other) = delete;
+    stream_endpoint(stream_endpoint&& other) noexcept = delete;
+    stream_endpoint& operator=(stream_endpoint&& other) noexcept = delete;
+
     /**
      * @brief setup the component (the state will be `ready`)
      */
@@ -64,6 +86,14 @@ class stream_endpoint : public endpoint {
         listener_.reset();
         return true;
     }
+
+    /**
+     * @see `tateyama::framework::component::label()`
+     */
+    [[nodiscard]] std::string_view label() const noexcept override {
+        return component_label;
+    }
+
 private:
     std::unique_ptr<tateyama::server::stream_listener> listener_;
     std::thread listener_thread_;
