@@ -227,7 +227,10 @@ TEST_F(ipc_resultset_writer_limit_test, multi_clients) {
     }
 }
 
-TEST_F(ipc_resultset_writer_limit_test, max_session_max_writer_max_datalen) {
+// NOTE: This test may cause SIGBUS because of allocation failure of shared memory.
+// If this test failed, other continuous tests also failed by SIGBUS.
+// Successfully ran at Intel i7-13700 (16C/24T), 64GB, Ubuntu 20.04.6 LTS.
+TEST_F(ipc_resultset_writer_limit_test, DISABLED_max_session_max_writer_max_datalen) {
     const int nclient = 1;
     const int nthread = ipc_max_session_;
     const std::size_t maxlen = ipc_client::resultset_record_maxlen;
