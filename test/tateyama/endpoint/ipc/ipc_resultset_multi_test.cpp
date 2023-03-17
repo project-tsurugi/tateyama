@@ -77,7 +77,6 @@ public:
         ipc_client client { cfg_ };
         std::string resultset_name { "resultset-" + client.session_name() };
         resultset_param param { resultset_name, len_list_, write_nloop_ };
-        std::size_t len_sum = std::reduce(len_list_.cbegin(), len_list_.cend());
         std::string req_message;
         param.to_string(req_message);
         std::string res_message;
