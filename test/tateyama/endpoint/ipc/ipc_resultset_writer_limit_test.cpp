@@ -72,9 +72,9 @@ class ipc_resultset_writer_limit_test_server_client: public server_client_base {
 public:
     ipc_resultset_writer_limit_test_server_client(std::shared_ptr<tateyama::api::configuration::whole> const &cfg,
             int nclient, int nthread, std::vector<std::size_t> &len_list, int nloop, std::size_t write_nloop,
-            std::size_t nwriter, int wait_msec = 0) :
+            std::size_t nwriter) :
             server_client_base(cfg, nclient, nthread), len_list_(len_list), nloop_(nloop), write_nloop_(write_nloop), nwriter_(
-                    nwriter), wait_msec_(wait_msec) {
+                    nwriter) {
     }
 
     std::shared_ptr<tateyama::framework::service> create_server_service() override {
@@ -90,8 +90,7 @@ public:
         std::cout << "nloop=" << nloop_;
         std::cout << ", nwriter=" << nwriter_;
         std::cout << ", write_nloop=" << write_nloop_;
-        std::cout << ", max_len=" << len_list_.back();
-        std::cout << ", wait_msec=" << wait_msec_ << ", ";
+        std::cout << ", max_len=" << len_list_.back() << ", ";
         server_client_base::server_dump(msg_num, len_sum);
     }
 
@@ -112,9 +111,6 @@ public:
          */
         resultset_wires_container *rwc = client.create_resultset_wires();
         rwc->connect(resultset_name);
-        if (wait_msec_ > 0) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(wait_msec_));
-        }
         while (true) {
             std::string_view chunk = rwc->get_chunk();
             if (chunk.length() == 0 && rwc->is_eor()) {
@@ -184,7 +180,6 @@ private:
     std::size_t write_nloop_ { };
     std::size_t nwriter_ { };
     std::vector<std::size_t> &len_list_;
-    int wait_msec_;
 };
 
 // tateyama/src/tateyama/endpoint/ipc/bootstrap/server_wires_impl.h
@@ -193,44 +188,32 @@ static constexpr int max_writer_count = 16;
 static const std::vector<std::size_t> nwriter_list { 1, 4, max_writer_count }; // NOLINT
 
 class ipc_resultset_writer_limit_test: public ipc_test_base {
-public:
-    void simple_test(std::size_t write_nloop, int wait_msec) {
-        const int nclient = 1;
-        const int nthread = 0;
-        std::vector<std::size_t> len_list { ipc_client::resultset_record_maxlen / 2 + 10 };
-        const int nloop = 10;
+};
+
+TEST_F(ipc_resultset_writer_limit_test, single_client) {
+    const int nclient = 1;
+    const int nthread = 0;
+    const std::size_t maxlen = ipc_client::resultset_record_maxlen;
+    std::vector<std::size_t> len_list { maxlen / 2 + 10 };
+    const int nloop = 10;
+    std::vector<std::size_t> write_nloop_list { 10, 100 };
+    for (std::size_t write_nloop : write_nloop_list) {
         for (std::size_t len : len_list) {
             std::vector<std::size_t> list { len };
             for (std::size_t nwriter : nwriter_list) {
                 ipc_resultset_writer_limit_test_server_client sc { cfg_, nclient, nthread, list, nloop, write_nloop,
-                        nwriter, wait_msec };
+                        nwriter };
                 sc.start_server_client();
             }
         }
     }
-};
-
-// NOTE: always passed (I have never seen this test failed)
-TEST_F(ipc_resultset_writer_limit_test, simple_small_write_nloop) {
-    simple_test(10, 0);
 }
 
-// NOTE: *rarely* causes missing message
-TEST_F(ipc_resultset_writer_limit_test, simple_big_write_nloop_with_wait) {
-    simple_test(100, 100);
-}
-
-// NOTE: *almost always* causes missing message
-TEST_F(ipc_resultset_writer_limit_test, simple_big_write_nloop_without_wait) {
-    simple_test(100, 0);
-}
-
-// NOTE: causes missing message, 'boost::interprocess::lock_exception' etc.
-TEST_F(ipc_resultset_writer_limit_test, DISABLED_multi_clients) {
+TEST_F(ipc_resultset_writer_limit_test, multi_clients) {
     const std::vector<std::size_t> nclient_list { 2, 4 };
     const std::vector<std::size_t> nthread_list { 2, 4 };
     const std::size_t maxlen = ipc_client::resultset_record_maxlen;
-    std::vector<std::size_t> len_list { maxlen / 2 + 10, maxlen };
+    std::vector<std::size_t> len_list { maxlen / 2 + 10 };
     for (int nclient : nclient_list) {
         for (int nthread : nthread_list) {
             for (std::size_t len : len_list) {
@@ -241,6 +224,17 @@ TEST_F(ipc_resultset_writer_limit_test, DISABLED_multi_clients) {
                 }
             }
         }
+    }
+}
+
+TEST_F(ipc_resultset_writer_limit_test, max_session_max_writer_max_datalen) {
+    const int nclient = 1;
+    const int nthread = ipc_max_session_;
+    const std::size_t maxlen = ipc_client::resultset_record_maxlen;
+    std::vector<std::size_t> len_list { maxlen };
+    for (std::size_t nwriter : nwriter_list) {
+        ipc_resultset_writer_limit_test_server_client sc { cfg_, nclient, nthread, len_list, 2, 10, nwriter };
+        sc.start_server_client();
     }
 }
 
