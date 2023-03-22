@@ -63,6 +63,7 @@ public:
             exit(1);
         }
         datachannel_buffer_size_ = datachannel_buffer_size_opt.value() * 1024;  // in KB
+        VLOG_LP(log_debug) << "datachannel_buffer_size = " << datachannel_buffer_size_ << " bytes";
 
         // connection channel
         container_ = std::make_unique<tateyama::common::wire::connection_container>(database_name_, threads);
