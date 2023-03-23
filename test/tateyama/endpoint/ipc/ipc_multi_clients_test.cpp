@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "ipc_client.h"
+#include "ipc_gtest_base.h"
 #include <numeric>
 
 namespace tateyama::api::endpoint::ipc {
@@ -29,11 +29,11 @@ public:
     }
 };
 
-class ipc_multi_clients_test_server_client: public server_client_base {
+class ipc_multi_clients_test_server_client: public server_client_gtest_base {
 public:
     ipc_multi_clients_test_server_client(std::shared_ptr<tateyama::api::configuration::whole> const &cfg, int nclient,
             int nthread, std::vector<std::size_t> &req_len_list, int nloop) :
-            server_client_base(cfg, nclient, nthread), req_len_list_(req_len_list), nloop_(nloop) {
+            server_client_gtest_base(cfg, nclient, nthread), req_len_list_(req_len_list), nloop_(nloop) {
     }
 
     std::shared_ptr<tateyama::framework::service> create_server_service() override {
@@ -44,8 +44,7 @@ public:
         server_client_base::server();
         //
         std::size_t msg_num = nworker_ * nloop_ * 2 * req_len_list_.size();
-        std::size_t len_sum = nworker_ * nloop_ * 2
-                * std::reduce(req_len_list_.cbegin(), req_len_list_.cend());
+        std::size_t len_sum = nworker_ * nloop_ * 2 * std::reduce(req_len_list_.cbegin(), req_len_list_.cend());
         std::cout << "nloop=" << nloop_;
         std::cout << ", max_len=" << req_len_list_.back() << ", ";
         server_client_base::server_dump(msg_num, len_sum);
@@ -71,7 +70,7 @@ private:
     int nloop_ { };
 };
 
-class ipc_multi_clients_test: public ipc_test_base {
+class ipc_multi_clients_test: public ipc_gtest_base {
 };
 
 TEST_F(ipc_multi_clients_test, test_fixed_size_only_small) {

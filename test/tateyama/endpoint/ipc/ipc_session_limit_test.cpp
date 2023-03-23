@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "ipc_client.h"
+#include "ipc_gtest_base.h"
 
 namespace tateyama::api::endpoint::ipc {
 
@@ -28,12 +28,12 @@ public:
     }
 };
 
-class ipc_session_limit_test_server_client: public server_client_base {
+class ipc_session_limit_test_server_client: public server_client_gtest_base {
 public:
     ipc_session_limit_test_server_client(std::shared_ptr<tateyama::api::configuration::whole> const &cfg, int nclient,
             int nthread, std::size_t msg_len, int nsession, bool pararell, int nloop) :
-            server_client_base(cfg, nclient, nthread), msg_len_(msg_len), nsession_(nsession), pararell_(pararell), nloop_(
-                    nloop) {
+            server_client_gtest_base(cfg, nclient, nthread), msg_len_(msg_len), nsession_(nsession), pararell_(
+                    pararell), nloop_(nloop) {
         get_ipc_max_session(cfg, ipc_max_session_);
     }
 
@@ -119,7 +119,7 @@ private:
     int nloop_ { };
 };
 
-class ipc_session_limit_test: public ipc_test_base {
+class ipc_session_limit_test: public ipc_gtest_base {
 };
 
 TEST_F(ipc_session_limit_test, max) {

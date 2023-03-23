@@ -19,7 +19,7 @@
 #include <tateyama/api/server/response.h>
 #include <tateyama/endpoint/common/endpoint_proto_utils.h>
 
-#include <gtest/gtest.h>
+// #include <gtest/gtest.h>
 
 namespace tateyama::api::endpoint {
 

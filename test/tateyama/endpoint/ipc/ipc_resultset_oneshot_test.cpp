@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "ipc_client.h"
+#include "ipc_gtest_base.h"
 
 namespace tateyama::api::endpoint::ipc {
 
@@ -51,11 +51,11 @@ public:
     }
 };
 
-class ipc_resultset_oneshot_test_server_client: public server_client_base {
+class ipc_resultset_oneshot_test_server_client: public server_client_gtest_base {
 public:
     ipc_resultset_oneshot_test_server_client(std::shared_ptr<tateyama::api::configuration::whole> const &cfg,
             std::size_t datalen) :
-            server_client_base(cfg), datalen_(datalen) {
+            server_client_gtest_base(cfg), datalen_(datalen) {
         maxsec_ = 3;
     }
 
@@ -106,7 +106,7 @@ private:
     std::size_t datalen_;
 };
 
-class ipc_resultset_oneshot_test: public ipc_test_base {
+class ipc_resultset_oneshot_test: public ipc_gtest_base {
 };
 
 TEST_F(ipc_resultset_oneshot_test, test_one) {
@@ -121,7 +121,7 @@ TEST_F(ipc_resultset_oneshot_test, test_record_max) {
 
 // get_chunk() never wakeup. It's limitation of current implementation.
 TEST_F(ipc_resultset_oneshot_test, DISABLED_test_record_max_plus_1) {
-    ipc_resultset_oneshot_test_server_client sc {cfg_, ipc_client::resultset_record_maxlen + 1};
+    ipc_resultset_oneshot_test_server_client sc { cfg_, ipc_client::resultset_record_maxlen + 1 };
     sc.start_server_client();
 }
 
