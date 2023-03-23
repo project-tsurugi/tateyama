@@ -43,8 +43,19 @@ protected:
     int nclient_;
     int nthread_;
     int nworker_;
+    elapse server_elapse_ { };
 
     int maxsec_ = 60;
+
+    virtual void check_client_exitcode(int code) {
+        // nothing to do
+        // NOTE: just exists for server_client_gtest_base::check_client_exitcode()
+    }
+
+    virtual void client_exit() {
+        // NOTE: just exists for server_client_gtest_base::client_exit()
+        std::exit(0);
+    }
 
 private:
     // for server process
@@ -54,9 +65,29 @@ private:
     // for client process
     void wait_server_startup_end();
 
+    // for server startup&shutdown checking
+    void assert_failed() {
+        std::cout << boost::stacktrace::stacktrace();
+        std::exit(1);
+    }
+    void assert_true(bool result) {
+        if (!result) {
+            assert_failed();
+        }
+    }
+    void assert_eq(int v1, int v2) {
+        if (v1 != v2) {
+            assert_failed();
+        }
+    }
+    void assert_gt(int v1, int v2) {
+        if (v1 <= v2) {
+            assert_failed();
+        }
+    }
+
     std::vector<pid_t> client_pids_ { };
     std::vector<std::thread> threads_ { };
-    elapse server_elapse_ { };
     std::string lock_filename_ { };
     int fd_ { };
 };

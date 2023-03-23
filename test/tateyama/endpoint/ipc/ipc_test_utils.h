@@ -31,7 +31,6 @@
 #include <tateyama/proto/datastore/request.pb.h>
 #include <tateyama/proto/datastore/response.pb.h>
 
-#include <gtest/gtest.h>
 #include <tateyama/endpoint/header_utils.h>
 #include <tateyama/utils/test_utils.h>
 
@@ -107,22 +106,6 @@ public:
     [[nodiscard]] std::string_view label() const noexcept override {
         return "server_service_base";
     }
-};
-
-class ipc_test_base: public ::testing::Test, public test::test_utils {
-    void SetUp() override {
-        temporary_.prepare();
-        cfg_ = tateyama::api::configuration::create_configuration("");
-        set_dbpath(*cfg_);
-        get_ipc_max_session(cfg_, ipc_max_session_);
-    }
-    void TearDown() override {
-        temporary_.clean();
-    }
-
-protected:
-    std::shared_ptr<tateyama::api::configuration::whole> cfg_ { };
-    int ipc_max_session_ { };
 };
 
 class resultset_param {

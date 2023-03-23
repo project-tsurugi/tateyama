@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "ipc_client.h"
+#include "ipc_gtest_base.h"
 #include <numeric>
 
 namespace tateyama::api::endpoint::ipc {
@@ -68,13 +68,13 @@ public:
     }
 };
 
-class ipc_resultset_writer_limit_test_server_client: public server_client_base {
+class ipc_resultset_writer_limit_test_server_client: public server_client_gtest_base {
 public:
     ipc_resultset_writer_limit_test_server_client(std::shared_ptr<tateyama::api::configuration::whole> const &cfg,
             int nclient, int nthread, std::vector<std::size_t> &len_list, int nloop, std::size_t write_nloop,
             std::size_t nwriter) :
-            server_client_base(cfg, nclient, nthread), len_list_(len_list), nloop_(nloop), write_nloop_(write_nloop), nwriter_(
-                    nwriter) {
+            server_client_gtest_base(cfg, nclient, nthread), len_list_(len_list), nloop_(nloop), write_nloop_(
+                    write_nloop), nwriter_(nwriter) {
     }
 
     std::shared_ptr<tateyama::framework::service> create_server_service() override {
@@ -187,7 +187,7 @@ private:
 static constexpr int max_writer_count = 16;
 static const std::vector<std::size_t> nwriter_list { 1, 4, max_writer_count }; // NOLINT
 
-class ipc_resultset_writer_limit_test: public ipc_test_base {
+class ipc_resultset_writer_limit_test: public ipc_gtest_base {
 };
 
 TEST_F(ipc_resultset_writer_limit_test, single_client) {

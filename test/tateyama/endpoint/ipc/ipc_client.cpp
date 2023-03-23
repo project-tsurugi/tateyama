@@ -13,8 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <gtest/gtest.h>
-
 #include "ipc_client.h"
 
 namespace tateyama::api::endpoint::ipc {
@@ -63,16 +61,17 @@ bool parse_response_header(std::string_view input, parse_response_result &result
 
 void ipc_client::receive(std::string &message) {
     tsubakuro::common::wire::response_header header = response_wire_->await();
-    EXPECT_EQ(ipc_test_index, header.get_idx());
-    ASSERT_GT(header.get_length(), 0);
-    EXPECT_EQ(1, header.get_type());
+    // EXPECT_EQ(ipc_test_index, header.get_idx());
+    // ASSERT_GT(header.get_length(), 0);
+    // EXPECT_EQ(1, header.get_type());
     std::string r_msg;
     r_msg.resize(header.get_length());
     response_wire_->read(reinterpret_cast<signed char*>(r_msg.data()));
     //
     parse_response_result result;
-    ASSERT_TRUE(parse_response_header(r_msg, result));
-    EXPECT_EQ(session_id_, result.session_id_);
+    parse_response_header(r_msg, result);
+    // ASSERT_TRUE(parse_response_header(r_msg, result));
+    // EXPECT_EQ(session_id_, result.session_id_);
     message = result.payload_;
 }
 

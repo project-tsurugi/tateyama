@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "ipc_client.h"
+#include "ipc_gtest_base.h"
 #include <numeric>
 
 namespace tateyama::api::endpoint::ipc {
@@ -53,12 +53,12 @@ private:
     const std::vector<std::size_t> &res_len_list_;
 };
 
-class ipc_reqres_limit_test_server_client: public server_client_base {
+class ipc_reqres_limit_test_server_client: public server_client_gtest_base {
 public:
     ipc_reqres_limit_test_server_client(std::shared_ptr<tateyama::api::configuration::whole> const &cfg,
             const int nclient, const int nthread, const std::vector<std::size_t> &req_len_list,
             const std::vector<std::size_t> &res_len_list, int nloop) :
-            server_client_base(cfg, nclient, nthread), req_len_list_(req_len_list), res_len_list_(res_len_list), nloop_(
+            server_client_gtest_base(cfg, nclient, nthread), req_len_list_(req_len_list), res_len_list_(res_len_list), nloop_(
                     nloop) {
     }
 
@@ -115,7 +115,7 @@ private:
     const std::vector<std::size_t> &res_len_list_;
 };
 
-class ipc_reqres_limit_test: public ipc_test_base {
+class ipc_reqres_limit_test: public ipc_gtest_base {
 public:
     void make_list(std::size_t max_len, std::size_t range, std::vector<std::size_t> &list) {
         for (std::size_t len = max_len - range; len <= max_len + range; len++) {

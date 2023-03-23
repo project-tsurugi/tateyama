@@ -15,15 +15,14 @@
  */
 #pragma
 
+#include "ipc_test_utils.h"
+
 // FIXME: temporary header handling - start
 // copied from tsubakuro/modules/ipc/src/main/native/include/
 // namespace is changed to tsubakuro::common::wire
 #include <tsubakuro/common/wire/wire.h>
 #include <tsubakuro/common/wire/udf_wires.h>
 // FIXME: temporary header handling - end
-
-#include "server_client_base.h"
-#include "watch_dog.h"
 
 namespace tateyama::api::endpoint::ipc {
 
