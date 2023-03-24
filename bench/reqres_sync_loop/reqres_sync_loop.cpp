@@ -41,15 +41,17 @@ public:
     }
 
     static void result_header() {
-        std::cout << "# nsession, single_client_proc, msg_len, elapse_sec, msg_num/sec, MB/sec" << std::endl;
+        std::cout << "# session_num, multi_thread_or_procs, msg_len, nloop, elapse_sec, msg_num/sec, MB/sec"
+                << std::endl;
     }
 
     void server() override {
         server_client_base::server();
         //
         std::cout << nworker_;
-        std::cout << "," << (nthread_ == 0 ? "false" : "true");
+        std::cout << "," << (nthread_ > 0 ? "mt" : "mp"); // NOLINT
         std::cout << "," << msg_len_;
+        std::cout << "," << nloop_;
         //
         std::int64_t msec = server_elapse_.msec();
         std::size_t msg_num = nloop_ * 2;
@@ -64,11 +66,11 @@ public:
 
     void client_thread() override {
         ipc_client client { cfg_ };
+        std::string req_message;
+        req_message.reserve(msg_len_);
+        std::string res_message;
         for (int i = 0; i < nloop_; i++) {
-            std::string req_message;
-            req_message.reserve(msg_len_);
             client.send(echo_service::tag, req_message);
-            std::string res_message;
             client.receive(res_message);
         }
     }
@@ -83,16 +85,16 @@ int main(int argc, char **argv) {
     env.setup();
     //
     std::vector<int> nsession_list { 1, 2, 4, 8, 16, 32, 64, env.ipc_max_session() };
-    std::vector<std::size_t> msg_len_list { 128, 256, 512, 1024, 4 * 1024, 32 * 1024 };
-    std::vector<bool> single_client_list { true, false };
-    const int nloop = 10000;
+    std::vector<std::size_t> msg_len_list { 0, 128, 256, 512, 1024, 4 * 1024, 32 * 1024 };
+    std::vector<bool> use_multi_thread_list { true, false };
+    const int nloop = 100000;
     //
     reqres_sync_loop_server_client::result_header();
-    for (int nsession : nsession_list) {
-        for (std::size_t msg_len : msg_len_list) {
-            for (bool single_client : single_client_list) {
-                int nclient = (single_client ? 1 : nsession);
-                int nthread = (single_client ? nsession : 0);
+    for (bool use_multi_thread : use_multi_thread_list) {
+        for (int nsession : nsession_list) {
+            int nclient = (use_multi_thread ? 1 : nsession);
+            int nthread = (use_multi_thread ? nsession : 0);
+            for (std::size_t msg_len : msg_len_list) {
                 reqres_sync_loop_server_client sc { env.config(), nclient, nthread, msg_len, nloop };
                 sc.start_server_client();
             }
