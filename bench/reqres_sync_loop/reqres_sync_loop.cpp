@@ -54,8 +54,8 @@ public:
         std::cout << "," << nloop_;
         //
         std::int64_t msec = server_elapse_.msec();
-        std::size_t msg_num = nloop_ * 2;
-        std::size_t len_sum = nloop_ * 2 * msg_len_;
+        std::size_t msg_num = nloop_ * 2 * nworker_;
+        std::size_t len_sum = msg_num * msg_len_;
         double sec = msec / 1000.0;
         double mb_len = len_sum / (1024.0 * 1024.0);
         std::cout << "," << std::fixed << std::setprecision(3) << sec;
