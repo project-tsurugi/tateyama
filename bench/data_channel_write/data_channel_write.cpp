@@ -149,7 +149,7 @@ int main(int argc, char **argv) {
     }
     std::vector<std::size_t> msg_len_list { 0, 1, 2, 4, 8, 16, 32, 64 }; // [KB]
     std::vector<bool> use_multi_thread_list { true, false };
-    const int nloop = 10'000;
+    const int nloop = 100'000;
     //
     std::map<std::string, double> msg_sec_results { };
     std::map<std::string, double> gb_sec_results { };
@@ -158,7 +158,12 @@ int main(int argc, char **argv) {
             int nclient = (use_multi_thread ? 1 : nsession);
             int nthread = (use_multi_thread ? nsession : 0);
             for (std::size_t msg_len : msg_len_list) {
-                std::size_t write_len = std::min(1024 * msg_len, ipc_client::resultset_record_maxlen);
+                std::size_t write_len;
+                if (msg_len == 0) {
+                    write_len = 0;
+                } else {
+                    write_len = 1024 * msg_len - tateyama::common::wire::length_header::size;
+                }
                 data_channel_write_server_client sc { env.config(), nclient, nthread, write_len, nloop };
                 sc.start_server_client();
                 std::string k = key(use_multi_thread, nsession, msg_len);
