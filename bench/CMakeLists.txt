@@ -13,3 +13,4 @@
 # limitations under the License.
 
 add_subdirectory(reqres_sync_loop)
+add_subdirectory(data_channel_write)
