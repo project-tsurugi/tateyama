@@ -34,6 +34,7 @@ public:
     reqres_sync_loop_server_client(std::shared_ptr<tateyama::api::configuration::whole> const &cfg, int nclient,
             int nthread, std::size_t msg_len, int nloop) :
             server_client_base(cfg, nclient, nthread), msg_len_(msg_len), nloop_(nloop) {
+        maxsec_ = 300;
     }
 
     std::shared_ptr<tateyama::framework::service> create_server_service() override {
