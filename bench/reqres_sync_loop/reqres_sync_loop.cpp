@@ -16,6 +16,7 @@
 #include "tateyama/endpoint/ipc/ipc_test_env.h"
 #include "tateyama/endpoint/ipc/ipc_client.h"
 #include "tateyama/endpoint/ipc/server_client_base.h"
+#include "show_result.h"
 
 using namespace tateyama::api::endpoint::ipc;
 
@@ -42,7 +43,7 @@ public:
     }
 
     static void result_header() {
-        std::cout << "# session_num, multi_thread_or_procs, msg_len, nloop, elapse_sec, msg_num/sec, MB/sec"
+        std::cout << "# session_num, multi_thread_or_procs, msg_len, nloop, elapse_sec, msg_num/sec, GB/sec"
                 << std::endl;
     }
 
@@ -58,15 +59,15 @@ public:
         std::size_t msg_num = nloop_ * 2 * nworker_;
         std::size_t len_sum = msg_num * msg_len_;
         double sec = msec / 1000.0;
-        double mb_len = len_sum / (1024.0 * 1024.0);
+        double gb_len = len_sum / (1024.0 * 1024.0 * 1024.0);
         msg_num_per_sec_ = msg_num / sec;
         std::cout << "," << std::fixed << std::setprecision(3) << sec;
         std::cout << "," << std::fixed << std::setprecision(1) << msg_num_per_sec_;
-        std::cout << "," << std::fixed << std::setprecision(1) << mb_len / sec;
+        std::cout << "," << std::fixed << std::setprecision(1) << gb_len / sec;
         std::cout << std::endl;
     }
 
-    double msg_num_per_sec() {
+    [[nodiscard]] double msg_num_per_sec() const {
         return msg_num_per_sec_;
     }
 
@@ -86,33 +87,6 @@ private:
     int nloop_ { };
     double msg_num_per_sec_ { };
 };
-
-static std::string key(bool use_multi_thread, int nsession, std::size_t msg_len) {
-    return std::to_string(nsession) + (use_multi_thread > 0 ? "mt" : "mp") + std::to_string(msg_len);
-}
-
-static void show_result_summary(std::vector<bool> use_multi_thread_list, std::vector<int> nsession_list,
-        std::vector<std::size_t> msg_len_list, std::map<std::string, double> results) {
-    for (bool use_multi_thread : use_multi_thread_list) {
-        std::cout << std::endl;
-        std::cout << "# summary : " << (use_multi_thread > 0 ? "multi_thread" : "multi_process") << " [msg/sec]"
-                << std::endl;
-        std::cout << "# nsession \\ msg_len";
-        for (std::size_t msg_len : msg_len_list) {
-            std::cout << ", " << msg_len;
-        }
-        std::cout << std::endl;
-        //
-        for (int nsession : nsession_list) {
-            std::cout << nsession;
-            for (std::size_t msg_len : msg_len_list) {
-                double r = results[key(use_multi_thread, nsession, msg_len)];
-                std::cout << "," << std::fixed << std::setprecision(1) << r;
-            }
-            std::cout << std::endl;
-        }
-    }
-}
 
 int main(int argc, char **argv) {
     ipc_test_env env;
@@ -139,7 +113,7 @@ int main(int argc, char **argv) {
             }
         }
     }
-    show_result_summary(use_multi_thread_list, nsession_list, msg_len_list, results);
+    show_result_summary(use_multi_thread_list, nsession_list, msg_len_list, results, "[msg/sec]");
     //
     env.teardown();
 }
