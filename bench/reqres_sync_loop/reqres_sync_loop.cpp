@@ -58,16 +58,21 @@ public:
         std::size_t len_sum = msg_num * msg_len_;
         double sec = msec / 1000.0;
         double mb_len = len_sum / (1024.0 * 1024.0);
+        msg_num_per_sec_ = msg_num / sec;
         std::cout << "," << std::fixed << std::setprecision(3) << sec;
-        std::cout << "," << std::fixed << std::setprecision(1) << msg_num / sec;
+        std::cout << "," << std::fixed << std::setprecision(1) << msg_num_per_sec_;
         std::cout << "," << std::fixed << std::setprecision(1) << mb_len / sec;
         std::cout << std::endl;
+    }
+
+    double msg_num_per_sec() {
+        return msg_num_per_sec_;
     }
 
     void client_thread() override {
         ipc_client client { cfg_ };
         std::string req_message;
-        req_message.reserve(msg_len_);
+        make_dummy_message(gettid(), msg_len_, req_message);
         std::string res_message;
         for (int i = 0; i < nloop_; i++) {
             client.send(echo_service::tag, req_message);
@@ -78,17 +83,49 @@ public:
 private:
     std::size_t msg_len_;
     int nloop_ { };
+    double msg_num_per_sec_ { };
 };
+
+static std::string key(bool use_multi_thread, int nsession, std::size_t msg_len) {
+    return std::to_string(nsession) + (use_multi_thread > 0 ? "mt" : "mp") + std::to_string(msg_len);
+}
+
+static void show_result_summary(std::vector<bool> use_multi_thread_list, std::vector<int> nsession_list,
+        std::vector<std::size_t> msg_len_list, std::map<std::string, double> results) {
+    for (bool use_multi_thread : use_multi_thread_list) {
+        std::cout << std::endl;
+        std::cout << "# summary : " << (use_multi_thread > 0 ? "multi_thread" : "multi_process") << " [msg/sec]"
+                << std::endl;
+        std::cout << "# nsession \\ msg_len";
+        for (std::size_t msg_len : msg_len_list) {
+            std::cout << ", " << msg_len;
+        }
+        std::cout << std::endl;
+        //
+        for (int nsession : nsession_list) {
+            std::cout << nsession;
+            for (std::size_t msg_len : msg_len_list) {
+                double r = results[key(use_multi_thread, nsession, msg_len)];
+                std::cout << "," << std::fixed << std::setprecision(1) << r;
+            }
+            std::cout << std::endl;
+        }
+    }
+}
 
 int main(int argc, char **argv) {
     ipc_test_env env;
     env.setup();
     //
-    std::vector<int> nsession_list { 1, 2, 4, 8, 16, 32, 64, env.ipc_max_session() };
+    std::vector<int> nsession_list { 1, 2, 4, 8 };
+    for (int n = 16; n <= env.ipc_max_session(); n += 8) {
+        nsession_list.push_back(n);
+    }
     std::vector<std::size_t> msg_len_list { 0, 128, 256, 512, 1024, 4 * 1024, 32 * 1024 };
     std::vector<bool> use_multi_thread_list { true, false };
-    const int nloop = 100000;
+    const int nloop = 100'000;
     //
+    std::map<std::string, double> results { };
     reqres_sync_loop_server_client::result_header();
     for (bool use_multi_thread : use_multi_thread_list) {
         for (int nsession : nsession_list) {
@@ -97,9 +134,11 @@ int main(int argc, char **argv) {
             for (std::size_t msg_len : msg_len_list) {
                 reqres_sync_loop_server_client sc { env.config(), nclient, nthread, msg_len, nloop };
                 sc.start_server_client();
+                results[key(use_multi_thread, nsession, msg_len)] = sc.msg_num_per_sec();
             }
         }
     }
+    show_result_summary(use_multi_thread_list, nsession_list, msg_len_list, results);
     //
     env.teardown();
 }
