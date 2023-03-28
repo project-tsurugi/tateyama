@@ -347,6 +347,7 @@ public:
     public:
         garbage_collector_impl() = default;
         ~garbage_collector_impl() override {
+            std::lock_guard<std::mutex> lock(mtx_put_);
             resultset_wires_set_.clear();
         }
 
