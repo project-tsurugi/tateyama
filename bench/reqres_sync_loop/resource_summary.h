@@ -140,7 +140,7 @@ public:
         output(use_multi_thread_list, nsession_list, msg_len_list, output_stime, "system_time [sec]");
         // output(use_multi_thread_list, nsession_list, msg_len_list, output_maxrss, "maxrss [byte]");
         output(use_multi_thread_list, nsession_list, msg_len_list, output_nvcsw, "# of voluntary ctx.swc.");
-        output(use_multi_thread_list, nsession_list, msg_len_list, output_nvcsw, "# of involuntary ctx.swc.");
+        output(use_multi_thread_list, nsession_list, msg_len_list, output_nivcsw, "# of involuntary ctx.swc.");
     }
 
 private:
