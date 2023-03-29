@@ -16,7 +16,8 @@
 #include "tateyama/endpoint/ipc/ipc_test_env.h"
 #include "tateyama/endpoint/ipc/ipc_client.h"
 #include "tateyama/endpoint/ipc/server_client_base.h"
-#include "show_result.h"
+
+#include "resource_summary.h"
 
 using namespace tateyama::api::endpoint::ipc;
 
@@ -48,27 +49,43 @@ public:
     }
 
     void server() override {
+        rusage_diff r_diff{RUSAGE_SELF};
+        //
         server_client_base::server();
+        //
+        rusage_server_ = r_diff.diff();
+        assert_eq(0, getrusage(RUSAGE_CHILDREN, &rusage_children_));
         //
         std::cout << nworker_;
         std::cout << "," << (nthread_ > 0 ? "mt" : "mp"); // NOLINT
         std::cout << "," << msg_len_;
         std::cout << "," << nloop_;
         //
-        std::int64_t msec = server_elapse_.msec();
         std::size_t msg_num = nloop_ * 2 * nworker_;
         std::size_t len_sum = msg_num * msg_len_;
-        double sec = msec / 1000.0;
+        real_sec_ = server_elapse_.nanosec() / 1e+9;
         double gb_len = len_sum / (1024.0 * 1024.0 * 1024.0);
-        msg_num_per_sec_ = msg_num / sec;
-        std::cout << "," << std::fixed << std::setprecision(3) << sec;
+        msg_num_per_sec_ = msg_num / real_sec_;
+        std::cout << "," << std::fixed << std::setprecision(6) << real_sec_;
         std::cout << "," << std::fixed << std::setprecision(1) << msg_num_per_sec_;
-        std::cout << "," << std::fixed << std::setprecision(1) << gb_len / sec;
+        std::cout << "," << std::fixed << std::setprecision(1) << gb_len / real_sec_;
         std::cout << std::endl;
+    }
+
+    [[nodiscard]] double real_sec() const {
+        return real_sec_;
     }
 
     [[nodiscard]] double msg_num_per_sec() const {
         return msg_num_per_sec_;
+    }
+
+    [[nodiscard]] struct rusage& rusage_server() {
+        return rusage_server_;
+    }
+
+    [[nodiscard]] struct rusage& rusage_clients() {
+        return rusage_children_;
     }
 
     void client_thread() override {
@@ -85,7 +102,11 @@ public:
 private:
     std::size_t msg_len_;
     int nloop_ { };
+
+    double real_sec_ { };
     double msg_num_per_sec_ { };
+    struct rusage rusage_server_ { };
+    struct rusage rusage_children_ { };
 };
 
 int main(int argc, char **argv) {
@@ -101,6 +122,8 @@ int main(int argc, char **argv) {
     const int nloop = 100'000;
     //
     std::map<std::string, double> results { };
+    std::map<std::string, double> real_secs { };
+    resource_summary res_summary { };
     reqres_sync_loop_server_client::result_header();
     for (bool use_multi_thread : use_multi_thread_list) {
         for (int nsession : nsession_list) {
@@ -109,11 +132,16 @@ int main(int argc, char **argv) {
             for (std::size_t msg_len : msg_len_list) {
                 reqres_sync_loop_server_client sc { env.config(), nclient, nthread, msg_len, nloop };
                 sc.start_server_client();
-                results[key(use_multi_thread, nsession, msg_len)] = sc.msg_num_per_sec();
+                std::string k = key(use_multi_thread, nsession, msg_len);
+                results[k] = sc.msg_num_per_sec();
+                real_secs[k] = sc.real_sec();
+                res_summary.add(k, sc.rusage_server(), sc.rusage_clients());
             }
         }
     }
-    show_result_summary(use_multi_thread_list, nsession_list, msg_len_list, results, "[msg/sec]");
+    show_result_summary(use_multi_thread_list, nsession_list, msg_len_list, results, "throughput [msg/sec]");
+    show_result_summary(use_multi_thread_list, nsession_list, msg_len_list, real_secs, "real_time [sec]", 6);
+    res_summary.output(use_multi_thread_list, nsession_list, msg_len_list);
     //
     env.teardown();
 }

@@ -23,12 +23,12 @@ inline std::string key(bool use_multi_thread, int nsession, std::size_t msg_len)
 }
 
 inline void show_result_summary(std::vector<bool> use_multi_thread_list, std::vector<int> nsession_list,
-        std::vector<std::size_t> msg_len_list, std::map<std::string, double> results, std::string_view unit, int prec =
-                1) {
+        std::vector<std::size_t> msg_len_list, std::map<std::string, double> results, std::string_view data_unit,
+        int prec = 1) {
     for (bool use_multi_thread : use_multi_thread_list) {
         std::cout << std::endl;
         std::cout << "# summary : " << (use_multi_thread > 0 ? "multi_thread" : "multi_process");
-        std::cout << " " << unit << std::endl;
+        std::cout << " : " << data_unit << std::endl;
         std::cout << "# nsession \\ msg_len";
         for (std::size_t msg_len : msg_len_list) {
             std::cout << ", " << msg_len;
