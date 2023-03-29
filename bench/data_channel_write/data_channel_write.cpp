@@ -160,8 +160,8 @@ int main(int argc, char **argv) {
     ipc_test_env env;
     env.setup();
     //
-    std::vector<int> nsession_list { 1, 2, 4, 8 };
-    for (int n = 16; n <= env.ipc_max_session(); n += 8) {
+    std::vector<int> nsession_list { 1, 2, 4, 8, 16 };
+    for (int n = 24; n <= env.ipc_max_session(); n += 16) {
         nsession_list.push_back(n);
     }
     std::vector<std::size_t> msg_len_list { 0, 1, 2, 4, 8, 16, 32, 64 }; // [KB]
@@ -170,6 +170,7 @@ int main(int argc, char **argv) {
     //
     std::map<std::string, double> msg_sec_results { };
     std::map<std::string, double> gb_sec_results { };
+    std::map<std::string, double> nloop_results { };
     resource_summary res_summary { };
     for (bool use_multi_thread : use_multi_thread_list) {
         for (int nsession : nsession_list) {
@@ -183,19 +184,24 @@ int main(int argc, char **argv) {
                     nloop = 1000 * nloop_default;
                 } else {
                     write_len = 1024 * msg_len - tateyama::common::wire::length_header::size;
-                    nloop = (msg_len <= 8 ? 10 * nloop_default : nloop_default);
+                    nloop = (msg_len <= 32 ? 10 * nloop_default : nloop_default);
+                    if (nsession >= 16) {
+                        nloop /= 2;
+                    }
                 }
                 data_channel_write_server_client sc { env.config(), nclient, nthread, write_len, nloop };
                 sc.start_server_client();
                 std::string k = key(use_multi_thread, nsession, msg_len);
                 msg_sec_results[k] = sc.msg_num_per_sec();
                 gb_sec_results[k] = sc.gb_per_sec();
+                nloop_results[k] = nloop;
                 res_summary.add(k, sc.rusage_server(), sc.rusage_clients());
             }
         }
     }
-    show_result_summary(use_multi_thread_list, nsession_list, msg_len_list, msg_sec_results, "[msg/sec]");
-    show_result_summary(use_multi_thread_list, nsession_list, msg_len_list, gb_sec_results, "[GB/sec]", 2);
+    show_result_summary(use_multi_thread_list, nsession_list, msg_len_list, msg_sec_results, "throughput [msg/sec]");
+    show_result_summary(use_multi_thread_list, nsession_list, msg_len_list, gb_sec_results, "throughput [GB/sec]", 2);
+    show_result_summary(use_multi_thread_list, nsession_list, msg_len_list, nloop_results, "nloop", 0);
     res_summary.output(use_multi_thread_list, nsession_list, msg_len_list);
     //
     env.teardown();
