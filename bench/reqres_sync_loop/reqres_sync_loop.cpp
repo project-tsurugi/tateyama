@@ -120,7 +120,7 @@ int main(int argc, char **argv) {
     }
     std::vector<std::size_t> msg_len_list { 0, 128, 256, 512, 1024, 4 * 1024, 32 * 1024 };
     std::vector<bool> use_multi_thread_list { true, false };
-    const int nloop = 1'000'000;
+    const int nloop = 100'000;
     //
     std::map<std::string, double> results { };
     std::map<std::string, double> real_secs { };
