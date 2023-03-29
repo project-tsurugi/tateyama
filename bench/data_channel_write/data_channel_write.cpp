@@ -16,7 +16,8 @@
 #include "tateyama/endpoint/ipc/ipc_test_env.h"
 #include "tateyama/endpoint/ipc/ipc_client.h"
 #include "tateyama/endpoint/ipc/server_client_base.h"
-#include "reqres_sync_loop/show_result.h"
+
+#include "reqres_sync_loop/resource_summary.h"
 
 using namespace tateyama::api::endpoint::ipc;
 
@@ -81,7 +82,13 @@ public:
     }
 
     void server() override {
+        rusage_diff r_server { RUSAGE_SELF };
+        rusage_diff r_clients { RUSAGE_CHILDREN };
+        //
         server_client_base::server();
+        //
+        rusage_server_ = r_server.diff();
+        rusage_clients_ = r_clients.diff();
         //
         std::cout << nworker_;
         std::cout << "," << (nthread_ > 0 ? "mt" : "mp"); // NOLINT
@@ -107,6 +114,14 @@ public:
 
     [[nodiscard]] double gb_per_sec() const {
         return gb_per_sec_;
+    }
+
+    [[nodiscard]] struct rusage& rusage_server() {
+        return rusage_server_;
+    }
+
+    [[nodiscard]] struct rusage& rusage_clients() {
+        return rusage_clients_;
     }
 
     void client_thread() override {
@@ -137,6 +152,8 @@ private:
     std::size_t write_nloop_ { };
     double msg_num_per_sec_ { };
     double gb_per_sec_ { };
+    struct rusage rusage_server_ { };
+    struct rusage rusage_clients_ { };
 };
 
 int main(int argc, char **argv) {
@@ -153,28 +170,33 @@ int main(int argc, char **argv) {
     //
     std::map<std::string, double> msg_sec_results { };
     std::map<std::string, double> gb_sec_results { };
+    resource_summary res_summary { };
     for (bool use_multi_thread : use_multi_thread_list) {
         for (int nsession : nsession_list) {
             int nclient = (use_multi_thread ? 1 : nsession);
             int nthread = (use_multi_thread ? nsession : 0);
             for (std::size_t msg_len : msg_len_list) {
-                std::size_t write_len;
+                std::size_t write_len { };
+                std::size_t nloop { };
                 if (msg_len == 0) {
                     write_len = 0;
+                    nloop = 1000 * nloop_default;
                 } else {
                     write_len = 1024 * msg_len - tateyama::common::wire::length_header::size;
+                    nloop = (msg_len <= 8 ? 10 * nloop_default : nloop_default);
                 }
-                std::size_t nloop = (msg_len <= 16 ? 10 * nloop_default : nloop_default);
                 data_channel_write_server_client sc { env.config(), nclient, nthread, write_len, nloop };
                 sc.start_server_client();
                 std::string k = key(use_multi_thread, nsession, msg_len);
                 msg_sec_results[k] = sc.msg_num_per_sec();
                 gb_sec_results[k] = sc.gb_per_sec();
+                res_summary.add(k, sc.rusage_server(), sc.rusage_clients());
             }
         }
     }
     show_result_summary(use_multi_thread_list, nsession_list, msg_len_list, msg_sec_results, "[msg/sec]");
     show_result_summary(use_multi_thread_list, nsession_list, msg_len_list, gb_sec_results, "[GB/sec]", 2);
+    res_summary.output(use_multi_thread_list, nsession_list, msg_len_list);
     //
     env.teardown();
 }
