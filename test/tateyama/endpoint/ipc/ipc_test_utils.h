@@ -57,30 +57,56 @@ std::string_view get_message_part_without_len(const std::string_view message);
 void make_dummy_message(const std::string &part, const std::size_t len, std::string &message);
 bool check_dummy_message(const std::string_view message);
 
+inline void assert_failed() {
+    std::cout << boost::stacktrace::stacktrace();
+    std::exit(1);
+}
+
+inline void assert_true(bool result) {
+    if (!result) {
+        assert_failed();
+    }
+}
+
+inline void assert_eq(int v1, int v2) {
+    if (v1 != v2) {
+        assert_failed();
+    }
+}
+
+inline void assert_gt(int v1, int v2) {
+    if (v1 <= v2) {
+        assert_failed();
+    }
+}
+
 class elapse {
 public:
     void start() noexcept {
-        start_ = end_ = now_msec();
+        start_ = end_ = now_nanosec();
     }
     void stop() noexcept {
-        end_ = now_msec();
+        end_ = now_nanosec();
     }
     std::chrono::milliseconds now_msec() noexcept {
         return std::chrono::duration_cast<std::chrono::milliseconds>(
                 std::chrono::system_clock::now().time_since_epoch());
     }
-    std::chrono::nanoseconds now_nsec() noexcept {
+    std::chrono::nanoseconds now_nanosec() noexcept {
         return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch());
     }
-    std::int64_t msec() noexcept {
+    std::int64_t nanosec() noexcept {
         if (end_ >= start_) {
             return static_cast<std::int64_t>((end_ - start_).count());
         } else {
             return -1;
         }
     }
+    std::int64_t msec() noexcept {
+        return nanosec() / 1'000'000;
+    }
 private:
-    std::chrono::milliseconds start_ { }, end_ { };
+    std::chrono::nanoseconds start_ { }, end_ { };
 };
 
 class server_service_base: public tateyama::framework::service {

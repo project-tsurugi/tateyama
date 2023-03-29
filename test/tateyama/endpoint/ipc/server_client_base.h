@@ -65,27 +65,6 @@ private:
     // for client process
     void wait_server_startup_end();
 
-    // for server startup&shutdown checking
-    void assert_failed() {
-        std::cout << boost::stacktrace::stacktrace();
-        std::exit(1);
-    }
-    void assert_true(bool result) {
-        if (!result) {
-            assert_failed();
-        }
-    }
-    void assert_eq(int v1, int v2) {
-        if (v1 != v2) {
-            assert_failed();
-        }
-    }
-    void assert_gt(int v1, int v2) {
-        if (v1 <= v2) {
-            assert_failed();
-        }
-    }
-
     std::vector<pid_t> client_pids_ { };
     std::vector<std::thread> threads_ { };
     std::string lock_filename_ { };
