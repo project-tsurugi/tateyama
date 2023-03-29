@@ -49,12 +49,13 @@ public:
     }
 
     void server() override {
-        rusage_diff r_diff{RUSAGE_SELF};
+        rusage_diff r_server{RUSAGE_SELF};
+        rusage_diff r_clients{RUSAGE_CHILDREN};
         //
         server_client_base::server();
         //
-        rusage_server_ = r_diff.diff();
-        assert_eq(0, getrusage(RUSAGE_CHILDREN, &rusage_children_));
+        rusage_server_ = r_server.diff();
+        rusage_clients_ = r_clients.diff();
         //
         std::cout << nworker_;
         std::cout << "," << (nthread_ > 0 ? "mt" : "mp"); // NOLINT
@@ -63,7 +64,7 @@ public:
         //
         std::size_t msg_num = nloop_ * 2 * nworker_;
         std::size_t len_sum = msg_num * msg_len_;
-        real_sec_ = server_elapse_.nanosec() / 1e+9;
+        real_sec_ = server_elapse_.sec();
         double gb_len = len_sum / (1024.0 * 1024.0 * 1024.0);
         msg_num_per_sec_ = msg_num / real_sec_;
         std::cout << "," << std::fixed << std::setprecision(6) << real_sec_;
@@ -85,7 +86,7 @@ public:
     }
 
     [[nodiscard]] struct rusage& rusage_clients() {
-        return rusage_children_;
+        return rusage_clients_;
     }
 
     void client_thread() override {
@@ -106,7 +107,7 @@ private:
     double real_sec_ { };
     double msg_num_per_sec_ { };
     struct rusage rusage_server_ { };
-    struct rusage rusage_children_ { };
+    struct rusage rusage_clients_ { };
 };
 
 int main(int argc, char **argv) {
@@ -119,7 +120,7 @@ int main(int argc, char **argv) {
     }
     std::vector<std::size_t> msg_len_list { 0, 128, 256, 512, 1024, 4 * 1024, 32 * 1024 };
     std::vector<bool> use_multi_thread_list { true, false };
-    const int nloop = 100'000;
+    const int nloop = 1'000'000;
     //
     std::map<std::string, double> results { };
     std::map<std::string, double> real_secs { };

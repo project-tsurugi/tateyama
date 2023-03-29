@@ -105,6 +105,9 @@ public:
     std::int64_t msec() noexcept {
         return nanosec() / 1'000'000;
     }
+    double sec() noexcept {
+        return 1e-9 * nanosec();
+    }
 private:
     std::chrono::nanoseconds start_ { }, end_ { };
 };
