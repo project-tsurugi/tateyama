@@ -138,6 +138,10 @@ private:
     std::size_t write_nloop_ { };
 };
 
+static inline std::size_t KB(int size) {
+    return 1024UL * size;
+}
+
 int main(int argc, char **argv) {
     ipc_test_env env;
     env.setup();
@@ -146,7 +150,12 @@ int main(int argc, char **argv) {
     for (int n = 24; n <= env.ipc_max_session(); n += 16) {
         nsession_list.push_back(n);
     }
-    std::vector<std::size_t> msg_len_list { 0, 1, 2, 4, 8, 16, 32, 64 }; // [KB]
+    std::vector<std::size_t> msg_len_list { 0, 128, 256, 512, KB(1), KB(2), KB(4), KB(8), KB(16), KB(32), KB(64) };
+    std::for_each(msg_len_list.begin(), msg_len_list.end(), [](std::size_t &len) {
+        if (len > 0) {
+            len -= tateyama::common::wire::length_header::size;
+        }
+    });
     std::vector<bool> use_multi_thread_list { true, false };
     const std::size_t nloop_default = 100'000;
     //
@@ -157,19 +166,16 @@ int main(int argc, char **argv) {
             int nclient = (use_multi_thread ? 1 : nsession);
             int nthread = (use_multi_thread ? nsession : 0);
             for (std::size_t msg_len : msg_len_list) {
-                std::size_t write_len { };
                 std::size_t nloop { };
                 if (msg_len == 0) {
-                    write_len = 0;
                     nloop = 1000 * nloop_default;
                 } else {
-                    write_len = 1024 * msg_len - tateyama::common::wire::length_header::size;
-                    nloop = (msg_len <= 32 ? 10 * nloop_default : nloop_default);
+                    nloop = (msg_len <= KB(32) ? 10 * nloop_default : nloop_default);
                     if (nsession >= 16) {
                         nloop /= 2;
                     }
                 }
-                data_channel_write_server_client sc { env.config(), nclient, nthread, write_len, nloop };
+                data_channel_write_server_client sc { env.config(), nclient, nthread, msg_len, nloop };
                 sc.start_server_client();
                 result_summary.add(use_multi_thread, nsession, msg_len, sc.result());
             }
