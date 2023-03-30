@@ -35,10 +35,10 @@ target_link_libraries(data_channel_write
 
 target_include_directories(data_channel_write
         PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
+        PRIVATE ${PROJECT_SOURCE_DIR}/bench/include
         PRIVATE ${CMAKE_BINARY_DIR}/src
         PRIVATE ${CMAKE_BINARY_DIR}/test
         PRIVATE ${PROJECT_SOURCE_DIR}/include
         PRIVATE ${PROJECT_SOURCE_DIR}/src
         PRIVATE ${PROJECT_SOURCE_DIR}/test
-        PRIVATE ${PROJECT_SOURCE_DIR}/bench
         )
