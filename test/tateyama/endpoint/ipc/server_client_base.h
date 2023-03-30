@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#pragma
+#pragma once
 #include <tateyama/framework/server.h>
 #include "ipc_test_utils.h"
 #include <sys/types.h>
