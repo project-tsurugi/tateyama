@@ -35,6 +35,7 @@ target_link_libraries(reqres_sync_loop
 
 target_include_directories(reqres_sync_loop
         PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
+        PRIVATE ${PROJECT_SOURCE_DIR}/bench/include
         PRIVATE ${CMAKE_BINARY_DIR}/src
         PRIVATE ${CMAKE_BINARY_DIR}/test
         PRIVATE ${PROJECT_SOURCE_DIR}/include
