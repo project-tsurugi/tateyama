@@ -41,8 +41,8 @@ public:
             for (std::size_t len : param.write_lens_) {
                 std::string data;
                 make_dummy_message(req->session_id() + len + i, len, data);
-                writer->write(data.c_str(), data.length());
-                writer->commit();
+                EXPECT_EQ(tateyama::status::ok, writer->write(data.c_str(), data.length()));
+                EXPECT_EQ(tateyama::status::ok, writer->commit());
             }
         }
         EXPECT_EQ(tateyama::status::ok, channel->release(*writer));

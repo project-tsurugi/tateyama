@@ -22,13 +22,6 @@
 
 using namespace tateyama::api::endpoint::ipc;
 
-static void ASSERT_EQ(tateyama::status st1, tateyama::status st2) {
-    if (st1 != st2) {
-        std::cout << boost::stacktrace::stacktrace();
-        std::exit(1);
-    }
-}
-
 class data_channel_write_service: public server_service_base {
 public:
     data_channel_write_service(std::size_t write_len, std::size_t write_nloop) :
@@ -41,22 +34,22 @@ public:
         resultset_param param { payload };
         //
         std::shared_ptr<tateyama::api::server::data_channel> channel;
-        ASSERT_EQ(tateyama::status::ok, res->acquire_channel(param.name_, channel));
+        ASSERT_OK(res->acquire_channel(param.name_, channel));
         std::shared_ptr<tateyama::api::server::writer> writer;
-        ASSERT_EQ(tateyama::status::ok, channel->acquire(writer));
+        ASSERT_OK(channel->acquire(writer));
         //
         res->session_id(req->session_id());
-        ASSERT_EQ(tateyama::status::ok, res->body(payload));
+        ASSERT_OK(res->body(payload));
         //
         std::size_t write_len = param.write_lens_[0];
         std::string data;
         make_dummy_message(req->session_id(), write_len, data);
         for (std::size_t i = 0; i < param.write_nloop_; i++) {
-            writer->write(data.c_str(), data.length());
-            writer->commit();
+            ASSERT_OK(writer->write(data.c_str(), data.length()));
+            ASSERT_OK(writer->commit());
         }
-        ASSERT_EQ(tateyama::status::ok, channel->release(*writer));
-        ASSERT_EQ(tateyama::status::ok, res->release_channel(*channel));
+        ASSERT_OK(channel->release(*writer));
+        ASSERT_OK(res->release_channel(*channel));
         return true;
     }
 
