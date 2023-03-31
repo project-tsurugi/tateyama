@@ -99,7 +99,7 @@ public:
         constexpr static auto undefined = static_cast<std::size_t>(-1);
         thread_local std::size_t index_for_this_thread = undefined;
         if (index_for_this_thread == undefined) {
-            index_for_this_thread = increment(current_index_, size_);
+            index_for_this_thread = next_worker();
             DVLOG(log_debug) << "worker " << index_for_this_thread << " assigned for thread on core " << sched_getcpu();
         }
         return index_for_this_thread;
@@ -112,10 +112,10 @@ public:
      */
     void schedule(task&& t) {
         std::size_t index{};
-        if (cfg_.round_robbin()) {
-            index = increment(current_index_, size_);
-        } else {
+        if (cfg_.use_preferred_worker_for_current_thread()) {
             index = preferred_worker_for_current_thread();
+        } else {
+            index = next_worker();
         }
         schedule_at(std::move(t), index);
     }
@@ -249,6 +249,10 @@ public:
             os << "      delayed:" << std::endl;
             print_queue_diagnostic(delayed_task_queues_[i], os);
         }
+    }
+
+    std::size_t next_worker() {
+        return increment(current_index_, size_);
     }
 private:
     task_scheduler_cfg cfg_{};
