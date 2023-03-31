@@ -41,6 +41,7 @@ parameter=value
 |enable_index_join | ブール(true/false) | 性能向上のためインデックスを利用した結合処理を行うか。デフォルトはfalse|開発用のため将来的に削除される可能性あり|
 |stealing_enabled | ブール(true/false) | 空いたCPUコアを活用するためにスケジューラーがタスクのstealingを行うか。デフォルトはtrue|開発用のため将来的に削除される可能性あり|
 |default_partitions | 整数 | 並列化可能な関係演算子の実行においてデータ分割を行う際のパーティション数。デフォルトは5|開発用のため将来的に削除/変更される可能性あり|
+|use_preferred_worker_for_current_thread | ブール(true/false) | スケジューラーがワーカーを選択する際、タスクを提出したスレッドごとに固定的なワーカーを使うようにするか。デフォルトはtrue|開発用のため将来的に削除される可能性あり|
 
 ## ipc_endpointセクション
 
