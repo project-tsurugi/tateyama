@@ -55,8 +55,8 @@ public:
                     make_dummy_message(part, len, data);
                     //
                     std::shared_ptr<tateyama::api::server::writer> &writer = writer_list[j];
-                    writer->write(data.c_str(), data.length());
-                    writer->commit();
+                    EXPECT_EQ(tateyama::status::ok, writer->write(data.c_str(), data.length()));
+                    EXPECT_EQ(tateyama::status::ok, writer->commit());
                 }
             }
         }

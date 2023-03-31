@@ -38,9 +38,9 @@ public:
         make_dummy_message(req->session_id(), datalen, data);
         EXPECT_EQ(datalen, data.length());
         std::cout << "server : call write() : " << datalen << std::endl;
-        writer->write(data.c_str(), data.length());
+        EXPECT_EQ(tateyama::status::ok, writer->write(data.c_str(), data.length()));
         std::cout << "server : call commit()" << std::endl;
-        writer->commit();
+        EXPECT_EQ(tateyama::status::ok, writer->commit());
         std::cout << "server : commit done()" << std::endl;
         //
         EXPECT_EQ(tateyama::status::ok, channel->release(*writer));

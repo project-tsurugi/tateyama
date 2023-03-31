@@ -18,6 +18,13 @@
 
 #include "bench_result.h"
 
+static inline void ASSERT_OK(tateyama::status status) {
+    if (status != tateyama::status::ok) {
+        std::cout << boost::stacktrace::stacktrace();
+        std::exit(1);
+    }
+}
+
 namespace tateyama::api::endpoint::ipc {
 
 class server_client_bench_base: public server_client_base {

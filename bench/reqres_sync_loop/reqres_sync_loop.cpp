@@ -26,7 +26,7 @@ public:
     bool operator ()(std::shared_ptr<tateyama::api::server::request> req,
             std::shared_ptr<tateyama::api::server::response> res) override {
         res->session_id(req->session_id());
-        res->body(req->payload());
+        ASSERT_OK(res->body(req->payload()));
         return true;
     }
 };
