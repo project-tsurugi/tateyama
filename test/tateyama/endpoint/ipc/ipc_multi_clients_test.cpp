@@ -31,9 +31,9 @@ public:
 
 class ipc_multi_clients_test_server_client: public server_client_gtest_base {
 public:
-    ipc_multi_clients_test_server_client(std::shared_ptr<tateyama::api::configuration::whole> const &cfg, int nclient,
+    ipc_multi_clients_test_server_client(std::shared_ptr<tateyama::api::configuration::whole> const &cfg, int nproc,
             int nthread, std::vector<std::size_t> &req_len_list, int nloop) :
-            server_client_gtest_base(cfg, nclient, nthread), req_len_list_(req_len_list), nloop_(nloop) {
+            server_client_gtest_base(cfg, nproc, nthread), req_len_list_(req_len_list), nloop_(nloop) {
     }
 
     std::shared_ptr<tateyama::framework::service> create_server_service() override {
@@ -74,7 +74,7 @@ class ipc_multi_clients_test: public ipc_gtest_base {
 };
 
 TEST_F(ipc_multi_clients_test, test_fixed_size_only_small) {
-    std::vector<std::size_t> nclient_list { 1, 2 };
+    std::vector<std::size_t> nproc_list { 1, 2 };
     std::vector<std::size_t> nthread_list { 0, 1, 2 };
     std::vector<std::size_t> maxlen_list { 128, 256, 512 };
     std::vector<std::size_t> req_len_list;
@@ -82,14 +82,14 @@ TEST_F(ipc_multi_clients_test, test_fixed_size_only_small) {
         req_len_list.clear();
         req_len_list.push_back(maxlen);
         int nloop = (maxlen <= 1024 ? 1000 : 100);
-        for (int nclient : nclient_list) {
+        for (int nproc : nproc_list) {
             for (int nthread : nthread_list) {
-                std::size_t nsession = nclient * nthread;
+                std::size_t nsession = nproc * nthread;
                 if (nsession > ipc_max_session_) {
                     // NOTE: causes tateyama-server error
                     continue;
                 }
-                ipc_multi_clients_test_server_client sc { cfg_, nclient, nthread, req_len_list, nloop };
+                ipc_multi_clients_test_server_client sc { cfg_, nproc, nthread, req_len_list, nloop };
                 sc.start_server_client();
             }
         }
@@ -97,7 +97,7 @@ TEST_F(ipc_multi_clients_test, test_fixed_size_only_small) {
 }
 
 TEST_F(ipc_multi_clients_test, DISABLED_test_fixed_size_only_big) {
-    std::vector<std::size_t> nclient_list { 4, 8 };
+    std::vector<std::size_t> nproc_list { 4, 8 };
     std::vector<std::size_t> nthread_list { 4, 8 };
     std::vector<std::size_t> maxlen_list { 128, 256, 512 };
     std::vector<std::size_t> req_len_list;
@@ -105,14 +105,14 @@ TEST_F(ipc_multi_clients_test, DISABLED_test_fixed_size_only_big) {
         req_len_list.clear();
         req_len_list.push_back(maxlen);
         int nloop = (maxlen <= 1024 ? 1000 : 100);
-        for (int nclient : nclient_list) {
+        for (int nproc : nproc_list) {
             for (int nthread : nthread_list) {
-                std::size_t nsession = nclient * nthread;
+                std::size_t nsession = nproc * nthread;
                 if (nsession > ipc_max_session_) {
                     // NOTE: causes tateyama-server error
                     continue;
                 }
-                ipc_multi_clients_test_server_client sc { cfg_, nclient, nthread, req_len_list, nloop };
+                ipc_multi_clients_test_server_client sc { cfg_, nproc, nthread, req_len_list, nloop };
                 sc.start_server_client();
             }
         }

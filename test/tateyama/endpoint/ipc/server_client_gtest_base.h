@@ -21,9 +21,9 @@ namespace tateyama::api::endpoint::ipc {
 
 class server_client_gtest_base: public server_client_base {
 public:
-    server_client_gtest_base(std::shared_ptr<tateyama::api::configuration::whole> const &cfg, int nclient = 1,
+    server_client_gtest_base(std::shared_ptr<tateyama::api::configuration::whole> const &cfg, int nproc = 1,
             int nthread = 0) :
-            server_client_base(cfg, nclient, nthread) {
+            server_client_base(cfg, nproc, nthread) {
     }
 
     virtual std::shared_ptr<tateyama::framework::service> create_server_service() = 0;

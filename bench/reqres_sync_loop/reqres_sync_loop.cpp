@@ -33,9 +33,9 @@ public:
 
 class reqres_sync_loop_server_client: public server_client_bench_base {
 public:
-    reqres_sync_loop_server_client(std::shared_ptr<tateyama::api::configuration::whole> const &cfg, int nclient,
+    reqres_sync_loop_server_client(std::shared_ptr<tateyama::api::configuration::whole> const &cfg, int nproc,
             int nthread, std::size_t msg_len, int nloop) :
-            server_client_bench_base(cfg, nclient, nthread), msg_len_(msg_len), nloop_(nloop) {
+            server_client_bench_base(cfg, nproc, nthread), msg_len_(msg_len), nloop_(nloop) {
     }
 
     std::shared_ptr<tateyama::framework::service> create_server_service() override {
@@ -107,10 +107,10 @@ int main(int argc, char **argv) {
     bench_result_summary result_summary { use_multi_thread_list, nsession_list, msg_len_list };
     for (bool use_multi_thread : use_multi_thread_list) {
         for (int nsession : nsession_list) {
-            int nclient = (use_multi_thread ? 1 : nsession);
+            int nproc = (use_multi_thread ? 1 : nsession);
             int nthread = (use_multi_thread ? nsession : 0);
             for (std::size_t msg_len : msg_len_list) {
-                reqres_sync_loop_server_client sc { env.config(), nclient, nthread, msg_len, nloop };
+                reqres_sync_loop_server_client sc { env.config(), nproc, nthread, msg_len, nloop };
                 sc.start_server_client();
                 result_summary.add(use_multi_thread, nsession, msg_len, sc.result());
             }

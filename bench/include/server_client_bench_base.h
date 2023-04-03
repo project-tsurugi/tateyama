@@ -29,8 +29,8 @@ namespace tateyama::api::endpoint::ipc {
 
 class server_client_bench_base: public server_client_base {
 public:
-    server_client_bench_base(std::shared_ptr<tateyama::api::configuration::whole> const &cfg, int nclient, int nthread) :
-            server_client_base(cfg, nclient, nthread) {
+    server_client_bench_base(std::shared_ptr<tateyama::api::configuration::whole> const &cfg, int nproc, int nthread) :
+            server_client_base(cfg, nproc, nthread) {
         maxsec_ = 300;
     }
 

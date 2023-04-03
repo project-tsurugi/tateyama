@@ -65,8 +65,8 @@ void server_client_base::server_dump(const std::size_t msg_num, const std::size_
     std::int64_t msec = server_elapse_.msec();
     double sec = msec / 1000.0;
     double mb_len = len_sum / (1024.0 * 1024.0);
-    std::cout << "nclient=" << nclient_;
-    std::cout << ", nthread/client=" << nthread_;
+    std::cout << "nproc=" << nproc_;
+    std::cout << ", nthread/proc=" << nthread_;
     std::cout << ", elapse=" << std::fixed << std::setprecision(3) << sec << "[sec]";
     std::cout << ", msg_num=" << msg_num;
     std::cout << ", " << std::fixed << std::setprecision(1) << msg_num / sec / 1000.0 << "[Kmsg/sec]";
@@ -101,7 +101,7 @@ void server_client_base::client() {
 
 void server_client_base::start_server_client() {
     server_startup_start(); // call this before fork()
-    for (int i = 0; i < nclient_; i++) {
+    for (int i = 0; i < nproc_; i++) {
         pid_t pid = fork();
         if (pid > 0) {
             // parent

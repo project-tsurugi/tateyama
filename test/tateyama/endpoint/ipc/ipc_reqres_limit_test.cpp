@@ -56,9 +56,9 @@ private:
 class ipc_reqres_limit_test_server_client: public server_client_gtest_base {
 public:
     ipc_reqres_limit_test_server_client(std::shared_ptr<tateyama::api::configuration::whole> const &cfg,
-            const int nclient, const int nthread, const std::vector<std::size_t> &req_len_list,
+            const int nproc, const int nthread, const std::vector<std::size_t> &req_len_list,
             const std::vector<std::size_t> &res_len_list, int nloop) :
-            server_client_gtest_base(cfg, nclient, nthread), req_len_list_(req_len_list), res_len_list_(res_len_list), nloop_(
+            server_client_gtest_base(cfg, nproc, nthread), req_len_list_(req_len_list), res_len_list_(res_len_list), nloop_(
                     nloop) {
     }
 
@@ -128,7 +128,7 @@ public:
 static const std::size_t max_req_len = 32 * 1024;
 static const std::size_t max_res_len = 64 * 1024;
 
-static const std::vector<int> nclient_list { 1, 2 }; // NOLINT
+static const std::vector<int> nproc_list { 1, 2 }; // NOLINT
 static const std::vector<int> nthread_list { 0, 2 }; // NOLINT
 
 TEST_F(ipc_reqres_limit_test, req_res_maxlen_half) {
@@ -140,9 +140,9 @@ TEST_F(ipc_reqres_limit_test, req_res_maxlen_half) {
     dump_length_list(req_len_list);
     dump_length_list(res_len_list);
     const int nloop = 2;
-    for (int nclient : nclient_list) {
+    for (int nproc : nproc_list) {
         for (int nthread : nthread_list) {
-            ipc_reqres_limit_test_server_client sc { cfg_, nclient, nthread, req_len_list, res_len_list, nloop };
+            ipc_reqres_limit_test_server_client sc { cfg_, nproc, nthread, req_len_list, res_len_list, nloop };
             sc.start_server_client();
         }
     }
@@ -157,16 +157,16 @@ TEST_F(ipc_reqres_limit_test, req_res_maxlen) {
     dump_length_list(req_len_list);
     dump_length_list(res_len_list);
     const int nloop = 2;
-    for (int nclient : nclient_list) {
+    for (int nproc : nproc_list) {
         for (int nthread : nthread_list) {
-            ipc_reqres_limit_test_server_client sc { cfg_, nclient, nthread, req_len_list, res_len_list, nloop };
+            ipc_reqres_limit_test_server_client sc { cfg_, nproc, nthread, req_len_list, res_len_list, nloop };
             sc.start_server_client();
         }
     }
 }
 
 TEST_F(ipc_reqres_limit_test, req_res_more_than_maxlen) {
-    const int nclient = 2;
+    const int nproc = 2;
     const int nthread = 2;
     const std::size_t req_len_limit = 1024 * 1024;
     std::size_t req_len = max_req_len;
@@ -175,7 +175,7 @@ TEST_F(ipc_reqres_limit_test, req_res_more_than_maxlen) {
     while (req_len <= req_len_limit) {
         std::vector<std::size_t> req_len_list { req_len };
         std::vector<std::size_t> res_len_list { res_len };
-        ipc_reqres_limit_test_server_client sc { cfg_, nclient, nthread, req_len_list, res_len_list, nloop };
+        ipc_reqres_limit_test_server_client sc { cfg_, nproc, nthread, req_len_list, res_len_list, nloop };
         sc.start_server_client();
         req_len *= 2;
         res_len *= 2;
