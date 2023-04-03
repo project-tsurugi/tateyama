@@ -31,20 +31,18 @@ public:
     bool operator ()(std::shared_ptr<tateyama::api::server::request> req,
             std::shared_ptr<tateyama::api::server::response> res) override {
         std::string payload { req->payload() };
-        resultset_param param { payload };
         //
         std::shared_ptr<tateyama::api::server::data_channel> channel;
-        ASSERT_OK(res->acquire_channel(param.name_, channel));
+        ASSERT_OK(res->acquire_channel(payload, channel));
         std::shared_ptr<tateyama::api::server::writer> writer;
         ASSERT_OK(channel->acquire(writer));
         //
         res->session_id(req->session_id());
         ASSERT_OK(res->body(payload));
         //
-        std::size_t write_len = param.write_lens_[0];
         std::string data;
-        make_dummy_message(req->session_id(), write_len, data);
-        for (std::size_t i = 0; i < param.write_nloop_; i++) {
+        make_dummy_message(req->session_id(), write_len_, data);
+        for (std::size_t i = 0; i < write_nloop_; i++) {
             ASSERT_OK(writer->write(data.c_str(), data.length()));
             ASSERT_OK(writer->commit());
         }
@@ -105,12 +103,8 @@ public:
     void client_thread() override {
         ipc_client client { cfg_ };
         std::string resultset_name { "resultset-" + client.session_name() };
-        std::vector<std::size_t> len_list { write_len_ };
-        resultset_param param { resultset_name, len_list, write_nloop_ };
-        std::string req_message;
-        param.to_string(req_message);
+        client.send(data_channel_write_service::tag, resultset_name);
         std::string res_message;
-        client.send(data_channel_write_service::tag, req_message);
         client.receive(res_message);
         //
         resultset_wires_container *rwc = client.create_resultset_wires();
