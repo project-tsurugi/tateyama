@@ -75,6 +75,10 @@ public:
     }
 
     void show_result_entry(double sec, double msg_num_per_sec, double gb_per_sec) {
+        std::cout << nworker_;
+        std::cout << "," << (nthread_ > 0 ? "mt" : "mp"); // NOLINT
+        std::cout << "," << write_len_;
+        std::cout << "," << write_nloop_;
         std::cout << "," << std::fixed << std::setprecision(3) << sec;
         std::cout << "," << std::fixed << std::setprecision(1) << msg_num_per_sec;
         std::cout << "," << std::fixed << std::setprecision(2) << gb_per_sec;
@@ -83,11 +87,6 @@ public:
 
     void server() override {
         server_client_bench_base::server();
-        //
-        std::cout << nworker_;
-        std::cout << "," << (nthread_ > 0 ? "mt" : "mp"); // NOLINT
-        std::cout << "," << write_len_;
-        std::cout << "," << write_nloop_;
         //
         std::size_t msg_num = write_nloop_ * nworker_;
         std::size_t len_sum = msg_num * write_len_;
