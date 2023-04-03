@@ -98,20 +98,15 @@ private:
         return (tv.tv_sec + 1e-6 * tv.tv_usec);
     }
 
+    void add_rusage(bool server, struct rusage &usage) {
+        add(get_info_type(server, sc_info_type::sys_sec), tv2sec(usage.ru_stime));
+        add(get_info_type(server, sc_info_type::user_sec), tv2sec(usage.ru_utime));
+        add(get_info_type(server, sc_info_type::nvcsw), usage.ru_nvcsw);
+        add(get_info_type(server, sc_info_type::nivcsw), usage.ru_nivcsw);
+    }
+
     void add_rusage() {
-        {
-            struct rusage &server = r_server_.get_diff();
-            add(info_type::server_sys_sec, tv2sec(server.ru_stime));
-            add(info_type::server_user_sec, tv2sec(server.ru_utime));
-            add(info_type::server_nvcsw, server.ru_nvcsw);
-            add(info_type::server_nivcsw, server.ru_nivcsw);
-        }
-        {
-            struct rusage &clients = r_clients_.get_diff();
-            add(info_type::client_sys_sec, tv2sec(clients.ru_stime));
-            add(info_type::client_user_sec, tv2sec(clients.ru_utime));
-            add(info_type::client_nvcsw, clients.ru_nvcsw);
-            add(info_type::client_nivcsw, clients.ru_nivcsw);
-        }
+        add_rusage(true, r_server_.get_diff());
+        add_rusage(false, r_clients_.get_diff());
     }
 };
