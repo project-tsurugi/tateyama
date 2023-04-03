@@ -24,11 +24,11 @@ namespace tateyama::api::endpoint::ipc {
 
 class server_client_base {
 public:
-    server_client_base(std::shared_ptr<tateyama::api::configuration::whole> const &cfg, int nclient = 1,
+    server_client_base(std::shared_ptr<tateyama::api::configuration::whole> const &cfg, int nproc = 1,
             int nthread = 0) :
-            cfg_(cfg), nclient_(nclient), nthread_(nthread) {
+            cfg_(cfg), nproc_(nproc), nthread_(nthread) {
         // nthread_ == 0 means not invoke a worker thread (i.e. using main thread)
-        nworker_ = nclient_ * std::max(nthread_, 1);
+        nworker_ = nproc_ * std::max(nthread_, 1);
     }
 
     virtual std::shared_ptr<tateyama::framework::service> create_server_service() = 0;
@@ -40,7 +40,7 @@ public:
 
 protected:
     std::shared_ptr<tateyama::api::configuration::whole> const &cfg_;
-    int nclient_;
+    int nproc_;
     int nthread_;
     int nworker_;
     elapse server_elapse_ { };
