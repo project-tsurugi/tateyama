@@ -12,5 +12,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-add_subdirectory(reqres_sync_loop)
+add_subdirectory(reqres_loop)
 add_subdirectory(data_channel_write)
