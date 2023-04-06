@@ -185,6 +185,10 @@ static comm_type get_comm_type(int argc, char **argv) {
     if (strcmp(param, "nores") == 0) {
         return comm_type::nores;
     }
+    if ('0' <= param[0] && param[0] <= '9') {
+        // without comm_type option.
+        return comm_type::sync;
+    }
     std::cout << "ERROR: invalid comm_type: " << param << std::endl;
     std::exit(1);
     return comm_type::sync; // not reach
