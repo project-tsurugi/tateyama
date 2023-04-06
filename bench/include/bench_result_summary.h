@@ -18,6 +18,7 @@
 #include <map>
 
 #include "bench_result.h"
+#include "comm_type.h"
 
 class bench_result_summary {
     enum class show_part {
@@ -26,9 +27,9 @@ class bench_result_summary {
 
 public:
     bench_result_summary(std::vector<bool> &use_multi_thread_list, std::vector<int> &nsession_list,
-            std::vector<std::size_t> &msg_len_list, bool with_respose = true) :
-            use_multi_thread_list_(use_multi_thread_list), nsession_list_(nsession_list), msg_len_list_(msg_len_list), with_respose_(
-                    with_respose) {
+            std::vector<std::size_t> &msg_len_list, comm_type c_type = comm_type::sync) :
+            use_multi_thread_list_(use_multi_thread_list), nsession_list_(nsession_list), msg_len_list_(msg_len_list), comm_type_(
+                    c_type) {
     }
 
     void add(bool use_multi_thread, int nsession, std::size_t msg_len, bench_result &result) {
@@ -41,7 +42,20 @@ public:
             std::cout << std::endl;
             std::cout << "# summary";
             std::cout << " : " << (use_multi_thread ? "multi_thread" : "multi_process");
-            std::cout << " : " << (with_respose_ ? "with_response" : "without_response");
+            switch (comm_type_) {
+            case comm_type::sync:
+                std::cout << " : sync";
+                break;
+            case comm_type::async:
+                std::cout << " : async";
+                break;
+            case comm_type::async_both:
+                std::cout << " : async_both";
+                break;
+            case comm_type::nores:
+                std::cout << " : no_response";
+                break;
+            }
             switch (part) {
             case show_part::server:
                 std::cout << " : server";
@@ -51,7 +65,21 @@ public:
                 break;
             }
             std::cout << " : " << data_unit << std::endl;
-            std::cout << (use_multi_thread ? "MT" : "MP") << (with_respose_ ? "r" : "nr");
+            std::cout << (use_multi_thread ? "MT" : "MP");
+            switch (comm_type_) {
+            case comm_type::sync:
+                std::cout << "s";
+                break;
+            case comm_type::async:
+                std::cout << "as";
+                break;
+            case comm_type::async_both:
+                std::cout << "asb";
+                break;
+            case comm_type::nores:
+                std::cout << "nr";
+                break;
+            }
             for (std::size_t msg_len : msg_len_list_) {
                 std::cout << ", " << msg_len;
             }
@@ -93,7 +121,7 @@ private:
     std::vector<bool> &use_multi_thread_list_;
     std::vector<int> &nsession_list_;
     std::vector<std::size_t> &msg_len_list_;
-    bool with_respose_;
+    comm_type comm_type_;
     std::map<std::string, std::map<info_type, double>> result_map_ { };
 
     inline std::string key(bool use_multi_thread, int nsession, std::size_t msg_len) {
