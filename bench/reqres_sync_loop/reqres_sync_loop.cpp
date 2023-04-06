@@ -23,33 +23,44 @@ using namespace tateyama::api::endpoint::ipc;
 
 class echo_service: public server_service_base {
 public:
+    echo_service(bool with_response) :
+            with_response_(with_response) {
+    }
+
     bool operator ()(std::shared_ptr<tateyama::api::server::request> req,
             std::shared_ptr<tateyama::api::server::response> res) override {
-        res->session_id(req->session_id());
-        ASSERT_OK(res->body(req->payload()));
+        if (with_response_) {
+            res->session_id(req->session_id());
+            ASSERT_OK(res->body(req->payload()));
+        }
         return true;
     }
+private:
+    bool with_response_ { };
 };
 
 class reqres_sync_loop_server_client: public server_client_bench_base {
 public:
     reqres_sync_loop_server_client(std::shared_ptr<tateyama::api::configuration::whole> const &cfg, int nproc,
-            int nthread, std::size_t msg_len, int nloop) :
-            server_client_bench_base(cfg, nproc, nthread), msg_len_(msg_len), nloop_(nloop) {
+            int nthread, std::size_t msg_len, int nloop, bool with_response = true) :
+            server_client_bench_base(cfg, nproc, nthread), msg_len_(msg_len), nloop_(nloop), with_response_(
+                    with_response) {
     }
 
     std::shared_ptr<tateyama::framework::service> create_server_service() override {
-        return std::make_shared<echo_service>();
+        service_ = std::make_shared<echo_service>(with_response_);
+        return service_;
     }
 
     static void show_result_header() {
-        std::cout << "# session_num, multi_thread_or_procs, msg_len, nloop, elapse_sec, msg_num/sec, GB/sec"
-                << std::endl;
+        std::cout << "# session_num, multi_thread_or_procs, with_response, ";
+        std::cout << "msg_len, nloop, elapse_sec, msg_num/sec, GB/sec" << std::endl;
     }
 
     void show_result_entry(double sec, double msg_num_per_sec, double gb_per_sec) {
         std::cout << nworker_;
         std::cout << "," << (nthread_ > 0 ? "mt" : "mp"); // NOLINT
+        std::cout << "," << (with_response_ > 0 ? "res" : "nores"); // NOLINT
         std::cout << "," << msg_len_;
         std::cout << "," << nloop_;
         std::cout << "," << std::fixed << std::setprecision(6) << sec;
@@ -61,7 +72,10 @@ public:
     void server() override {
         server_client_bench_base::server();
         //
-        std::size_t msg_num = nloop_ * 2 * nworker_;
+        std::size_t msg_num = nloop_ * nworker_;
+        if (with_response_) {
+            msg_num *= 2;
+        }
         std::size_t len_sum = msg_num * msg_len_;
         double sec = real_sec();
         double gb_len = len_sum / (1024.0 * 1024.0 * 1024.0);
@@ -82,16 +96,20 @@ public:
         std::string res_message;
         for (int i = 0; i < nloop_; i++) {
             client.send(echo_service::tag, req_message);
-            client.receive(res_message);
+            if (with_response_) {
+                client.receive(res_message);
+            }
         }
     }
 
 private:
     std::size_t msg_len_;
     int nloop_ { };
+    bool with_response_ { };
+    std::shared_ptr<echo_service> service_;
 };
 
-int main(int argc, char **argv) {
+static void bench_all(int argc, char **argv) {
     ipc_test_env env;
     env.setup();
     //
@@ -101,16 +119,17 @@ int main(int argc, char **argv) {
     }
     std::vector<std::size_t> msg_len_list { 0, 128, 256, 512, 1024, 4 * 1024, 32 * 1024 };
     std::vector<bool> use_multi_thread_list { true, false };
-    const int nloop = 100'000;
+    const int nloop = 10000;
+    bool with_response { argc == 1 || strcmp(argv[1], "nores") != 0 };
     //
     reqres_sync_loop_server_client::show_result_header();
-    bench_result_summary result_summary { use_multi_thread_list, nsession_list, msg_len_list };
+    bench_result_summary result_summary { use_multi_thread_list, nsession_list, msg_len_list, with_response };
     for (bool use_multi_thread : use_multi_thread_list) {
         for (int nsession : nsession_list) {
             int nproc = (use_multi_thread ? 1 : nsession);
             int nthread = (use_multi_thread ? nsession : 0);
             for (std::size_t msg_len : msg_len_list) {
-                reqres_sync_loop_server_client sc { env.config(), nproc, nthread, msg_len, nloop };
+                reqres_sync_loop_server_client sc { env.config(), nproc, nthread, msg_len, nloop, with_response };
                 sc.start_server_client();
                 result_summary.add(use_multi_thread, nsession, msg_len, sc.result());
             }
@@ -119,4 +138,54 @@ int main(int argc, char **argv) {
     result_summary.show();
     //
     env.teardown();
+}
+
+static void bench_once(int argc, char **argv) {
+    ipc_test_env env;
+    env.setup();
+    //
+    bool use_multi_thread { strcmp(argv[1], "mt") == 0 };
+    int nsession { std::atoi(argv[2]) };
+    std::size_t msg_len { std::strtoull(argv[3], nullptr, 10) };
+    int nloop { std::atoi(argv[4]) };
+    bool with_response { argc <= 5 || strcmp(argv[5], "nores") != 0 };
+    int nproc = (use_multi_thread ? 1 : nsession);
+    int nthread = (use_multi_thread ? nsession : 0);
+    //
+    reqres_sync_loop_server_client::show_result_header();
+    reqres_sync_loop_server_client sc { env.config(), nproc, nthread, msg_len, nloop, with_response };
+    sc.start_server_client();
+    //
+    env.teardown();
+}
+
+static void help(char **argv) {
+    std::cout << "Usage: " << argv[0] << " [{mt|mp} nsession msg_len nloop] [nores]" << std::endl;
+    std::cout << "\tex: " << argv[0] << std::endl;
+    std::cout << "\tex: " << argv[0] << " nores" << std::endl;
+    std::cout << "\tex: " << argv[0] << " mt 8 512 100000" << std::endl;
+    std::cout << "\tex: " << argv[0] << " mp 16 4192 10000" << std::endl;
+    std::cout << "\tex: " << argv[0] << " mp 16 4192 10000 nores" << std::endl;
+}
+
+int main(int argc, char **argv) {
+    switch (argc) {
+    case 1:
+        bench_all(argc, argv);
+        break;
+    case 2:
+        if (strcmp(argv[1], "help") != 0) {
+            bench_all(argc, argv);
+        } else {
+            help(argv);
+        }
+        break;
+    case 5:
+    case 6:
+        bench_once(argc, argv);
+        break;
+    default:
+        help(argv);
+        break;
+    }
 }
