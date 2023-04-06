@@ -12,18 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-file(GLOB REQRES_SYNC_LOOP_SOURCES
+file(GLOB REQRES_LOOP_SOURCES
         "*.cpp"
         ${PROJECT_SOURCE_DIR}/test/tateyama/endpoint/ipc/ipc_client.cpp
         ${PROJECT_SOURCE_DIR}/test/tateyama/endpoint/ipc/ipc_test_utils.cpp
         ${PROJECT_SOURCE_DIR}/test/tateyama/endpoint/ipc/server_client_base.cpp
         )
 
-add_executable(reqres_sync_loop
-        ${REQRES_SYNC_LOOP_SOURCES}
+add_executable(reqres_loop
+        ${REQRES_LOOP_SOURCES}
         )
 
-target_link_libraries(reqres_sync_loop
+target_link_libraries(reqres_loop
         PRIVATE tateyama-impl
         PRIVATE tbb
         PRIVATE takatori
@@ -33,7 +33,7 @@ target_link_libraries(reqres_sync_loop
         PRIVATE limestone
         )
 
-target_include_directories(reqres_sync_loop
+target_include_directories(reqres_loop
         PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
         PRIVATE ${PROJECT_SOURCE_DIR}/bench/include
         PRIVATE ${CMAKE_BINARY_DIR}/src

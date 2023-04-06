@@ -54,9 +54,9 @@ private:
     comm_type comm_type_ { };
 };
 
-class reqres_sync_loop_server_client: public server_client_bench_base {
+class reqres_loop_server_client: public server_client_bench_base {
 public:
-    reqres_sync_loop_server_client(std::shared_ptr<tateyama::api::configuration::whole> const &cfg, int nproc,
+    reqres_loop_server_client(std::shared_ptr<tateyama::api::configuration::whole> const &cfg, int nproc,
             int nthread, std::size_t msg_len, int nloop, comm_type c_type) :
             server_client_bench_base(cfg, nproc, nthread), msg_len_(msg_len), nloop_(nloop), comm_type_(c_type) {
     }
@@ -207,14 +207,14 @@ static void bench_all(int argc, char **argv) {
     const int nloop = 100'000;
     comm_type c_type = get_comm_type(argc, argv);
     //
-    reqres_sync_loop_server_client::show_result_header();
+    reqres_loop_server_client::show_result_header();
     bench_result_summary result_summary { use_multi_thread_list, nsession_list, msg_len_list, c_type };
     for (bool use_multi_thread : use_multi_thread_list) {
         for (int nsession : nsession_list) {
             int nproc = (use_multi_thread ? 1 : nsession);
             int nthread = (use_multi_thread ? nsession : 0);
             for (std::size_t msg_len : msg_len_list) {
-                reqres_sync_loop_server_client sc { env.config(), nproc, nthread, msg_len, nloop, c_type };
+                reqres_loop_server_client sc { env.config(), nproc, nthread, msg_len, nloop, c_type };
                 sc.start_server_client();
                 result_summary.add(use_multi_thread, nsession, msg_len, sc.result());
             }
@@ -237,8 +237,8 @@ static void bench_once(int argc, char **argv) {
     int nproc = (use_multi_thread ? 1 : nsession);
     int nthread = (use_multi_thread ? nsession : 0);
     //
-    reqres_sync_loop_server_client::show_result_header();
-    reqres_sync_loop_server_client sc { env.config(), nproc, nthread, msg_len, nloop, c_type };
+    reqres_loop_server_client::show_result_header();
+    reqres_loop_server_client sc { env.config(), nproc, nthread, msg_len, nloop, c_type };
     sc.start_server_client();
     //
     env.teardown();
