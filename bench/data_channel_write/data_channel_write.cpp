@@ -128,7 +128,7 @@ static inline std::size_t KB(int size) {
     return 1024UL * size;
 }
 
-int main(int argc, char **argv) {
+static void bench_all() {
     ipc_test_env env;
     env.setup();
     //
@@ -170,4 +170,43 @@ int main(int argc, char **argv) {
     result_summary.show();
     //
     env.teardown();
+}
+
+static void bench_once(int argc, char **argv) {
+    ipc_test_env env;
+    env.setup();
+    //
+    bool use_multi_thread { strcmp(argv[1], "mt") == 0 };
+    int nsession { std::atoi(argv[2]) };
+    std::size_t msg_len { std::strtoull(argv[3], nullptr, 10) };
+    std::size_t nloop { std::strtoull(argv[4], nullptr, 10) };
+    int nproc = (use_multi_thread ? 1 : nsession);
+    int nthread = (use_multi_thread ? nsession : 0);
+    //
+    data_channel_write_server_client::show_result_header();
+    data_channel_write_server_client sc { env.config(), nproc, nthread, msg_len, nloop };
+    sc.start_server_client();
+    //
+    env.teardown();
+}
+
+static void help(char **argv) {
+    std::cout << "Usage: " << argv[0] << " [{mt|mp} nsession msg_len nloop]" << std::endl;
+    std::cout << "\tex: " << argv[0] << std::endl;
+    std::cout << "\tex: " << argv[0] << " mt 8 512 100000" << std::endl;
+    std::cout << "\tex: " << argv[0] << " mp 16 4192 10000" << std::endl;
+}
+
+int main(int argc, char **argv) {
+    switch (argc) {
+    case 1:
+        bench_all();
+        break;
+    case 5:
+        bench_once(argc, argv);
+        break;
+    default:
+        help(argv);
+        break;
+    }
 }
