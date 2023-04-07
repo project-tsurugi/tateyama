@@ -19,6 +19,7 @@
 
 #include "server_client_bench_base.h"
 #include "bench_result_summary.h"
+#include "main_args.h"
 
 using namespace tateyama::api::endpoint::ipc;
 
@@ -172,14 +173,14 @@ static void bench_all() {
     env.teardown();
 }
 
-static void bench_once(int argc, char **argv) {
+static void bench_once(std::vector<std::string> &args) {
     ipc_test_env env;
     env.setup();
     //
-    bool use_multi_thread { strcmp(argv[1], "mt") == 0 };
-    int nsession { std::atoi(argv[2]) };
-    std::size_t msg_len { std::strtoull(argv[3], nullptr, 10) };
-    std::size_t nloop { std::strtoull(argv[4], nullptr, 10) };
+    bool use_multi_thread { args[1] == "mt" };
+    int nsession { std::stoi(args[2]) };
+    std::size_t msg_len { std::stoull(args[3]) };
+    std::size_t nloop { std::stoull(args[4]) };
     int nproc = (use_multi_thread ? 1 : nsession);
     int nthread = (use_multi_thread ? nsession : 0);
     //
@@ -190,23 +191,25 @@ static void bench_once(int argc, char **argv) {
     env.teardown();
 }
 
-static void help(char **argv) {
-    std::cout << "Usage: " << argv[0] << " [{mt|mp} nsession msg_len nloop]" << std::endl;
-    std::cout << "\tex: " << argv[0] << std::endl;
-    std::cout << "\tex: " << argv[0] << " mt 8 512 100000" << std::endl;
-    std::cout << "\tex: " << argv[0] << " mp 16 4192 10000" << std::endl;
+static void help(std::vector<std::string> &args) {
+    std::cout << "Usage: " << args[0] << " [{mt|mp} nsession msg_len nloop]" << std::endl;
+    std::cout << "\tex: " << args[0] << std::endl;
+    std::cout << "\tex: " << args[0] << " mt 8 512 100000" << std::endl;
+    std::cout << "\tex: " << args[0] << " mp 16 4192 10000" << std::endl;
 }
 
 int main(int argc, char **argv) {
+    std::vector<std::string> args{};
+    to_args(argc, argv, args);
     switch (argc) {
     case 1:
         bench_all();
         break;
     case 5:
-        bench_once(argc, argv);
+        bench_once(args);
         break;
     default:
-        help(argv);
+        help(args);
         break;
     }
 }

@@ -18,12 +18,13 @@
 
 #include "server_client_bench_base.h"
 #include "bench_result_summary.h"
+#include "main_args.h"
 
 using namespace tateyama::api::endpoint::ipc;
 
 class echo_service: public server_service_base {
 public:
-    echo_service(comm_type c_type) :
+    explicit echo_service(comm_type c_type) :
             comm_type_(c_type) {
     }
 
@@ -56,8 +57,8 @@ private:
 
 class reqres_loop_server_client: public server_client_bench_base {
 public:
-    reqres_loop_server_client(std::shared_ptr<tateyama::api::configuration::whole> const &cfg, int nproc,
-            int nthread, std::size_t msg_len, int nloop, comm_type c_type) :
+    reqres_loop_server_client(std::shared_ptr<tateyama::api::configuration::whole> const &cfg, int nproc, int nthread,
+            std::size_t msg_len, int nloop, comm_type c_type) :
             server_client_bench_base(cfg, nproc, nthread), msg_len_(msg_len), nloop_(nloop), comm_type_(c_type) {
     }
 
@@ -115,7 +116,7 @@ public:
         show_result_entry(sec, msg_num_per_sec, gb_per_sec);
     }
 
-    void client_loop_sync(std::string &req_message, ipc_client &client) {
+    void client_loop_sync(std::string &req_message, ipc_client &client) const {
         std::string res_message;
         for (int i = 0; i < nloop_; i++) {
             client.send(echo_service::tag, req_message);
@@ -138,7 +139,7 @@ public:
         }
     }
 
-    void client_loop_nores(std::string &req_message, ipc_client &client) {
+    void client_loop_nores(std::string &req_message, ipc_client &client) const {
         for (int i = 0; i < nloop_; i++) {
             client.send(echo_service::tag, req_message);
         }
@@ -168,33 +169,36 @@ private:
     comm_type comm_type_ { };
 };
 
-static comm_type get_comm_type(int argc, char **argv) {
-    if (argc <= 1) {
+static bool is_number(const std::string &s) {
+    return s.find_first_not_of("0123456789") == std::string::npos;
+}
+
+static comm_type get_comm_type(std::vector<std::string> &args) {
+    if (args.size() <= 1) {
         return comm_type::sync;
     }
-    char *param = argv[argc - 1];
-    if (strcmp(param, "sync") == 0) {
+    std::string &last = args[args.size() - 1];
+    if (is_number(last)) {
         return comm_type::sync;
     }
-    if (strcmp(param, "async") == 0) {
+    if (last == "sync") {
+        return comm_type::sync;
+    }
+    if (last == "async") {
         return comm_type::async;
     }
-    if (strcmp(param, "async_both") == 0) {
+    if (last == "async_both") {
         return comm_type::async_both;
     }
-    if (strcmp(param, "nores") == 0) {
+    if (last == "nores") {
         return comm_type::nores;
     }
-    if ('0' <= param[0] && param[0] <= '9') {
-        // without comm_type option.
-        return comm_type::sync;
-    }
-    std::cout << "ERROR: invalid comm_type: " << param << std::endl;
+    std::cout << "ERROR: invalid comm_type: " << last << std::endl;
     std::exit(1);
     return comm_type::sync; // not reach
 }
 
-static void bench_all(int argc, char **argv) {
+static void bench_all(std::vector<std::string> &args) {
     ipc_test_env env;
     env.setup();
     //
@@ -205,7 +209,7 @@ static void bench_all(int argc, char **argv) {
     std::vector<std::size_t> msg_len_list { 0, 128, 256, 512, 1024, 4 * 1024, 32 * 1024 };
     std::vector<bool> use_multi_thread_list { true, false };
     const int nloop = 100'000;
-    comm_type c_type = get_comm_type(argc, argv);
+    comm_type c_type = get_comm_type(args);
     //
     reqres_loop_server_client::show_result_header();
     bench_result_summary result_summary { use_multi_thread_list, nsession_list, msg_len_list, c_type };
@@ -225,15 +229,15 @@ static void bench_all(int argc, char **argv) {
     env.teardown();
 }
 
-static void bench_once(int argc, char **argv) {
+static void bench_once(std::vector<std::string> &args) {
     ipc_test_env env;
     env.setup();
     //
-    bool use_multi_thread { strcmp(argv[1], "mt") == 0 };
-    int nsession { std::atoi(argv[2]) };
-    std::size_t msg_len { std::strtoull(argv[3], nullptr, 10) };
-    int nloop { std::atoi(argv[4]) };
-    comm_type c_type = get_comm_type(argc, argv);
+    bool use_multi_thread { args[1] == "mt" };
+    int nsession { std::stoi(args[2]) };
+    std::size_t msg_len { std::stoull(args[3]) };
+    int nloop { std::stoi(args[4]) };
+    comm_type c_type = get_comm_type(args);
     int nproc = (use_multi_thread ? 1 : nsession);
     int nthread = (use_multi_thread ? nsession : 0);
     //
@@ -244,34 +248,36 @@ static void bench_once(int argc, char **argv) {
     env.teardown();
 }
 
-static void help(char **argv) {
-    std::cout << "Usage: " << argv[0] << " [{mt|mp} nsession msg_len nloop] [sync|async|async_both|nores]" << std::endl;
-    std::cout << "\tex: " << argv[0] << std::endl;
-    std::cout << "\tex: " << argv[0] << " async" << std::endl;
-    std::cout << "\tex: " << argv[0] << " nores" << std::endl;
-    std::cout << "\tex: " << argv[0] << " mt 8 512 100000" << std::endl;
-    std::cout << "\tex: " << argv[0] << " mp 16 4192 10000" << std::endl;
-    std::cout << "\tex: " << argv[0] << " mp 16 4192 10000 nores" << std::endl;
+static void help(std::vector<std::string> &args) {
+    std::cout << "Usage: " << args[0] << " [{mt|mp} nsession msg_len nloop] [sync|async|async_both|nores]" << std::endl;
+    std::cout << "\tex: " << args[0] << std::endl;
+    std::cout << "\tex: " << args[0] << " async" << std::endl;
+    std::cout << "\tex: " << args[0] << " nores" << std::endl;
+    std::cout << "\tex: " << args[0] << " mt 8 512 100000" << std::endl;
+    std::cout << "\tex: " << args[0] << " mp 16 4192 10000" << std::endl;
+    std::cout << "\tex: " << args[0] << " mp 16 4192 10000 nores" << std::endl;
 }
 
 int main(int argc, char **argv) {
+    std::vector<std::string> args { };
+    to_args(argc, argv, args);
     switch (argc) {
     case 1:
-        bench_all(argc, argv);
+        bench_all(args);
         break;
     case 2:
-        if (strcmp(argv[1], "help") != 0) {
-            bench_all(argc, argv);
+        if (args[1] != "help") {
+            bench_all(args);
         } else {
-            help(argv);
+            help(args);
         }
         break;
     case 5:
     case 6:
-        bench_once(argc, argv);
+        bench_once(args);
         break;
     default:
-        help(argv);
+        help(args);
         break;
     }
 }
