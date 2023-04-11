@@ -121,7 +121,7 @@ public:
     public:
         resultset_wire_container_impl(shm_resultset_wire* resultset_wire, resultset_wires_container_impl& resultset_wires_container_impl, std::size_t datachannel_buffer_size)
             : shm_resultset_wire_(resultset_wire), resultset_wires_container_impl_(resultset_wires_container_impl), datachannel_buffer_size_(datachannel_buffer_size) {
-            VLOG_LP(log_debug) << "creates a resultset_wire with a size of " << datachannel_buffer_size_ << " bytes";
+            VLOG_LP(log_trace) << "creates a resultset_wire with a size of " << datachannel_buffer_size_ << " bytes";
         }
         ~resultset_wire_container_impl() override {
             if (thread_active_) {

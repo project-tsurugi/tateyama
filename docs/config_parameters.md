@@ -54,6 +54,7 @@ parameter=value
 |---:| :---: | :--- |---|
 |database_name | 文字列 | ipc_endpointに接続する際のurl名、デフォルトはtateyama（参）この文字列は/dev/shmに作成されるファイル名のprefixとして使われる。
 |threads | 整数 | ipc_endpointの最大同時接続数、デフォルトは104。
+|datachannel_buffer_size | 整数 | resultsetのbuffer size、単位はKB、デフォルトは64。ipcで扱える最大のraw sizeはdatachannel_buffer_size-4。
 
 ## stream_endpointセクション
 
