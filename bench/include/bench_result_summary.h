@@ -27,7 +27,7 @@ class bench_result_summary {
 
 public:
     bench_result_summary(std::vector<bool> &use_multi_thread_list, std::vector<int> &nsession_list,
-            std::vector<std::size_t> &msg_len_list, comm_type c_type = comm_type::sync) :
+            std::vector<std::size_t> &msg_len_list, comm_type c_type = comm_type::none) :
             use_multi_thread_list_(use_multi_thread_list), nsession_list_(nsession_list), msg_len_list_(msg_len_list), comm_type_(
                     c_type) {
     }
@@ -43,14 +43,13 @@ public:
             std::cout << "# summary";
             std::cout << " : " << (use_multi_thread ? "multi_thread" : "multi_process");
             switch (comm_type_) {
+            case comm_type::none:
+                break;
             case comm_type::sync:
                 std::cout << " : sync";
                 break;
             case comm_type::async:
                 std::cout << " : async";
-                break;
-            case comm_type::async_both:
-                std::cout << " : async_both";
                 break;
             case comm_type::nores:
                 std::cout << " : no_response";
@@ -67,14 +66,13 @@ public:
             std::cout << " : " << data_unit << std::endl;
             std::cout << (use_multi_thread ? "MT" : "MP");
             switch (comm_type_) {
+            case comm_type::none:
+                break;
             case comm_type::sync:
                 std::cout << "s";
                 break;
             case comm_type::async:
                 std::cout << "as";
-                break;
-            case comm_type::async_both:
-                std::cout << "asb";
                 break;
             case comm_type::nores:
                 std::cout << "nr";

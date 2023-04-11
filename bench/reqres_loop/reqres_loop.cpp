@@ -36,16 +36,6 @@ public:
             res->session_id(req->session_id());
             ASSERT_OK(res->body(req->payload()));
             break;
-        case comm_type::async_both: {
-            // NOTE: NOT WORK CORRECTLY. just made for test
-            std::shared_ptr<tateyama::api::server::response> res2 = std::move(res);
-            auto payload = req->payload();
-            res2->session_id(req->session_id());
-            std::thread([res2, payload] {
-                ASSERT_OK(res2->body(payload));
-            });
-        }
-            break;
         case comm_type::nores:
             break;
         }
@@ -80,9 +70,6 @@ public:
             break;
         case comm_type::async:
             std::cout << ",async";
-            break;
-        case comm_type::async_both:
-            std::cout << ",async_both";
             break;
         case comm_type::nores:
             std::cout << ",nores";
@@ -154,7 +141,6 @@ public:
             client_loop_sync(req_message, client);
             break;
         case comm_type::async:
-        case comm_type::async_both:
             client_loop_async(req_message, client);
             break;
         case comm_type::nores:
@@ -186,9 +172,6 @@ static comm_type get_comm_type(std::vector<std::string> &args) {
     }
     if (last == "async") {
         return comm_type::async;
-    }
-    if (last == "async_both") {
-        return comm_type::async_both;
     }
     if (last == "nores") {
         return comm_type::nores;
@@ -241,7 +224,6 @@ static void bench_once(std::vector<std::string> &args) {
     int nproc = (use_multi_thread ? 1 : nsession);
     int nthread = (use_multi_thread ? nsession : 0);
     //
-    reqres_loop_server_client::show_result_header();
     reqres_loop_server_client sc { env.config(), nproc, nthread, msg_len, nloop, c_type };
     sc.start_server_client();
     //
@@ -249,7 +231,7 @@ static void bench_once(std::vector<std::string> &args) {
 }
 
 static void help(std::vector<std::string> &args) {
-    std::cout << "Usage: " << args[0] << " [{mt|mp} nsession msg_len nloop] [sync|async|async_both|nores]" << std::endl;
+    std::cout << "Usage: " << args[0] << " [{mt|mp} nsession msg_len nloop] [sync|async|nores]" << std::endl;
     std::cout << "\tex: " << args[0] << std::endl;
     std::cout << "\tex: " << args[0] << " async" << std::endl;
     std::cout << "\tex: " << args[0] << " nores" << std::endl;
@@ -266,7 +248,7 @@ int main(int argc, char **argv) {
         bench_all(args);
         break;
     case 2:
-        if (args[1] != "help") {
+        if (args[1].find("help") == std::string::npos) {
             bench_all(args);
         } else {
             help(args);

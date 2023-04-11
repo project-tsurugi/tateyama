@@ -184,7 +184,6 @@ static void bench_once(std::vector<std::string> &args) {
     int nproc = (use_multi_thread ? 1 : nsession);
     int nthread = (use_multi_thread ? nsession : 0);
     //
-    data_channel_write_server_client::show_result_header();
     data_channel_write_server_client sc { env.config(), nproc, nthread, msg_len, nloop };
     sc.start_server_client();
     //
@@ -203,7 +202,11 @@ int main(int argc, char **argv) {
     to_args(argc, argv, args);
     switch (argc) {
     case 1:
-        bench_all();
+        if (args[1].find("help") == std::string::npos) {
+            bench_all();
+        } else {
+            help(args);
+        }
         break;
     case 5:
         bench_once(args);

@@ -16,5 +16,5 @@
 #pragma once
 
 enum class comm_type {
-    sync, async, async_both, nores
+    none, sync, async, nores
 };
