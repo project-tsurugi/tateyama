@@ -11,8 +11,8 @@ PERF_EVENTS="task-clock,context-switches,cpu-migrations,cycles,instructions,cach
 
 perf_stat() {
 	session_num=$1
-	echo "perf stat -e ${PERF_EVENTS} -x , ${APP} ${CLIENT_TYPE} ${session_num} ${MSG_LEN} ${NLOOP} ${COMM_TYPE}"
-	perf stat -e ${PERF_EVENTS} -x , ${APP} ${CLIENT_TYPE} ${session_num} ${MSG_LEN} ${NLOOP} ${COMM_TYPE}
+	echo "perf stat -e ${PERF_EVENTS} -x , ${APP} ${session_num} ${CLIENT_TYPE} ${MSG_LEN} ${NLOOP}"
+	perf stat -e ${PERF_EVENTS} -x , ${APP} ${session_num} ${CLIENT_TYPE} ${MSG_LEN} ${NLOOP}
 	echo ""
 	sleep 3
 }

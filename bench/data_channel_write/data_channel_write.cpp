@@ -177,8 +177,8 @@ static void bench_once(std::vector<std::string> &args) {
     ipc_test_env env;
     env.setup();
     //
-    bool use_multi_thread { args[1] == "mt" };
-    int nsession { std::stoi(args[2]) };
+    int nsession { std::stoi(args[1]) };
+    bool use_multi_thread { args[2] == "mt" };
     std::size_t msg_len { std::stoull(args[3]) };
     std::size_t nloop { std::stoull(args[4]) };
     int nproc = (use_multi_thread ? 1 : nsession);
@@ -191,9 +191,9 @@ static void bench_once(std::vector<std::string> &args) {
 }
 
 static void help(std::vector<std::string> &args) {
-    std::cout << "Usage: " << args[0] << " [{mt|mp} nsession msg_len nloop]" << std::endl;
-    std::cout << "\tex: " << args[0] << " mt 8 512 100000" << std::endl;
-    std::cout << "\tex: " << args[0] << " mp 16 4192 10000" << std::endl;
+    std::cout << "Usage: " << args[0] << " [nsession {mt|mp} msg_len nloop]" << std::endl;
+    std::cout << "\tex: " << args[0] << " 8 mt 512 100000" << std::endl;
+    std::cout << "\tex: " << args[0] << " 16 mp 4192 10000" << std::endl;
     std::cout << "\tex: " << args[0] << std::endl;
 }
 
