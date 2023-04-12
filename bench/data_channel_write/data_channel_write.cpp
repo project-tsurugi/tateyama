@@ -192,9 +192,9 @@ static void bench_once(std::vector<std::string> &args) {
 
 static void help(std::vector<std::string> &args) {
     std::cout << "Usage: " << args[0] << " [{mt|mp} nsession msg_len nloop]" << std::endl;
-    std::cout << "\tex: " << args[0] << std::endl;
     std::cout << "\tex: " << args[0] << " mt 8 512 100000" << std::endl;
     std::cout << "\tex: " << args[0] << " mp 16 4192 10000" << std::endl;
+    std::cout << "\tex: " << args[0] << std::endl;
 }
 
 int main(int argc, char **argv) {
