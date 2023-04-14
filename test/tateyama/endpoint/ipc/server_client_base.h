@@ -44,7 +44,7 @@ protected:
     int nthread_;
     int nworker_;
 
-    int maxsec_ = 60;
+    int maxsec_ = 180;
 
 private:
     // for server process
