@@ -63,15 +63,19 @@ bool parse_response_header(std::string_view input, parse_response_result &result
 
 void ipc_client::receive(std::string &message) {
     tsubakuro::common::wire::response_header header;
+    int ntry = 0;
     bool ok = false;
     do {
         // NOTE: await() throws exception if it cannot receive any response in a few seconds.
-        // retry await() forever to receive response.
         try {
             header = response_wire_->await();
             ok = true;
         } catch (const std::runtime_error &ex) {
             std::cout << ex.what() << std::endl;
+            ntry++;
+            if (ntry >= 100) {
+                FAIL();
+            }
         }
     } while (!ok);
     EXPECT_EQ(ipc_test_index, header.get_idx());
