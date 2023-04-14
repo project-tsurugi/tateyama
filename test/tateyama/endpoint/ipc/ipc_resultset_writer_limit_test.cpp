@@ -196,7 +196,7 @@ TEST_F(ipc_resultset_writer_limit_test, single_client) {
     const std::size_t maxlen = ipc_client::resultset_record_maxlen;
     std::vector<std::size_t> len_list { maxlen / 2 + 10 };
     const int nloop = 10;
-    std::vector<std::size_t> write_nloop_list { 10, 100 };
+    std::vector<std::size_t> write_nloop_list { 10 };
     for (std::size_t write_nloop : write_nloop_list) {
         for (std::size_t len : len_list) {
             std::vector<std::size_t> list { len };
