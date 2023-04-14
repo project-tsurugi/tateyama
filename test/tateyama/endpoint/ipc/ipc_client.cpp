@@ -21,12 +21,12 @@ namespace tateyama::api::endpoint::ipc {
 
 ipc_client::ipc_client(std::shared_ptr<tateyama::api::configuration::whole> const &cfg) {
     get_ipc_database_name(cfg, database_name_);
-    container_ = std::make_unique<tsubakuro::common::wire::connection_container>(database_name_);
+    container_ = std::make_unique < tsubakuro::common::wire::connection_container > (database_name_);
     id_ = container_->get_connection_queue().request();
     session_id_ = container_->get_connection_queue().wait(id_);
     //
     session_name_ = database_name_ + "-" + std::to_string(session_id_);
-    swc_ = std::make_unique<tsubakuro::common::wire::session_wire_container>(session_name_);
+    swc_ = std::make_unique < tsubakuro::common::wire::session_wire_container > (session_name_);
     request_wire_ = &swc_->get_request_wire();
     response_wire_ = &swc_->get_response_wire();
 }
@@ -62,7 +62,18 @@ bool parse_response_header(std::string_view input, parse_response_result &result
 }
 
 void ipc_client::receive(std::string &message) {
-    tsubakuro::common::wire::response_header header = response_wire_->await();
+    tsubakuro::common::wire::response_header header;
+    bool ok = false;
+    do {
+        // NOTE: await() throws exception if it cannot receive any response in a few seconds.
+        // retry await() forever to receive response.
+        try {
+            header = response_wire_->await();
+            ok = true;
+        } catch (const std::runtime_error &ex) {
+            std::cout << ex.what() << std::endl;
+        }
+    } while (!ok);
     EXPECT_EQ(ipc_test_index, header.get_idx());
     ASSERT_GT(header.get_length(), 0);
     EXPECT_EQ(1, header.get_type());
@@ -76,7 +87,7 @@ void ipc_client::receive(std::string &message) {
     message = result.payload_;
 }
 
-resultset_wires_container *ipc_client::create_resultset_wires() {
+resultset_wires_container* ipc_client::create_resultset_wires() {
     return swc_->create_resultset_wire();
 }
 
