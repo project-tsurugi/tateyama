@@ -44,8 +44,6 @@ protected:
     int nthread_;
     int nworker_;
 
-    int maxsec_ = 180;
-
 private:
     // for server process
     void wait_client_exit();
