@@ -30,6 +30,8 @@ file(GLOB SOURCES
         "tateyama/endpoint/service/impl/*.cpp"
         "tateyama/endpoint/ipc/*.cpp"
         "tateyama/endpoint/ipc/bootstrap/*.cpp"
+        "tateyama/endpoint/loopback/*.cpp"
+        "tateyama/endpoint/loopback/bootstrap/*.cpp"
         "tateyama/endpoint/stream/*.cpp"
         "tateyama/endpoint/stream/bootstrap/*.cpp"
         "tateyama/framework/*.cpp"
