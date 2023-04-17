@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "ipc_client.h"
+#include "ipc_gtest_base.h"
 #include <numeric>
 
 namespace tateyama::api::endpoint::ipc {
@@ -49,11 +49,11 @@ private:
     int index_ = 0;
 };
 
-class ipc_bigsmall_test_server_client: public server_client_base {
+class ipc_bigsmall_test_server_client: public server_client_gtest_base {
 public:
     ipc_bigsmall_test_server_client(std::shared_ptr<tateyama::api::configuration::whole> const &cfg, int nloop,
             std::size_t req_max_length, std::size_t res_max_length) :
-            server_client_base(cfg), nloop_(nloop) {
+            server_client_gtest_base(cfg), nloop_(nloop) {
         make_power2_length_list(req_len_list_, req_max_length);
         EXPECT_GT(req_len_list_.size(), 0);
         make_power2_length_list(res_len_list_, res_max_length);
@@ -61,7 +61,7 @@ public:
     }
 
     std::shared_ptr<tateyama::framework::service> create_server_service() override {
-        return std::make_shared < bigsmall_service > (req_len_list_, res_len_list_);
+        return std::make_shared<bigsmall_service>(req_len_list_, res_len_list_);
     }
 
     void server() override {
@@ -102,14 +102,14 @@ private:
     std::vector<std::size_t> req_len_list_, res_len_list_;
 };
 
-class ipc_bigsmall_test: public ipc_test_base {
+class ipc_bigsmall_test: public ipc_gtest_base {
 };
 
 TEST_F(ipc_bigsmall_test, test1) {
     // NOTE: server_wire_container_impl::request_buffer_size, response_buffer_size are private member.
-    std::vector<std::size_t> maxlen_list {32, 64, 128, 256, 1024};
+    std::vector<std::size_t> maxlen_list { 32, 64, 128, 256, 1024 };
     for (std::size_t maxlen : maxlen_list) {
-        ipc_bigsmall_test_server_client sc {cfg_, 100, maxlen, maxlen};
+        ipc_bigsmall_test_server_client sc { cfg_, 100, maxlen, maxlen };
         sc.start_server_client();
     }
 }
@@ -117,7 +117,7 @@ TEST_F(ipc_bigsmall_test, test1) {
 TEST_F(ipc_bigsmall_test, test2) {
     // NOTE: server_wire_container_impl::request_buffer_size, response_buffer_size are private member.
     std::size_t maxlen = 4 * 1024;
-    ipc_bigsmall_test_server_client sc {cfg_, 100, maxlen + 1, maxlen + 1};
+    ipc_bigsmall_test_server_client sc { cfg_, 100, maxlen + 1, maxlen + 1 };
     sc.start_server_client();
 }
 

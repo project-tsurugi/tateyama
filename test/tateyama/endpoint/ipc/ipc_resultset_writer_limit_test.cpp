@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "ipc_client.h"
+#include "ipc_gtest_base.h"
 #include <numeric>
 
 namespace tateyama::api::endpoint::ipc {
@@ -41,7 +41,7 @@ public:
         }
         //
         res->session_id(req->session_id());
-        EXPECT_EQ(tateyama::status::ok, res->body(payload));
+        EXPECT_EQ(tateyama::status::ok, res->body_head(payload));
         //
         for (std::size_t i = 0; i < param.write_nloop_; i++) {
             msg_info info { req, i };
@@ -55,8 +55,8 @@ public:
                     make_dummy_message(part, len, data);
                     //
                     std::shared_ptr<tateyama::api::server::writer> &writer = writer_list[j];
-                    writer->write(data.c_str(), data.length());
-                    writer->commit();
+                    EXPECT_EQ(tateyama::status::ok, writer->write(data.c_str(), data.length()));
+                    EXPECT_EQ(tateyama::status::ok, writer->commit());
                 }
             }
         }
@@ -68,13 +68,13 @@ public:
     }
 };
 
-class ipc_resultset_writer_limit_test_server_client: public server_client_base {
+class ipc_resultset_writer_limit_test_server_client: public server_client_gtest_base {
 public:
     ipc_resultset_writer_limit_test_server_client(std::shared_ptr<tateyama::api::configuration::whole> const &cfg,
-            int nclient, int nthread, std::vector<std::size_t> &len_list, int nloop, std::size_t write_nloop,
+            int nproc, int nthread, std::vector<std::size_t> &len_list, int nloop, std::size_t write_nloop,
             std::size_t nwriter) :
-            server_client_base(cfg, nclient, nthread), len_list_(len_list), nloop_(nloop), write_nloop_(write_nloop), nwriter_(
-                    nwriter) {
+            server_client_gtest_base(cfg, nproc, nthread), len_list_(len_list), nloop_(nloop), write_nloop_(
+                    write_nloop), nwriter_(nwriter) {
     }
 
     std::shared_ptr<tateyama::framework::service> create_server_service() override {
@@ -187,11 +187,11 @@ private:
 static constexpr int max_writer_count = 16;
 static const std::vector<std::size_t> nwriter_list { 1, 4, max_writer_count }; // NOLINT
 
-class ipc_resultset_writer_limit_test: public ipc_test_base {
+class ipc_resultset_writer_limit_test: public ipc_gtest_base {
 };
 
 TEST_F(ipc_resultset_writer_limit_test, single_client) {
-    const int nclient = 1;
+    const int nproc = 1;
     const int nthread = 0;
     const std::size_t maxlen = ipc_client::resultset_record_maxlen;
     std::vector<std::size_t> len_list { maxlen / 2 + 10 };
@@ -201,7 +201,7 @@ TEST_F(ipc_resultset_writer_limit_test, single_client) {
         for (std::size_t len : len_list) {
             std::vector<std::size_t> list { len };
             for (std::size_t nwriter : nwriter_list) {
-                ipc_resultset_writer_limit_test_server_client sc { cfg_, nclient, nthread, list, nloop, write_nloop,
+                ipc_resultset_writer_limit_test_server_client sc { cfg_, nproc, nthread, list, nloop, write_nloop,
                         nwriter };
                 sc.start_server_client();
             }
@@ -233,23 +233,23 @@ TEST_F(ipc_resultset_writer_limit_test, multi_clients) {
 // If this test failed, other continuous tests also failed by SIGBUS.
 // Successfully ran at Intel i7-13700 (16C/24T), 64GB, Ubuntu 20.04.6 LTS.
 TEST_F(ipc_resultset_writer_limit_test, DISABLED_max_session_max_writer_max_datalen) {
-    const int nclient = 1;
+    const int nproc = 1;
     const int nthread = ipc_max_session_;
     const std::size_t maxlen = ipc_client::resultset_record_maxlen;
     std::vector<std::size_t> len_list { maxlen };
     for (std::size_t nwriter : nwriter_list) {
-        ipc_resultset_writer_limit_test_server_client sc { cfg_, nclient, nthread, len_list, 2, 10, nwriter };
+        ipc_resultset_writer_limit_test_server_client sc { cfg_, nproc, nthread, len_list, 2, 10, nwriter };
         sc.start_server_client();
     }
 }
 
 // NOTE: (max+1)th channel->acquire(writer) never wake-up (wait until one writer is released). It's OK.
 TEST_F(ipc_resultset_writer_limit_test, DISABLED_max_plus_1_writer) {
-    const int nclient = 1;
+    const int nproc = 1;
     const int nthread = 0;
     const std::size_t maxlen = ipc_client::resultset_record_maxlen;
     std::vector<std::size_t> len_list { maxlen };
-    ipc_resultset_writer_limit_test_server_client sc { cfg_, nclient, nthread, len_list, 1, 1, max_writer_count + 1 };
+    ipc_resultset_writer_limit_test_server_client sc { cfg_, nproc, nthread, len_list, 1, 1, max_writer_count + 1 };
     sc.start_server_client();
 }
 

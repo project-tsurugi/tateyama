@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "ipc_client.h"
+#include "ipc_gtest_base.h"
 
 namespace tateyama::api::endpoint::ipc {
 
@@ -32,15 +32,15 @@ public:
         EXPECT_EQ(tateyama::status::ok, channel->acquire(writer));
         //
         res->session_id(req->session_id());
-        EXPECT_EQ(tateyama::status::ok, res->body("writer ready!"));
+        EXPECT_EQ(tateyama::status::ok, res->body_head("writer ready!"));
         //
         std::string data;
         make_dummy_message(req->session_id(), datalen, data);
         EXPECT_EQ(datalen, data.length());
         std::cout << "server : call write() : " << datalen << std::endl;
-        writer->write(data.c_str(), data.length());
+        EXPECT_EQ(tateyama::status::ok, writer->write(data.c_str(), data.length()));
         std::cout << "server : call commit()" << std::endl;
-        writer->commit();
+        EXPECT_EQ(tateyama::status::ok, writer->commit());
         std::cout << "server : commit done()" << std::endl;
         //
         EXPECT_EQ(tateyama::status::ok, channel->release(*writer));
@@ -51,11 +51,11 @@ public:
     }
 };
 
-class ipc_resultset_oneshot_test_server_client: public server_client_base {
+class ipc_resultset_oneshot_test_server_client: public server_client_gtest_base {
 public:
     ipc_resultset_oneshot_test_server_client(std::shared_ptr<tateyama::api::configuration::whole> const &cfg,
             std::size_t datalen) :
-            server_client_base(cfg), datalen_(datalen) {
+            server_client_gtest_base(cfg), datalen_(datalen) {
     }
 
     std::shared_ptr<tateyama::framework::service> create_server_service() override {
@@ -105,16 +105,16 @@ private:
     std::size_t datalen_;
 };
 
-class ipc_resultset_oneshot_test: public ipc_test_base {
+class ipc_resultset_oneshot_test: public ipc_gtest_base {
 };
 
 TEST_F(ipc_resultset_oneshot_test, test_one) {
-    ipc_resultset_oneshot_test_server_client sc { cfg_, 1 };
+    ipc_resultset_oneshot_test_server_client sc {cfg_, 1};
     sc.start_server_client();
 }
 
 TEST_F(ipc_resultset_oneshot_test, test_record_max) {
-    ipc_resultset_oneshot_test_server_client sc { cfg_, ipc_client::resultset_record_maxlen };
+    ipc_resultset_oneshot_test_server_client sc {cfg_, ipc_client::resultset_record_maxlen};
     sc.start_server_client();
 }
 
@@ -124,4 +124,5 @@ TEST_F(ipc_resultset_oneshot_test, DISABLED_test_record_max_plus_1) {
     sc.start_server_client();
 }
 
-} // namespace tateyama::api::endpoint::ipc
+}
+ // namespace tateyama::api::endpoint::ipc

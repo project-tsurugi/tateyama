@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "ipc_client.h"
+#include "ipc_gtest_base.h"
 #include <numeric>
 
 namespace tateyama::api::endpoint::ipc {
@@ -43,11 +43,11 @@ private:
     int index_ = 0;
 };
 
-class ipc_echo_test_server_client: public server_client_base {
+class ipc_echo_test_server_client: public server_client_gtest_base {
 public:
     ipc_echo_test_server_client(std::shared_ptr<tateyama::api::configuration::whole> const &cfg,
             std::vector<std::size_t> &len_list, int nloop = 1000) :
-            server_client_base(cfg), len_list_(len_list), nloop_(nloop) {
+            server_client_gtest_base(cfg), len_list_(len_list), nloop_(nloop) {
     }
 
     std::shared_ptr<tateyama::framework::service> create_server_service() override {
@@ -83,7 +83,7 @@ private:
     std::vector<std::size_t> &len_list_;
 };
 
-class ipc_echo_test: public ipc_test_base {
+class ipc_echo_test: public ipc_gtest_base {
 };
 
 TEST_F(ipc_echo_test, test_fixed_size_only) {

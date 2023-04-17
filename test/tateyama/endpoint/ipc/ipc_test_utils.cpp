@@ -25,20 +25,14 @@ namespace tateyama::api::endpoint::ipc {
 void get_ipc_database_name(std::shared_ptr<tateyama::api::configuration::whole> const &cfg,
         std::string &ipc_database_name) {
     auto endpoint_config = cfg->get_section("ipc_endpoint");
-    ASSERT_TRUE(endpoint_config);
     auto database_name_opt = endpoint_config->get<std::string>("database_name");
-    ASSERT_TRUE(database_name_opt.has_value());
     ipc_database_name = database_name_opt.value();
-    ASSERT_GT(ipc_database_name.size(), 0);
 }
 
 void get_ipc_max_session(std::shared_ptr<tateyama::api::configuration::whole> const &cfg, int &max_session) {
     auto endpoint_config = cfg->get_section("ipc_endpoint");
-    ASSERT_TRUE(endpoint_config);
     auto threads_opt = endpoint_config->get<std::size_t>("threads");
-    ASSERT_TRUE(threads_opt.has_value());
     max_session = static_cast<int>(threads_opt.value());
-    ASSERT_GT(max_session, 0);
 }
 
 inline void add_length(std::vector<std::size_t> &vec, const std::size_t len, const std::size_t max) {

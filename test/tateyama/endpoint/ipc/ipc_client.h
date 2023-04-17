@@ -13,7 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#pragma
+#pragma once
+
+#include "ipc_test_utils.h"
 
 // FIXME: temporary header handling - start
 // copied from tsubakuro/modules/ipc/src/main/native/include/

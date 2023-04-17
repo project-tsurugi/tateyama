@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#pragma
+#pragma once
 #include <tateyama/framework/server.h>
 #include "ipc_test_utils.h"
 #include <sys/types.h>
@@ -24,11 +24,11 @@ namespace tateyama::api::endpoint::ipc {
 
 class server_client_base {
 public:
-    server_client_base(std::shared_ptr<tateyama::api::configuration::whole> const &cfg, int nclient = 1,
+    server_client_base(std::shared_ptr<tateyama::api::configuration::whole> const &cfg, int nproc = 1,
             int nthread = 0) :
-            cfg_(cfg), nclient_(nclient), nthread_(nthread) {
+            cfg_(cfg), nproc_(nproc), nthread_(nthread) {
         // nthread_ == 0 means not invoke a worker thread (i.e. using main thread)
-        nworker_ = nclient_ * std::max(nthread_, 1);
+        nworker_ = nproc_ * std::max(nthread_, 1);
     }
 
     virtual std::shared_ptr<tateyama::framework::service> create_server_service() = 0;
@@ -40,9 +40,20 @@ public:
 
 protected:
     std::shared_ptr<tateyama::api::configuration::whole> const &cfg_;
-    int nclient_;
+    int nproc_;
     int nthread_;
     int nworker_;
+    elapse server_elapse_ { };
+
+    virtual void check_client_exitcode(int code) {
+        // nothing to do
+        // NOTE: just exists for server_client_gtest_base::check_client_exitcode()
+    }
+
+    virtual void client_exit() {
+        // NOTE: just exists for server_client_gtest_base::client_exit()
+        std::exit(0);
+    }
 
 private:
     // for server process
@@ -54,7 +65,6 @@ private:
 
     std::vector<pid_t> client_pids_ { };
     std::vector<std::thread> threads_ { };
-    elapse server_elapse_ { };
     std::string lock_filename_ { };
     int fd_ { };
 };

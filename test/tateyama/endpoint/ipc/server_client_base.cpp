@@ -15,11 +15,12 @@
  */
 
 #include <chrono>
+#include <cstdio>
 #include <thread>
 
-#include <gtest/gtest.h>
 #include <sys/file.h>
-#include <cstdio>
+#include <sys/types.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 #include "server_client_base.h"
@@ -42,7 +43,7 @@ int wait_for_child_fork(int pid) {
 
 void server_client_base::wait_client_exit() {
     for (pid_t pid : client_pids_) {
-        EXPECT_EQ(0, wait_for_child_fork(pid));
+        check_client_exitcode(wait_for_child_fork(pid));
     }
 }
 
@@ -50,20 +51,20 @@ void server_client_base::server() {
     tateyama::framework::server sv { tateyama::framework::boot_mode::database_server, cfg_ };
     add_core_components(sv);
     sv.add_service(create_server_service());
-    ASSERT_TRUE(sv.start());
+    assert_true(sv.start());
     server_startup_end();
     server_elapse_.start();
     wait_client_exit();
     server_elapse_.stop();
-    EXPECT_TRUE(sv.shutdown());
+    assert_true(sv.shutdown());
 }
 
 void server_client_base::server_dump(const std::size_t msg_num, const std::size_t len_sum) {
     std::int64_t msec = server_elapse_.msec();
     double sec = msec / 1000.0;
     double mb_len = len_sum / (1024.0 * 1024.0);
-    std::cout << "nclient=" << nclient_;
-    std::cout << ", nthread/client=" << nthread_;
+    std::cout << "nproc=" << nproc_;
+    std::cout << ", nthread/proc=" << nthread_;
     std::cout << ", elapse=" << std::fixed << std::setprecision(3) << sec << "[sec]";
     std::cout << ", msg_num=" << msg_num;
     std::cout << ", " << std::fixed << std::setprecision(1) << msg_num / sec / 1000.0 << "[Kmsg/sec]";
@@ -97,19 +98,19 @@ void server_client_base::client() {
 
 void server_client_base::start_server_client() {
     server_startup_start(); // call this before fork()
-    for (int i = 0; i < nclient_; i++) {
+    for (int i = 0; i < nproc_; i++) {
         pid_t pid = fork();
         if (pid > 0) {
             // parent
             client_pids_.push_back(pid);
         } else if (pid == 0) {
-            //child: wait server startup and go!
+            // child: wait server startup and go!
             wait_server_startup_end();
             client();
-            exit(testing::Test::HasFailure() ? 1 : 0); // IMPORTANT!!!
-            return; // not reach here
+            client_exit();
+            return; // not reached here
         } else {
-            EXPECT_GE(pid, 0);
+            assert_failed();
         }
     }
     server();
@@ -122,33 +123,33 @@ void server_client_base::server_startup_start() {
     fd_ = open(lock_filename_.c_str(), O_CREAT | O_RDWR, S_IRUSR | S_IWUSR); // NOLINT
     if (fd_ < 0) {
         perror("open");
-        ASSERT_GT(fd_, 0);
+        assert_gt(fd_, 0);
     }
-    ASSERT_EQ(0, flock(fd_, LOCK_EX));
+    assert_eq(0, flock(fd_, LOCK_EX));
 }
 
 void server_client_base::server_startup_end() {
-    ASSERT_GT(fd_, 0);
-    ASSERT_EQ(0, flock(fd_, LOCK_UN));
-    ASSERT_EQ(0, close(fd_));
-    EXPECT_EQ(0, unlink(lock_filename_.c_str()));
+    assert_gt(fd_, 0);
+    assert_eq(0, flock(fd_, LOCK_UN));
+    assert_eq(0, close(fd_));
+    assert_eq(0, unlink(lock_filename_.c_str()));
     fd_ = 0;
 }
 
 void server_client_base::wait_server_startup_end() {
-    ASSERT_GT(fd_, 0);
-    ASSERT_EQ(0, close(fd_));
+    assert_gt(fd_, 0);
+    assert_eq(0, close(fd_));
     fd_ = open(lock_filename_.c_str(), O_RDONLY); // NOLINT
     if (fd_ < 0 && errno == ENOENT) {
         // Server startup has already finished and the file has already deleted.
         // It's not necessary to wait.
         return;
     }
-    ASSERT_GT(fd_, 0);
+    assert_gt(fd_, 0);
     // wait until server_startup_end() unlocks the file
-    ASSERT_EQ(0, flock(fd_, LOCK_SH));
-    ASSERT_EQ(0, flock(fd_, LOCK_UN));
-    ASSERT_EQ(0, close(fd_));
+    assert_eq(0, flock(fd_, LOCK_SH));
+    assert_eq(0, flock(fd_, LOCK_UN));
+    assert_eq(0, close(fd_));
     fd_ = 0;
 }
 
