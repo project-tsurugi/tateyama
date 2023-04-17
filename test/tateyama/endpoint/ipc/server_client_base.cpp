@@ -23,7 +23,6 @@
 #include <unistd.h>
 
 #include "server_client_base.h"
-#include "watch_dog.h"
 
 namespace tateyama::api::endpoint::ipc {
 
@@ -48,7 +47,6 @@ void server_client_base::wait_client_exit() {
 }
 
 void server_client_base::server() {
-    watch_dog wd { maxsec_ };
     tateyama::framework::server sv { tateyama::framework::boot_mode::database_server, cfg_ };
     add_core_components(sv);
     sv.add_service(create_server_service());
@@ -77,7 +75,6 @@ void server_client_base::server_dump(const std::size_t msg_num, const std::size_
 }
 
 void server_client_base::client() {
-    watch_dog wd { maxsec_ };
     if (nthread_ == 0) {
         // use main thread, not make another working thread
         client_thread();

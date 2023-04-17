@@ -23,7 +23,6 @@
 // FIXME: temporary header handling - end
 
 #include "server_client_base.h"
-#include "watch_dog.h"
 
 namespace tateyama::api::endpoint::ipc {
 
