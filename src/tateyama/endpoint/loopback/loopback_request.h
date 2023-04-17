@@ -19,21 +19,40 @@
 
 namespace tateyama::common::loopback {
 
+/**
+ * @brief request object for loopback_endpoint
+ */
 class loopback_request: public tateyama::api::server::request {
 public:
+    /**
+     * @brief create loopback_request
+     * @param session_id session identifier of the request
+     * @param service_id service identifier of the request
+     * @param payload payload binary data of the request
+     */
     loopback_request(std::size_t session_id, std::size_t service_id, std::string_view payload) :
             session_id_(session_id), service_id_(service_id) {
         payload_ = payload;
     }
 
+    /**
+     * @brief accessor to session identifier
+     */
     [[nodiscard]] std::size_t session_id() const override {
         return session_id_;
     }
 
+    /**
+     * @brief accessor to target service identifier
+     */
     [[nodiscard]] std::size_t service_id() const override {
         return service_id_;
     }
 
+    /**
+     * @brief accessor to the payload binary data
+     * @return the view to the payload
+     */
     [[nodiscard]] std::string_view payload() const override {
         return payload_;
     }

@@ -25,27 +25,59 @@
 
 namespace tateyama::framework {
 
+/**
+ * @brief loopback endpoint for debug
+ * @details This class designed for developers to debug or make tests of Tsurugi database.
+ * After adding this endpoint to the server, you can send any requests you wanted to debug or so.
+ * Every requests are handled by the service specified by {@code service_id} at
+ * {@ref #request(std::size_t,std::size_t,std::string_view)}.
+ * This class doesn't define the format of request payload.
+ * @see tateyama::framework::server::add_endpoint(std::make_shared<tateyama::framework::loopback_endpoint>)
+ */
 class loopback_endpoint: public endpoint {
 public:
     static constexpr std::string_view component_label = "loopback_endpoint";
 
-    bool start(tateyama::framework::environment&) override {
-        return true;
-    }
-
+    /**
+     * @see `tateyama::framework::component::setup()`
+     */
     bool setup(tateyama::framework::environment &env) override {
         service_ = env.service_repository().find<tateyama::framework::routing_service>();
         return (service_ != nullptr);
     }
 
+    /**
+     * @see `tateyama::framework::component::start()`
+     */
+    bool start(tateyama::framework::environment&) override {
+        return true;
+    }
+
+    /**
+     * @see `tateyama::framework::component::label()`
+     */
     [[nodiscard]] std::string_view label() const noexcept override {
         return component_label;
     }
 
+    /**
+     * @see `tateyama::framework::component::shutdown()`
+     */
     bool shutdown(tateyama::framework::environment&) override {
         return true;
     }
 
+    /**
+     * @brief handle request by loopback endpoint and receive a response
+     * @details send a request through loopback endpoint.
+     * A request is handled by the service of {@code service_id}.
+     * A response will be returned after handling request operation finished.
+     * If {@code service_id} is unknown, nothing done, an empty response will be returned.
+     * @param session_id session identifier of the request
+     * @param service_id service identifier of the request
+     * @param payload payload binary data of the request
+     * @attention This function is blocked until the operation finished.
+     */
     tateyama::common::loopback::loopback_response request(std::size_t session_id, std::size_t service_id,
             std::string_view payload) {
         auto request = std::make_shared<tateyama::common::loopback::loopback_request>(session_id, service_id, payload);
