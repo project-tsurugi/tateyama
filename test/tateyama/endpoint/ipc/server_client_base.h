@@ -45,8 +45,6 @@ protected:
     int nworker_;
     elapse server_elapse_ { };
 
-    int maxsec_ = 60;
-
     virtual void check_client_exitcode(int code) {
         // nothing to do
         // NOTE: just exists for server_client_gtest_base::check_client_exitcode()

@@ -24,6 +24,8 @@
 #include <tsubakuro/common/wire/udf_wires.h>
 // FIXME: temporary header handling - end
 
+#include "server_client_base.h"
+
 namespace tateyama::api::endpoint::ipc {
 
 using resultset_wires_container = tsubakuro::common::wire::session_wire_container::resultset_wires_container;
