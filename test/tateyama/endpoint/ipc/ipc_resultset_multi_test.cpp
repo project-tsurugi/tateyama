@@ -35,7 +35,7 @@ public:
         EXPECT_EQ(tateyama::status::ok, channel->acquire(writer));
         //
         res->session_id(req->session_id());
-        EXPECT_EQ(tateyama::status::ok, res->body(payload));
+        EXPECT_EQ(tateyama::status::ok, res->body_head(payload));
         //
         for (std::size_t i = 0; i < param.write_nloop_; i++) {
             for (std::size_t len : param.write_lens_) {

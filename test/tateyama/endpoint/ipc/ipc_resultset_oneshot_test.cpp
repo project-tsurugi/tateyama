@@ -32,7 +32,7 @@ public:
         EXPECT_EQ(tateyama::status::ok, channel->acquire(writer));
         //
         res->session_id(req->session_id());
-        EXPECT_EQ(tateyama::status::ok, res->body("writer ready!"));
+        EXPECT_EQ(tateyama::status::ok, res->body_head("writer ready!"));
         //
         std::string data;
         make_dummy_message(req->session_id(), datalen, data);
