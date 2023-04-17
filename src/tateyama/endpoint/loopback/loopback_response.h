@@ -150,6 +150,19 @@ private:
 class loopback_response: public tateyama::api::server::response {
 public:
     /**
+     * @brief clear all data hold in this response object
+     * @details To reuse response object, call this function after current response data is unnecessary.
+     * @attention this function is not thread-safe and should be called from single thread at a time.
+     */
+    void clear() {
+        session_id_ = 0;
+        code_ = tateyama::api::server::response_code::unknown;
+        body_head_.clear();
+        body_.clear();
+        channel_map_.clear();
+    }
+
+    /**
      * @see `tateyama::server::response::session_id()`
      */
     void session_id(std::size_t id) override {

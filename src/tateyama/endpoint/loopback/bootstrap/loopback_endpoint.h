@@ -89,6 +89,27 @@ public:
         return std::move(*response);
     }
 
+    /**
+     * @brief handle request by loopback endpoint and receive a response
+     * @details send a request through loopback endpoint.
+     * A request is handled by the service of {@code service_id}.
+     * A response will be returned after handling request operation finished.
+     * If {@code service_id} is unknown, nothing done, an empty response will be returned.
+     * For better performance, {@code recycle} object is always used as a response.
+     * All values in {@code recycle} object is overwritten in this function's call.
+     * @param session_id session identifier of the request
+     * @param service_id service identifier of the request
+     * @param payload payload binary data of the request
+     * @param recycle response object to be used
+     * @attention This function is blocked until the operation finished.
+     */
+    tateyama::common::loopback::loopback_response request(std::size_t session_id, std::size_t service_id,
+            std::string_view payload, tateyama::common::loopback::loopback_response&& recycle) {
+        recycle.clear();
+        // FIXME make shared_ptr<response> from a recycle object
+        return std::move(recycle);
+    }
+
 private:
     std::shared_ptr<tateyama::framework::routing_service> service_ { };
 };
