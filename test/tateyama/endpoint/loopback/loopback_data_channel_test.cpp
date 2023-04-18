@@ -111,7 +111,7 @@ TEST_F(loopback_data_channel_test, simple) {
     //
     for (int ch = 0; ch < nchannel; ch++) {
         std::string name { data_channel_service::channel_name(ch) };
-        std::vector<std::string> &ch_data = response.channel(name);
+        std::vector<std::string> ch_data = response.channel(name);
         EXPECT_EQ(ch_data.size(), nwrite * nloop);
         int idx = 0;
         for (int w = 0; w < nwrite; w++) {

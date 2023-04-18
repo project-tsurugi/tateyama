@@ -30,7 +30,7 @@ public:
      * @brief add a string
      * @param data the data to be added
      * @note this function is thread-safe and multiple threads can invoke simultaneously.
-     * @attention calling this function after {@ref get_all()} will change the entries of the return value of it.
+     * @attention calling this function after {@ref get_all()} may change the entries of the return value of it.
      */
     void add(std::string &data) {
         // FIXME: make thread-safe
@@ -39,12 +39,11 @@ public:
 
     /**
      * @brief get a string list which has been added by {@ref #add(std::string&)}
-     * @note this function is thread-safe and multiple threads can invoke simultaneously.
-     * @attention entries will be changed if {@ref #add(std::string&)} is called after this function returns.
-     * @attention do not change entries of the return value, or unexpected situation occurs.
+     * @attention do not call {@ref #add(std::string&)} after this function returns.
+     * @attention do not call this function again after this function returns.
      */
-    std::vector<std::string>& get_all() {
-        return list_;
+    std::vector<std::string> get_all() {
+        return std::move(list_);
     }
 private:
     // FIXME: make thread-safe
@@ -134,8 +133,8 @@ public:
      * @note do not call this function during writing/committing to this channel,
      * or unexpected value will return.
      */
-    std::vector<std::string>& committed_data() {
-        return list_.get_all();
+    std::vector<std::string> committed_data() {
+        return std::move(list_.get_all());
     }
 private:
     concurrent_string_list list_ { };
@@ -234,7 +233,7 @@ public:
 
     /**
      * @see `tateyama::server::response::acquire_channel()`
-     * @attention This function fails if {@code name} has been already acquired and not released yet.
+     * @attention This function fails if {@code name} has been already acquired (even if it has been released).
      */
     tateyama::status acquire_channel(std::string_view name, std::shared_ptr<tateyama::api::server::data_channel> &ch)
             override {
@@ -262,15 +261,15 @@ public:
      * @brief returns a {@code std::vector} of written data to the channel of the specified name
      * @returns written data to the channel of the specified name
      * @throw out_of_range if this response doesn't have the channel of the specified name
-     * @note this function is thread-safe and multiple threads can invoke simultaneously.
      * @note do not call this function during writing/committing to the channel of the specified name,
      * or unexpected value will return.
+     * @note do not call this function again with same {@code name}, or unexpected value will return.
      */
-    [[nodiscard]] std::vector<std::string>& channel(std::string_view name) const {
+    [[nodiscard]] std::vector<std::string> channel(std::string_view name) const {
         // FIXME: make thread-safe
         std::shared_ptr<tateyama::api::server::data_channel> ch = channel_map_.at(std::string { name });
         auto data_channel = dynamic_cast<loopback_data_channel*>(ch.get());
-        return data_channel->committed_data();
+        return std::move(data_channel->committed_data());
     }
 
     /**
