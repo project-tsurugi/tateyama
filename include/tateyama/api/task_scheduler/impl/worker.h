@@ -194,7 +194,9 @@ private:
             if(tgt.active() && tgt.try_pop(t)) {
                 ++stat_->stolen_;
                 ctx.last_steal_from(idx);
+                ctx.task_is_stolen(true);
                 execute_task(t, ctx);
+                ctx.task_is_stolen(false);
                 ++stat_->count_;
                 return true;
             }

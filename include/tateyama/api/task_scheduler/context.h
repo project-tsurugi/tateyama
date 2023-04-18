@@ -89,11 +89,28 @@ public:
         return count_promoting_delayed_;
     }
 
+    /**
+     * @brief accessor to the stealing flag
+     * @return whether the task is being executed by stealing
+     */
+    [[nodiscard]] bool task_is_solen() const noexcept {
+        return task_is_stolen_;
+    }
+
+    /**
+     * @brief setter to the stealing flag
+     * @param whether the task is being executed by stealing
+     */
+    void task_is_stolen(bool arg) noexcept {
+        task_is_stolen_ = arg;
+    }
+
 private:
     std::size_t index_{};
     std::size_t last_steal_from_{};
     rational count_check_local_first_{};
     rational count_promoting_delayed_{};
+    bool task_is_stolen_{};
 };
 
 }
