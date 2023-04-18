@@ -47,7 +47,7 @@ public:
 private:
     std::string current_data_ { };
     bool written_ { false };
-    std::vector<std::string> list_{};
+    std::vector<std::string> list_ { };
 };
 
 class loopback_data_channel: public tateyama::api::server::data_channel {
@@ -65,13 +65,15 @@ public:
         return tateyama::status::ok;
     }
 
-     void committed_data(std::vector<std::string> &whole) {
+    std::vector<std::string> committed_data() {
+        std::vector < std::string > whole { };
         // FIXME make thread-safe
         for (auto &writer : writers_) {
             for (auto &data : writer->committed_data()) {
                 whole.push_back(data);
             }
         }
+        return whole;
     }
 private:
     std::vector<std::shared_ptr<loopback_data_writer>> writers_ { };
@@ -172,8 +174,7 @@ public:
         // FIXME: make thread-safe
         std::shared_ptr<tateyama::api::server::data_channel> ch = channel_map_.at(std::string { name });
         auto data_channel = dynamic_cast<loopback_data_channel*>(ch.get());
-        std::vector<std::string> whole{};
-        data_channel->committed_data(whole);
+        std::vector < std::string > whole = data_channel->committed_data();
         return whole;
     }
 

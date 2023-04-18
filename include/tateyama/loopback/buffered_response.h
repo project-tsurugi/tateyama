@@ -27,7 +27,7 @@ namespace tateyama::loopback {
 class buffered_response {
 public:
     /**
-     * @brief create empty object
+     * @brief create response object
      */
     buffered_response(std::shared_ptr<tateyama::api::server::response> response);
 
