@@ -56,19 +56,19 @@ class loopback_echo_test: public loopback_test_base {
 };
 
 TEST_F(loopback_echo_test, simple) {
-    tateyama::framework::server sv { tateyama::framework::boot_mode::database_server, cfg_ };
-    add_core_components(sv);
-    sv.add_service(std::make_shared<echo_service>());
-    auto loopback = std::make_shared<tateyama::framework::loopback_endpoint>();
-    sv.add_endpoint(loopback);
-    ASSERT_TRUE(sv.start());
-    //
     const std::size_t session_id = 123;
     const std::size_t service_id = echo_service::tag;
     const std::string request { "loopback_test" };
+    //
+    tateyama::loopback::loopback_client loopback;
+    tateyama::framework::server sv { tateyama::framework::boot_mode::database_server, cfg_ };
+    add_core_components(sv);
+    sv.add_service(std::make_shared<echo_service>());
+    sv.add_endpoint(loopback.endpoint());
+    ASSERT_TRUE(sv.start());
 
     // NOTE: use 'const auto' to avoid calling response.body("txt") etc.
-    const auto response = loopback->request(session_id, service_id, request);
+    const auto response = loopback.request(session_id, service_id, request);
     EXPECT_EQ(response.session_id(), session_id);
     EXPECT_EQ(response.code(), tateyama::api::server::response_code::success);
     EXPECT_EQ(response.body_head(), echo_service::body_head);
@@ -78,4 +78,4 @@ TEST_F(loopback_echo_test, simple) {
 }
 
 }
-// namespace tateyama::api::endpoint::loopback
+// namespace tateyama::loopback

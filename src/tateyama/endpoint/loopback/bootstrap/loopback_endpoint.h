@@ -18,10 +18,8 @@
 #include <tateyama/framework/environment.h>
 #include <tateyama/framework/endpoint.h>
 #include <tateyama/framework/routing_service.h>
-#include <tateyama/status/resource/bridge.h>
 
-#include "tateyama/endpoint/loopback/loopback_request.h"
-#include "tateyama/endpoint/loopback/loopback_response.h"
+#include "../../../../../include/tateyama/loopback/buffered_response.h"
 
 namespace tateyama::framework {
 
@@ -76,18 +74,11 @@ public:
      * @param session_id session identifier of the request
      * @param service_id service identifier of the request
      * @param payload payload binary data of the request
-     * @attention This function is blocked until the operation finished.
+     * @attention this function is blocked until the operation finished.
+     * @attention this function is not thread-safe and should be called from single thread at a time.
      */
-    tateyama::common::loopback::loopback_response request(std::size_t session_id, std::size_t service_id,
-            std::string_view payload) {
-        auto request = std::make_shared<tateyama::common::loopback::loopback_request>(session_id, service_id, payload);
-        auto response = std::make_shared<tateyama::common::loopback::loopback_response>();
-
-        // NOTE: ignore operator() failure
-        service_->operator ()(static_cast<std::shared_ptr<tateyama::api::server::request>>(request),
-                static_cast<std::shared_ptr<tateyama::api::server::response>>(response));
-        return std::move(*response);
-    }
+    tateyama::loopback::buffered_response request(std::size_t session_id, std::size_t service_id,
+            std::string_view payload);
 
     /**
      * @brief handle request by loopback endpoint and receive a response
@@ -101,14 +92,11 @@ public:
      * @param service_id service identifier of the request
      * @param payload payload binary data of the request
      * @param recycle response object to be used
-     * @attention This function is blocked until the operation finished.
+     * @attention this function is blocked until the operation finished.
+     * @attention this function is not thread-safe and should be called from single thread at a time.
      */
-    tateyama::common::loopback::loopback_response request(std::size_t session_id, std::size_t service_id,
-            std::string_view payload, tateyama::common::loopback::loopback_response&& recycle) {
-        recycle.clear();
-        // FIXME make shared_ptr<response> from a recycle object
-        return std::move(recycle);
-    }
+    tateyama::loopback::buffered_response request(std::size_t session_id, std::size_t service_id,
+            std::string_view payload, tateyama::loopback::buffered_response &&recycle);
 
 private:
     std::shared_ptr<tateyama::framework::routing_service> service_ { };

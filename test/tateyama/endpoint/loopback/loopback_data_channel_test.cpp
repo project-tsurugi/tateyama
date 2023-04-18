@@ -95,15 +95,15 @@ TEST_F(loopback_data_channel_test, simple) {
     const int nwrite = 2;
     const int nloop = 2;
     //
+    tateyama::loopback::loopback_client loopback;
     tateyama::framework::server sv { tateyama::framework::boot_mode::database_server, cfg_ };
     add_core_components(sv);
     sv.add_service(std::make_shared<data_channel_service>(nchannel, nwrite, nloop));
-    auto loopback = std::make_shared<tateyama::framework::loopback_endpoint>();
-    sv.add_endpoint(loopback);
+    sv.add_endpoint(loopback.endpoint());
     ASSERT_TRUE(sv.start());
 
     // NOTE: use 'const auto' to avoid calling response.body("txt") etc.
-    const auto response = loopback->request(session_id, service_id, request);
+    const auto response = loopback.request(session_id, service_id, request);
     EXPECT_EQ(response.session_id(), session_id);
     EXPECT_EQ(response.code(), tateyama::api::server::response_code::success);
     EXPECT_EQ(response.body_head(), data_channel_service::body_head);
@@ -126,5 +126,4 @@ TEST_F(loopback_data_channel_test, simple) {
     EXPECT_TRUE(sv.shutdown());
 }
 
-}
-// namespace tateyama::api::endpoint::loopback
+} // namespace tateyama::loopback

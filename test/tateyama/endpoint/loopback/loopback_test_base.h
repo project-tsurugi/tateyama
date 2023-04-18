@@ -20,7 +20,7 @@
 #include <tateyama/framework/routing_service.h>
 #include <tateyama/utils/test_utils.h>
 
-#include <tateyama/endpoint/loopback/bootstrap/loopback_endpoint.h>
+#include <tateyama/loopback/loopback_client.h>
 
 namespace tateyama::api::endpoint::loopback {
 
