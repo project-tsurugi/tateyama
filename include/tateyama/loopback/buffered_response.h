@@ -23,7 +23,8 @@
 namespace tateyama::loopback {
 
 /**
- * @brief response of loopback endpoint
+ * @brief response of loopback endpoint request handling
+ * @see loopback_client
  */
 class buffered_response {
 public:
@@ -44,50 +45,51 @@ public:
 
     /**
      * @brief update all values in this response
-     * @note this function is not thread-safe
-     * @note this function is intended to call from internal server side, not to call from client side.
+     * @attention this function is not thread-safe
+     * @attention this function is intended to call from internal server side, not to call from client side.
      */
     void update(std::size_t session_id, tateyama::api::server::response_code code, std::string_view body_head,
             std::string_view body, std::map<std::string, std::vector<std::string>> data_map);
 
     /**
      * @brief accessor to the session identifier
-     * @note this function is thread-safe and multiple threads can invoke simultaneously.
+     * @return session identifier of this response
      */
-    std::size_t session_id() const noexcept;
+    [[nodiscard]] std::size_t session_id() const noexcept;
 
     /**
-     * @brief accessor to the tateyama response status
-     * @note this function is thread-safe and multiple threads can invoke simultaneously.
+     * @brief accessor to the tateyama response code
+     * @return code of this response
      */
-    tateyama::api::server::response_code code() const noexcept;
+    [[nodiscard]] tateyama::api::server::response_code code() const noexcept;
 
     /**
      * @brief accessor to the response body head
-     * @note this function is thread-safe and multiple threads can invoke simultaneously.
+     * @return body head of this response
      */
-    std::string_view body_head() const noexcept;
+    [[nodiscard]] std::string_view body_head() const noexcept;
 
     /**
      * @brief accessor to the response body
-     * @note this function is thread-safe and multiple threads can invoke simultaneously.
+     * @return body of this response
      */
-    std::string_view body() const noexcept;
+    [[nodiscard]] std::string_view body() const noexcept;
 
     /**
-     * @brief returns true if this response has a channel of specified name
+     * @brief check whether this response has a channel of the specified name
      * @param name a name of the channel
-     * @return true if this response has a channel of specified name
+     * @return true if this response has a channel of the specified name
      * @note this function is thread-safe and multiple threads can invoke simultaneously.
      */
-    bool has_channel(std::string_view name) const noexcept;
+    [[nodiscard]] bool has_channel(std::string_view name) const noexcept;
 
     /**
-     * @brief returns a {@code std::vector} of written data to the channel of the specified name
-     * @returns every written data to the channel of the specified name
+     * @brief retrieve all written data to the channel of the specified name
+     * @return all written data to the channel of the specified name
      * @throw out_of_range if this response doesn't have the channel of the specified name
+     * @note this function is thread-safe and multiple threads can invoke simultaneously.
      */
-    std::vector<std::string> channel(std::string_view name) const;
+    [[nodiscard]] std::vector<std::string> channel(std::string_view name) const;
 
 private:
     std::size_t session_id_ { };

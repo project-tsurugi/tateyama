@@ -76,7 +76,7 @@ public:
      * @param payload payload binary data of the request
      * @return response of handling the request
      * @attention this function is blocked until the operation finished.
-     * @attention this function is not thread-safe and should be called from single thread at a time.
+     * @note this function is thread-safe and multiple threads can invoke simultaneously.
      */
     tateyama::loopback::buffered_response request(std::size_t session_id, std::size_t service_id,
             std::string_view payload);
@@ -95,7 +95,7 @@ public:
      * @param recycle response object to be used
      * @return response of handling the request
      * @attention this function is blocked until the operation finished.
-     * @attention this function is not thread-safe and should be called from single thread at a time.
+     * @note this function is thread-safe and multiple threads can invoke simultaneously.
      */
     tateyama::loopback::buffered_response request(std::size_t session_id, std::size_t service_id, std::string_view payload,
             tateyama::loopback::buffered_response &&recycle);

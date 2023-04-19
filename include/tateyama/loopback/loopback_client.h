@@ -23,6 +23,10 @@ namespace tateyama::loopback {
 
 /**
  * @brief loopback endpoint for debug or test of Tateyama server modules
+ * @details This class designed for developers to debug or make tests of Tsurugi database.
+ * After adding this endpoint to the server, you can send any requests you wanted to debug or so.
+ * Every requests are handled by the service specified by code service_id at request().
+ * This class doesn't define the format of request payload.
  */
 class loopback_client {
 public:
@@ -42,45 +46,47 @@ public:
     loopback_client& operator=(loopback_client &&other) noexcept = delete;
 
     /**
-     * @brief returns loopback endpoint
-     * Return value can be used for {@code add_endpoint()}. You should call that function
-     * before {@code setup()} or {@code start()} of the Tateyama server object.
+     * @brief obtains a loopback endpoint
+     * @details Return value can be used for add_endpoint(). You should call that function
+     * before setup() or start() of the Tateyama server object.
      * @return loopback endpoint
      * @note this function is thread-safe and multiple threads can invoke simultaneously.
-     * @see tateyama::framework::server::add_endpoint(std::shared_ptr<tateyama::framework::endpoint>)
+     * @see tateyama::framework::server::add_endpoint()
      * @see tateyama::framework::server::setup()
      * @see tateyama::framework::server::start()
      */
-    std::shared_ptr<tateyama::framework::endpoint> endpoint() const noexcept;
+    [[nodiscard]] std::shared_ptr<tateyama::framework::endpoint> endpoint() const noexcept;
 
     /**
      * @brief handle request by loopback endpoint and receive a response
-     * @details send a request through loopback endpoint.
-     * A request is handled by the service of {@code service_id}.
+     * @details Send a request through loopback endpoint.
+     * A request is handled by the service of service_id.
      * A response will be returned after handling request operation finished.
-     * If {@code service_id} is unknown, nothing done, an empty response will be returned.
+     * If service_id is unknown, nothing done, an empty response will be returned.
      * @param session_id session identifier of the request
      * @param service_id service identifier of the request
      * @param payload payload binary data of the request
      * @return response of handling the request
-     * @attention This function is blocked until the operation finished.
+     * @note this function is thread-safe and multiple threads can invoke simultaneously.
+     * @attention this function is blocked until the operation finished.
      */
     buffered_response request(std::size_t session_id, std::size_t service_id, std::string_view payload);
 
     /**
      * @brief handle request by loopback endpoint and receive a response
      * @details send a request through loopback endpoint.
-     * A request is handled by the service of {@code service_id}.
+     * A request is handled by the service of service_id.
      * A response will be returned after handling request operation finished.
-     * If {@code service_id} is unknown, nothing done, an empty response will be returned.
-     * For better performance, {@code recycle} object is always used as a response.
-     * All values in {@code recycle} object is overwritten in this function's call.
+     * If service_id is unknown, nothing done, an empty response will be returned.
+     * recycle object is always used as a response.
+     * All values in recycle object is overwritten in this function's call.
      * @param session_id session identifier of the request
      * @param service_id service identifier of the request
      * @param payload payload binary data of the request
      * @param recycle response object to be used
      * @return response of handling the request
-     * @attention This function is blocked until the operation finished.
+     * @note this function is thread-safe and multiple threads can invoke simultaneously.
+     * @attention this function is blocked until the operation finished.
      */
     buffered_response request(std::size_t session_id, std::size_t service_id, std::string_view payload,
             buffered_response &&recycle);

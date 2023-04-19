@@ -126,7 +126,7 @@ public:
         return body_;
     }
 
-    bool has_channel(std::string_view name) const noexcept {
+    [[nodiscard]] bool has_channel(std::string_view name) const noexcept {
         // FIXME: make thread-safe
         return channel_map_.find(std::string { name }) != channel_map_.cend();
     }
