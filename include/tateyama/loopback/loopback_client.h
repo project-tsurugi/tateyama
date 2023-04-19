@@ -67,6 +67,7 @@ public:
      * @param service_id service identifier of the request
      * @param payload payload binary data of the request
      * @return response of handling the request
+     * @throw std::invalid_argument if service_id is unknown
      * @note this function is thread-safe and multiple threads can invoke simultaneously.
      * @attention this function is blocked until the operation finished.
      */

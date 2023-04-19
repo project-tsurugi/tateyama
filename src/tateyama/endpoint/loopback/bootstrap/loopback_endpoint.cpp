@@ -26,8 +26,11 @@ tateyama::loopback::buffered_response loopback_endpoint::request(std::size_t ses
     auto request = std::make_shared<tateyama::common::loopback::loopback_request>(session_id, service_id, payload);
     auto response = std::make_shared<tateyama::common::loopback::loopback_response>();
 
-    service_->operator ()(static_cast<std::shared_ptr<tateyama::api::server::request>>(request),
+    bool ok = service_->operator ()(static_cast<std::shared_ptr<tateyama::api::server::request>>(request),
             static_cast<std::shared_ptr<tateyama::api::server::response>>(response));
+    if (!ok) {
+        throw std::invalid_argument("unknown service_id " + std::to_string(service_id));
+    }
 
     tateyama::loopback::buffered_response bufres { };
     bufres.update(response->session_id(), response->code(), response->body_head(), response->body(),
