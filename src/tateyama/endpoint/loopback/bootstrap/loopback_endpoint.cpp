@@ -45,7 +45,7 @@ tateyama::loopback::buffered_response loopback_endpoint::request(std::size_t ses
 
     recycle.update(response->session_id(), response->code(), response->body_head(), response->body(),
             response->all_committed_data());
-    return recycle;
+    return std::move(recycle);
 }
 
 } // namespace tateyama::framework
