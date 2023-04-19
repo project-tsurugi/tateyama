@@ -273,6 +273,7 @@ private:
                 return false;
             default:
                 LOG_LP(ERROR) << "illegal message type " << static_cast<std::uint32_t>(info);  //NOLINT
+                close();
                 return false;  // to exit this thread
             }
         }
