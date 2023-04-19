@@ -66,6 +66,7 @@ public:
     /**
      * @brief accessor to the response body head
      * @return body head of this response
+     * @return empty string_view object if body head is not defined
      */
     [[nodiscard]] std::string_view body_head() const noexcept;
 
