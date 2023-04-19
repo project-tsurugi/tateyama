@@ -76,26 +76,4 @@ TEST_F(loopback_echo_test, simple) {
     EXPECT_TRUE(sv.shutdown());
 }
 
-TEST_F(loopback_echo_test, recycle) {
-    const std::size_t session_id = 123;
-    const std::size_t service_id = echo_service::tag;
-    const std::string request { "loopback_test" };
-    //
-    tateyama::loopback::loopback_client loopback;
-    tateyama::framework::server sv { tateyama::framework::boot_mode::database_server, cfg_ };
-    add_core_components(sv);
-    sv.add_service(std::make_shared<echo_service>());
-    sv.add_endpoint(loopback.endpoint());
-    ASSERT_TRUE(sv.start());
-
-    tateyama::loopback::buffered_response response;
-    response = loopback.request(session_id, service_id, request, std::move(response));
-    EXPECT_EQ(response.session_id(), session_id);
-    EXPECT_EQ(response.code(), tateyama::api::server::response_code::success);
-    EXPECT_EQ(response.body_head(), echo_service::body_head);
-    EXPECT_EQ(response.body(), request);
-    //
-    EXPECT_TRUE(sv.shutdown());
-}
-
 } // namespace tateyama::loopback

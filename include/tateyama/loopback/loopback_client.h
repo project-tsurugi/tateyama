@@ -72,25 +72,6 @@ public:
      */
     buffered_response request(std::size_t session_id, std::size_t service_id, std::string_view payload);
 
-    /**
-     * @brief handle request by loopback endpoint and receive a response
-     * @details send a request through loopback endpoint.
-     * A request is handled by the service of service_id.
-     * A response will be returned after handling request operation finished.
-     * If service_id is unknown, nothing done, an empty response will be returned.
-     * recycle object is always used as a response.
-     * All values in recycle object is overwritten in this function's call.
-     * @param session_id session identifier of the request
-     * @param service_id service identifier of the request
-     * @param payload payload binary data of the request
-     * @param recycle response object to be used
-     * @return response of handling the request
-     * @note this function is thread-safe and multiple threads can invoke simultaneously.
-     * @attention this function is blocked until the operation finished.
-     */
-    buffered_response request(std::size_t session_id, std::size_t service_id, std::string_view payload,
-            buffered_response &&recycle);
-
 private:
     std::shared_ptr<tateyama::framework::endpoint> endpoint_;
 };

@@ -35,17 +35,4 @@ tateyama::loopback::buffered_response loopback_endpoint::request(std::size_t ses
     return bufres;
 }
 
-tateyama::loopback::buffered_response loopback_endpoint::request(std::size_t session_id, std::size_t service_id, std::string_view payload,
-        tateyama::loopback::buffered_response &&recycle) {
-    auto request = std::make_shared<tateyama::common::loopback::loopback_request>(session_id, service_id, payload);
-    auto response = std::make_shared<tateyama::common::loopback::loopback_response>();
-
-    service_->operator ()(static_cast<std::shared_ptr<tateyama::api::server::request>>(request),
-            static_cast<std::shared_ptr<tateyama::api::server::response>>(response));
-
-    recycle.update(response->session_id(), response->code(), response->body_head(), response->body(),
-            response->all_committed_data());
-    return std::move(recycle);
-}
-
 } // namespace tateyama::framework

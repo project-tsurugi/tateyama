@@ -81,25 +81,6 @@ public:
     tateyama::loopback::buffered_response request(std::size_t session_id, std::size_t service_id,
             std::string_view payload);
 
-    /**
-     * @brief handle request by loopback endpoint and receive a response
-     * @details send a request through loopback endpoint.
-     * A request is handled by the service of {@code service_id}.
-     * A response will be returned after handling request operation finished.
-     * If {@code service_id} is unknown, nothing done, an empty response will be returned.
-     * For better performance, {@code recycle} object is always used as a response.
-     * All values in {@code recycle} object is overwritten in this function's call.
-     * @param session_id session identifier of the request
-     * @param service_id service identifier of the request
-     * @param payload payload binary data of the request
-     * @param recycle response object to be used
-     * @return response of handling the request
-     * @attention this function is blocked until the operation finished.
-     * @note this function is thread-safe and multiple threads can invoke simultaneously.
-     */
-    tateyama::loopback::buffered_response request(std::size_t session_id, std::size_t service_id, std::string_view payload,
-            tateyama::loopback::buffered_response &&recycle);
-
 private:
     std::shared_ptr<tateyama::framework::routing_service> service_ { };
 };
