@@ -22,6 +22,8 @@ namespace tateyama::server {
 
 void Worker::run()
 {
+    VLOG(log_debug_timing_event) << "/:tateyama:timing:session:started "
+        << session_id_;
     while(true) {
         auto h = request_wire_container_->peep(true);
         if (h.get_length() == 0 && h.get_idx() == tateyama::common::wire::message_header::not_use) { break; }
@@ -36,6 +38,8 @@ void Worker::run()
     }
     clean_up_();
     VLOG_LP(log_trace) << "destroy session wire: session_id = " << std::to_string(session_id_);
+    VLOG(log_debug_timing_event) << "/:tateyama:timing:session:finished "
+        << session_id_;
 }
 
 }  // tateyama::server
