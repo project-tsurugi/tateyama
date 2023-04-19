@@ -15,6 +15,7 @@
  */
 #pragma once
 
+#include <map>
 #include <vector>
 
 #include <tateyama/api/server/response.h>
@@ -29,7 +30,7 @@ public:
     /**
      * @brief create response object
      */
-    buffered_response(std::shared_ptr<tateyama::api::server::response> response);
+    buffered_response() = default;
 
     /**
      * @brief destruct the object
@@ -40,6 +41,14 @@ public:
     buffered_response& operator=(buffered_response const &other) = default;
     buffered_response(buffered_response &&other) noexcept = default;
     buffered_response& operator=(buffered_response &&other) noexcept = default;
+
+    /**
+     * @brief update all values in this response
+     * @note this function is not thread-safe
+     * @note this function is intended to call from internal server side, not to call from client side.
+     */
+    void update(std::size_t session_id, tateyama::api::server::response_code code, std::string_view body_head,
+            std::string_view body, std::map<std::string, std::vector<std::string>> data_map);
 
     /**
      * @brief accessor to the session identifier
@@ -81,7 +90,11 @@ public:
     std::vector<std::string> channel(std::string_view name) const;
 
 private:
-    std::shared_ptr<tateyama::api::server::response> response_;
+    std::size_t session_id_ { };
+    tateyama::api::server::response_code code_ { };
+    std::string body_head_ { };
+    std::string body_ { };
+    std::map<std::string, std::vector<std::string>> data_map_ { };
 };
 
 } // namespace tateyama::loopback

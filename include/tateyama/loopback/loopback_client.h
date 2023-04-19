@@ -45,6 +45,8 @@ public:
      * @brief returns loopback endpoint
      * Return value can be used for {@code add_endpoint()}. You should call that function
      * before {@code setup()} or {@code start()} of the Tateyama server object.
+     * @return loopback endpoint
+     * @note this function is thread-safe and multiple threads can invoke simultaneously.
      * @see tateyama::framework::server::add_endpoint(std::shared_ptr<tateyama::framework::endpoint>)
      * @see tateyama::framework::server::setup()
      * @see tateyama::framework::server::start()
@@ -60,6 +62,7 @@ public:
      * @param session_id session identifier of the request
      * @param service_id service identifier of the request
      * @param payload payload binary data of the request
+     * @return response of handling the request
      * @attention This function is blocked until the operation finished.
      */
     buffered_response request(std::size_t session_id, std::size_t service_id, std::string_view payload);
@@ -76,6 +79,7 @@ public:
      * @param service_id service identifier of the request
      * @param payload payload binary data of the request
      * @param recycle response object to be used
+     * @return response of handling the request
      * @attention This function is blocked until the operation finished.
      */
     buffered_response request(std::size_t session_id, std::size_t service_id, std::string_view payload,

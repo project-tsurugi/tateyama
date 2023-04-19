@@ -24,18 +24,18 @@ namespace tateyama::common::loopback {
 class loopback_data_writer: public tateyama::api::server::writer {
 public:
     tateyama::status write(const char *data, std::size_t length) override {
-        // NOTE: data is binary data. It maybe data="\0\1\2\3", length=4 etc.
-        std::string s { data, length };
-        current_data_ += s;
-        written_ = true;
+        if (length > 0) {
+            // NOTE: data is binary data. It maybe data="\0\1\2\3", length=4 etc.
+            std::string s { data, length };
+            current_data_ += s;
+        }
         return tateyama::status::ok;
     }
 
     tateyama::status commit() override {
-        if (written_) {
+        if (current_data_.length() > 0) {
             list_.emplace_back(current_data_);
             current_data_.clear();
-            written_ = false;
         }
         return tateyama::status::ok;
     }
@@ -46,7 +46,6 @@ public:
 
 private:
     std::string current_data_ { };
-    bool written_ { false };
     std::vector<std::string> list_ { };
 };
 
@@ -70,7 +69,7 @@ public:
         // FIXME make thread-safe
         for (auto &writer : writers_) {
             for (auto &data : writer->committed_data()) {
-                whole.push_back(data);
+                whole.emplace_back(data);
             }
         }
         return whole;
@@ -81,14 +80,6 @@ private:
 
 class loopback_response: public tateyama::api::server::response {
 public:
-    void clear() {
-        session_id_ = 0;
-        code_ = tateyama::api::server::response_code::unknown;
-        body_head_.clear();
-        body_.clear();
-        channel_map_.clear();
-    }
-
     /**
      * @see `tateyama::server::response::session_id()`
      */
@@ -135,6 +126,11 @@ public:
         return body_;
     }
 
+    bool has_channel(std::string_view name) const noexcept {
+        // FIXME: make thread-safe
+        return channel_map_.find(std::string { name }) != channel_map_.cend();
+    }
+
     /**
      * @see `tateyama::server::response::acquire_channel()`
      * @attention This function fails if {@code name} has been already acquired (even if it has been released).
@@ -165,17 +161,13 @@ public:
         return tateyama::status::ok;
     }
 
-    bool has_channel(std::string_view name) const noexcept {
-        // FIXME: make thread-safe
-        return channel_map_.find(std::string { name }) != channel_map_.cend();
-    }
-
-    std::vector<std::string> channel(std::string_view name) const {
-        // FIXME: make thread-safe
-        std::shared_ptr<tateyama::api::server::data_channel> ch = channel_map_.at(std::string { name });
-        auto data_channel = dynamic_cast<loopback_data_channel*>(ch.get());
-        std::vector < std::string > whole = data_channel->committed_data();
-        return whole;
+    std::map<std::string, std::vector<std::string>> all_committed_data() {
+        std::map<std::string, std::vector<std::string>> data_map { };
+        for (const auto& [name, channel] : channel_map_) {
+            auto data_channel = dynamic_cast<loopback_data_channel*>(channel.get());
+            data_map[name] = data_channel->committed_data();
+        }
+        return data_map;
     }
 
 private:
@@ -186,6 +178,7 @@ private:
 
     // FIXME: make thread-safe
     std::map<std::string, std::shared_ptr<tateyama::api::server::data_channel>> channel_map_ { };
+
 };
 
 } // namespace tateyama::common::loopback

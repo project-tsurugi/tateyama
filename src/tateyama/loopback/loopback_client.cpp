@@ -34,11 +34,9 @@ buffered_response loopback_client::request(std::size_t session_id, std::size_t s
 }
 
 buffered_response loopback_client::request(std::size_t session_id, std::size_t service_id, std::string_view payload,
-        buffered_response&&) {
+        buffered_response &&recycle) {
     auto endpoint = dynamic_cast<tateyama::framework::loopback_endpoint*>(endpoint_.get());
-    // FIXME
-    // return endpoint->request(session_id, service_id, payload, recycle);
-    return endpoint->request(session_id, service_id, payload);
+    return endpoint->request(session_id, service_id, payload, std::move(recycle));
 }
 
 } // namespace tateyama::loopback

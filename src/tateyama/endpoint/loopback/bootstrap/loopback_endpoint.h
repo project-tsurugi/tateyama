@@ -74,6 +74,7 @@ public:
      * @param session_id session identifier of the request
      * @param service_id service identifier of the request
      * @param payload payload binary data of the request
+     * @return response of handling the request
      * @attention this function is blocked until the operation finished.
      * @attention this function is not thread-safe and should be called from single thread at a time.
      */
@@ -92,11 +93,12 @@ public:
      * @param service_id service identifier of the request
      * @param payload payload binary data of the request
      * @param recycle response object to be used
+     * @return response of handling the request
      * @attention this function is blocked until the operation finished.
      * @attention this function is not thread-safe and should be called from single thread at a time.
      */
-    tateyama::loopback::buffered_response request(std::size_t session_id, std::size_t service_id,
-            std::string_view payload, tateyama::loopback::buffered_response &&recycle);
+    tateyama::loopback::buffered_response request(std::size_t session_id, std::size_t service_id, std::string_view payload,
+            tateyama::loopback::buffered_response &&recycle);
 
 private:
     std::shared_ptr<tateyama::framework::routing_service> service_ { };

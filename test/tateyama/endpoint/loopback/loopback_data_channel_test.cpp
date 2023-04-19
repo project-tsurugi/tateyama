@@ -102,7 +102,6 @@ TEST_F(loopback_data_channel_test, simple) {
     sv.add_endpoint(loopback.endpoint());
     ASSERT_TRUE(sv.start());
 
-    // NOTE: use 'const auto' to avoid calling response.body("txt") etc.
     const auto response = loopback.request(session_id, service_id, request);
     EXPECT_EQ(response.session_id(), session_id);
     EXPECT_EQ(response.code(), tateyama::api::server::response_code::success);
