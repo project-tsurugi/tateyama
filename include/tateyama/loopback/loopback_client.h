@@ -42,8 +42,8 @@ public:
 
     loopback_client(loopback_client const &other) = delete;
     loopback_client& operator=(loopback_client const &other) = delete;
-    loopback_client(loopback_client &&other) noexcept = delete;
-    loopback_client& operator=(loopback_client &&other) noexcept = delete;
+    loopback_client(loopback_client &&other) noexcept = default;
+    loopback_client& operator=(loopback_client &&other) noexcept = default;
 
     /**
      * @brief obtains a loopback endpoint
@@ -62,7 +62,6 @@ public:
      * @details Send a request through loopback endpoint.
      * A request is handled by the service of service_id.
      * A response will be returned after handling request operation finished.
-     * If service_id is unknown, nothing done, an empty response will be returned.
      * @param session_id session identifier of the request
      * @param service_id service identifier of the request
      * @param payload payload binary data of the request

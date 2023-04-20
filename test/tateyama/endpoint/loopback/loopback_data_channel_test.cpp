@@ -85,16 +85,37 @@ private:
 };
 
 class loopback_data_channel_test: public loopback_test_base {
-};
-
-TEST_F(loopback_data_channel_test, simple) {
+public:
     const std::size_t session_id = 123;
     const std::size_t service_id = data_channel_service::tag;
     const std::string request { "loopback_test" };
-    const int nchannel = 2;
-    const int nwrite = 2;
-    const int nloop = 2;
-    //
+
+    void check_response(int nchannel, int nwrite, int nloop, const tateyama::loopback::buffered_response &response) {
+        EXPECT_EQ(response.session_id(), session_id);
+        EXPECT_EQ(response.code(), tateyama::api::server::response_code::success);
+        EXPECT_EQ(response.body_head(), data_channel_service::body_head);
+        EXPECT_EQ(response.body(), request);
+        //
+        for (int ch = 0; ch < nchannel; ch++) {
+            std::string name { data_channel_service::channel_name(ch) };
+            const std::vector<std::string> &ch_data = response.channel(name);
+            EXPECT_EQ(ch_data.size(), nwrite * nloop);
+            int idx = 0;
+            for (int w = 0; w < nwrite; w++) {
+                for (int i = 0; i < nloop; i++) {
+                    std::string data { data_channel_service::channel_data(ch, w, i) };
+                    EXPECT_EQ(ch_data[idx++], data);
+                }
+            }
+        }
+    }
+};
+
+static const int nchannel = 2;
+static const int nwrite = 2;
+static const int nloop = 2;
+
+TEST_F(loopback_data_channel_test, simple) {
     tateyama::loopback::loopback_client loopback;
     tateyama::framework::server sv { tateyama::framework::boot_mode::database_server, cfg_ };
     add_core_components(sv);
@@ -103,25 +124,32 @@ TEST_F(loopback_data_channel_test, simple) {
     ASSERT_TRUE(sv.start());
 
     const auto response = loopback.request(session_id, service_id, request);
-    EXPECT_EQ(response.session_id(), session_id);
-    EXPECT_EQ(response.code(), tateyama::api::server::response_code::success);
-    EXPECT_EQ(response.body_head(), data_channel_service::body_head);
-    EXPECT_EQ(response.body(), request);
+    check_response(nchannel, nwrite, nloop, response);
+    EXPECT_TRUE(sv.shutdown());
+}
+
+TEST_F(loopback_data_channel_test, response_copy_move) {
+    tateyama::loopback::loopback_client loopback;
+    tateyama::framework::server sv { tateyama::framework::boot_mode::database_server, cfg_ };
+    add_core_components(sv);
+    sv.add_service(std::make_shared<data_channel_service>(nchannel, nwrite, nloop));
+    sv.add_endpoint(loopback.endpoint());
+    ASSERT_TRUE(sv.start());
+
+    const auto response = loopback.request(session_id, service_id, request);
+    check_response(nchannel, nwrite, nloop, response);
+    const auto response_copy = response;  // NOLINT
+    check_response(nchannel, nwrite, nloop, response_copy);
+    const auto response_copy_ctor { response }; // NOLINT
+    check_response(nchannel, nwrite, nloop, response_copy_ctor);
     //
-    for (int ch = 0; ch < nchannel; ch++) {
-        std::string name { data_channel_service::channel_name(ch) };
-        std::vector<std::string> ch_data = response.channel(name);
-        EXPECT_EQ(ch_data.size(), nwrite * nloop);
-        int idx = 0;
-        for (int w = 0; w < nwrite; w++) {
-            for (int i = 0; i < nloop; i++) {
-                std::string data { data_channel_service::channel_data(ch, w, i) };
-                EXPECT_EQ(ch_data[idx++], data);
-                std::cout << data << std::endl;
-            }
-        }
-    }
-    //
+    const auto response_move = std::move(response); // NOLINT
+    check_response(nchannel, nwrite, nloop, response_move);
+    check_response(nchannel, nwrite, nloop, response); // NOLINT
+    const auto response_move_ctor { std::move(response) }; // NOLINT
+    check_response(nchannel, nwrite, nloop, response_move_ctor);
+    check_response(nchannel, nwrite, nloop, response_move); // NOLINT
+
     EXPECT_TRUE(sv.shutdown());
 }
 

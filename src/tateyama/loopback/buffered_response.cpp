@@ -18,8 +18,8 @@
 
 namespace tateyama::loopback {
 
-void buffered_response::update(std::size_t session_id, tateyama::api::server::response_code code,
-        std::string_view body_head, std::string_view body, std::map<std::string, std::vector<std::string>> data_map) {
+buffered_response::buffered_response(std::size_t session_id, tateyama::api::server::response_code code,
+        std::string_view body_head, std::string_view body, std::map<std::string, std::vector<std::string>> &data_map) {
     session_id_ = session_id;
     code_ = code;
     body_head_ = std::string { body_head };
@@ -47,7 +47,7 @@ bool buffered_response::has_channel(std::string_view name) const noexcept {
     return data_map_.find(std::string { name }) != data_map_.cend();
 }
 
-std::vector<std::string> buffered_response::channel(std::string_view name) const {
+const std::vector<std::string>& buffered_response::channel(std::string_view name) const {
     return data_map_.at(std::string { name });
 }
 

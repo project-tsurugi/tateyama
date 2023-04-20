@@ -64,15 +64,13 @@ public:
         return tateyama::status::ok;
     }
 
-    std::vector<std::string> committed_data() {
-        std::vector < std::string > whole { };
+    void committed_data(std::vector<std::string> &whole) {
         // FIXME make thread-safe
         for (auto &writer : writers_) {
             for (auto &data : writer->committed_data()) {
-                whole.emplace_back(data);
+                whole.emplace_back(std::move(data));
             }
         }
-        return whole;
     }
 private:
     std::vector<std::shared_ptr<loopback_data_writer>> writers_ { };
@@ -161,13 +159,13 @@ public:
         return tateyama::status::ok;
     }
 
-    std::map<std::string, std::vector<std::string>> all_committed_data() {
-        std::map<std::string, std::vector<std::string>> data_map { };
+    void all_committed_data(std::map<std::string, std::vector<std::string>> &data_map) const {
         for (const auto& [name, channel] : channel_map_) {
             auto data_channel = dynamic_cast<loopback_data_channel*>(channel.get());
-            data_map[name] = data_channel->committed_data();
+            std::vector < std::string > whole { };
+            data_channel->committed_data(whole);
+            data_map[name] = std::move(whole);
         }
-        return data_map;
     }
 
 private:

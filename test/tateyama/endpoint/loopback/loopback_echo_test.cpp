@@ -42,8 +42,6 @@ public:
 
     bool operator ()(std::shared_ptr<tateyama::api::server::request> req,
             std::shared_ptr<tateyama::api::server::response> res) override {
-        std::cout << "HERE! : " << req->payload() << std::endl;
-        //
         res->session_id(req->session_id());
         res->code(tateyama::api::server::response_code::success);
         res->body_head(body_head);
@@ -55,7 +53,7 @@ public:
 class loopback_echo_test: public loopback_test_base {
 };
 
-TEST_F(loopback_echo_test, simple) {
+TEST_F(loopback_echo_test, simple_copy_res) {
     const std::size_t session_id = 123;
     const std::size_t service_id = echo_service::tag;
     const std::string request { "loopback_test" };
@@ -68,6 +66,69 @@ TEST_F(loopback_echo_test, simple) {
     ASSERT_TRUE(sv.start());
 
     const auto response = loopback.request(session_id, service_id, request);
+    EXPECT_EQ(response.session_id(), session_id);
+    EXPECT_EQ(response.code(), tateyama::api::server::response_code::success);
+    EXPECT_EQ(response.body_head(), echo_service::body_head);
+    EXPECT_EQ(response.body(), request);
+    //
+    EXPECT_TRUE(sv.shutdown());
+}
+
+TEST_F(loopback_echo_test, simple_copy_ctor_res) {
+    const std::size_t session_id = 123;
+    const std::size_t service_id = echo_service::tag;
+    const std::string request { "loopback_test" };
+    //
+    tateyama::loopback::loopback_client loopback;
+    tateyama::framework::server sv { tateyama::framework::boot_mode::database_server, cfg_ };
+    add_core_components(sv);
+    sv.add_service(std::make_shared<echo_service>());
+    sv.add_endpoint(loopback.endpoint());
+    ASSERT_TRUE(sv.start());
+
+    const auto response { loopback.request(session_id, service_id, request) }; // NOLINT
+    EXPECT_EQ(response.session_id(), session_id);
+    EXPECT_EQ(response.code(), tateyama::api::server::response_code::success);
+    EXPECT_EQ(response.body_head(), echo_service::body_head);
+    EXPECT_EQ(response.body(), request);
+    //
+    EXPECT_TRUE(sv.shutdown());
+}
+
+TEST_F(loopback_echo_test, simple_move_ctor_res) {
+    const std::size_t session_id = 123;
+    const std::size_t service_id = echo_service::tag;
+    const std::string request { "loopback_test" };
+    //
+    tateyama::loopback::loopback_client loopback;
+    tateyama::framework::server sv { tateyama::framework::boot_mode::database_server, cfg_ };
+    add_core_components(sv);
+    sv.add_service(std::make_shared<echo_service>());
+    sv.add_endpoint(loopback.endpoint());
+    ASSERT_TRUE(sv.start());
+
+    const auto response { std::move(loopback.request(session_id, service_id, request)) }; // NOLINT
+    EXPECT_EQ(response.session_id(), session_id);
+    EXPECT_EQ(response.code(), tateyama::api::server::response_code::success);
+    EXPECT_EQ(response.body_head(), echo_service::body_head);
+    EXPECT_EQ(response.body(), request);
+    //
+    EXPECT_TRUE(sv.shutdown());
+}
+
+TEST_F(loopback_echo_test, simple_move_res) {
+    const std::size_t session_id = 123;
+    const std::size_t service_id = echo_service::tag;
+    const std::string request { "loopback_test" };
+    //
+    tateyama::loopback::loopback_client loopback;
+    tateyama::framework::server sv { tateyama::framework::boot_mode::database_server, cfg_ };
+    add_core_components(sv);
+    sv.add_service(std::make_shared<echo_service>());
+    sv.add_endpoint(loopback.endpoint());
+    ASSERT_TRUE(sv.start());
+
+    const auto response = std::move(loopback.request(session_id, service_id, request)); // NOLINT
     EXPECT_EQ(response.session_id(), session_id);
     EXPECT_EQ(response.code(), tateyama::api::server::response_code::success);
     EXPECT_EQ(response.body_head(), echo_service::body_head);
@@ -97,6 +158,22 @@ TEST_F(loopback_echo_test, unknown_service_id) {
     }
     //
     EXPECT_TRUE(sv.shutdown());
+}
+
+TEST_F(loopback_echo_test, client_move) {
+    tateyama::loopback::loopback_client loopback;
+    const tateyama::framework::endpoint *endpoint_org = loopback.endpoint().get();
+    //
+    tateyama::loopback::loopback_client loopback_move_ctor { std::move(loopback) };  // NOLINT
+    const tateyama::framework::endpoint *endpoint_move_ctor = loopback_move_ctor.endpoint().get();
+    EXPECT_EQ(endpoint_org, endpoint_move_ctor);
+    EXPECT_EQ(loopback.endpoint().get(), nullptr); // NOLINT
+    //
+    tateyama::loopback::loopback_client loopback_move = std::move(loopback_move_ctor) ;  // NOLINT
+    const tateyama::framework::endpoint *endpoint_move = loopback_move.endpoint().get();
+    EXPECT_EQ(endpoint_org, endpoint_move);
+    EXPECT_EQ(loopback.endpoint().get(), nullptr); // NOLINT
+    EXPECT_EQ(loopback_move_ctor.endpoint().get(), nullptr); // NOLINT
 }
 
 } // namespace tateyama::loopback

@@ -32,9 +32,10 @@ tateyama::loopback::buffered_response loopback_endpoint::request(std::size_t ses
         throw std::invalid_argument("unknown service_id " + std::to_string(service_id));
     }
 
-    tateyama::loopback::buffered_response bufres { };
-    bufres.update(response->session_id(), response->code(), response->body_head(), response->body(),
-            response->all_committed_data());
+    std::map<std::string, std::vector<std::string>> data_map{};
+    response->all_committed_data(data_map);
+    tateyama::loopback::buffered_response bufres { response->session_id(), response->code(), response->body_head(),
+            response->body(), data_map };
     return bufres;
 }
 
