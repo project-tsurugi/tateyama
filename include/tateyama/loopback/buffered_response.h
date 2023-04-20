@@ -85,7 +85,7 @@ public:
     /**
      * @brief retrieve all written data to the channel of the specified name
      * @return all written data to the channel of the specified name
-     * @throw out_of_range if this response doesn't have the channel of the specified name
+     * @throw std::invalid_argument if service_id is unknown
      * @note this function is thread-safe and multiple threads can invoke simultaneously.
      */
     [[nodiscard]] const std::vector<std::string>& channel(std::string_view name) const;

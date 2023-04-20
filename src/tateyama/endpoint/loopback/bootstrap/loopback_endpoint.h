@@ -70,11 +70,11 @@ public:
      * @details send a request through loopback endpoint.
      * A request is handled by the service of {@code service_id}.
      * A response will be returned after handling request operation finished.
-     * If {@code service_id} is unknown, nothing done, an empty response will be returned.
      * @param session_id session identifier of the request
      * @param service_id service identifier of the request
      * @param payload payload binary data of the request
      * @return response of handling the request
+     * @throw std::invalid_argument if service_id is unknown
      * @attention this function is blocked until the operation finished.
      * @note this function is thread-safe and multiple threads can invoke simultaneously.
      */

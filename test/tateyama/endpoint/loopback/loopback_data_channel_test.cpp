@@ -97,16 +97,30 @@ public:
         EXPECT_EQ(response.body(), request);
         //
         for (int ch = 0; ch < nchannel; ch++) {
-            std::string name { data_channel_service::channel_name(ch) };
+            std::string name { std::move(data_channel_service::channel_name(ch)) };
+            EXPECT_TRUE(response.has_channel(name));
             const std::vector<std::string> &ch_data = response.channel(name);
             EXPECT_EQ(ch_data.size(), nwrite * nloop);
             int idx = 0;
             for (int w = 0; w < nwrite; w++) {
                 for (int i = 0; i < nloop; i++) {
-                    std::string data { data_channel_service::channel_data(ch, w, i) };
+                    std::string data { std::move(data_channel_service::channel_data(ch, w, i)) };
                     EXPECT_EQ(ch_data[idx++], data);
                 }
             }
+        }
+    }
+
+    void check_invalid_channel_name(const tateyama::loopback::buffered_response &response) {
+        const std::string invalid_name { "invalid_name" };
+        EXPECT_FALSE(response.has_channel(invalid_name));
+        try {
+            const std::vector<std::string> &ch_data = response.channel(invalid_name);
+            FAIL();
+            EXPECT_EQ(ch_data.size(), 0);
+        } catch (std::invalid_argument &ex) {
+            std::cout << ex.what() << std::endl;
+            SUCCEED();
         }
     }
 };
@@ -125,6 +139,8 @@ TEST_F(loopback_data_channel_test, simple) {
 
     const auto response = loopback.request(session_id, service_id, request);
     check_response(nchannel, nwrite, nloop, response);
+    check_invalid_channel_name(response);
+    //
     EXPECT_TRUE(sv.shutdown());
 }
 

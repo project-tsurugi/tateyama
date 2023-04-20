@@ -48,7 +48,13 @@ bool buffered_response::has_channel(std::string_view name) const noexcept {
 }
 
 const std::vector<std::string>& buffered_response::channel(std::string_view name) const {
-    return data_map_.at(std::string { name });
+    try {
+        return data_map_.at(std::string { name });
+    } catch (std::out_of_range &ex) {
+        std::string m { "invalid channel name: "};
+        m += name;
+        throw std::invalid_argument(m);
+    }
 }
 
 } // namespace tateyama::loopback
