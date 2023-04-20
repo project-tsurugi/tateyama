@@ -51,7 +51,7 @@ const std::vector<std::string>& buffered_response::channel(std::string_view name
     try {
         return data_map_.at(std::string { name });
     } catch (std::out_of_range &ex) {
-        std::string m { "invalid channel name: "};
+        std::string m { "invalid channel name: " };
         m += name;
         throw std::invalid_argument(m);
     }

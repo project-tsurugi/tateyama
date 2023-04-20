@@ -34,7 +34,8 @@ public:
      * @param code response_code of the response
      * @param body_head body head of the response
      * @param body body of the response
-     * @param data_map all data written to all channels
+     * @param data_map all data written to all channels (key: channel name, value: written data)
+     * @attention this function is intended to call from internal server side, not to call from client side
      */
     buffered_response(std::size_t session_id, tateyama::api::server::response_code code, std::string_view body_head,
             std::string_view body, std::map<std::string, std::vector<std::string>> &data_map);
@@ -85,7 +86,7 @@ public:
     /**
      * @brief retrieve all written data to the channel of the specified name
      * @return all written data to the channel of the specified name
-     * @throw std::invalid_argument if service_id is unknown
+     * @throw std::invalid_argument if name is unknown
      * @note this function is thread-safe and multiple threads can invoke simultaneously.
      */
     [[nodiscard]] const std::vector<std::string>& channel(std::string_view name) const;
