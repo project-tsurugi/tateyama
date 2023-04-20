@@ -29,13 +29,17 @@ namespace tateyama::loopback {
 class buffered_response {
 public:
     /**
+     * @brief create the object
+     */
+    buffered_response() = default;
+
+    /**
      * @brief create response object
      * @param session_id session identifier of the response
      * @param code response_code of the response
      * @param body_head body head of the response
      * @param body body of the response
      * @param data_map all data written to all channels (key: channel name, value: written data)
-     * @attention this function is intended to call from internal server side, not to call from client side
      */
     buffered_response(std::size_t session_id, tateyama::api::server::response_code code, std::string_view body_head,
             std::string_view body, std::map<std::string, std::vector<std::string>> &data_map);
@@ -44,11 +48,6 @@ public:
      * @brief destruct the object
      */
     ~buffered_response() = default;
-
-    buffered_response(buffered_response const &other) = default;
-    buffered_response& operator=(buffered_response const &other) = default;
-    buffered_response(buffered_response &&other) noexcept = default;
-    buffered_response& operator=(buffered_response &&other) noexcept = default;
 
     /**
      * @brief accessor to the session identifier

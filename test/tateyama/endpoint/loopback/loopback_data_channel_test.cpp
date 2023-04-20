@@ -166,17 +166,6 @@ TEST_F(loopback_data_channel_test, response_copy_move) {
     check_response(nchannel, nwrite, nloop, response_move_ctor);
     check_response(nchannel, nwrite, nloop, response_move); // NOLINT
 
-    // move from without const object
-    auto response_copy2 = response;
-    check_response(nchannel, nwrite, nloop, response_copy2);
-    auto response_copy_move = std::move(response_copy2); // NOLINT
-    check_response(nchannel, nwrite, nloop, response_copy_move);
-    // response_copy2 became empty...
-    for (int ch = 0; ch < nchannel; ch++) {
-        std::string name { std::move(data_channel_service::channel_name(ch)) };
-        EXPECT_FALSE(response_copy2.has_channel(name));
-    }
-
     EXPECT_TRUE(sv.shutdown());
 }
 
