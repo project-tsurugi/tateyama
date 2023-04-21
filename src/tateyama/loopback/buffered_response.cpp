@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 #include <tateyama/loopback/buffered_response.h>
-#include <tateyama/endpoint/loopback/loopback_response.h>
 
 namespace tateyama::loopback {
 

@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-#include "tateyama/loopback/loopback_client.h"
-
+#include <tateyama/loopback/loopback_client.h>
 #include <tateyama/endpoint/loopback/bootstrap/loopback_endpoint.h>
 
 namespace tateyama::loopback {

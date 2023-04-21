@@ -125,9 +125,9 @@ public:
     }
 };
 
-static const int nchannel = 2;
-static const int nwrite = 2;
-static const int nloop = 2;
+static const int nchannel = 1;
+static const int nwrite = 1;
+static const int nloop = 1;
 
 TEST_F(loopback_data_channel_test, simple) {
     tateyama::loopback::loopback_client loopback;

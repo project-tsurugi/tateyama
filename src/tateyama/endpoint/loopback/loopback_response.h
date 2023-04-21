@@ -16,65 +16,14 @@
 #pragma once
 
 #include <map>
+#include <mutex>
 
 #include <tateyama/api/server/response.h>
 
+#include "loopback_data_writer.h"
+#include "loopback_data_channel.h"
+
 namespace tateyama::common::loopback {
-
-class loopback_data_writer: public tateyama::api::server::writer {
-public:
-    tateyama::status write(const char *data, std::size_t length) override {
-        if (length > 0) {
-            // NOTE: data is binary data. It maybe data="\0\1\2\3", length=4 etc.
-            std::string s { data, length };
-            current_data_ += s;
-        }
-        return tateyama::status::ok;
-    }
-
-    tateyama::status commit() override {
-        if (current_data_.length() > 0) {
-            list_.emplace_back(current_data_);
-            current_data_.clear();
-        }
-        return tateyama::status::ok;
-    }
-
-    std::vector<std::string> committed_data() {
-        return std::move(list_);
-    }
-
-private:
-    std::string current_data_ { };
-    std::vector<std::string> list_ { };
-};
-
-class loopback_data_channel: public tateyama::api::server::data_channel {
-public:
-    tateyama::status acquire(std::shared_ptr<tateyama::api::server::writer> &wrt) override {
-        // FIXME make thread-safe
-        auto writer = std::make_shared<loopback_data_writer>();
-        writers_.emplace_back(writer);
-        wrt = writer;
-        return tateyama::status::ok;
-    }
-
-    tateyama::status release(tateyama::api::server::writer&) override {
-        // FIXME make thread-safe
-        return tateyama::status::ok;
-    }
-
-    void committed_data(std::vector<std::string> &whole) {
-        // FIXME make thread-safe
-        for (auto &writer : writers_) {
-            for (auto &data : writer->committed_data()) {
-                whole.emplace_back(std::move(data));
-            }
-        }
-    }
-private:
-    std::vector<std::shared_ptr<loopback_data_writer>> writers_ { };
-};
 
 class loopback_response: public tateyama::api::server::response {
 public:
@@ -124,33 +73,19 @@ public:
         return body_;
     }
 
-    [[nodiscard]] bool has_channel(std::string_view name) const noexcept {
-        // FIXME: make thread-safe
-        return channel_map_.find(std::string { name }) != channel_map_.cend();
-    }
+    [[nodiscard]] bool has_channel(std::string_view name) noexcept;
 
     /**
      * @see `tateyama::server::response::acquire_channel()`
      * @attention This function fails if {@code name} has been already acquired (even if it has been released).
      */
     tateyama::status acquire_channel(std::string_view name, std::shared_ptr<tateyama::api::server::data_channel> &ch)
-            override {
-        // FIXME: make thread-safe
-        if (has_channel(name)) {
-            return tateyama::status::not_found;
-        }
-        ch = std::make_shared<loopback_data_channel>();
-        channel_map_[std::string { name }] = ch;
-        return tateyama::status::ok;
-    }
+            override;
 
     /**
      * @see `tateyama::server::response::release_channel()`
      */
-    tateyama::status release_channel(tateyama::api::server::data_channel&) override {
-        // FIXME: make thread-safe
-        return tateyama::status::ok;
-    }
+    tateyama::status release_channel(tateyama::api::server::data_channel&) override;
 
     /**
      * @see `tateyama::server::response::close_session()`
@@ -159,14 +94,7 @@ public:
         return tateyama::status::ok;
     }
 
-    void all_committed_data(std::map<std::string, std::vector<std::string>> &data_map) const {
-        for (const auto& [name, channel] : channel_map_) {
-            auto data_channel = dynamic_cast<loopback_data_channel*>(channel.get());
-            std::vector < std::string > whole { };
-            data_channel->committed_data(whole);
-            data_map[name] = std::move(whole);
-        }
-    }
+    void all_committed_data(std::map<std::string, std::vector<std::string>> &data_map);
 
 private:
     std::size_t session_id_ { };
@@ -174,9 +102,34 @@ private:
     std::string body_head_ { };
     std::string body_ { };
 
-    // FIXME: make thread-safe
-    std::map<std::string, std::shared_ptr<tateyama::api::server::data_channel>> channel_map_ { };
+    std::shared_timed_mutex mtx_channel_map_{ };
+    /*
+     * @brief acquired channel map
+     * @details add data_channel when acquired, remove it when it's released
+     * @note it's empty if all data channels are released
+     * @attention use mtx_channel_map_ to be thread-safe
+     */
+    std::map<std::string, loopback_data_channel*> acquired_channel_map_ { };
 
+    /*
+     * @brief all committed data of all data channels
+     * @details add data queue when channel is acquired, not remove it even if it's released.
+     * Data queue is filled only when the channel is released
+     * @note it's not cleared even if a channel is released
+     * @note data queue is reused if same name channel is acquired again
+     * @attention use mtx_data_map_ to be thread-safe
+     */
+    std::map<std::string, std::vector<std::string>> released_data_map_ { };
+
+    /*
+     * @brief check whether this response has data of the specified name
+     * @return true this response has data channel of the specified name, even if the channel is already released
+     * @return false otherwise
+     * @attention caller must use mtx_channel_map_ to be thread-safe
+     */
+    [[nodiscard]] bool has_channel_nolock(std::string_view name) const noexcept {
+        return released_data_map_.find(std::string { name }) != released_data_map_.cend();
+    }
 };
 
 } // namespace tateyama::common::loopback

@@ -31,8 +31,7 @@ public:
      * @param payload payload binary data of the request
      */
     loopback_request(std::size_t session_id, std::size_t service_id, std::string_view payload) :
-            session_id_(session_id), service_id_(service_id) {
-        payload_ = payload;
+            session_id_(session_id), service_id_(service_id), payload_(payload) {
     }
 
     /**
@@ -58,9 +57,9 @@ public:
     }
 
 private:
-    std::size_t session_id_;
-    std::size_t service_id_;
-    std::string payload_;
+    const std::size_t session_id_;
+    const std::size_t service_id_;
+    const std::string payload_;
 };
 
 } // namespace tateyama::common::loopback
