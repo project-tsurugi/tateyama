@@ -26,16 +26,18 @@ void Worker::run()
         << session_id_;
     while(true) {
         auto h = request_wire_container_->peep(true);
+        mark_begin();
         if (h.get_length() == 0 && h.get_idx() == tateyama::common::wire::message_header::not_use) { break; }
         auto request = std::make_shared<tateyama::common::wire::ipc_request>(*wire_, h);
-        auto response = std::make_shared<tateyama::common::wire::ipc_response>(*request, h.get_idx());
-
+        auto response = std::make_shared<tateyama::common::wire::ipc_response>(*request, h.get_idx(),
+                                                                               [this](){ mark_end(); });
         service_(static_cast<std::shared_ptr<tateyama::api::server::request>>(request),
                  static_cast<std::shared_ptr<tateyama::api::server::response>>(std::move(response)));
         request->dispose();
         request = nullptr;
         if (wire_->is_session_closed()) { break; }
     }
+    print_out();
     clean_up_();
     VLOG_LP(log_trace) << "destroy session wire: session_id = " << std::to_string(session_id_);
     VLOG(log_debug_timing_event) << "/:tateyama:timing:session:finished "

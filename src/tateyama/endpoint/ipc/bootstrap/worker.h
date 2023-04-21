@@ -18,6 +18,7 @@
 #include <future>
 #include <thread>
 #include <functional>
+#include <iostream>
 
 #include <tateyama/status.h>
 #include <tateyama/api/server/request.h>
@@ -66,6 +67,32 @@ class Worker {
     std::packaged_task<void()> task_;
     std::future<void> future_;
     std::thread thread_{};
+
+    // for measurement
+    std::chrono::time_point<std::chrono::steady_clock> time_{std::chrono::steady_clock::time_point()};
+    std::chrono::nanoseconds duration_{};
+    std::size_t count_{};
+
+    void mark_begin() {
+        time_ = std::chrono::steady_clock::now();
+    }
+    void mark_end() {
+        if (time_ != std::chrono::steady_clock::time_point()) {
+            auto now = std::chrono::steady_clock::now();
+            duration_ += std::chrono::duration_cast<std::chrono::nanoseconds>(now - time_);
+            time_ = std::chrono::steady_clock::time_point();
+            count_++;
+        }
+    }
+    std::size_t count() {
+        return count_;
+    }
+    auto duration() {
+        return duration_;
+    }
+    void print_out() {
+        std::cout << count_ << " : " << (duration_.count() + 500) / 1000 << std::endl;
+    }
 };
 
 }  // tateyama::server

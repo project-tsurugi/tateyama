@@ -18,6 +18,7 @@
 #include <set>
 #include <string_view>
 #include <mutex>
+#include <functional>
 
 #include <tateyama/api/server/response.h>
 #include <tateyama/api/server/response_code.h>
@@ -113,14 +114,16 @@ private:
  */
 class ipc_response : public tateyama::api::server::response {
 public:
-    ipc_response(ipc_request& request, std::size_t index) :
+    ipc_response(ipc_request& request, std::size_t index, std::function<void(void)> mark_end) :
         ipc_request_(request),
         server_wire_(ipc_request_.get_server_wire_container()),
         index_(index),
-        garbage_collector_(server_wire_.get_garbage_collector()) {
+        garbage_collector_(server_wire_.get_garbage_collector()),
+        mark_end_(std::move(mark_end)) {
         // do dump here
         garbage_collector_->dump();
     }
+    ipc_response(ipc_request& request, std::size_t index) : ipc_response(request, index, [](){}) {}
 
     ipc_response() = delete;
 
@@ -139,6 +142,7 @@ private:
     server_wire_container& server_wire_;
     std::size_t index_;
     tateyama::common::wire::garbage_collector* garbage_collector_;
+    std::function<void(void)> mark_end_;
 
     tateyama::api::server::response_code response_code_{tateyama::api::server::response_code::unknown};
     std::string message_{};
