@@ -24,6 +24,8 @@ void stream_worker::run()
 {
     std::string session_name = std::to_string(session_id_);
     if (session_stream_->wait_hello(session_name)) {
+        VLOG(log_debug_timing_event) << "/:tateyama:timing:session:started "
+            << session_id_;
         while(true) {
             std::uint16_t slot{};
             std::string payload{};
@@ -38,6 +40,8 @@ void stream_worker::run()
                      static_cast<std::shared_ptr<tateyama::api::server::response>>(std::move(response)));
             request = nullptr;
         }
+        VLOG(log_debug_timing_event) << "/:tateyama:timing:session:finished "
+            << session_id_;
     }
 }
 
