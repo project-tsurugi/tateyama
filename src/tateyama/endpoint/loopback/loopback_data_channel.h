@@ -29,6 +29,9 @@ class loopback_data_channel: public tateyama::api::server::data_channel {
 public:
     explicit loopback_data_channel(std::string_view name) :
             name_(name) {
+        if (name.size() == 0) {
+            throw std::invalid_argument("empty name");
+        }
     }
     const std::string& name() const noexcept {
         return name_;
