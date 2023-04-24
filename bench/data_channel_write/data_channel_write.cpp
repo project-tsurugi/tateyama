@@ -198,15 +198,14 @@ static void help(std::vector<std::string> &args) {
 }
 
 int main(int argc, char **argv) {
-    std::vector<std::string> args{};
+    std::vector<std::string> args { };
     to_args(argc, argv, args);
     switch (argc) {
     case 1:
-        if (args[1].find("help") == std::string::npos) {
-            bench_all();
-        } else {
-            help(args);
-        }
+        bench_all();
+        break;
+    case 2:
+        help(args);
         break;
     case 5:
         bench_once(args);
