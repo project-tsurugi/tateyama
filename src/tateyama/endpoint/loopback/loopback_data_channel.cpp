@@ -45,7 +45,7 @@ tateyama::status loopback_data_channel::release(tateyama::api::server::writer &w
         for (auto &data : wrt->committed_data()) {
             // data is moved to released_data_
             // because writer is released, and data in the writer is freed also.
-            released_data_.emplace_back(std::move(data));
+            released_data_.emplace_back(data);
         }
     }
     return tateyama::status::ok;

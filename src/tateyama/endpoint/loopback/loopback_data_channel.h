@@ -30,11 +30,8 @@ public:
     explicit loopback_data_channel(std::string_view name) :
             name_(name) {
     }
-    const std::string& name() const noexcept {
+    [[nodiscard]] const std::string& name() const noexcept {
         return name_;
-    }
-    ~loopback_data_channel() override {
-        release();
     }
 
     tateyama::status acquire(std::shared_ptr<tateyama::api::server::writer> &writer) override;
