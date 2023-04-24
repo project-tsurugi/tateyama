@@ -77,7 +77,6 @@ public:
 
     /**
      * @see `tateyama::server::response::acquire_channel()`
-     * @attention This function fails if {@code name} has been already acquired (even if it has been released).
      */
     tateyama::status acquire_channel(std::string_view name, std::shared_ptr<tateyama::api::server::data_channel> &ch)
             override;
@@ -85,7 +84,7 @@ public:
     /**
      * @see `tateyama::server::response::release_channel()`
      */
-    tateyama::status release_channel(tateyama::api::server::data_channel&) override;
+    tateyama::status release_channel(tateyama::api::server::data_channel &ch) override;
 
     /**
      * @see `tateyama::server::response::close_session()`
@@ -102,7 +101,7 @@ private:
     std::string body_head_ { };
     std::string body_ { };
 
-    std::shared_timed_mutex mtx_channel_map_{ };
+    std::shared_mutex mtx_channel_map_ { };
     /*
      * @brief acquired channel map
      * @details add data_channel when acquired, remove it when it's released
@@ -111,25 +110,21 @@ private:
      */
     std::map<std::string, loopback_data_channel*> acquired_channel_map_ { };
 
+    bool is_acquired(std::string &name) {
+        return (acquired_channel_map_.find(name) != acquired_channel_map_.cend());
+    }
+
     /*
      * @brief all committed data of all data channels
      * @details add data queue when channel is acquired, not remove it even if it's released.
      * Data queue is filled only when the channel is released
      * @note it's not cleared even if a channel is released
      * @note data queue is reused if same name channel is acquired again
-     * @attention use mtx_data_map_ to be thread-safe
+     * @attention use mtx_channel_map_ to be thread-safe
+     * because remove from acquired_channel_map_ and append data to released_data_map_
+     * should be atomic.
      */
     std::map<std::string, std::vector<std::string>> released_data_map_ { };
-
-    /*
-     * @brief check whether this response has data of the specified name
-     * @return true this response has data channel of the specified name, even if the channel is already released
-     * @return false otherwise
-     * @attention caller must use mtx_channel_map_ to be thread-safe
-     */
-    [[nodiscard]] bool has_channel_nolock(std::string_view name) const noexcept {
-        return released_data_map_.find(std::string { name }) != released_data_map_.cend();
-    }
 };
 
 } // namespace tateyama::common::loopback

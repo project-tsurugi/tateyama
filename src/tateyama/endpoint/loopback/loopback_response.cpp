@@ -19,18 +19,19 @@
 namespace tateyama::common::loopback {
 
 bool loopback_response::has_channel(std::string_view name) noexcept {
-    std::shared_lock < std::shared_timed_mutex > lock(mtx_channel_map_);
-    return has_channel_nolock(name);
+    std::shared_lock < std::shared_mutex > lock(mtx_channel_map_);
+    return released_data_map_.find(std::string { name }) != released_data_map_.cend();
 }
 
 tateyama::status loopback_response::acquire_channel(std::string_view name,
         std::shared_ptr<tateyama::api::server::data_channel> &ch) {
-    std::unique_lock < std::shared_timed_mutex > lock(mtx_channel_map_);
-    if (has_channel_nolock(name)) {
+    std::string namestr { name };
+    std::unique_lock < std::shared_mutex > lock(mtx_channel_map_);
+    if (is_acquired(namestr)) {
+        // the channel is already active, cannot make dual instances of same name
         return tateyama::status::not_found;
     }
     ch = std::make_shared < loopback_data_channel > (name);
-    std::string namestr { name };
     acquired_channel_map_[namestr] = dynamic_cast<loopback_data_channel*>(ch.get());
     //
     if (released_data_map_.find(namestr) == released_data_map_.cend()) {
@@ -44,8 +45,8 @@ tateyama::status loopback_response::release_channel(tateyama::api::server::data_
     auto data_channel = dynamic_cast<loopback_data_channel*>(&ch);
     auto name = data_channel->name();
     //
-    std::unique_lock < std::shared_timed_mutex > lock(mtx_channel_map_);
-    if (!has_channel_nolock(name)) {
+    std::unique_lock < std::shared_mutex > lock(mtx_channel_map_);
+    if (!is_acquired(name)) {
         return tateyama::status::not_found;
     }
     if (acquired_channel_map_[name] != data_channel) {
@@ -53,6 +54,7 @@ tateyama::status loopback_response::release_channel(tateyama::api::server::data_
         return tateyama::status::not_found;
     }
     acquired_channel_map_.erase(name);
+    data_channel->release(); // release all unreleased writers if exist
     //
     std::vector < std::string > &whole = released_data_map_[name];
     data_channel->append_committed_data(whole);
@@ -60,7 +62,7 @@ tateyama::status loopback_response::release_channel(tateyama::api::server::data_
 }
 
 void loopback_response::all_committed_data(std::map<std::string, std::vector<std::string>> &data_map) {
-    std::shared_lock < std::shared_timed_mutex > lock(mtx_channel_map_);
+    std::shared_lock < std::shared_mutex > lock(mtx_channel_map_);
     for (const auto& [name, committed_data] : released_data_map_) {
         data_map[name] = committed_data;
     }

@@ -71,6 +71,7 @@ file(GLOB SRCS
         "tateyama/registry/*.cpp"
         "tateyama/common/*.cpp"
         "tateyama/framework/*.cpp"
+        "tateyama/loopback/*.cpp"
         "tateyama/server/*.cpp"
         "tateyama/utils/*.cpp"
         )

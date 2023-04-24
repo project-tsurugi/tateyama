@@ -13,160 +13,213 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <thread>
+
+#include <tateyama/endpoint/loopback/loopback_data_channel.h>
+
 #include "loopback_test_base.h"
 
 namespace tateyama::api::endpoint::loopback {
 
-class data_channel_service: public tateyama::framework::service {
-public:
-    data_channel_service(int nchannel, int nwrite, int nloop) :
-            nchannel_(nchannel), nwrite_(nwrite), nloop_(nloop) {
-    }
-
-    static constexpr tateyama::framework::component::id_type tag = 1234;
-    [[nodiscard]] tateyama::framework::component::id_type id() const noexcept override {
-        return tag;
-    }
-
-    bool start(tateyama::framework::environment&) override {
-        return true;
-    }
-    bool setup(tateyama::framework::environment&) override {
-        return true;
-    }
-    bool shutdown(tateyama::framework::environment&) override {
-        return true;
-    }
-
-    [[nodiscard]] std::string_view label() const noexcept override {
-        return "loopback:data_channel_service";
-    }
-
-    static constexpr std::string_view body_head = "body_head";
-
-    static std::string channel_name(int ch) {
-        return "ch" + std::to_string(ch);
-    }
-
-    static std::string channel_data(int ch, int w, int i) {
-        return channel_name(ch) + "-w" + std::to_string(w) + "-" + std::to_string(i);
-    }
-
-    bool operator ()(std::shared_ptr<tateyama::api::server::request> req,
-            std::shared_ptr<tateyama::api::server::response> res) override {
-        res->session_id(req->session_id());
-        res->code(tateyama::api::server::response_code::success);
-        res->body_head(body_head);
-        //
-        for (int ch = 0; ch < nchannel_; ch++) {
-            std::shared_ptr<tateyama::api::server::data_channel> channel;
-            std::string name { channel_name(ch) };
-            EXPECT_EQ(tateyama::status::ok, res->acquire_channel(name, channel));
-            for (int w = 0; w < nwrite_; w++) {
-                std::shared_ptr<tateyama::api::server::writer> writer;
-                EXPECT_EQ(tateyama::status::ok, channel->acquire(writer));
-                for (int i = 0; i < nloop_; i++) {
-                    std::string data { channel_data(ch, w, i) };
-                    writer->write(data.c_str(), data.length());
-                    writer->commit();
-                }
-                channel->release(*writer);
-            }
-            res->release_channel(*channel);
-        }
-        res->body(req->payload());
-        return true;
-    }
-
-private:
-    int nchannel_;
-    int nwrite_;
-    int nloop_;
-};
-
 class loopback_data_channel_test: public loopback_test_base {
-public:
-    const std::size_t session_id = 123;
-    const std::size_t service_id = data_channel_service::tag;
-    const std::string request { "loopback_test" };
-
-    void check_response(int nchannel, int nwrite, int nloop, const tateyama::loopback::buffered_response &response) {
-        EXPECT_EQ(response.session_id(), session_id);
-        EXPECT_EQ(response.code(), tateyama::api::server::response_code::success);
-        EXPECT_EQ(response.body_head(), data_channel_service::body_head);
-        EXPECT_EQ(response.body(), request);
-        //
-        for (int ch = 0; ch < nchannel; ch++) {
-            std::string name { std::move(data_channel_service::channel_name(ch)) };
-            EXPECT_TRUE(response.has_channel(name));
-            const std::vector<std::string> &ch_data = response.channel(name);
-            EXPECT_EQ(ch_data.size(), nwrite * nloop);
-            int idx = 0;
-            for (int w = 0; w < nwrite; w++) {
-                for (int i = 0; i < nloop; i++) {
-                    std::string data { std::move(data_channel_service::channel_data(ch, w, i)) };
-                    EXPECT_EQ(ch_data[idx++], data);
-                }
-            }
-        }
-    }
-
-    void check_invalid_channel_name(const tateyama::loopback::buffered_response &response) {
-        const std::string invalid_name { "invalid_name" };
-        EXPECT_FALSE(response.has_channel(invalid_name));
-        try {
-            const std::vector<std::string> &ch_data = response.channel(invalid_name);
-            FAIL();
-            EXPECT_EQ(ch_data.size(), 0);
-        } catch (std::invalid_argument &ex) {
-            std::cout << ex.what() << std::endl;
-            SUCCEED();
-        }
-    }
 };
 
-static const int nchannel = 1;
-static const int nwrite = 1;
-static const int nloop = 1;
-
-TEST_F(loopback_data_channel_test, simple) {
-    tateyama::loopback::loopback_client loopback;
-    tateyama::framework::server sv { tateyama::framework::boot_mode::database_server, cfg_ };
-    add_core_components(sv);
-    sv.add_service(std::make_shared<data_channel_service>(nchannel, nwrite, nloop));
-    sv.add_endpoint(loopback.endpoint());
-    ASSERT_TRUE(sv.start());
-
-    const auto response = loopback.request(session_id, service_id, request);
-    check_response(nchannel, nwrite, nloop, response);
-    check_invalid_channel_name(response);
-    //
-    EXPECT_TRUE(sv.shutdown());
+TEST_F(loopback_data_channel_test, name) {
+    const std::string name { "channelX" };
+    tateyama::common::loopback::loopback_data_channel channel(name);
+    EXPECT_EQ(channel.name(), name);
 }
 
-TEST_F(loopback_data_channel_test, response_copy_move) {
-    tateyama::loopback::loopback_client loopback;
-    tateyama::framework::server sv { tateyama::framework::boot_mode::database_server, cfg_ };
-    add_core_components(sv);
-    sv.add_service(std::make_shared<data_channel_service>(nchannel, nwrite, nloop));
-    sv.add_endpoint(loopback.endpoint());
-    ASSERT_TRUE(sv.start());
-
-    const auto response = loopback.request(session_id, service_id, request);
-    check_response(nchannel, nwrite, nloop, response);
-    const auto response_copy = response;  // NOLINT
-    check_response(nchannel, nwrite, nloop, response_copy);
-    const auto response_copy_ctor { response }; // NOLINT
-    check_response(nchannel, nwrite, nloop, response_copy_ctor);
-    //
-    const auto response_move = std::move(response); // NOLINT
-    check_response(nchannel, nwrite, nloop, response_move);
-    check_response(nchannel, nwrite, nloop, response); // NOLINT
-    const auto response_move_ctor { std::move(response) }; // NOLINT
-    check_response(nchannel, nwrite, nloop, response_move_ctor);
-    check_response(nchannel, nwrite, nloop, response_move); // NOLINT
-
-    EXPECT_TRUE(sv.shutdown());
+TEST_F(loopback_data_channel_test, no_name) {
+    const std::string name { };
+    try {
+        tateyama::common::loopback::loopback_data_channel channel(name);
+        SUCCEED();
+        EXPECT_EQ(channel.name(), name);
+    } catch (std::invalid_argument &ex) {
+        std::cout << ex.what() << std::endl;
+        FAIL();
+    }
 }
 
-} // namespace tateyama::loopback
+TEST_F(loopback_data_channel_test, single_channel) {
+    const std::string name { "channelX" };
+    tateyama::common::loopback::loopback_data_channel channel(name);
+
+    std::shared_ptr<tateyama::api::server::writer> wrt;
+    EXPECT_EQ(tateyama::status::ok, channel.acquire(wrt));
+    tateyama::common::loopback::loopback_data_writer *writer =
+            dynamic_cast<tateyama::common::loopback::loopback_data_writer*>(wrt.get());
+    {
+        std::vector<std::string> whole { };
+        channel.append_committed_data(whole);
+        EXPECT_EQ(whole.size(), 0);
+    }
+    std::vector<std::string> test_data { "hello", "this is a pen" };
+    {
+        const std::string &data = test_data[0];
+        EXPECT_EQ(writer->write(data.data(), data.length()), tateyama::status::ok);
+        std::vector<std::string> whole { };
+        channel.append_committed_data(whole);
+        EXPECT_EQ(whole.size(), 0);
+        EXPECT_EQ(channel.name(), name);
+    }
+    {
+        EXPECT_EQ(writer->commit(), tateyama::status::ok);
+        std::vector<std::string> whole { };
+        channel.append_committed_data(whole);
+        EXPECT_EQ(whole.size(), 1);
+        EXPECT_EQ(whole[0], test_data[0]);
+        EXPECT_EQ(channel.name(), name);
+    }
+    {
+        const std::string &data = test_data[1];
+        EXPECT_EQ(writer->write(data.data(), data.length()), tateyama::status::ok);
+        std::vector<std::string> whole { };
+        channel.append_committed_data(whole);
+        EXPECT_EQ(whole.size(), 1);
+        EXPECT_EQ(whole[0], test_data[0]);
+        EXPECT_EQ(channel.name(), name);
+    }
+    {
+        EXPECT_EQ(writer->commit(), tateyama::status::ok);
+        std::vector<std::string> whole { };
+        channel.append_committed_data(whole);
+        EXPECT_EQ(whole.size(), 2);
+        EXPECT_EQ(whole[0], test_data[0]);
+        EXPECT_EQ(whole[1], test_data[1]);
+        EXPECT_EQ(channel.name(), name);
+    }
+    {
+        std::vector<std::string> whole { };
+        channel.append_committed_data(whole);
+        EXPECT_EQ(whole.size(), 2);
+        // clear returned map
+        whole.clear();
+        EXPECT_EQ(whole.size(), 0);
+        // still got same data
+        channel.append_committed_data(whole);
+        EXPECT_EQ(whole.size(), 2);
+        EXPECT_EQ(whole[0], test_data[0]);
+        EXPECT_EQ(whole[1], test_data[1]);
+        EXPECT_EQ(channel.name(), name);
+    }
+    EXPECT_EQ(tateyama::status::ok, channel.release(*wrt));
+}
+
+TEST_F(loopback_data_channel_test, acquire_writer) {
+    const std::string name { "channelX" };
+    tateyama::common::loopback::loopback_data_channel channel(name);
+
+    std::shared_ptr<tateyama::api::server::writer> wrt;
+    EXPECT_EQ(tateyama::status::ok, channel.acquire(wrt));
+    EXPECT_EQ(tateyama::status::ok, channel.release(*wrt));
+}
+
+TEST_F(loopback_data_channel_test, acquire_writer_without_release) {
+    const std::string name { "channelX" };
+    tateyama::common::loopback::loopback_data_channel channel(name);
+
+    std::shared_ptr<tateyama::api::server::writer> wrt;
+    EXPECT_EQ(tateyama::status::ok, channel.acquire(wrt));
+}
+
+TEST_F(loopback_data_channel_test, acquire_writer_dual_release) {
+    const std::string name { "channelX" };
+    tateyama::common::loopback::loopback_data_channel channel(name);
+
+    std::shared_ptr<tateyama::api::server::writer> wrt;
+    EXPECT_EQ(tateyama::status::ok, channel.acquire(wrt));
+    EXPECT_EQ(tateyama::status::ok, channel.release(*wrt));
+    EXPECT_EQ(tateyama::status::not_found, channel.release(*wrt));
+}
+
+TEST_F(loopback_data_channel_test, dual_acquire_writer) {
+    const std::string name { "channelX" };
+    std::shared_ptr<tateyama::api::server::writer> wrt1;
+    std::shared_ptr<tateyama::api::server::writer> wrt2;
+    {
+        tateyama::common::loopback::loopback_data_channel channel(name);
+        EXPECT_EQ(tateyama::status::ok, channel.acquire(wrt1));
+        EXPECT_EQ(tateyama::status::ok, channel.acquire(wrt2));
+        EXPECT_EQ(tateyama::status::ok, channel.release(*wrt1));
+        EXPECT_EQ(tateyama::status::ok, channel.release(*wrt2));
+    }
+    {
+        tateyama::common::loopback::loopback_data_channel channel(name);
+        EXPECT_EQ(tateyama::status::ok, channel.acquire(wrt1));
+        EXPECT_EQ(tateyama::status::ok, channel.acquire(wrt2));
+        EXPECT_EQ(tateyama::status::ok, channel.release(*wrt2));
+        EXPECT_EQ(tateyama::status::ok, channel.release(*wrt1));
+    }
+}
+
+TEST_F(loopback_data_channel_test, multi_acquire_writer) {
+    const std::string name { "channelX" };
+    tateyama::common::loopback::loopback_data_channel channel(name);
+    std::vector<std::shared_ptr<tateyama::api::server::writer>> writers { };
+    const int nwriter = 10;
+    for (int i = 0; i < nwriter; i++) {
+        std::shared_ptr<tateyama::api::server::writer> wrt;
+        EXPECT_EQ(tateyama::status::ok, channel.acquire(wrt));
+        writers.emplace_back(std::move(wrt));
+    }
+    for (auto &wrt : writers) {
+        EXPECT_EQ(tateyama::status::ok, channel.release(*wrt));
+    }
+}
+
+inline void dummy_message(int i, int j, std::string &s) {
+    s = std::to_string(i) + "-" + std::to_string(j);
+}
+
+TEST_F(loopback_data_channel_test, parallel_writer) {
+    const std::string name { "channelX" };
+    tateyama::common::loopback::loopback_data_channel channel(name);
+    const int nwriter = 10;
+    const int write_loop = 1000;
+    std::vector<std::thread> threads { };
+    threads.reserve(nwriter);
+    for (int i = 0; i < nwriter; i++) {
+        threads.emplace_back([this, i, &channel] {
+            std::string s { };
+            std::shared_ptr<tateyama::api::server::writer> wrt;
+            EXPECT_EQ(tateyama::status::ok, channel.acquire(wrt));
+            tateyama::common::loopback::loopback_data_writer *writer =
+                    dynamic_cast<tateyama::common::loopback::loopback_data_writer*>(wrt.get());
+            for (int k = 0; k < write_loop; k++) {
+                dummy_message(i, k, s);
+                wrt->write(s.c_str(), s.length());
+                wrt->commit();
+                EXPECT_EQ(writer->committed_data().size(), k + 1);
+            }
+            EXPECT_EQ(tateyama::status::ok, channel.release(*wrt));
+        });
+    }
+    for (std::thread &th : threads) {
+        if (th.joinable()) {
+            th.join();
+        }
+    }
+    //
+    std::set<std::string> resultset { };
+    {
+        std::vector<std::string> whole { };
+        channel.append_committed_data(whole);
+        for (const auto &s : whole) {
+            resultset.emplace(s);
+        }
+    }
+    //
+    EXPECT_EQ(resultset.size(), nwriter * write_loop);
+    std::string s { };
+    const auto cend = resultset.cend();
+    for (int i = 0; i < nwriter; i++) {
+        for (int k = 0; k < write_loop; k++) {
+            dummy_message(i, k, s);
+            EXPECT_NE(resultset.find(s), cend);
+        }
+    }
+}
+
+} // namespace tateyama::api::endpoint::loopback

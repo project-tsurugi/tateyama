@@ -29,25 +29,30 @@ class loopback_data_channel: public tateyama::api::server::data_channel {
 public:
     explicit loopback_data_channel(std::string_view name) :
             name_(name) {
-        if (name.size() == 0) {
-            throw std::invalid_argument("empty name");
-        }
     }
     const std::string& name() const noexcept {
         return name_;
+    }
+    ~loopback_data_channel() override {
+        release();
     }
 
     tateyama::status acquire(std::shared_ptr<tateyama::api::server::writer> &writer) override;
     tateyama::status release(tateyama::api::server::writer &writer) override;
 
+    /**
+     * @brief release all unreleased writers if exist
+     */
+    void release();
+
     void append_committed_data(std::vector<std::string> &whole);
 private:
-    std::string name_;
+    const std::string name_;
 
-    std::mutex mtx_writers_ { };
+    std::shared_mutex mtx_writers_ { };
     std::vector<loopback_data_writer*> writers_ { };
 
-    std::shared_timed_mutex mtx_released_data_{ };
+    std::shared_mutex mtx_released_data_ { };
     std::vector<std::string> released_data_ { };
 };
 

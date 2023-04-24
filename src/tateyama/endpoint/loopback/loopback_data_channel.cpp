@@ -23,7 +23,7 @@ namespace tateyama::common::loopback {
 tateyama::status loopback_data_channel::acquire(std::shared_ptr<tateyama::api::server::writer> &writer) {
     auto wrt = std::make_shared<loopback_data_writer>();
     {
-        std::unique_lock < std::mutex > lock(mtx_writers_);
+        std::unique_lock < std::shared_mutex > lock(mtx_writers_);
         writers_.emplace_back(wrt.get());
     }
     writer = wrt;
@@ -33,7 +33,7 @@ tateyama::status loopback_data_channel::acquire(std::shared_ptr<tateyama::api::s
 tateyama::status loopback_data_channel::release(tateyama::api::server::writer &writer) {
     auto wrt = dynamic_cast<loopback_data_writer*>(&writer);
     {
-        std::unique_lock < std::mutex > lock(mtx_writers_);
+        std::unique_lock < std::shared_mutex > lock(mtx_writers_);
         auto it = std::find(writers_.cbegin(), writers_.cend(), wrt);
         if (it == writers_.cend()) {
             return tateyama::status::not_found;
@@ -41,7 +41,7 @@ tateyama::status loopback_data_channel::release(tateyama::api::server::writer &w
         writers_.erase(it);
     }
     {
-        std::unique_lock < std::shared_timed_mutex > lock(mtx_released_data_);
+        std::unique_lock < std::shared_mutex > lock(mtx_released_data_);
         for (auto &data : wrt->committed_data()) {
             // data is moved to released_data_
             // because writer is released, and data in the writer is freed also.
@@ -51,15 +51,25 @@ tateyama::status loopback_data_channel::release(tateyama::api::server::writer &w
     return tateyama::status::ok;
 }
 
+void loopback_data_channel::release() {
+    std::shared_lock < std::shared_mutex > lock(mtx_writers_);
+    auto writers_copy { writers_ };
+    lock.unlock();
+    //
+    for (auto &writer : writers_copy) {
+        release(*writer);
+    }
+}
+
 void loopback_data_channel::append_committed_data(std::vector<std::string> &whole) {
     {
-        std::shared_lock < std::shared_timed_mutex > lock(mtx_released_data_);
+        std::shared_lock < std::shared_mutex > lock(mtx_released_data_);
         for (auto &data : released_data_) {
             whole.emplace_back(data);
         }
     }
     {
-        std::unique_lock < std::mutex > lock(mtx_writers_);
+        std::shared_lock < std::shared_mutex > lock(mtx_writers_);
         for (auto &writer : writers_) {
             for (auto &data : writer->committed_data()) {
                 whole.emplace_back(data);
