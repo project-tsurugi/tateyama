@@ -24,7 +24,7 @@ namespace tateyama::loopback {
 
 /**
  * @brief response of loopback endpoint request handling
- * @see loopback_client
+ * @see buffered_response
  */
 class buffered_response {
 public:
@@ -32,6 +32,11 @@ public:
      * @brief create the object
      */
     buffered_response() = default;
+
+    buffered_response(buffered_response const &other) = default;
+    buffered_response& operator=(buffered_response const &other) = default;
+    buffered_response(buffered_response &&other) noexcept = default;
+    buffered_response& operator=(buffered_response &&other) noexcept = default;
 
     /**
      * @brief create response object
