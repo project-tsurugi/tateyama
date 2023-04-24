@@ -204,9 +204,6 @@ int main(int argc, char **argv) {
     case 1:
         bench_all();
         break;
-    case 2:
-        help(args);
-        break;
     case 5:
         bench_once(args);
         break;
