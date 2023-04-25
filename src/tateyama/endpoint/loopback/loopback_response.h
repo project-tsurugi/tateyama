@@ -108,7 +108,7 @@ private:
      * @note it's empty if all data channels are released
      * @attention use mtx_channel_map_ to be thread-safe
      */
-    std::map<std::string, loopback_data_channel*> acquired_channel_map_ { };
+    std::map<std::string, std::shared_ptr<tateyama::api::server::data_channel>> acquired_channel_map_ { };
 
     bool is_acquired(std::string &name) {
         return (acquired_channel_map_.find(name) != acquired_channel_map_.cend());

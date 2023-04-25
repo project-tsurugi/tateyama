@@ -32,7 +32,7 @@ tateyama::status loopback_response::acquire_channel(std::string_view name,
         return tateyama::status::not_found;
     }
     ch = std::make_shared < loopback_data_channel > (name);
-    acquired_channel_map_[namestr] = dynamic_cast<loopback_data_channel*>(ch.get());
+    acquired_channel_map_[namestr] = ch;
     //
     if (released_data_map_.find(namestr) == released_data_map_.cend()) {
         // NOTE: do not clear if acquire_channel() called with the same name again
@@ -49,7 +49,7 @@ tateyama::status loopback_response::release_channel(tateyama::api::server::data_
     if (!is_acquired(name)) {
         return tateyama::status::not_found;
     }
-    if (acquired_channel_map_[name] != data_channel) {
+    if (acquired_channel_map_[name].get() != data_channel) {
         // it has same name, but it maybe another session's channel
         return tateyama::status::not_found;
     }
@@ -66,8 +66,9 @@ void loopback_response::all_committed_data(std::map<std::string, std::vector<std
     for (const auto& [name, committed_data] : released_data_map_) {
         data_map[name] = committed_data;
     }
-    for (const auto& [name, data_channel] : acquired_channel_map_) {
+    for (const auto& [name, ch] : acquired_channel_map_) {
         std::vector < std::string > &vec = data_map[name];
+        auto data_channel = dynamic_cast<loopback_data_channel*>(ch.get());
         data_channel->append_committed_data(vec);
     }
 }
