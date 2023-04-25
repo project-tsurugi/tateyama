@@ -93,7 +93,7 @@ public:
      * @brief accessor to the stealing flag
      * @return whether the task is being executed by stealing
      */
-    [[nodiscard]] bool task_is_solen() const noexcept {
+    [[nodiscard]] bool task_is_stolen() const noexcept {
         return task_is_stolen_;
     }
 
