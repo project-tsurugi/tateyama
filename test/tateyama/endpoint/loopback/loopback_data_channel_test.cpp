@@ -32,14 +32,8 @@ TEST_F(loopback_data_channel_test, name) {
 
 TEST_F(loopback_data_channel_test, no_name) {
     const std::string name { };
-    try {
-        tateyama::common::loopback::loopback_data_channel channel(name);
-        SUCCEED();
-        EXPECT_EQ(channel.name(), name);
-    } catch (std::invalid_argument &ex) {
-        std::cout << ex.what() << std::endl;
-        FAIL();
-    }
+    tateyama::common::loopback::loopback_data_channel channel(name);
+    EXPECT_EQ(channel.name(), name);
 }
 
 TEST_F(loopback_data_channel_test, single_channel) {
