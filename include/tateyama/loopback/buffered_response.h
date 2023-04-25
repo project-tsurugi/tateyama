@@ -33,11 +33,6 @@ public:
      */
     buffered_response() = default;
 
-    buffered_response(buffered_response const &other) = default;
-    buffered_response& operator=(buffered_response const &other) = default;
-    buffered_response(buffered_response &&other) noexcept = default;
-    buffered_response& operator=(buffered_response &&other) noexcept = default;
-
     /**
      * @brief create response object
      * @param session_id session identifier of the response
@@ -48,11 +43,6 @@ public:
      */
     buffered_response(std::size_t session_id, tateyama::api::server::response_code code, std::string_view body_head,
             std::string_view body, std::map<std::string, std::vector<std::string>> &data_map);
-
-    /**
-     * @brief destruct the object
-     */
-    ~buffered_response() = default;
 
     /**
      * @brief accessor to the session identifier
