@@ -213,5 +213,4 @@ TEST_F(loopback_client_test, unknown_service_id) {
     EXPECT_TRUE(sv.shutdown());
 }
 
-}
- // namespace tateyama::framework
+} // namespace tateyama::framework
