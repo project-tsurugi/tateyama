@@ -57,5 +57,4 @@ TEST_F(loopback_request_test, big_binary_payload) {
     EXPECT_EQ(request.payload(), payload);
 }
 
-}
- // namespace tateyama::api::endpoint::loopback
+} // namespace tateyama::api::endpoint::loopback

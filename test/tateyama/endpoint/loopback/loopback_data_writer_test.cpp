@@ -132,12 +132,12 @@ TEST_F(loopback_data_writer_test, drop_commit) {
 
 TEST_F(loopback_data_writer_test, binary) {
     const int len = 256;
-    char data[len];
+    char data[len]; // NOLINT
     for (int i = 0; i < len; i++) {
-        data[i] = static_cast<char>(i);
+        data[i] = static_cast<char>(i); // NOLINT
     }
     tateyama::common::loopback::loopback_data_writer writer {};
-    writer.write(data, len);
+    writer.write(data, len);  // NOLINT
     writer.commit();
     const auto commit = writer.committed_data();
     EXPECT_EQ(commit.size(), 1);
@@ -146,7 +146,7 @@ TEST_F(loopback_data_writer_test, binary) {
     const char *commitptr = commitstr.c_str();
     for (int i = 0; i < len; i++) {
         EXPECT_EQ(commitstr[i], static_cast<char>(i));
-        EXPECT_EQ(commitptr[i], static_cast<char>(i));
+        EXPECT_EQ(commitptr[i], static_cast<char>(i)); // NOLINT
     }
 }
 
