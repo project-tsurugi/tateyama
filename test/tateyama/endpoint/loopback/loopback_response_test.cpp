@@ -148,6 +148,42 @@ TEST_F(loopback_response_test, dual_acqurie_channel) {
     EXPECT_TRUE(response.has_channel(name));
 }
 
+TEST_F(loopback_response_test, dual_release_channel) {
+    const std::string name { "channelA" };
+    tateyama::common::loopback::loopback_response response { };
+    std::shared_ptr<tateyama::api::server::data_channel> channel;
+    EXPECT_FALSE(response.has_channel(name));
+    EXPECT_EQ(response.acquire_channel(name, channel), tateyama::status::ok);
+    EXPECT_TRUE(response.has_channel(name));
+    EXPECT_EQ(response.release_channel(*channel), tateyama::status::ok);
+    EXPECT_TRUE(response.has_channel(name));
+    // re-release of release channel is prohibited
+    EXPECT_EQ(response.release_channel(*channel), tateyama::status::not_found);
+    EXPECT_TRUE(response.has_channel(name));
+}
+
+TEST_F(loopback_response_test, release_from_another_channel) {
+    const std::string name { "channelA" };
+    tateyama::common::loopback::loopback_response response { };
+    std::shared_ptr<tateyama::api::server::data_channel> channel;
+    EXPECT_FALSE(response.has_channel(name));
+    EXPECT_EQ(response.acquire_channel(name, channel), tateyama::status::ok);
+    EXPECT_TRUE(response.has_channel(name));
+    {
+        tateyama::common::loopback::loopback_response response2 { };
+        std::shared_ptr<tateyama::api::server::data_channel> channel2;
+        EXPECT_FALSE(response2.has_channel(name));
+        EXPECT_EQ(response2.acquire_channel(name, channel2), tateyama::status::ok);
+        EXPECT_TRUE(response2.has_channel(name));
+        // release from another response's channel
+        EXPECT_EQ(response.release_channel(*channel2), tateyama::status::not_found);
+        // release from correct channel
+        EXPECT_EQ(response2.release_channel(*channel2), tateyama::status::ok);
+    }
+    EXPECT_EQ(response.release_channel(*channel), tateyama::status::ok);
+    EXPECT_TRUE(response.has_channel(name));
+}
+
 TEST_F(loopback_response_test, twice_acqurie_channel) {
     const std::string name { "channelA" };
     tateyama::common::loopback::loopback_response response { };

@@ -43,8 +43,6 @@ tateyama::status loopback_data_channel::release(tateyama::api::server::writer &w
     {
         std::unique_lock < std::shared_mutex > lock(mtx_released_data_);
         for (auto &data : wrt->committed_data()) {
-            // data is moved to released_data_
-            // because writer is released, and data in the writer is freed also.
             released_data_.emplace_back(data);
         }
     }

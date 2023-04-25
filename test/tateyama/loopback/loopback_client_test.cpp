@@ -77,7 +77,7 @@ public:
             std::shared_ptr<tateyama::api::server::response> res) override {
         res->session_id(req->session_id());
         res->code(tateyama::api::server::response_code::success);
-        res->body_head(body_head);
+        EXPECT_EQ(res->body_head(body_head), tateyama::status::ok);
         //
         for (int ch = 0; ch < nchannel_; ch++) {
             std::shared_ptr<tateyama::api::server::data_channel> channel;
@@ -88,24 +88,24 @@ public:
                 EXPECT_EQ(tateyama::status::ok, channel->acquire(writer));
                 for (int i = 0; i < nloop_; i++) {
                     std::string data { channel_data(ch, w, i) };
-                    writer->write(data.c_str(), data.length());
-                    writer->commit();
+                    EXPECT_EQ(writer->write(data.c_str(), data.length()), tateyama::status::ok);
+                    EXPECT_EQ(writer->commit(), tateyama::status::ok);
                 }
-                channel->release(*writer);
+                EXPECT_EQ(channel->release(*writer), tateyama::status::ok);
             }
-            res->release_channel(*channel);
+            EXPECT_EQ(res->release_channel(*channel), tateyama::status::ok);
         }
-        res->body(req->payload());
+        EXPECT_EQ(res->body(req->payload()), tateyama::status::ok);
         return true;
     }
 
 private:
-    int nchannel_;
-    int nwrite_;
-    int nloop_;
+    const int nchannel_;
+    const int nwrite_;
+    const int nloop_;
 };
 
-TEST_F(loopback_client_test, single_shot) {
+TEST_F(loopback_client_test, single) {
     const std::size_t session_id = 123;
     const std::size_t service_id = data_channel_service::tag;
     const std::string request { "loopback_test" };
@@ -142,6 +142,74 @@ TEST_F(loopback_client_test, single_shot) {
         }
     }
     //
+    EXPECT_TRUE(sv.shutdown());
+}
+
+TEST_F(loopback_client_test, multi_request) {
+    const std::size_t session_id = 123;
+    const std::size_t service_id = data_channel_service::tag;
+    const std::string request { "loopback_test" };
+    const int nchannel = 5;
+    const int nwriter = 5;
+    const int nloop = 10;
+    const int nrequest = 10;
+    //
+    auto cfg = api::configuration::create_configuration("");
+    set_dbpath(*cfg);
+    tateyama::loopback::loopback_client loopback;
+    tateyama::framework::server sv {tateyama::framework::boot_mode::database_server, cfg};
+    add_core_components(sv);
+    sv.add_service(std::make_shared<data_channel_service>(nchannel, nwriter, nloop));
+    sv.add_endpoint(loopback.endpoint());
+    ASSERT_TRUE(sv.start());
+    //
+    for (int r = 0; r < nrequest; r++) {
+        const auto response = loopback.request(session_id, service_id, request);
+        EXPECT_EQ(response.session_id(), session_id);
+        EXPECT_EQ(response.code(), tateyama::api::server::response_code::success);
+        EXPECT_EQ(response.body_head(), data_channel_service::body_head);
+        EXPECT_EQ(response.body(), request);
+        //
+        for (int ch = 0; ch < nchannel; ch++) {
+            std::string name { std::move(data_channel_service::channel_name(ch)) };
+            EXPECT_TRUE(response.has_channel(name));
+            const std::vector<std::string> &ch_data = response.channel(name);
+            EXPECT_EQ(ch_data.size(), nwriter * nloop);
+            int idx = 0;
+            for (int w = 0; w < nwriter; w++) {
+                for (int i = 0; i < nloop; i++) {
+                    std::string data { std::move(data_channel_service::channel_data(ch, w, i)) };
+                    EXPECT_EQ(ch_data[idx++], data);
+                }
+            }
+        }
+    }
+    //
+    EXPECT_TRUE(sv.shutdown());
+}
+
+TEST_F(loopback_client_test, unknown_service_id) {
+    const std::size_t session_id = 123;
+    const std::size_t service_id = data_channel_service::tag;
+    const std::string request { "loopback_test" };
+    //
+    auto cfg = api::configuration::create_configuration("");
+    set_dbpath(*cfg);
+    tateyama::loopback::loopback_client loopback;
+    tateyama::framework::server sv {tateyama::framework::boot_mode::database_server, cfg};
+    add_core_components(sv);
+    sv.add_service(std::make_shared<data_channel_service>(0, 0, 0));
+    sv.add_endpoint(loopback.endpoint());
+    ASSERT_TRUE(sv.start());
+    //
+    try {
+        const auto response = loopback.request(session_id, service_id + 1, request);
+        FAIL();
+        EXPECT_EQ(response.session_id(), 0);
+    } catch (std::invalid_argument &ex) {
+        std::cout << ex.what() << std::endl;
+        SUCCEED();
+    }
     EXPECT_TRUE(sv.shutdown());
 }
 
