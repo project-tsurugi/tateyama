@@ -18,12 +18,8 @@
 namespace tateyama::loopback {
 
 buffered_response::buffered_response(std::size_t session_id, tateyama::api::server::response_code code,
-        std::string_view body_head, std::string_view body, std::map<std::string, std::vector<std::string>> &data_map) {
-    session_id_ = session_id;
-    code_ = code;
-    body_head_ = std::string { body_head };
-    body_ = std::string { body };
-    data_map_ = std::move(data_map);
+        std::string_view body_head, std::string_view body, std::map<std::string, std::vector<std::string>> &data_map) :
+        session_id_(session_id), code_(code), body_head_(body_head), body_(body), data_map_(data_map) {
 }
 
 std::size_t buffered_response::session_id() const noexcept {
@@ -47,9 +43,10 @@ bool buffered_response::has_channel(std::string_view name) const noexcept {
 }
 
 const std::vector<std::string>& buffered_response::channel(std::string_view name) const {
-    try {
-        return data_map_.at(std::string { name });
-    } catch (std::out_of_range &ex) {
+    auto it = data_map_.find(std::string { name });
+    if (it != data_map_.cend()) {
+        return it->second;
+    } else {
         std::string m { "invalid channel name: " };
         m += name;
         throw std::invalid_argument(m);

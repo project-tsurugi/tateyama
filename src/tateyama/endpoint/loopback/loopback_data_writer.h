@@ -30,7 +30,7 @@ public:
     tateyama::status write(const char *data, std::size_t length) override;
     tateyama::status commit() override;
 
-    const std::vector<std::string> &committed_data() {
+    const std::vector<std::string>& committed_data() const noexcept {
         return list_;
     }
 private:

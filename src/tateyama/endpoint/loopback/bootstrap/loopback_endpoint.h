@@ -19,7 +19,7 @@
 #include <tateyama/framework/endpoint.h>
 #include <tateyama/framework/routing_service.h>
 
-#include "../../../../../include/tateyama/loopback/buffered_response.h"
+#include <tateyama/loopback/buffered_response.h>
 
 namespace tateyama::framework {
 
@@ -41,7 +41,7 @@ public:
      */
     bool setup(tateyama::framework::environment &env) override {
         service_ = env.service_repository().find<tateyama::framework::routing_service>();
-        return (service_ != nullptr);
+        return service_ != nullptr;
     }
 
     /**

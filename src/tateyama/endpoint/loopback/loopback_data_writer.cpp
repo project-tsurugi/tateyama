@@ -21,7 +21,7 @@ namespace tateyama::common::loopback {
 tateyama::status loopback_data_writer::write(const char *data, std::size_t length) {
     if (length > 0) {
         // NOTE: data is binary data. It maybe data="\0\1\2\3", length=4 etc.
-        current_data_ += std::string { data, length };
+        current_data_.append(data, length);
     }
     return tateyama::status::ok;
 }

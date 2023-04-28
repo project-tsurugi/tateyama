@@ -56,7 +56,7 @@ tateyama::status loopback_response::release_channel(tateyama::api::server::data_
     acquired_channel_map_.erase(name);
     data_channel->release(); // release all unreleased writers if exist
     //
-    std::vector < std::string > &whole = released_data_map_[name];
+    auto &whole = released_data_map_[name];
     data_channel->append_committed_data(whole);
     return tateyama::status::ok;
 }
