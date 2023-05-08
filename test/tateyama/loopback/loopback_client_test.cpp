@@ -116,7 +116,7 @@ TEST_F(loopback_client_test, single) {
     auto cfg = api::configuration::create_configuration("");
     set_dbpath(*cfg);
     tateyama::loopback::loopback_client loopback;
-    tateyama::framework::server sv {tateyama::framework::boot_mode::database_server, cfg};
+    tateyama::framework::server sv { tateyama::framework::boot_mode::database_server, cfg };
     add_core_components(sv);
     sv.add_service(std::make_shared<data_channel_service>(nchannel, nwriter, nloop));
     sv.add_endpoint(loopback.endpoint());
@@ -157,7 +157,7 @@ TEST_F(loopback_client_test, multi_request) {
     auto cfg = api::configuration::create_configuration("");
     set_dbpath(*cfg);
     tateyama::loopback::loopback_client loopback;
-    tateyama::framework::server sv {tateyama::framework::boot_mode::database_server, cfg};
+    tateyama::framework::server sv { tateyama::framework::boot_mode::database_server, cfg };
     add_core_components(sv);
     sv.add_service(std::make_shared<data_channel_service>(nchannel, nwriter, nloop));
     sv.add_endpoint(loopback.endpoint());
@@ -196,7 +196,7 @@ TEST_F(loopback_client_test, unknown_service_id) {
     auto cfg = api::configuration::create_configuration("");
     set_dbpath(*cfg);
     tateyama::loopback::loopback_client loopback;
-    tateyama::framework::server sv {tateyama::framework::boot_mode::database_server, cfg};
+    tateyama::framework::server sv { tateyama::framework::boot_mode::database_server, cfg };
     add_core_components(sv);
     sv.add_service(std::make_shared<data_channel_service>(0, 0, 0));
     sv.add_endpoint(loopback.endpoint());

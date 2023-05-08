@@ -17,7 +17,7 @@
 
 #include <tateyama/api/server/request.h>
 
-namespace tateyama::common::loopback {
+namespace tateyama::endpoint::loopback {
 
 /**
  * @brief request object for loopback_endpoint
@@ -62,4 +62,4 @@ private:
     const std::string payload_;
 };
 
-} // namespace tateyama::common::loopback
+} // namespace tateyama::endpoint::loopback

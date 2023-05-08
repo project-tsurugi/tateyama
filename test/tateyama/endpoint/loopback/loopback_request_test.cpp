@@ -25,8 +25,8 @@ class loopback_request_test: public loopback_test_base {
 TEST_F(loopback_request_test, simple) {
     const std::size_t session_id = 123;
     const std::size_t service_id = 65478;
-    const std::string payload {"hello"};
-    tateyama::common::loopback::loopback_request request {session_id, service_id, payload};
+    const std::string payload { "hello" };
+    tateyama::endpoint::loopback::loopback_request request { session_id, service_id, payload };
     EXPECT_EQ(request.session_id(), session_id);
     EXPECT_EQ(request.service_id(), service_id);
     EXPECT_EQ(request.payload(), payload);
@@ -35,8 +35,8 @@ TEST_F(loopback_request_test, simple) {
 TEST_F(loopback_request_test, empty_payload) {
     const std::size_t session_id = 123;
     const std::size_t service_id = 65478;
-    const std::string payload {""};
-    tateyama::common::loopback::loopback_request request {session_id, service_id, payload};
+    const std::string payload { "" };
+    tateyama::endpoint::loopback::loopback_request request { session_id, service_id, payload };
     EXPECT_EQ(request.session_id(), session_id);
     EXPECT_EQ(request.service_id(), service_id);
     EXPECT_EQ(request.payload(), payload);
@@ -46,12 +46,12 @@ TEST_F(loopback_request_test, big_binary_payload) {
     const std::size_t session_id = 123;
     const std::size_t service_id = 65478;
     const std::size_t req_len = 4 * 1024;
-    std::string payload {};
+    std::string payload { };
     payload.resize(req_len);
     for (auto i = 0; i < req_len; i++) {
         payload[i] = static_cast<char>(i % 256);
     }
-    tateyama::common::loopback::loopback_request request {session_id, service_id, payload};
+    tateyama::endpoint::loopback::loopback_request request { session_id, service_id, payload };
     EXPECT_EQ(request.session_id(), session_id);
     EXPECT_EQ(request.service_id(), service_id);
     EXPECT_EQ(request.payload(), payload);

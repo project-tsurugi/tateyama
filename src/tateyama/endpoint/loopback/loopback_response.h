@@ -23,7 +23,7 @@
 #include "loopback_data_writer.h"
 #include "loopback_data_channel.h"
 
-namespace tateyama::common::loopback {
+namespace tateyama::endpoint::loopback {
 
 class loopback_response: public tateyama::api::server::response {
 public:
@@ -93,7 +93,7 @@ public:
         return tateyama::status::ok;
     }
 
-    void all_committed_data(std::map<std::string, std::vector<std::string>> &data_map);
+    void all_committed_data(std::map<std::string, std::vector<std::string>, std::less<>> &data_map);
 
 private:
     std::size_t session_id_ { };
@@ -127,4 +127,4 @@ private:
     std::map<std::string, std::vector<std::string>> released_data_map_ { };
 };
 
-} // namespace tateyama::common::loopback
+} // namespace tateyama::endpoint::loopback

@@ -26,24 +26,24 @@ class loopback_data_channel_test: public loopback_test_base {
 
 TEST_F(loopback_data_channel_test, name) {
     const std::string name { "channelX" };
-    tateyama::common::loopback::loopback_data_channel channel(name);
+    tateyama::endpoint::loopback::loopback_data_channel channel(name);
     EXPECT_EQ(channel.name(), name);
 }
 
 TEST_F(loopback_data_channel_test, no_name) {
     const std::string name { };
-    tateyama::common::loopback::loopback_data_channel channel(name);
+    tateyama::endpoint::loopback::loopback_data_channel channel(name);
     EXPECT_EQ(channel.name(), name);
 }
 
 TEST_F(loopback_data_channel_test, single_channel) {
     const std::string name { "channelX" };
-    tateyama::common::loopback::loopback_data_channel channel(name);
+    tateyama::endpoint::loopback::loopback_data_channel channel(name);
 
     std::shared_ptr<tateyama::api::server::writer> wrt;
     EXPECT_EQ(tateyama::status::ok, channel.acquire(wrt));
-    tateyama::common::loopback::loopback_data_writer *writer =
-            dynamic_cast<tateyama::common::loopback::loopback_data_writer*>(wrt.get());
+    tateyama::endpoint::loopback::loopback_data_writer *writer =
+            dynamic_cast<tateyama::endpoint::loopback::loopback_data_writer*>(wrt.get());
     {
         std::vector<std::string> whole { };
         channel.append_committed_data(whole);
@@ -103,7 +103,7 @@ TEST_F(loopback_data_channel_test, single_channel) {
 
 TEST_F(loopback_data_channel_test, acquire_writer) {
     const std::string name { "channelX" };
-    tateyama::common::loopback::loopback_data_channel channel(name);
+    tateyama::endpoint::loopback::loopback_data_channel channel(name);
 
     std::shared_ptr<tateyama::api::server::writer> wrt;
     EXPECT_EQ(tateyama::status::ok, channel.acquire(wrt));
@@ -112,7 +112,7 @@ TEST_F(loopback_data_channel_test, acquire_writer) {
 
 TEST_F(loopback_data_channel_test, acquire_writer_without_release) {
     const std::string name { "channelX" };
-    tateyama::common::loopback::loopback_data_channel channel(name);
+    tateyama::endpoint::loopback::loopback_data_channel channel(name);
 
     std::shared_ptr<tateyama::api::server::writer> wrt;
     EXPECT_EQ(tateyama::status::ok, channel.acquire(wrt));
@@ -120,7 +120,7 @@ TEST_F(loopback_data_channel_test, acquire_writer_without_release) {
 
 TEST_F(loopback_data_channel_test, acquire_writer_dual_release) {
     const std::string name { "channelX" };
-    tateyama::common::loopback::loopback_data_channel channel(name);
+    tateyama::endpoint::loopback::loopback_data_channel channel(name);
 
     std::shared_ptr<tateyama::api::server::writer> wrt;
     EXPECT_EQ(tateyama::status::ok, channel.acquire(wrt));
@@ -133,14 +133,14 @@ TEST_F(loopback_data_channel_test, dual_acquire_writer) {
     std::shared_ptr<tateyama::api::server::writer> wrt1;
     std::shared_ptr<tateyama::api::server::writer> wrt2;
     {
-        tateyama::common::loopback::loopback_data_channel channel(name);
+        tateyama::endpoint::loopback::loopback_data_channel channel(name);
         EXPECT_EQ(tateyama::status::ok, channel.acquire(wrt1));
         EXPECT_EQ(tateyama::status::ok, channel.acquire(wrt2));
         EXPECT_EQ(tateyama::status::ok, channel.release(*wrt1));
         EXPECT_EQ(tateyama::status::ok, channel.release(*wrt2));
     }
     {
-        tateyama::common::loopback::loopback_data_channel channel(name);
+        tateyama::endpoint::loopback::loopback_data_channel channel(name);
         EXPECT_EQ(tateyama::status::ok, channel.acquire(wrt1));
         EXPECT_EQ(tateyama::status::ok, channel.acquire(wrt2));
         EXPECT_EQ(tateyama::status::ok, channel.release(*wrt2));
@@ -150,7 +150,7 @@ TEST_F(loopback_data_channel_test, dual_acquire_writer) {
 
 TEST_F(loopback_data_channel_test, multi_acquire_writer) {
     const std::string name { "channelX" };
-    tateyama::common::loopback::loopback_data_channel channel(name);
+    tateyama::endpoint::loopback::loopback_data_channel channel(name);
     std::vector<std::shared_ptr<tateyama::api::server::writer>> writers { };
     const int nwriter = 10;
     for (int i = 0; i < nwriter; i++) {
@@ -169,7 +169,7 @@ inline void dummy_message(int i, int j, std::string &s) {
 
 TEST_F(loopback_data_channel_test, parallel_writer) {
     const std::string name { "channelX" };
-    tateyama::common::loopback::loopback_data_channel channel(name);
+    tateyama::endpoint::loopback::loopback_data_channel channel(name);
     const int nwriter = 10;
     const int write_loop = 1000;
     std::vector<std::thread> threads { };
@@ -179,8 +179,8 @@ TEST_F(loopback_data_channel_test, parallel_writer) {
             std::string s { };
             std::shared_ptr<tateyama::api::server::writer> wrt;
             EXPECT_EQ(tateyama::status::ok, channel.acquire(wrt));
-            tateyama::common::loopback::loopback_data_writer *writer =
-                    dynamic_cast<tateyama::common::loopback::loopback_data_writer*>(wrt.get());
+            tateyama::endpoint::loopback::loopback_data_writer *writer =
+                    dynamic_cast<tateyama::endpoint::loopback::loopback_data_writer*>(wrt.get());
             for (int k = 0; k < write_loop; k++) {
                 dummy_message(i, k, s);
                 wrt->write(s.c_str(), s.length());

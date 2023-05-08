@@ -16,7 +16,7 @@
 
 #include "loopback_data_writer.h"
 
-namespace tateyama::common::loopback {
+namespace tateyama::endpoint::loopback {
 
 tateyama::status loopback_data_writer::write(const char *data, std::size_t length) {
     if (length > 0) {
@@ -34,4 +34,4 @@ tateyama::status loopback_data_writer::commit() {
     return tateyama::status::ok;
 }
 
-} // namespace tateyama::common::loopback
+} // namespace tateyama::endpoint::loopback

@@ -23,8 +23,8 @@ class loopback_data_writer_test: public loopback_test_base {
 };
 
 TEST_F(loopback_data_writer_test, printable) {
-    std::vector<std::string> test_data = {"hello", "this is a pen"};
-    tateyama::common::loopback::loopback_data_writer writer {};
+    std::vector<std::string> test_data = { "hello", "this is a pen" };
+    tateyama::endpoint::loopback::loopback_data_writer writer { };
     {
         const auto commit = writer.committed_data();
         EXPECT_EQ(commit.size(), 0);
@@ -66,8 +66,8 @@ TEST_F(loopback_data_writer_test, printable) {
 }
 
 TEST_F(loopback_data_writer_test, unnesessary_call) {
-    std::vector<std::string> test_data = {"hello", "this is a pen"};
-    tateyama::common::loopback::loopback_data_writer writer {};
+    std::vector<std::string> test_data = { "hello", "this is a pen" };
+    tateyama::endpoint::loopback::loopback_data_writer writer { };
     {
         // commit() without write()
         EXPECT_EQ(writer.commit(), tateyama::status::ok);
@@ -119,15 +119,15 @@ TEST_F(loopback_data_writer_test, unnesessary_call) {
 }
 
 TEST_F(loopback_data_writer_test, drop_commit) {
-    std::vector<std::string> test_data = {"hello", "this is a pen"};
-    tateyama::common::loopback::loopback_data_writer writer {};
+    std::vector<std::string> test_data = { "hello", "this is a pen" };
+    tateyama::endpoint::loopback::loopback_data_writer writer { };
 
     EXPECT_EQ(writer.write(test_data[0].data(), test_data[0].length()), tateyama::status::ok);
     EXPECT_EQ(writer.write(test_data[1].data(), test_data[1].length()), tateyama::status::ok);
     EXPECT_EQ(writer.commit(), tateyama::status::ok);
     const auto commit = writer.committed_data();
     EXPECT_EQ(commit.size(), 1);
-    EXPECT_EQ(commit[0], std::string {test_data[0] + test_data[1]});
+    EXPECT_EQ(commit[0], std::string { test_data[0] + test_data[1] });
 }
 
 TEST_F(loopback_data_writer_test, binary) {
@@ -136,7 +136,7 @@ TEST_F(loopback_data_writer_test, binary) {
     for (int i = 0; i < len; i++) {
         data[i] = static_cast<char>(i); // NOLINT
     }
-    tateyama::common::loopback::loopback_data_writer writer {};
+    tateyama::endpoint::loopback::loopback_data_writer writer { };
     writer.write(data, len);  // NOLINT
     writer.commit();
     const auto commit = writer.committed_data();

@@ -15,12 +15,12 @@
  */
 
 #include <tateyama/loopback/loopback_client.h>
-#include <tateyama/endpoint/loopback/bootstrap/loopback_endpoint.h>
+#include <tateyama/endpoint/loopback/loopback_endpoint.h>
 
 namespace tateyama::loopback {
 
 loopback_client::loopback_client() {
-    endpoint_ = std::make_shared<tateyama::framework::loopback_endpoint>();
+    endpoint_ = std::make_shared<tateyama::endpoint::loopback::loopback_endpoint>();
 }
 
 std::shared_ptr<tateyama::framework::endpoint> loopback_client::endpoint() const noexcept {
@@ -28,7 +28,7 @@ std::shared_ptr<tateyama::framework::endpoint> loopback_client::endpoint() const
 }
 
 buffered_response loopback_client::request(std::size_t session_id, std::size_t service_id, std::string_view payload) {
-    auto endpoint = dynamic_cast<tateyama::framework::loopback_endpoint*>(endpoint_.get());
+    auto endpoint = dynamic_cast<tateyama::endpoint::loopback::loopback_endpoint*>(endpoint_.get());
     return endpoint->request(session_id, service_id, payload);
 }
 

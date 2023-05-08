@@ -21,7 +21,7 @@
 
 #include <tateyama/loopback/buffered_response.h>
 
-namespace tateyama::framework {
+namespace tateyama::endpoint::loopback {
 
 /**
  * @brief loopback endpoint for debug
@@ -32,7 +32,7 @@ namespace tateyama::framework {
  * This class doesn't define the format of request payload.
  * @see tateyama::framework::server::add_endpoint(std::make_shared<tateyama::framework::loopback_endpoint>)
  */
-class loopback_endpoint: public endpoint {
+class loopback_endpoint: public tateyama::framework::endpoint {
 public:
     static constexpr std::string_view component_label = "loopback_endpoint";
 
@@ -85,4 +85,4 @@ private:
     std::shared_ptr<tateyama::framework::routing_service> service_ { };
 };
 
-} // namespace tateyama::framework
+} // namespace tateyama::endpoint::loopback

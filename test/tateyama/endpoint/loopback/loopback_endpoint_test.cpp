@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <tateyama/endpoint/loopback/bootstrap/loopback_endpoint.h>
+#include <tateyama/endpoint/loopback/loopback_endpoint.h>
 
 #include "loopback_test_base.h"
 
@@ -27,8 +27,8 @@ class loopback_endpoint_test: public loopback_test_base {
  * this test is created just for 100% coverage.
  */
 TEST_F(loopback_endpoint_test, label) {
-    tateyama::framework::loopback_endpoint endpoint {};
-    std::string label {endpoint.label()};
+    tateyama::endpoint::loopback::loopback_endpoint endpoint { };
+    std::string label { endpoint.label() };
     EXPECT_GT(label.length(), 0);
     EXPECT_NE(label.find("loopback"), std::string::npos);
     EXPECT_NE(label.find("endpoint"), std::string::npos);

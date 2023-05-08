@@ -28,7 +28,7 @@ public:
 };
 
 TEST_F(buffered_response_test, empty) {
-    buffered_response response{};
+    buffered_response response { };
 
     EXPECT_EQ(response.session_id(), 0);
     EXPECT_EQ(response.code(), tateyama::api::server::response_code::success);
@@ -52,18 +52,18 @@ TEST_F(buffered_response_test, multi_channel) {
     const std::string body_head { "body_head" };
     const std::string body { "body message" };
     const std::vector<std::string> names = { "channelA", "channelB" };
-    std::map<std::string, std::vector<std::string>> test_data { };
+    std::map<std::string, std::vector<std::string>, std::less<>> test_data { };
     test_data[names[0]] = { "hello", "this is a pen" };
     test_data[names[1]] = { "good night", "it's fine today" };
     {
-        buffered_response response{session_id, code, body_head, body, test_data};
+        buffered_response response { session_id, code, body_head, body, test_data };
         EXPECT_EQ(response.session_id(), session_id);
         EXPECT_EQ(response.code(), code);
         EXPECT_EQ(response.body_head(), body_head);
         EXPECT_EQ(response.body(), body);
         EXPECT_FALSE(response.has_channel(""));
         EXPECT_FALSE(response.has_channel("name"));
-        for (const auto &[name, data] : test_data) {
+        for (const auto& [name, data] : test_data) {
             EXPECT_TRUE(response.has_channel(name));
             const auto &committed = response.channel(name);
             ASSERT_EQ(data.size(), committed.size());
@@ -74,7 +74,7 @@ TEST_F(buffered_response_test, multi_channel) {
     }
     {
         // empty body_head
-        buffered_response response{session_id, code, "", body, test_data};
+        buffered_response response { session_id, code, "", body, test_data };
         EXPECT_EQ(response.session_id(), session_id);
         EXPECT_EQ(response.code(), code);
         EXPECT_EQ(response.body_head().length(), 0);
@@ -82,7 +82,7 @@ TEST_F(buffered_response_test, multi_channel) {
     }
     {
         // empty body
-        buffered_response response{session_id, code, body_head, "", test_data};
+        buffered_response response { session_id, code, body_head, "", test_data };
         EXPECT_EQ(response.session_id(), session_id);
         EXPECT_EQ(response.code(), code);
         EXPECT_EQ(response.body_head(), body_head);
@@ -90,7 +90,7 @@ TEST_F(buffered_response_test, multi_channel) {
     }
     {
         // empty body head and body
-        buffered_response response{session_id, code, "", "", test_data};
+        buffered_response response { session_id, code, "", "", test_data };
         EXPECT_EQ(response.session_id(), session_id);
         EXPECT_EQ(response.code(), code);
         EXPECT_EQ(response.body_head().length(), 0);

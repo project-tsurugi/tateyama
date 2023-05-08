@@ -19,23 +19,23 @@
 #include <tateyama/endpoint/loopback/loopback_request.h>
 #include <tateyama/endpoint/loopback/loopback_response.h>
 
-namespace tateyama::framework {
+namespace tateyama::endpoint::loopback {
 
 tateyama::loopback::buffered_response loopback_endpoint::request(std::size_t session_id, std::size_t service_id,
         std::string_view payload) {
-    auto request = std::make_shared<tateyama::common::loopback::loopback_request>(session_id, service_id, payload);
-    auto response = std::make_shared<tateyama::common::loopback::loopback_response>();
+    auto request = std::make_shared<tateyama::endpoint::loopback::loopback_request>(session_id, service_id, payload);
+    auto response = std::make_shared<tateyama::endpoint::loopback::loopback_response>();
 
     bool ok = service_->operator ()(request, response);
     if (!ok) {
         throw std::invalid_argument("unknown service_id " + std::to_string(service_id));
     }
 
-    std::map<std::string, std::vector<std::string>> data_map { };
+    std::map<std::string, std::vector<std::string>, std::less<>> data_map { };
     response->all_committed_data(data_map);
     tateyama::loopback::buffered_response bufres { response->session_id(), response->code(), response->body_head(),
             response->body(), data_map };
     return bufres;
 }
 
-} // namespace tateyama::framework
+} // namespace tateyama::endpoint::loopback

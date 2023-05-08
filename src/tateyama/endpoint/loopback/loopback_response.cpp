@@ -16,7 +16,7 @@
 
 #include "loopback_response.h"
 
-namespace tateyama::common::loopback {
+namespace tateyama::endpoint::loopback {
 
 bool loopback_response::has_channel(std::string_view name) noexcept {
     std::shared_lock < std::shared_mutex > lock(mtx_channel_map_);
@@ -26,12 +26,12 @@ bool loopback_response::has_channel(std::string_view name) noexcept {
 tateyama::status loopback_response::acquire_channel(std::string_view name,
         std::shared_ptr<tateyama::api::server::data_channel> &ch) {
     std::string namestr { name };
-    std::unique_lock < std::shared_mutex > lock(mtx_channel_map_);
+    std::unique_lock<std::shared_mutex> lock(mtx_channel_map_);
     if (is_acquired(namestr)) {
         // the channel is already active, cannot make dual instances of same name
         return tateyama::status::not_found;
     }
-    ch = std::make_shared < loopback_data_channel > (name);
+    ch = std::make_shared<loopback_data_channel>(name);
     acquired_channel_map_[namestr] = ch;
     //
     if (released_data_map_.find(namestr) == released_data_map_.cend()) {
@@ -43,9 +43,9 @@ tateyama::status loopback_response::acquire_channel(std::string_view name,
 
 tateyama::status loopback_response::release_channel(tateyama::api::server::data_channel &ch) {
     auto data_channel = dynamic_cast<loopback_data_channel*>(&ch);
-    auto name = data_channel->name();
+    auto &name = data_channel->name();
     //
-    std::unique_lock < std::shared_mutex > lock(mtx_channel_map_);
+    std::unique_lock<std::shared_mutex> lock(mtx_channel_map_);
     if (!is_acquired(name)) {
         return tateyama::status::not_found;
     }
@@ -61,16 +61,16 @@ tateyama::status loopback_response::release_channel(tateyama::api::server::data_
     return tateyama::status::ok;
 }
 
-void loopback_response::all_committed_data(std::map<std::string, std::vector<std::string>> &data_map) {
+void loopback_response::all_committed_data(std::map<std::string, std::vector<std::string>, std::less<>> &data_map) {
     std::shared_lock < std::shared_mutex > lock(mtx_channel_map_);
     for (const auto& [name, committed_data] : released_data_map_) {
         data_map[name] = committed_data;
     }
     for (const auto& [name, ch] : acquired_channel_map_) {
-        std::vector < std::string > &vec = data_map[name];
+        std::vector<std::string> &vec = data_map[name];
         auto data_channel = dynamic_cast<loopback_data_channel*>(ch.get());
         data_channel->append_committed_data(vec);
     }
 }
 
-} // namespace tateyama::common::loopback
+} // namespace tateyama::endpoint::loopback

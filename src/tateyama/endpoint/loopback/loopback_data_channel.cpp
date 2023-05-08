@@ -18,7 +18,7 @@
 
 #include "loopback_data_channel.h"
 
-namespace tateyama::common::loopback {
+namespace tateyama::endpoint::loopback {
 
 tateyama::status loopback_data_channel::acquire(std::shared_ptr<tateyama::api::server::writer> &writer) {
     auto wrt = std::make_shared<loopback_data_writer>();
@@ -76,4 +76,4 @@ void loopback_data_channel::append_committed_data(std::vector<std::string> &whol
     }
 }
 
-} // namespace tateyama::common::loopback
+} // namespace tateyama::endpoint::loopback

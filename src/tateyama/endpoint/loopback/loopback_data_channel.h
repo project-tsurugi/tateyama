@@ -23,7 +23,7 @@
 
 #include "loopback_data_writer.h"
 
-namespace tateyama::common::loopback {
+namespace tateyama::endpoint::loopback {
 
 class loopback_data_channel: public tateyama::api::server::data_channel {
 public:
@@ -53,4 +53,4 @@ private:
     std::vector<std::string> released_data_ { };
 };
 
-} // namespace tateyama::common::loopback
+} // namespace tateyama::endpoint::loopback

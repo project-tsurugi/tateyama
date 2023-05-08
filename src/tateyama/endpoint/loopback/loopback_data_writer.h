@@ -19,7 +19,7 @@
 
 #include <tateyama/api/server/writer.h>
 
-namespace tateyama::common::loopback {
+namespace tateyama::endpoint::loopback {
 
 /**
  * @brief data writer for loopback endpoint
@@ -30,7 +30,7 @@ public:
     tateyama::status write(const char *data, std::size_t length) override;
     tateyama::status commit() override;
 
-    const std::vector<std::string>& committed_data() const noexcept {
+    [[nodiscard]] const std::vector<std::string>& committed_data() const noexcept {
         return list_;
     }
 private:
@@ -38,4 +38,4 @@ private:
     std::vector<std::string> list_ { };
 };
 
-} // namespace tateyama::common::loopback
+} // namespace tateyama::endpoint::loopback
