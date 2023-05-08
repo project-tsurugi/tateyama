@@ -64,7 +64,7 @@ tateyama::status loopback_response::release_channel(tateyama::api::server::data_
 void loopback_response::all_committed_data(std::map<std::string, std::vector<std::string>, std::less<>> &data_map) {
     std::shared_lock < std::shared_mutex > lock(mtx_channel_map_);
     for (const auto& [name, committed_data] : released_data_map_) {
-        data_map[name] = committed_data;
+        data_map.try_emplace(name, committed_data);
     }
     for (const auto& [name, ch] : acquired_channel_map_) {
         std::vector<std::string> &vec = data_map[name];
