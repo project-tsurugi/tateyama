@@ -52,11 +52,11 @@ TEST_F(buffered_response_test, multi_channel) {
     const std::string body_head { "body_head" };
     const std::string body { "body message" };
     const std::vector<std::string> names = { "channelA", "channelB" };
-    std::map<std::string, std::vector<std::string>, std::less<>> test_data { };
-    test_data[names[0]] = { "hello", "this is a pen" };
-    test_data[names[1]] = { "good night", "it's fine today" };
+    const std::map<std::string, std::vector<std::string>, std::less<>> test_data_org { { names[0],
+            { "hello", "this is a pen" } }, { names[1], { "good night", "it's fine today" } } };
     {
-        buffered_response response { session_id, code, body_head, body, test_data };
+        auto test_data { test_data_org };
+        buffered_response response { session_id, code, body_head, body, std::move(test_data) };
         EXPECT_EQ(response.session_id(), session_id);
         EXPECT_EQ(response.code(), code);
         EXPECT_EQ(response.body_head(), body_head);
@@ -74,7 +74,8 @@ TEST_F(buffered_response_test, multi_channel) {
     }
     {
         // empty body_head
-        buffered_response response { session_id, code, "", body, test_data };
+        auto test_data { test_data_org };
+        buffered_response response { session_id, code, "", body, std::move(test_data) };
         EXPECT_EQ(response.session_id(), session_id);
         EXPECT_EQ(response.code(), code);
         EXPECT_EQ(response.body_head().length(), 0);
@@ -82,7 +83,8 @@ TEST_F(buffered_response_test, multi_channel) {
     }
     {
         // empty body
-        buffered_response response { session_id, code, body_head, "", test_data };
+        auto test_data { test_data_org };
+        buffered_response response { session_id, code, body_head, "", std::move(test_data) };
         EXPECT_EQ(response.session_id(), session_id);
         EXPECT_EQ(response.code(), code);
         EXPECT_EQ(response.body_head(), body_head);
@@ -90,7 +92,8 @@ TEST_F(buffered_response_test, multi_channel) {
     }
     {
         // empty body head and body
-        buffered_response response { session_id, code, "", "", test_data };
+        auto test_data { test_data_org };
+        buffered_response response { session_id, code, "", "", std::move(test_data) };
         EXPECT_EQ(response.session_id(), session_id);
         EXPECT_EQ(response.code(), code);
         EXPECT_EQ(response.body_head().length(), 0);

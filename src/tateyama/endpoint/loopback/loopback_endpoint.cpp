@@ -34,7 +34,7 @@ tateyama::loopback::buffered_response loopback_endpoint::request(std::size_t ses
     std::map<std::string, std::vector<std::string>, std::less<>> data_map { };
     response->all_committed_data(data_map);
     tateyama::loopback::buffered_response bufres { response->session_id(), response->code(), response->body_head(),
-            response->body(), data_map };
+            response->body(), std::move(data_map) };
     return bufres;
 }
 

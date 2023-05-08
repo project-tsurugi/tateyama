@@ -42,7 +42,7 @@ public:
      * @param data_map all data written to all channels (key: channel name, value: written data)
      */
     buffered_response(std::size_t session_id, tateyama::api::server::response_code code, std::string_view body_head,
-            std::string_view body, std::map<std::string, std::vector<std::string>, std::less<>> &data_map);
+            std::string_view body, std::map<std::string, std::vector<std::string>, std::less<>> &&data_map);
 
     /**
      * @brief accessor to the session identifier
