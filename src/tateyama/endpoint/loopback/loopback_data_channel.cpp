@@ -26,7 +26,7 @@ tateyama::status loopback_data_channel::acquire(std::shared_ptr<tateyama::api::s
         std::unique_lock < std::shared_mutex > lock(mtx_writers_);
         writers_.emplace_back(wrt.get());
     }
-    writer = wrt;
+    writer = std::move(wrt);
     return tateyama::status::ok;
 }
 

@@ -108,7 +108,7 @@ private:
      * @note it's empty if all data channels are released
      * @attention use mtx_channel_map_ to be thread-safe
      */
-    std::map<std::string, std::shared_ptr<tateyama::api::server::data_channel>> acquired_channel_map_ { };
+    std::map<std::string, std::shared_ptr<tateyama::api::server::data_channel>, std::less<>> acquired_channel_map_ { };
 
     bool is_acquired(const std::string &name) {
         return acquired_channel_map_.find(name) != acquired_channel_map_.cend();
@@ -124,7 +124,7 @@ private:
      * because remove from acquired_channel_map_ and append data to released_data_map_
      * should be atomic.
      */
-    std::map<std::string, std::vector<std::string>> released_data_map_ { };
+    std::map<std::string, std::vector<std::string>, std::less<>> released_data_map_ { };
 };
 
 } // namespace tateyama::endpoint::loopback

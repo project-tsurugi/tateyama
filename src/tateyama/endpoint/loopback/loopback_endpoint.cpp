@@ -23,8 +23,8 @@ namespace tateyama::endpoint::loopback {
 
 tateyama::loopback::buffered_response loopback_endpoint::request(std::size_t session_id, std::size_t service_id,
         std::string_view payload) {
-    auto request = std::make_shared<tateyama::endpoint::loopback::loopback_request>(session_id, service_id, payload);
-    auto response = std::make_shared<tateyama::endpoint::loopback::loopback_response>();
+    auto request = std::make_shared<loopback_request>(session_id, service_id, payload);
+    auto response = std::make_shared<loopback_response>();
 
     bool ok = service_->operator ()(request, response);
     if (!ok) {

@@ -20,7 +20,7 @@ namespace tateyama::endpoint::loopback {
 
 bool loopback_response::has_channel(std::string_view name) noexcept {
     std::shared_lock < std::shared_mutex > lock(mtx_channel_map_);
-    return released_data_map_.find(std::string { name }) != released_data_map_.cend();
+    return released_data_map_.find(name) != released_data_map_.cend();
 }
 
 tateyama::status loopback_response::acquire_channel(std::string_view name,
@@ -34,7 +34,7 @@ tateyama::status loopback_response::acquire_channel(std::string_view name,
     ch = std::make_shared<loopback_data_channel>(name);
     acquired_channel_map_[namestr] = ch;
     //
-    if (released_data_map_.find(namestr) == released_data_map_.cend()) {
+    if (released_data_map_.find(name) == released_data_map_.cend()) {
         // NOTE: do not clear if acquire_channel() called with the same name again
         released_data_map_[namestr] = std::vector<std::string> { };
     }
