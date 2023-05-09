@@ -20,7 +20,7 @@ namespace tateyama::loopback {
 buffered_response::buffered_response(std::size_t session_id, tateyama::api::server::response_code code,
         std::string_view body_head, std::string_view body,
         std::map<std::string, std::vector<std::string>, std::less<>> &&data_map) :
-        session_id_(session_id), code_(code), body_head_(body_head), body_(body), data_map_(data_map) {
+        session_id_(session_id), code_(code), body_head_(body_head), body_(body), data_map_(std::move(data_map)) {
 }
 
 std::size_t buffered_response::session_id() const noexcept {
