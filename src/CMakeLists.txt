@@ -51,7 +51,7 @@ set_source_files_properties(
         ${GENERATED_PROTO_SRCS}
         PROPERTIES
         GENERATED TRUE
-        COMPILE_FLAGS -Wno-unused-parameter
+        COMPILE_FLAGS "-Wno-unused-parameter -Wno-array-bounds"
 )
 
 add_library(${ENGINE}
