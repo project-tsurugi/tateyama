@@ -28,8 +28,7 @@ tateyama::status loopback_data_writer::write(const char *data, std::size_t lengt
 
 tateyama::status loopback_data_writer::commit() {
     if (current_data_.length() > 0) {
-        list_.emplace_back(current_data_);
-        current_data_.clear();
+        committed_data_list_.emplace_back(std::move(current_data_));
     }
     return tateyama::status::ok;
 }

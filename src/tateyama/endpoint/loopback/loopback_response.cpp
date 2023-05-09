@@ -18,26 +18,16 @@
 
 namespace tateyama::endpoint::loopback {
 
-bool loopback_response::has_channel(std::string_view name) noexcept {
-    std::shared_lock < std::shared_mutex > lock(mtx_channel_map_);
-    return released_data_map_.find(name) != released_data_map_.cend();
-}
-
 tateyama::status loopback_response::acquire_channel(std::string_view name,
         std::shared_ptr<tateyama::api::server::data_channel> &ch) {
-    std::string namestr { name };
-    std::unique_lock<std::shared_mutex> lock(mtx_channel_map_);
-    if (is_acquired(namestr)) {
-        // the channel is already active, cannot make dual instances of same name
+    std::unique_lock<std::mutex> lock(mtx_channel_map_);
+    if (channel_map_.find(name) != channel_map_.cend()) {
+        // already acquired the same name channel
         return tateyama::status::not_found;
     }
     ch = std::make_shared<loopback_data_channel>(name);
-    acquired_channel_map_[namestr] = ch;
-    //
-    if (released_data_map_.find(name) == released_data_map_.cend()) {
-        // NOTE: do not clear if acquire_channel() called with the same name again
-        released_data_map_[namestr] = std::vector<std::string> { };
-    }
+    auto data_channel = dynamic_cast<loopback_data_channel*>(ch.get());
+    channel_map_.try_emplace(data_channel->name(), ch);
     return tateyama::status::ok;
 }
 
@@ -45,32 +35,19 @@ tateyama::status loopback_response::release_channel(tateyama::api::server::data_
     auto data_channel = dynamic_cast<loopback_data_channel*>(&ch);
     auto &name = data_channel->name();
     //
-    std::unique_lock<std::shared_mutex> lock(mtx_channel_map_);
-    if (!is_acquired(name)) {
-        return tateyama::status::not_found;
+    {
+        std::unique_lock<std::mutex> lock(mtx_channel_map_);
+        auto it = channel_map_.find(name);
+        if (it == channel_map_.cend() || it->second.get() != data_channel) {
+            return tateyama::status::not_found;
+        }
+        channel_map_.erase(it);
     }
-    if (acquired_channel_map_[name].get() != data_channel) {
-        // it has same name, but it maybe another session's channel
-        return tateyama::status::not_found;
+    {
+        std::unique_lock<std::mutex> lock(mtx_committed_data_map_);
+        committed_data_map_.try_emplace(name, data_channel->committed_data());
     }
-    acquired_channel_map_.erase(name);
-    data_channel->release(); // release all unreleased writers if exist
-    //
-    auto &whole = released_data_map_[name];
-    data_channel->append_committed_data(whole);
     return tateyama::status::ok;
-}
-
-void loopback_response::all_committed_data(std::map<std::string, std::vector<std::string>, std::less<>> &data_map) {
-    std::shared_lock < std::shared_mutex > lock(mtx_channel_map_);
-    for (const auto& [name, committed_data] : released_data_map_) {
-        data_map.try_emplace(name, committed_data);
-    }
-    for (const auto& [name, ch] : acquired_channel_map_) {
-        std::vector<std::string> &vec = data_map[name];
-        auto data_channel = dynamic_cast<loopback_data_channel*>(ch.get());
-        data_channel->append_committed_data(vec);
-    }
 }
 
 } // namespace tateyama::endpoint::loopback

@@ -44,61 +44,21 @@ TEST_F(loopback_data_channel_test, single_channel) {
     EXPECT_EQ(tateyama::status::ok, channel.acquire(wrt));
     tateyama::endpoint::loopback::loopback_data_writer *writer =
             dynamic_cast<tateyama::endpoint::loopback::loopback_data_writer*>(wrt.get());
-    {
-        std::vector<std::string> whole { };
-        channel.append_committed_data(whole);
-        EXPECT_EQ(whole.size(), 0);
-    }
     std::vector<std::string> test_data { "hello", "this is a pen" };
-    {
-        const std::string &data = test_data[0];
-        EXPECT_EQ(writer->write(data.data(), data.length()), tateyama::status::ok);
-        std::vector<std::string> whole { };
-        channel.append_committed_data(whole);
-        EXPECT_EQ(whole.size(), 0);
-        EXPECT_EQ(channel.name(), name);
-    }
-    {
-        EXPECT_EQ(writer->commit(), tateyama::status::ok);
-        std::vector<std::string> whole { };
-        channel.append_committed_data(whole);
-        EXPECT_EQ(whole.size(), 1);
-        EXPECT_EQ(whole[0], test_data[0]);
-        EXPECT_EQ(channel.name(), name);
-    }
-    {
-        const std::string &data = test_data[1];
-        EXPECT_EQ(writer->write(data.data(), data.length()), tateyama::status::ok);
-        std::vector<std::string> whole { };
-        channel.append_committed_data(whole);
-        EXPECT_EQ(whole.size(), 1);
-        EXPECT_EQ(whole[0], test_data[0]);
-        EXPECT_EQ(channel.name(), name);
-    }
-    {
-        EXPECT_EQ(writer->commit(), tateyama::status::ok);
-        std::vector<std::string> whole { };
-        channel.append_committed_data(whole);
-        EXPECT_EQ(whole.size(), 2);
-        EXPECT_EQ(whole[0], test_data[0]);
-        EXPECT_EQ(whole[1], test_data[1]);
-        EXPECT_EQ(channel.name(), name);
-    }
-    {
-        std::vector<std::string> whole { };
-        channel.append_committed_data(whole);
-        EXPECT_EQ(whole.size(), 2);
-        // clear returned map
-        whole.clear();
-        EXPECT_EQ(whole.size(), 0);
-        // still got same data
-        channel.append_committed_data(whole);
-        EXPECT_EQ(whole.size(), 2);
-        EXPECT_EQ(whole[0], test_data[0]);
-        EXPECT_EQ(whole[1], test_data[1]);
-        EXPECT_EQ(channel.name(), name);
-    }
+    EXPECT_EQ(writer->write(test_data[0].data(), test_data[0].length()), tateyama::status::ok);
+    EXPECT_EQ(writer->commit(), tateyama::status::ok);
+    EXPECT_EQ(channel.committed_data().size(), 0);
+    //
+    EXPECT_EQ(writer->write(test_data[1].data(), test_data[1].length()), tateyama::status::ok);
+    EXPECT_EQ(writer->commit(), tateyama::status::ok);
+    EXPECT_EQ(channel.committed_data().size(), 0);
     EXPECT_EQ(tateyama::status::ok, channel.release(*wrt));
+    //
+    auto &data = channel.committed_data();
+    EXPECT_EQ(data.size(), 2);
+    EXPECT_EQ(data[0], test_data[0]);
+    EXPECT_EQ(data[1], test_data[1]);
+    EXPECT_EQ(channel.name(), name);
 }
 
 TEST_F(loopback_data_channel_test, acquire_writer) {
@@ -108,14 +68,6 @@ TEST_F(loopback_data_channel_test, acquire_writer) {
     std::shared_ptr<tateyama::api::server::writer> wrt;
     EXPECT_EQ(tateyama::status::ok, channel.acquire(wrt));
     EXPECT_EQ(tateyama::status::ok, channel.release(*wrt));
-}
-
-TEST_F(loopback_data_channel_test, acquire_writer_without_release) {
-    const std::string name { "channelX" };
-    tateyama::endpoint::loopback::loopback_data_channel channel(name);
-
-    std::shared_ptr<tateyama::api::server::writer> wrt;
-    EXPECT_EQ(tateyama::status::ok, channel.acquire(wrt));
 }
 
 TEST_F(loopback_data_channel_test, acquire_writer_dual_release) {
@@ -198,9 +150,7 @@ TEST_F(loopback_data_channel_test, parallel_writer) {
     //
     std::set<std::string> resultset { };
     {
-        std::vector<std::string> whole { };
-        channel.append_committed_data(whole);
-        for (const auto &s : whole) {
+        for (const auto &s : channel.committed_data()) {
             resultset.emplace(s);
         }
     }

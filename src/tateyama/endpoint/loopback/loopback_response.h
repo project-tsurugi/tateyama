@@ -73,8 +73,6 @@ public:
         return body_;
     }
 
-    [[nodiscard]] bool has_channel(std::string_view name) noexcept;
-
     /**
      * @see `tateyama::server::response::acquire_channel()`
      */
@@ -93,7 +91,9 @@ public:
         return tateyama::status::ok;
     }
 
-    void all_committed_data(std::map<std::string, std::vector<std::string>, std::less<>> &data_map);
+    [[nodiscard]] std::map<std::string, std::vector<std::string>, std::less<>> all_committed_data() const noexcept {
+        return committed_data_map_;
+    }
 
 private:
     std::size_t session_id_ { };
@@ -101,30 +101,25 @@ private:
     std::string body_head_ { };
     std::string body_ { };
 
-    std::shared_mutex mtx_channel_map_ { };
+    std::mutex mtx_channel_map_ { };
     /*
      * @brief acquired channel map
      * @details add data_channel when acquired, remove it when it's released
      * @note it's empty if all data channels are released
      * @attention use mtx_channel_map_ to be thread-safe
      */
-    std::map<std::string, std::shared_ptr<tateyama::api::server::data_channel>, std::less<>> acquired_channel_map_ { };
+    std::map<std::string, std::shared_ptr<tateyama::api::server::data_channel>, std::less<>> channel_map_ { };
 
-    bool is_acquired(const std::string &name) {
-        return acquired_channel_map_.find(name) != acquired_channel_map_.cend();
-    }
-
+    std::mutex mtx_committed_data_map_ { };
     /*
      * @brief all committed data of all data channels
      * @details add data queue when channel is acquired, not remove it even if it's released.
      * Data queue is filled only when the channel is released
      * @note it's not cleared even if a channel is released
      * @note data queue is reused if same name channel is acquired again
-     * @attention use mtx_channel_map_ to be thread-safe
-     * because remove from acquired_channel_map_ and append data to released_data_map_
-     * should be atomic.
+     * @attention use mtx_committed_data_map_ to be thread-safe
      */
-    std::map<std::string, std::vector<std::string>, std::less<>> released_data_map_ { };
+    std::map<std::string, std::vector<std::string>, std::less<>> committed_data_map_ { };
 };
 
 } // namespace tateyama::endpoint::loopback

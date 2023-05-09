@@ -31,11 +31,11 @@ public:
     tateyama::status commit() override;
 
     [[nodiscard]] const std::vector<std::string>& committed_data() const noexcept {
-        return list_;
+        return committed_data_list_;
     }
 private:
     std::string current_data_ { };
-    std::vector<std::string> list_ { };
+    std::vector<std::string> committed_data_list_ { };
 };
 
 } // namespace tateyama::endpoint::loopback

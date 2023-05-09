@@ -26,16 +26,11 @@ tateyama::loopback::buffered_response loopback_endpoint::request(std::size_t ses
     auto request = std::make_shared<loopback_request>(session_id, service_id, payload);
     auto response = std::make_shared<loopback_response>();
 
-    bool ok = service_->operator ()(request, response);
-    if (!ok) {
-        throw std::invalid_argument("unknown service_id " + std::to_string(service_id));
+    if (service_->operator ()(request, response)) {
+        return tateyama::loopback::buffered_response { response->session_id(), response->code(), response->body_head(),
+                response->body(), response->all_committed_data() };
     }
-
-    std::map<std::string, std::vector<std::string>, std::less<>> data_map { };
-    response->all_committed_data(data_map);
-    tateyama::loopback::buffered_response bufres { response->session_id(), response->code(), response->body_head(),
-            response->body(), std::move(data_map) };
-    return bufres;
+    throw std::invalid_argument("unknown service_id " + std::to_string(service_id));
 }
 
 } // namespace tateyama::endpoint::loopback

@@ -26,31 +26,31 @@ TEST_F(loopback_data_writer_test, printable) {
     std::vector<std::string> test_data = { "hello", "this is a pen" };
     tateyama::endpoint::loopback::loopback_data_writer writer { };
     {
-        const auto commit = writer.committed_data();
+        const auto &commit = writer.committed_data();
         EXPECT_EQ(commit.size(), 0);
     }
     {
         const std::string &data = test_data[0];
         EXPECT_EQ(writer.write(data.data(), data.length()), tateyama::status::ok);
-        const auto commit = writer.committed_data();
+        const auto &commit = writer.committed_data();
         EXPECT_EQ(commit.size(), 0);
     }
     {
         EXPECT_EQ(writer.commit(), tateyama::status::ok);
-        const auto commit = writer.committed_data();
+        const auto &commit = writer.committed_data();
         EXPECT_EQ(commit.size(), 1);
         EXPECT_EQ(commit[0], test_data[0]);
     }
     {
         const std::string &data = test_data[1];
         EXPECT_EQ(writer.write(data.data(), data.length()), tateyama::status::ok);
-        const auto commit = writer.committed_data();
+        const auto &commit = writer.committed_data();
         EXPECT_EQ(commit.size(), 1);
         EXPECT_EQ(commit[0], test_data[0]);
     }
     {
         EXPECT_EQ(writer.commit(), tateyama::status::ok);
-        const auto commit = writer.committed_data();
+        const auto &commit = writer.committed_data();
         EXPECT_EQ(commit.size(), 2);
         EXPECT_EQ(commit[0], test_data[0]);
         EXPECT_EQ(commit[1], test_data[1]);
@@ -58,7 +58,7 @@ TEST_F(loopback_data_writer_test, printable) {
     {
         // re-get data
         EXPECT_EQ(writer.commit(), tateyama::status::ok);
-        const auto commit = writer.committed_data();
+        const auto &commit = writer.committed_data();
         EXPECT_EQ(commit.size(), 2);
         EXPECT_EQ(commit[0], test_data[0]);
         EXPECT_EQ(commit[1], test_data[1]);
@@ -71,48 +71,48 @@ TEST_F(loopback_data_writer_test, unnesessary_call) {
     {
         // commit() without write()
         EXPECT_EQ(writer.commit(), tateyama::status::ok);
-        const auto commit = writer.committed_data();
+        const auto &commit = writer.committed_data();
         EXPECT_EQ(commit.size(), 0);
     }
     {
         EXPECT_EQ(writer.write(test_data[0].data(), test_data[0].length()), tateyama::status::ok);
         EXPECT_EQ(writer.commit(), tateyama::status::ok);
-        const auto commit = writer.committed_data();
+        const auto &commit = writer.committed_data();
         EXPECT_EQ(commit.size(), 1);
         EXPECT_EQ(commit[0], test_data[0]);
     }
     {
         // commit() without write()
         EXPECT_EQ(writer.commit(), tateyama::status::ok);
-        const auto commit = writer.committed_data();
+        const auto &commit = writer.committed_data();
         EXPECT_EQ(commit.size(), 1);
         EXPECT_EQ(commit[0], test_data[0]);
     }
     {
         // empty write
         EXPECT_EQ(writer.write("", 0), tateyama::status::ok);
-        const auto commit = writer.committed_data();
+        const auto &commit = writer.committed_data();
         EXPECT_EQ(commit.size(), 1);
         EXPECT_EQ(commit[0], test_data[0]);
     }
     {
         // commit() after empty write()
         EXPECT_EQ(writer.commit(), tateyama::status::ok);
-        const auto commit = writer.committed_data();
+        const auto &commit = writer.committed_data();
         EXPECT_EQ(commit.size(), 1);
         EXPECT_EQ(commit[0], test_data[0]);
     }
     {
         // data is not empty, but length is specified as 0
         EXPECT_EQ(writer.write("hello", 0), tateyama::status::ok);
-        const auto commit = writer.committed_data();
+        const auto &commit = writer.committed_data();
         EXPECT_EQ(commit.size(), 1);
         EXPECT_EQ(commit[0], test_data[0]);
     }
     {
         // commit() after empty write()
         EXPECT_EQ(writer.commit(), tateyama::status::ok);
-        const auto commit = writer.committed_data();
+        const auto &commit = writer.committed_data();
         EXPECT_EQ(commit.size(), 1);
         EXPECT_EQ(commit[0], test_data[0]);
     }
@@ -125,7 +125,7 @@ TEST_F(loopback_data_writer_test, drop_commit) {
     EXPECT_EQ(writer.write(test_data[0].data(), test_data[0].length()), tateyama::status::ok);
     EXPECT_EQ(writer.write(test_data[1].data(), test_data[1].length()), tateyama::status::ok);
     EXPECT_EQ(writer.commit(), tateyama::status::ok);
-    const auto commit = writer.committed_data();
+    const auto &commit = writer.committed_data();
     EXPECT_EQ(commit.size(), 1);
     EXPECT_EQ(commit[0], std::string { test_data[0] + test_data[1] });
 }
@@ -139,7 +139,7 @@ TEST_F(loopback_data_writer_test, binary) {
     tateyama::endpoint::loopback::loopback_data_writer writer { };
     writer.write(data, len);  // NOLINT
     writer.commit();
-    const auto commit = writer.committed_data();
+    const auto &commit = writer.committed_data();
     EXPECT_EQ(commit.size(), 1);
     const std::string &commitstr = commit[0];
     EXPECT_EQ(commitstr.length(), len);

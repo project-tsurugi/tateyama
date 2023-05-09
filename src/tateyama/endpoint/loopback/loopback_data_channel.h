@@ -16,7 +16,6 @@
 #pragma once
 
 #include <mutex>
-#include <shared_mutex>
 #include <vector>
 
 #include <tateyama/api/server/data_channel.h>
@@ -37,20 +36,17 @@ public:
     tateyama::status acquire(std::shared_ptr<tateyama::api::server::writer> &writer) override;
     tateyama::status release(tateyama::api::server::writer &writer) override;
 
-    /**
-     * @brief release all unreleased writers if exist
-     */
-    void release();
-
-    void append_committed_data(std::vector<std::string> &whole);
+    [[nodiscard]] const std::vector<std::string>& committed_data() const noexcept {
+        return committed_data_list_;
+    }
 private:
     const std::string name_;
 
-    std::shared_mutex mtx_writers_ { };
-    std::vector<loopback_data_writer*> writers_ { };
+    std::mutex mtx_writers_ { };
+    std::vector<std::shared_ptr<loopback_data_writer>> writers_ { };
 
-    std::shared_mutex mtx_released_data_ { };
-    std::vector<std::string> released_data_ { };
+    std::mutex mtx_committed_data_list_ { };
+    std::vector<std::string> committed_data_list_ { };
 };
 
 } // namespace tateyama::endpoint::loopback

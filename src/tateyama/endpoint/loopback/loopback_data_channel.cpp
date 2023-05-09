@@ -14,66 +14,43 @@
  * limitations under the License.
  */
 
-#include <algorithm>
-
 #include "loopback_data_channel.h"
 
 namespace tateyama::endpoint::loopback {
 
 tateyama::status loopback_data_channel::acquire(std::shared_ptr<tateyama::api::server::writer> &writer) {
     auto wrt = std::make_shared<loopback_data_writer>();
+    writer = wrt;
     {
-        std::unique_lock < std::shared_mutex > lock(mtx_writers_);
-        writers_.emplace_back(wrt.get());
+        std::lock_guard<std::mutex> lock(mtx_writers_);
+        writers_.emplace_back(std::move(wrt));
     }
-    writer = std::move(wrt);
     return tateyama::status::ok;
 }
 
 tateyama::status loopback_data_channel::release(tateyama::api::server::writer &writer) {
-    auto wrt = dynamic_cast<loopback_data_writer*>(&writer);
+    tateyama::status result = tateyama::status::not_found;
+    const auto wrt = dynamic_cast<loopback_data_writer*>(&writer);
     {
-        std::unique_lock < std::shared_mutex > lock(mtx_writers_);
-        auto it = std::find(writers_.cbegin(), writers_.cend(), wrt);
-        if (it == writers_.cend()) {
-            return tateyama::status::not_found;
-        }
-        writers_.erase(it);
-    }
-    {
-        std::unique_lock < std::shared_mutex > lock(mtx_released_data_);
-        for (auto &data : wrt->committed_data()) {
-            released_data_.emplace_back(data);
-        }
-    }
-    return tateyama::status::ok;
-}
-
-void loopback_data_channel::release() {
-    std::shared_lock < std::shared_mutex > lock(mtx_writers_);
-    auto writers_copy { writers_ };
-    lock.unlock();
-    //
-    for (auto &writer : writers_copy) {
-        release(*writer);
-    }
-}
-
-void loopback_data_channel::append_committed_data(std::vector<std::string> &whole) {
-    {
-        std::shared_lock < std::shared_mutex > lock(mtx_released_data_);
-        for (auto &data : released_data_) {
-            whole.emplace_back(data);
-        }
-    }
-    {
-        std::shared_lock < std::shared_mutex > lock(mtx_writers_);
-        for (auto &writer : writers_) {
-            for (auto &data : writer->committed_data()) {
-                whole.emplace_back(data);
+        std::lock_guard<std::mutex> lock(mtx_writers_);
+        for (auto it = writers_.cbegin(); it != writers_.cend(); it++) {
+            if (it->get() == wrt) {
+                writers_.erase(it);
+                result = tateyama::status::ok;
+                break;
             }
         }
     }
+    if (result != tateyama::status::ok) {
+        return result;
+    }
+    {
+        std::lock_guard<std::mutex> lock(mtx_committed_data_list_);
+        for (auto &data : wrt->committed_data()) {
+            committed_data_list_.emplace_back(data);
+        }
+    }
+    return result;
 }
 
 } // namespace tateyama::endpoint::loopback
