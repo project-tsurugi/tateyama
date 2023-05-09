@@ -91,6 +91,13 @@ public:
         return tateyama::status::ok;
     }
 
+    /**
+     * retrieve all committed data of all channels
+     * @post loopback_data_writer::commit() of all acquired writers
+     * @post loopback_data_channel::release() of all acquired writers
+     * @post release_channel() of all acquired channels
+     * @note this method is intended to call only once after all writing operations are finished clean
+     */
     [[nodiscard]] std::map<std::string, std::vector<std::string>, std::less<>> all_committed_data() const noexcept {
         return committed_data_map_;
     }
@@ -113,11 +120,9 @@ private:
     std::mutex mtx_committed_data_map_ { };
     /*
      * @brief all committed data of all data channels
-     * @details add data queue when channel is acquired, not remove it even if it's released.
      * Data queue is filled only when the channel is released
-     * @note it's not cleared even if a channel is released
-     * @note data queue is reused if same name channel is acquired again
      * @attention use mtx_committed_data_map_ to be thread-safe
+     * @see notes of all_committed_data()
      */
     std::map<std::string, std::vector<std::string>, std::less<>> committed_data_map_ { };
 };
