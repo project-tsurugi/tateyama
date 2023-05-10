@@ -44,7 +44,7 @@ public:
         for(std::size_t i=0; i < tasks; ++i) {
             results.emplace_back(std::async(std::launch::async, [=]() {
                 if(! tateyama::utils::set_thread_affinity(i, prof)) {
-                    std::abort();
+                    FAIL();
                 };
                 auto b = clock::now();
                 while(std::chrono::duration_cast<std::chrono::milliseconds>(clock::now() -b).count() < duration_ms_) {
@@ -68,21 +68,33 @@ TEST_F(thread_affinity_test, default) {
 }
 
 TEST_F(thread_affinity_test, uniform) {
+    if(numa_available() < 0) {
+        GTEST_SKIP_("numa not available on this system");
+    }
     affinity_profile prof{affinity_tag<affinity_kind::numa_affinity>}; // assign nodes uniformly
     execute(1, prof);
 }
 
 TEST_F(thread_affinity_test, uniform_2) {
+    if(numa_available() < 0) {
+        GTEST_SKIP_("numa not available on this system");
+    }
     affinity_profile prof{affinity_tag<affinity_kind::numa_affinity>}; // assign nodes uniformly
     execute(2, prof);
 }
 
 TEST_F(thread_affinity_test, numa_0) {
+    if(numa_available() < 0) {
+        GTEST_SKIP_("numa not available on this system");
+    }
     affinity_profile prof{affinity_tag<affinity_kind::numa_affinity>, 0}; // assign node 0
     execute(1, prof);
 }
 
 TEST_F(thread_affinity_test, numa_1) {
+    if(numa_available() < 0) {
+        GTEST_SKIP_("numa not available on this system");
+    }
     // assign node 1 - fallback to 0 if numa node 1 is missing
     affinity_profile prof{affinity_tag<affinity_kind::numa_affinity>, 1};
     execute(1, prof);

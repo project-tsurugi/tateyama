@@ -15,6 +15,8 @@
  */
 #include <tateyama/utils/thread_affinity.h>
 
+#include <glog/logging.h>
+
 #include <sched.h>
 #include <pthread.h>
 #include <numa.h>
@@ -30,11 +32,19 @@ bool set_thread_affinity(std::size_t id, affinity_profile const& prof) {
     if(! prof.set_core_affinity_) return true;
     auto nodes = numa_node_count();
     if(prof.assign_numa_nodes_uniformly_) {
-        return 0 == numa_run_on_node(static_cast<int>(id % nodes));
+        auto success = 0 == numa_run_on_node(static_cast<int>(id % nodes));
+        if(! success) {
+            LOG(ERROR) << "Failed to set numa node affinity. errno:" << errno;
+        }
+        return success;
     }
     if(prof.numa_node_ != affinity_profile::npos) {
         // round down if specified value is larger than nodes
-        return 0 == numa_run_on_node(static_cast<int>(prof.numa_node_ % nodes));
+        auto success = 0 == numa_run_on_node(static_cast<int>(prof.numa_node_ % nodes));
+        if(! success) {
+            LOG(ERROR) << "Failed to set numa node affinity. errno:" << errno;
+        }
+        return success;
     }
     cpu_set_t cpuset{};
     CPU_ZERO(&cpuset);

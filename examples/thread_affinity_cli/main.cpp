@@ -80,7 +80,8 @@ public:
         for(std::size_t i=0, n=FLAGS_thread_count; i<n; ++i) {
             results.emplace_back(std::async(std::launch::async, [=](){
                 if(! tateyama::utils::set_thread_affinity(i, prof)) {
-                    std::abort();
+                    LOG(ERROR) << "failed to set thread affinity";
+                    return;
                 };
                 auto b = clock::now();
                 while(std::chrono::duration_cast<std::chrono::milliseconds>(clock::now() -b).count() < duration) {
