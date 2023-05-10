@@ -98,7 +98,7 @@ void bridge::add_shm_entry(std::size_t session_id, std::size_t index) {
 }
 
 void bridge::set_digest(const std::string& path_string) {
-    std::size_t hash = std::hash<std::string>{}(path_string);
+    auto hash = std::hash<std::string>{}(path_string);
     std::ostringstream sstream;
     sstream << std::hex << std::setfill('0')
             << std::setw(sizeof(hash) * 2) << hash;
