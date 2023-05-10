@@ -157,6 +157,14 @@ public:
         frequency_promoting_delayed_ = arg;
     }
 
+    [[nodiscard]] std::size_t stealing_wait() const noexcept {
+        return stealing_wait_;
+    }
+
+    void stealing_wait(std::size_t arg) noexcept {
+        stealing_wait_ = arg;
+    }
+
     friend inline std::ostream& operator<<(std::ostream& out, task_scheduler_cfg const& cfg) {
         return out << std::boolalpha <<
             "thread_count:" << cfg.thread_count() << " " <<
@@ -169,6 +177,7 @@ public:
             "use_preferred_worker_for_current_thread:" << cfg.use_preferred_worker_for_current_thread() << " " <<
             "ratio_check_local_first:" << cfg.ratio_check_local_first() << " " <<
             "frequency_promoting_delayed:" << cfg.frequency_promoting_delayed() << " " <<
+            "stealing_wait:" << cfg.stealing_wait() << " " <<
             "";
     }
 
@@ -183,6 +192,7 @@ private:
     bool use_preferred_worker_for_current_thread_ = false;
     rational ratio_check_local_first_{1, 10};
     rational frequency_promoting_delayed_{1, 1000};
+    std::size_t stealing_wait_ = 0;
 };
 
 }

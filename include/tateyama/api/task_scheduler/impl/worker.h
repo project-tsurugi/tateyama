@@ -125,25 +125,22 @@ public:
         basic_queue<task>& q,
         basic_queue<task>& sq
     ) {
-        promote_delayed_task_if_needed(ctx, q, sq);
-        // using counter, check sticky sometimes for fairness
-        auto& cnt = ctx.count_check_local_first();
-        cnt += cfg_->ratio_check_local_first();
-        if(cnt < 1) {
-            if(try_process(ctx, sq)) return true;
-            if(try_process(ctx, q)) return true;
-        } else {
-            --cnt;
-            if(try_process(ctx, q)) return true;
-            if(try_process(ctx, sq)) return true;
+        if (try_local_and_sticky(ctx, q, sq)) {
+            return true;
         }
         if (cfg_ && cfg_->stealing_enabled()) {
+            // try local and sticky more times before stealing
+            for(std::size_t i=0, n=cfg_->stealing_wait() * cfg_->thread_count(); i<n ; ++i) {
+                if(try_local_and_sticky(ctx, q, sq)) {
+                    return true;
+                }
+            }
             bool stolen = steal_and_execute(ctx);
             if(stolen) {
                 return true;
             }
         }
-        if(cfg_ && cfg_->lazy_worker() && check_delayed_task_empty(ctx)) {
+        if(cfg_ && cfg_->lazy_worker() && check_delayed_task_exists(ctx)) {
             // If delayed task exists, pretend as if its small slice is executed so that worker won't suspend.
             return true;
         }
@@ -233,6 +230,27 @@ private:
         return false;
     }
 
+    bool try_local_and_sticky(
+        api::task_scheduler::context& ctx,
+        basic_queue<task>& q,
+        basic_queue<task>& sq
+    ) {
+        promote_delayed_task_if_needed(ctx, q, sq);
+        // using counter, check sticky sometimes for fairness
+        auto& cnt = ctx.count_check_local_first();
+        cnt += cfg_->ratio_check_local_first();
+        if(cnt < 1) {
+            if(try_process(ctx, sq)) return true;
+            if(try_process(ctx, q)) return true;
+        } else {
+            --cnt;
+            if(try_process(ctx, q)) return true;
+            if(try_process(ctx, sq)) return true;
+        }
+        return false;
+    }
+
+
     void promote_delayed_task_if_needed(
         api::task_scheduler::context& ctx,
         basic_queue<task>& q,
@@ -254,9 +272,11 @@ private:
         }
     }
 
-    bool check_delayed_task_empty(
+    bool check_delayed_task_exists(
         api::task_scheduler::context& ctx
     ) {
+        // caution: this logic re-order an element (if exists) in the queue, and can result in live-lock
+        // e.g. some task always get re-ordered and never executed. Use with care.
         auto& dtq = (*delayed_task_queues_)[ctx.index()];
         task dt{};
         if(dtq.try_pop(dt)) {
