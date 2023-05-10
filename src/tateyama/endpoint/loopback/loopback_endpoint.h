@@ -37,7 +37,7 @@ public:
     static constexpr std::string_view component_label = "loopback_endpoint";
 
     /**
-     * @see `tateyama::framework::component::setup()`
+     * @see tateyama::framework::component::setup()
      */
     bool setup(tateyama::framework::environment &env) override {
         service_ = env.service_repository().find<tateyama::framework::routing_service>();
@@ -45,21 +45,21 @@ public:
     }
 
     /**
-     * @see `tateyama::framework::component::start()`
+     * @see tateyama::framework::component::start()
      */
     bool start(tateyama::framework::environment&) override {
         return true;
     }
 
     /**
-     * @see `tateyama::framework::component::label()`
+     * @see tateyama::framework::component::label()
      */
     [[nodiscard]] std::string_view label() const noexcept override {
         return component_label;
     }
 
     /**
-     * @see `tateyama::framework::component::shutdown()`
+     * @see tateyama::framework::component::shutdown()
      */
     bool shutdown(tateyama::framework::environment&) override {
         return true;

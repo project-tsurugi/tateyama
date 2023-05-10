@@ -26,7 +26,7 @@ tateyama::loopback::buffered_response loopback_endpoint::request(std::size_t ses
     auto request = std::make_shared<loopback_request>(session_id, service_id, payload);
     auto response = std::make_shared<loopback_response>();
 
-    if (service_->operator ()(request, response)) {
+    if (service_->operator ()(std::move(request), response)) {
         return tateyama::loopback::buffered_response { response->session_id(), response->code(), response->body_head(),
                 response->body(), response->all_committed_data() };
     }

@@ -46,7 +46,7 @@ tateyama::status loopback_data_channel::release(tateyama::api::server::writer &w
     }
     {
         std::lock_guard<std::mutex> lock(mtx_committed_data_list_);
-        auto &list = wrt->committed_data();
+        auto list = wrt->release_committed_data();
         committed_data_list_.reserve(committed_data_list_.size() + list.size());
         committed_data_list_.insert(committed_data_list_.end(), std::make_move_iterator(list.begin()),
                 std::make_move_iterator(list.end()));

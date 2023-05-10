@@ -30,8 +30,15 @@ public:
     tateyama::status write(const char *data, std::size_t length) override;
     tateyama::status commit() override;
 
+    // just for unit test
     [[nodiscard]] const std::vector<std::string>& committed_data() const noexcept {
         return committed_data_list_;
+    }
+
+    [[nodiscard]] std::vector<std::string> release_committed_data() noexcept {
+        std::vector < std::string > result { };
+        committed_data_list_.swap(result);
+        return result;
     }
 private:
     std::string current_data_ { };

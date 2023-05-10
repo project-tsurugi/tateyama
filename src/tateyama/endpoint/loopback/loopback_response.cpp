@@ -25,9 +25,9 @@ tateyama::status loopback_response::acquire_channel(std::string_view name,
         // already acquired the same name channel
         return tateyama::status::not_found;
     }
-    ch = std::make_shared<loopback_data_channel>(name);
-    auto data_channel = dynamic_cast<loopback_data_channel*>(ch.get());
-    channel_map_.try_emplace(data_channel->name(), ch);
+    auto data_channel = std::make_shared<loopback_data_channel>(name);
+    ch = data_channel;
+    channel_map_.try_emplace(data_channel->name(), std::move(data_channel));
     return tateyama::status::ok;
 }
 
@@ -45,7 +45,7 @@ tateyama::status loopback_response::release_channel(tateyama::api::server::data_
     }
     {
         std::unique_lock<std::mutex> lock(mtx_committed_data_map_);
-        committed_data_map_.try_emplace(name, data_channel->committed_data());
+        committed_data_map_.try_emplace(name, data_channel->release_committed_data());
     }
     return tateyama::status::ok;
 }

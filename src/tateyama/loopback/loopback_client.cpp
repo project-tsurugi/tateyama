@@ -19,8 +19,8 @@
 
 namespace tateyama::loopback {
 
-loopback_client::loopback_client() {
-    endpoint_ = std::make_shared<tateyama::endpoint::loopback::loopback_endpoint>();
+loopback_client::loopback_client() :
+        endpoint_(std::make_shared<tateyama::endpoint::loopback::loopback_endpoint>()) {
 }
 
 std::shared_ptr<tateyama::framework::endpoint> loopback_client::endpoint() const noexcept {

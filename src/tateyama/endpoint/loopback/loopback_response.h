@@ -28,7 +28,7 @@ namespace tateyama::endpoint::loopback {
 class loopback_response: public tateyama::api::server::response {
 public:
     /**
-     * @see `tateyama::server::response::session_id()`
+     * @see tateyama::server::response::session_id()
      */
     void session_id(std::size_t id) override {
         session_id_ = id;
@@ -39,7 +39,7 @@ public:
     }
 
     /**
-     * @see `tateyama::server::response::code()`
+     * @see tateyama::server::response::code()
      */
     void code(tateyama::api::server::response_code code) override {
         code_ = code;
@@ -50,7 +50,7 @@ public:
     }
 
     /**
-     * @see `tateyama::server::response::body_head()`
+     * @see tateyama::server::response::body_head()
      */
     tateyama::status body_head(std::string_view body_head) override {
         body_head_ = body_head;
@@ -62,7 +62,7 @@ public:
     }
 
     /**
-     * @see `tateyama::server::response::body()`
+     * @see tateyama::server::response::body()
      */
     tateyama::status body(std::string_view body) override {
         body_ = body;
@@ -74,18 +74,18 @@ public:
     }
 
     /**
-     * @see `tateyama::server::response::acquire_channel()`
+     * @see tateyama::server::response::acquire_channel()
      */
     tateyama::status acquire_channel(std::string_view name, std::shared_ptr<tateyama::api::server::data_channel> &ch)
             override;
 
     /**
-     * @see `tateyama::server::response::release_channel()`
+     * @see tateyama::server::response::release_channel()
      */
     tateyama::status release_channel(tateyama::api::server::data_channel &ch) override;
 
     /**
-     * @see `tateyama::server::response::close_session()`
+     * @see tateyama::server::response::close_session()
      */
     tateyama::status close_session() override {
         return tateyama::status::ok;

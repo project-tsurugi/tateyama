@@ -36,8 +36,15 @@ public:
     tateyama::status acquire(std::shared_ptr<tateyama::api::server::writer> &writer) override;
     tateyama::status release(tateyama::api::server::writer &writer) override;
 
+    // just for unit test
     [[nodiscard]] const std::vector<std::string>& committed_data() const noexcept {
         return committed_data_list_;
+    }
+
+    [[nodiscard]] std::vector<std::string> release_committed_data() noexcept {
+        std::vector < std::string > result { };
+        committed_data_list_.swap(result);
+        return result;
     }
 private:
     const std::string name_;

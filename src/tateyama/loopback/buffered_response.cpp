@@ -48,9 +48,7 @@ const std::vector<std::string>& buffered_response::channel(std::string_view name
     if (it != data_map_.cend()) {
         return it->second;
     }
-    std::string m { "invalid channel name: " };
-    m += name;
-    throw std::invalid_argument(m);
+    throw std::invalid_argument("invalid channel name: " + std::string { name });
 }
 
 } // namespace tateyama::loopback
