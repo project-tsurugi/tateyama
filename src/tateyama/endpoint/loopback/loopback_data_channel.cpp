@@ -54,4 +54,10 @@ tateyama::status loopback_data_channel::release(tateyama::api::server::writer &w
     return result;
 }
 
+std::vector<std::string> loopback_data_channel::release_committed_data() noexcept {
+    std::vector<std::string> result { };
+    committed_data_list_.swap(result);
+    return result;
+}
+
 } // namespace tateyama::endpoint::loopback

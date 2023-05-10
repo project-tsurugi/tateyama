@@ -34,4 +34,10 @@ tateyama::status loopback_data_writer::commit() {
     return tateyama::status::ok;
 }
 
+std::vector<std::string> loopback_data_writer::release_committed_data() noexcept {
+    std::vector<std::string> result { };
+    committed_data_list_.swap(result);
+    return result;
+}
+
 } // namespace tateyama::endpoint::loopback

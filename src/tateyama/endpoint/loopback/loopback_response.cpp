@@ -50,4 +50,10 @@ tateyama::status loopback_response::release_channel(tateyama::api::server::data_
     return tateyama::status::ok;
 }
 
+std::map<std::string, std::vector<std::string>, std::less<>> loopback_response::release_all_committed_data() noexcept {
+    std::map<std::string, std::vector<std::string>, std::less<>> result { };
+    committed_data_map_.swap(result);
+    return result;
+}
+
 } // namespace tateyama::endpoint::loopback

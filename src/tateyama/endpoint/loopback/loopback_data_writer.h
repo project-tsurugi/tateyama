@@ -35,11 +35,7 @@ public:
         return committed_data_list_;
     }
 
-    [[nodiscard]] std::vector<std::string> release_committed_data() noexcept {
-        std::vector < std::string > result { };
-        committed_data_list_.swap(result);
-        return result;
-    }
+    [[nodiscard]] std::vector<std::string> release_committed_data() noexcept;
 private:
     std::string current_data_ { };
     std::vector<std::string> committed_data_list_ { };

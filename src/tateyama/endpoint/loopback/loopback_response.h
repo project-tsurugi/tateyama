@@ -91,6 +91,11 @@ public:
         return tateyama::status::ok;
     }
 
+    // just for unit test
+    [[nodiscard]] const std::map<std::string, std::vector<std::string>, std::less<>>& all_committed_data() const noexcept {
+        return committed_data_map_;
+    }
+
     /**
      * retrieve all committed data of all channels
      * @post loopback_data_writer::commit() of all acquired writers
@@ -98,9 +103,7 @@ public:
      * @post release_channel() of all acquired channels
      * @note this method is intended to call only once after all writing operations are finished clean
      */
-    [[nodiscard]] std::map<std::string, std::vector<std::string>, std::less<>> all_committed_data() const noexcept {
-        return committed_data_map_;
-    }
+    [[nodiscard]] std::map<std::string, std::vector<std::string>, std::less<>> release_all_committed_data() noexcept;
 
 private:
     std::size_t session_id_ { };

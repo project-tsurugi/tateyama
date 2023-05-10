@@ -104,10 +104,10 @@ TEST_F(loopback_response_test, single) {
     EXPECT_EQ(response.body_head(), body_head);
     EXPECT_EQ(response.body(), body);
     //
-    auto data_map = response.all_committed_data();
+    auto &data_map = response.all_committed_data();
     EXPECT_EQ(data_map.size(), 1);
     EXPECT_NE(data_map.find(name), data_map.cend());
-    std::vector<std::string> &result = data_map[name];
+    auto &result = data_map.find(name)->second;
     EXPECT_EQ(result.size(), test_data.size());
     for (int i = 0; i < result.size(); i++) {
         EXPECT_EQ(result[i], test_data[i]);
@@ -176,12 +176,12 @@ TEST_F(loopback_response_test, dual_channel) {
         EXPECT_EQ(response.release_channel(*channel), tateyama::status::ok);
     }
     //
-    auto data_map = std::move(response.all_committed_data());
+    auto &data_map = response.all_committed_data();
     EXPECT_EQ(data_map.size(), names.size());
     //
     for (const auto &name : names) {
         EXPECT_NE(data_map.find(name), data_map.cend());
-        std::vector<std::string> &result = data_map[name];
+        auto &result = data_map.find(name)->second;
         EXPECT_EQ(result.size(), test_data.size());
         for (int i = 0; i < result.size(); i++) {
             EXPECT_EQ(result[i], test_data[name][i]);
@@ -206,10 +206,10 @@ TEST_F(loopback_response_test, empty_channel_name) {
     EXPECT_EQ(channel->release(*writer), tateyama::status::ok);
     EXPECT_EQ(response.release_channel(*channel), tateyama::status::ok);
     //
-    auto data_map = std::move(response.all_committed_data());
+    auto &data_map = response.all_committed_data();
     EXPECT_EQ(data_map.size(), 1);
     EXPECT_NE(data_map.find(name), data_map.cend());
-    std::vector<std::string> &result = data_map[name];
+    auto &result = data_map.find(name)->second;
     EXPECT_EQ(result.size(), test_data.size());
     for (int i = 0; i < result.size(); i++) {
         EXPECT_EQ(result[i], test_data[i]);
@@ -256,13 +256,13 @@ TEST_F(loopback_response_test, parallel_writer) {
     }
     EXPECT_EQ(tateyama::status::ok, response.release_channel(*channel));
     //
-    auto data_map = std::move(response.all_committed_data());
+    auto &data_map = response.all_committed_data();
     EXPECT_EQ(data_map.size(), 1);
     EXPECT_NE(data_map.find(name), data_map.cend());
     //
     std::set<std::string> resultset { };
     const auto cend = resultset.cend();
-    for (const auto &d : data_map[name]) {
+    for (const auto &d : data_map.find(name)->second) {
         resultset.emplace(d);
     }
     for (int i = 0; i < nwriter; i++) {
@@ -306,15 +306,15 @@ TEST_F(loopback_response_test, parallel_channel) {
         }
     }
     //
-    auto data_map = std::move(response.all_committed_data());
+    auto &data_map = response.all_committed_data();
     EXPECT_EQ(data_map.size(), nchannel);
     //
     for (int i = 0; i < nchannel; i++) {
-        std::string name { std::to_string(i) };
+        const std::string name { std::to_string(i) };
         EXPECT_NE(data_map.find(name), data_map.cend());
         std::set<std::string> resultset { };
         const auto cend = resultset.cend();
-        for (const auto &d : data_map[name]) {
+        for (const auto &d : data_map.find(name)->second) {
             resultset.emplace(d);
         }
         std::string s { };
@@ -384,15 +384,15 @@ TEST_F(loopback_response_test, parallel_channel_and_wrier) {
         EXPECT_EQ(tateyama::status::ok, response.release_channel(*channel));
     }
     //
-    auto data_map = std::move(response.all_committed_data());
+    auto &data_map = response.all_committed_data();
     EXPECT_EQ(data_map.size(), nchannel);
     //
     for (int i = 0; i < nchannel; i++) {
-        std::string name { std::to_string(i) };
+        const std::string name { std::to_string(i) };
         EXPECT_NE(data_map.find(name), data_map.cend());
         std::set<std::string> resultset { };
         const auto cend = resultset.cend();
-        for (const auto &d : data_map[name]) {
+        for (const auto &d : data_map.find(name)->second) {
             resultset.emplace(d);
         }
         std::string s { };

@@ -28,7 +28,7 @@ tateyama::loopback::buffered_response loopback_endpoint::request(std::size_t ses
 
     if (service_->operator ()(std::move(request), response)) {
         return tateyama::loopback::buffered_response { response->session_id(), response->code(), response->body_head(),
-                response->body(), response->all_committed_data() };
+                response->body(), response->release_all_committed_data() };
     }
     throw std::invalid_argument("unknown service_id " + std::to_string(service_id));
 }
