@@ -83,7 +83,7 @@ public:
      * @throw std::invalid_argument if name is unknown
      * @note this function is thread-safe and multiple threads can invoke simultaneously.
      */
-    [[nodiscard]] const std::vector<std::string>& channel(std::string_view name) const;
+    [[nodiscard]] std::vector<std::string> const& channel(std::string_view name) const;
 
 private:
     std::size_t session_id_ { };

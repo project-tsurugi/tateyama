@@ -43,7 +43,7 @@ bool buffered_response::has_channel(std::string_view name) const noexcept {
     return data_map_.find(name) != data_map_.cend();
 }
 
-const std::vector<std::string>& buffered_response::channel(std::string_view name) const {
+std::vector<std::string> const& buffered_response::channel(std::string_view name) const {
     auto it = data_map_.find(name);
     if (it != data_map_.cend()) {
         return it->second;

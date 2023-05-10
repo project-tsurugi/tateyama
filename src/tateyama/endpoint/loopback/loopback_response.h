@@ -92,7 +92,7 @@ public:
     }
 
     // just for unit test
-    [[nodiscard]] const std::map<std::string, std::vector<std::string>, std::less<>>& all_committed_data() const noexcept {
+    [[nodiscard]] std::map<std::string, std::vector<std::string>, std::less<>> const& all_committed_data() const noexcept {
         return committed_data_map_;
     }
 

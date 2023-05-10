@@ -37,7 +37,7 @@ TEST_F(buffered_response_test, empty) {
     EXPECT_FALSE(response.has_channel(""));
     EXPECT_FALSE(response.has_channel("name"));
     try {
-        const auto &data = response.channel("name");
+        auto const &data = response.channel("name");
         FAIL();
         EXPECT_EQ(data.size(), 0);
     } catch (std::invalid_argument &ex) {
@@ -52,8 +52,8 @@ TEST_F(buffered_response_test, multi_channel) {
     const std::string body_head { "body_head" };
     const std::string body { "body message" };
     const std::vector<std::string> names = { "channelA", "channelB" };
-    const std::map<std::string, std::vector<std::string>, std::less<>> test_data_org { { names[0],
-            { "hello", "this is a pen" } }, { names[1], { "good night", "it's fine today" } } };
+    const std::map<std::string, std::vector<std::string>, std::less<>> test_data_org { { names[0], { "hello",
+            "this is a pen" } }, { names[1], { "good night", "it's fine today" } } };
     {
         auto test_data { test_data_org };
         buffered_response response { session_id, code, body_head, body, std::move(test_data) };
@@ -63,9 +63,9 @@ TEST_F(buffered_response_test, multi_channel) {
         EXPECT_EQ(response.body(), body);
         EXPECT_FALSE(response.has_channel(""));
         EXPECT_FALSE(response.has_channel("name"));
-        for (const auto& [name, data] : test_data) {
+        for (auto const& [name, data] : test_data) {
             EXPECT_TRUE(response.has_channel(name));
-            const auto &committed = response.channel(name);
+            auto const &committed = response.channel(name);
             ASSERT_EQ(data.size(), committed.size());
             for (int i = 0; i < data.size(); i++) {
                 EXPECT_EQ(data[i], committed[i]);

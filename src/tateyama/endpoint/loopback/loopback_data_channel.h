@@ -29,7 +29,7 @@ public:
     explicit loopback_data_channel(std::string_view name) :
             name_(name) {
     }
-    [[nodiscard]] const std::string& name() const noexcept {
+    [[nodiscard]] std::string const& name() const noexcept {
         return name_;
     }
 
@@ -37,7 +37,7 @@ public:
     tateyama::status release(tateyama::api::server::writer &writer) override;
 
     // just for unit test
-    [[nodiscard]] const std::vector<std::string>& committed_data() const noexcept {
+    [[nodiscard]] std::vector<std::string> const& committed_data() const noexcept {
         return committed_data_list_;
     }
 

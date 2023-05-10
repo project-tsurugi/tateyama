@@ -31,7 +31,7 @@ public:
     tateyama::status commit() override;
 
     // just for unit test
-    [[nodiscard]] const std::vector<std::string>& committed_data() const noexcept {
+    [[nodiscard]] std::vector<std::string> const& committed_data() const noexcept {
         return committed_data_list_;
     }
 
