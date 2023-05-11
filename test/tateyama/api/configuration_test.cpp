@@ -138,4 +138,15 @@ TEST_F(configuration_test, inequality_when_new_property_is_added) {
     auto orig = api::configuration::create_configuration();
     EXPECT_EQ(*orig, *cfg);
 }
+
+TEST_F(configuration_test, warn_on_invalid_property) {
+    std::string content{
+            "[sql]\n"
+            "stealing_wait=2\n"
+    };
+    std::stringstream ss0{content};
+    configuration::whole cfg{ss0};
+}
+
+
 }
