@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-#include <openssl/md5.h>
+#include <iomanip>
+#include <sstream>
 
 #include "tateyama/status/resource/bridge.h"
 
@@ -97,27 +98,11 @@ void bridge::add_shm_entry(std::size_t session_id, std::size_t index) {
 }
 
 void bridge::set_digest(const std::string& path_string) {
-    MD5_CTX mdContext;
-    unsigned int len = path_string.length();
-    std::array<unsigned char, MD5_DIGEST_LENGTH> digest{};
-
-    std::string s{};
-    s.resize(len + 1);
-    path_string.copy(s.data(), len + 1);
-    s.at(len) = '\0';
-    MD5_Init(&mdContext);
-    MD5_Update (&mdContext, s.data(), len);
-    MD5_Final(digest.data(), &mdContext);
-
-    digest_.resize(MD5_DIGEST_LENGTH * 2);
-    auto it = digest_.begin();
-    for(unsigned char c : digest) {
-        std::uint32_t n = c & 0xf0U;
-        n >>= 8U;
-        *(it++) = (n < 0xa) ? ('0' + n) : ('a' + (n - 0xa));
-        n = c & 0xfU;
-        *(it++) = (n < 0xa) ? ('0' + n) : ('a' + (n - 0xa));
-    }
+    auto hash = std::hash<std::string>{}(path_string);
+    std::ostringstream sstream;
+    sstream << std::hex << std::setfill('0')
+            << std::setw(sizeof(hash) * 2) << hash;
+    digest_ = sstream.str();
 }
 
 std::string_view bridge::label() const noexcept {
