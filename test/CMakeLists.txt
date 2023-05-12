@@ -66,10 +66,12 @@ file(GLOB SRCS
         "tateyama/datastore/*.cpp"
         "tateyama/endpoint/*.cpp"
         "tateyama/endpoint/ipc/*.cpp"
+        "tateyama/endpoint/loopback/*.cpp"
         "tateyama/task_scheduler/*.cpp"
         "tateyama/registry/*.cpp"
         "tateyama/common/*.cpp"
         "tateyama/framework/*.cpp"
+        "tateyama/loopback/*.cpp"
         "tateyama/server/*.cpp"
         "tateyama/utils/*.cpp"
         )
