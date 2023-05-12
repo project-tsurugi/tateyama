@@ -192,7 +192,7 @@ private:
     bool use_preferred_worker_for_current_thread_ = false;
     rational ratio_check_local_first_{1, 10};
     rational frequency_promoting_delayed_{1, 1000};
-    std::size_t stealing_wait_ = 0;
+    std::size_t stealing_wait_ = 1;
 };
 
 }

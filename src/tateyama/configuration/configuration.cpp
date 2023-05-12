@@ -28,7 +28,7 @@ static constexpr std::string_view default_configuration {  // NOLINT
         "enable_index_join=false\n"
         "stealing_enabled=true\n"
         "default_partitions=5\n"
-        "stealing_wait=0\n"
+        "stealing_wait=1\n"
 
     "[ipc_endpoint]\n"
         "database_name=tateyama\n"
