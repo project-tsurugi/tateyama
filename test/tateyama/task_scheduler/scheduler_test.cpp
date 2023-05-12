@@ -228,6 +228,7 @@ TEST_F(scheduler_test, delayed_tasks_only) {
     cfg.ratio_check_local_first({1, 2}); // sticky task and local queue task are processed alternately
     cfg.frequency_promoting_delayed({1, 3}); // checking 3 times, one delayed task is promoted
     cfg.lazy_worker(true);
+    cfg.stealing_wait(0);
     scheduler<task> sched{cfg, true};
 
     auto& w0 = sched.workers()[0];
@@ -261,6 +262,7 @@ TEST_F(scheduler_test, sticky_tasks_delayed_tasks) {
     cfg.thread_count(1);
     cfg.ratio_check_local_first({1, 2}); // sticky task and local queue task are processed alternately
     cfg.frequency_promoting_delayed({1, 6}); // when task is checked 6 times, one delayed task is promoted to local
+    cfg.stealing_wait(0);
     scheduler<task> sched{cfg, true};
 
     auto& w0 = sched.workers()[0];
@@ -398,6 +400,7 @@ TEST_F(scheduler_test, task_sticky_and_delayed_only) {
     cfg.ratio_check_local_first({1, 2}); // sticky task and local queue task are processed alternately
     cfg.frequency_promoting_delayed({1, 2}); // when task is checked 3 times, one delayed task is promoted
     cfg.lazy_worker(true);
+    cfg.stealing_wait(0);
     scheduler<task> sched{cfg, true};
 
     auto& w0 = sched.workers()[0];
@@ -423,4 +426,5 @@ TEST_F(scheduler_test, task_sticky_and_delayed_only) {
     EXPECT_TRUE(w0.process_next(ctx0, lq0, sq0));  // sticky delayed task is promoted and executed
     EXPECT_TRUE(executed00);
 }
+
 }
