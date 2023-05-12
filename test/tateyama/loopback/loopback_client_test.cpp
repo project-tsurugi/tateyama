@@ -117,7 +117,7 @@ TEST_F(loopback_client_test, single) {
     set_dbpath(*cfg);
     tateyama::loopback::loopback_client loopback;
     tateyama::framework::server sv { tateyama::framework::boot_mode::database_server, cfg };
-    add_core_components(sv);
+    sv.add_service(std::make_shared<framework::routing_service>());
     sv.add_service(std::make_shared<data_channel_service>(nchannel, nwriter, nloop));
     sv.add_endpoint(loopback.endpoint());
     ASSERT_TRUE(sv.start());
