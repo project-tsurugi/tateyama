@@ -125,14 +125,20 @@ public:
         basic_queue<task>& q,
         basic_queue<task>& sq
     ) {
+        auto last_successful = ctx.last_successful();
+        ctx.last_successful(true);
         if (try_local_and_sticky(ctx, q, sq)) {
             return true;
         }
         if (cfg_ && cfg_->stealing_enabled()) {
-            // try local and sticky more times before stealing
-            for(std::size_t i=0, n=cfg_->stealing_wait() * cfg_->thread_count(); i<n ; ++i) {
-                if(try_local_and_sticky(ctx, q, sq)) {
-                    return true;
+            if(! last_successful) {
+                // If last process_next is successful, try to steal as soon as possible.
+                // Otherwise, as a back-off (to avoid stealing too frequently),
+                // try local and sticky more times before stealing.
+                for(std::size_t i=0, n=cfg_->stealing_wait() * cfg_->thread_count(); i<n ; ++i) {
+                    if(try_local_and_sticky(ctx, q, sq)) {
+                        return true;
+                    }
                 }
             }
             bool stolen = steal_and_execute(ctx);
@@ -144,6 +150,7 @@ public:
             // If delayed task exists, pretend as if its small slice is executed so that worker won't suspend.
             return true;
         }
+        ctx.last_successful(false);
         return false;
     }
 
