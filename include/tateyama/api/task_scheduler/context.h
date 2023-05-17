@@ -99,34 +99,18 @@ public:
 
     /**
      * @brief setter to the stealing flag
-     * @param arg whether the task is being executed by stealing
+     * @param whether the task is being executed by stealing
      */
     void task_is_stolen(bool arg) noexcept {
         task_is_stolen_ = arg;
     }
 
-    /**
-     * @brief accessor to the last successful flag
-     * @return whether the last process_next execution was successful
-     */
-    [[nodiscard]] bool last_successful() const noexcept {
-        return last_successful_;
-    }
-
-    /**
-     * @brief setter to the last successful flag
-     * @param arg whether the last process_next execution was successful
-     */
-    void last_successful(bool arg) noexcept {
-        last_successful_ = arg;
-    }
 private:
     std::size_t index_{};
     std::size_t last_steal_from_{};
     rational count_check_local_first_{};
     rational count_promoting_delayed_{};
     bool task_is_stolen_{};
-    bool last_successful_{};
 };
 
 }
