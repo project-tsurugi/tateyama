@@ -165,6 +165,14 @@ public:
         stealing_wait_ = arg;
     }
 
+    [[nodiscard]] std::size_t task_polling_wait() const noexcept {
+        return task_polling_wait_;
+    }
+
+    void task_polling_wait(std::size_t arg) noexcept {
+        task_polling_wait_ = arg;
+    }
+
     friend inline std::ostream& operator<<(std::ostream& out, task_scheduler_cfg const& cfg) {
         return out << std::boolalpha <<
             "thread_count:" << cfg.thread_count() << " " <<
@@ -178,6 +186,7 @@ public:
             "ratio_check_local_first:" << cfg.ratio_check_local_first() << " " <<
             "frequency_promoting_delayed:" << cfg.frequency_promoting_delayed() << " " <<
             "stealing_wait:" << cfg.stealing_wait() << " " <<
+            "task_polling_wait:" << cfg.task_polling_wait() << " " <<
             "";
     }
 
@@ -193,6 +202,7 @@ private:
     rational ratio_check_local_first_{1, 10};
     rational frequency_promoting_delayed_{1, 1000};
     std::size_t stealing_wait_ = 1;
+    std::size_t task_polling_wait_ = 0;
 };
 
 }

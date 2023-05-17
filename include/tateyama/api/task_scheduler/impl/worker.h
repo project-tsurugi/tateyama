@@ -144,6 +144,9 @@ public:
             // If delayed task exists, pretend as if its small slice is executed so that worker won't suspend.
             return true;
         }
+        if(cfg_->task_polling_wait() > 0) {
+            std::this_thread::sleep_for(std::chrono::microseconds{cfg_->task_polling_wait()});
+        }
         return false;
     }
 
