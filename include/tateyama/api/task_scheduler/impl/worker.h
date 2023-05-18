@@ -134,6 +134,7 @@ public:
                 if(try_local_and_sticky(ctx, q, sq)) {
                     return true;
                 }
+                _mm_pause();
             }
             bool stolen = steal_and_execute(ctx);
             if(stolen) {
