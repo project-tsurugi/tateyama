@@ -54,6 +54,8 @@ class cache_align worker {
 public:
     using task = T;
 
+    using initializer_type = std::function<void(std::size_t)>;
+
     /**
      * @brief create empty object
      */
@@ -67,6 +69,7 @@ public:
      * @param initial_tasks reference initial tasks (ones submitted before starting scheduler)
      * @param stat worker stat information
      * @param cfg the scheduler configuration information
+     * @param initializer the function called on worker thread for initialization
      */
     worker(
         std::vector<basic_queue<task>>& queues,
@@ -74,7 +77,8 @@ public:
         std::vector<basic_queue<task>>& delayed_task_queues,
         std::vector<std::vector<task>>& initial_tasks,
         worker_stat& stat,
-        task_scheduler_cfg const* cfg = nullptr
+        task_scheduler_cfg const* cfg = nullptr,
+        initializer_type initializer = {}
     ) noexcept:
         cfg_(cfg),
         queues_(std::addressof(queues)),
@@ -82,7 +86,8 @@ public:
         delayed_task_queues_(std::addressof(delayed_task_queues)),
         initial_tasks_(std::addressof(initial_tasks)),
         stat_(std::addressof(stat)),
-        waiter_(cfg->lazy_worker() ? backoff_waiter() : backoff_waiter(0))
+        waiter_(cfg->lazy_worker() ? backoff_waiter() : backoff_waiter(0)),
+        initializer_(std::move(initializer))
     {}
 
     /**
@@ -111,6 +116,10 @@ public:
             q.push(std::move(t));
         }
         s.clear();
+
+        if(initializer_) {
+            initializer_(thread_id);
+        }
     }
 
     /**
@@ -183,6 +192,7 @@ private:
     std::vector<std::vector<task>>* initial_tasks_{};
     worker_stat* stat_{};
     backoff_waiter waiter_{0};
+    initializer_type initializer_{};
 
     std::size_t next(std::size_t current) {
         auto sz = queues_->size();

@@ -96,13 +96,17 @@ public:
      * @note this function is thread-safe. Multiple threads can safely call this function concurrently.
      */
     std::size_t preferred_worker_for_current_thread() {
-        constexpr static auto undefined = static_cast<std::size_t>(-1);
-        thread_local std::size_t index_for_this_thread = undefined;
-        if (index_for_this_thread == undefined) {
-            index_for_this_thread = next_worker();
-            DVLOG(log_debug) << "worker " << index_for_this_thread << " assigned for thread on core " << sched_getcpu();
-        }
-        return index_for_this_thread;
+        return set_preferred_worker_for_current_thread(undefined);
+    }
+
+    /**
+     * @brief setter of the preferred worker for the current thread
+     * @details scheduler has the preference on worker id determined by the caller's thread. This function sets
+     * the preference for the calling thread.
+     * @note this function is not thread-safe. Expected to be called only once at the worker initialization.
+     */
+    void initialize_preferred_worker_for_current_thread(std::size_t worker_index) {
+        set_preferred_worker_for_current_thread(worker_index);
     }
 
     /**
@@ -282,7 +286,9 @@ private:
         for(std::size_t i = 0; i < sz; ++i) {
             auto& ctx = contexts_.emplace_back(i);
             auto& worker = workers_.emplace_back(
-                queues_, sticky_task_queues_, delayed_task_queues_, initial_tasks_, worker_stats_[i], std::addressof(cfg_));
+                queues_, sticky_task_queues_, delayed_task_queues_, initial_tasks_, worker_stats_[i], std::addressof(cfg_), [this](std::size_t index) {
+                        this->initialize_preferred_worker_for_current_thread(index);
+                });
             if (! empty_thread_) {
                 threads_.emplace_back(i, std::addressof(cfg_), worker, ctx);
             }
@@ -312,6 +318,20 @@ private:
         while(backup.try_pop(t)) {
             q.push(std::move(t));
         }
+    }
+
+    constexpr static auto undefined = static_cast<std::size_t>(-1);
+    std::size_t set_preferred_worker_for_current_thread(std::size_t index = undefined) {
+        thread_local std::size_t index_for_this_thread = undefined;
+        if (index != undefined) {
+            index_for_this_thread = index;
+            return index_for_this_thread;
+        }
+        if (index_for_this_thread == undefined) {
+            index_for_this_thread = next_worker();
+            DVLOG(log_debug) << "worker " << index_for_this_thread << " assigned for thread on core " << sched_getcpu();
+        }
+        return index_for_this_thread;
     }
 
     static_assert(std::is_default_constructible_v<task>);
