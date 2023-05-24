@@ -18,6 +18,7 @@
 #include <future>
 #include <thread>
 #include <functional>
+#include <iostream>
 
 #include <tateyama/status.h>
 #include <tateyama/api/server/request.h>
@@ -39,6 +40,7 @@ class Worker {
           clean_up_(std::move(clean_up)) {
     }
     ~Worker() {
+        print_out();
         if(thread_.joinable()) thread_.join();
     }
 
@@ -66,6 +68,24 @@ class Worker {
     std::packaged_task<void()> task_;
     std::future<void> future_;
     std::thread thread_{};
+
+    // for measurement
+    std::chrono::nanoseconds duration_{};
+    std::size_t count_{};
+
+    void mark_end(std::chrono::nanoseconds duration) {
+        duration_ += duration;
+        count_++;
+    }
+    std::size_t count() {
+        return count_;
+    }
+    auto duration() {
+        return duration_;
+    }
+    void print_out() {
+        std::cout << "response stat: " << count_ << " : " << (duration_.count() + 500) / 1000 << std::endl;
+    }
 };
 
 }  // tateyama::server
