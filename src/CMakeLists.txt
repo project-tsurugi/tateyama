@@ -45,8 +45,13 @@ file(GLOB SOURCES
 
 if(TRACY_ENABLE)
     file(GLOB TRACY_CLIENT
-            "../third_party/tracy/TracyClient.cpp"
+            "../third_party/tracy/public/TracyClient.cpp"
             )
+    set_source_files_properties(
+        ${TRACY_CLIENT}
+        PROPERTIES
+        COMPILE_FLAGS "-Wno-missing-field-initializers -Wno-empty-body"
+    )
     list(APPEND SOURCES ${TRACY_CLIENT})
 endif()
 

@@ -16,8 +16,8 @@
 #pragma once
 
 #ifdef TRACY_ENABLE
-#include "../../third_party/tracy/Tracy.hpp"
-#include "../../third_party/tracy/common/TracySystem.hpp"
+#include "../../third_party/tracy/public/tracy/Tracy.hpp"
+#include "../../third_party/tracy/public/common/TracySystem.hpp"
 #define TRACY_SCOPED_ZONE TracyConcat(___tracy_scoped_zone_, __LINE__)
 #define trace_scope ZoneNamed(TRACY_SCOPED_ZONE, true)
 #define trace_scope_name(name) ZoneNamedN(TRACY_SCOPED_ZONE, name, true)
