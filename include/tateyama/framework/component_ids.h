@@ -36,6 +36,6 @@ constexpr inline component::id_type service_id_endpoint_broker = 1;
 constexpr inline component::id_type service_id_datastore = 2;
 constexpr inline component::id_type service_id_sql = 3;
 constexpr inline component::id_type service_id_fdw = 4;
-constexpr inline component::id_type service_id_kvs = 5;
+constexpr inline component::id_type service_id_remote_kvs = 5;
 
 }
