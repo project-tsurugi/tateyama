@@ -32,7 +32,7 @@ static constexpr std::string_view default_configuration {  // NOLINT
         "task_polling_wait=0\n"
         "tasked_write=true\n"
         "lightweight_job_level=0\n"
-        "enable_hybrid_scheduler=false\n"
+        "enable_hybrid_scheduler=true\n"
 
     "[ipc_endpoint]\n"
         "database_name=tateyama\n"
