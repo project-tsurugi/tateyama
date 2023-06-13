@@ -30,7 +30,9 @@ component::id_type bridge::id() const noexcept {
 bool bridge::setup(environment& env) {
     set_digest(env.configuration()->get_canonical_path().string());
 
-    std::string status_file_name = (digest_ + ".stat");
+    std::string status_file_name{file_prefix};
+    status_file_name += digest_;
+    status_file_name += ".stat";
     boost::interprocess::shared_memory_object::remove(status_file_name.c_str());
     shm_remover_ = std::make_unique<shm_remover>(status_file_name);
     try {
