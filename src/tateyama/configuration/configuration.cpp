@@ -35,7 +35,7 @@ static constexpr std::string_view default_configuration {  // NOLINT
         "enable_hybrid_scheduler=true\n"
 
     "[ipc_endpoint]\n"
-        "database_name=tateyama\n"
+        "database_name=tsurugi\n"
         "threads=104\n"
         "datachannel_buffer_size=64\n"
 
@@ -44,7 +44,7 @@ static constexpr std::string_view default_configuration {  // NOLINT
         "threads=104\n"
 
     "[fdw]\n"
-        "name=tateyama\n"
+        "name=tsurugi\n"
         "threads=104\n"
 
     "[datastore]\n"
