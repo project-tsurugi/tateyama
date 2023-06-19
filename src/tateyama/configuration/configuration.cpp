@@ -54,63 +54,16 @@ static constexpr std::string_view default_configuration {  // NOLINT
     "[cc]\n"
         "epoch_duration=40000\n"
 
+    "[system]\n"
+        "pid_directory = /tmp\n"
+
 };
 
 } // namespace details
 
 
-void whole::initialize(std::istream& content) {
-    // default configuration
-    try {
-        auto default_conf_string = std::string(details::default_configuration);
-        std::istringstream default_iss(default_conf_string);  // NOLINT
-        boost::property_tree::read_ini(default_iss, default_tree_);
-    } catch (boost::property_tree::ini_parser_error &e) {
-        LOG(ERROR) << "default tree: " << e.what();
-        BOOST_PROPERTY_TREE_THROW(e);  // NOLINT
-    }
-
-    try {
-        boost::property_tree::read_ini(content, property_tree_);
-    } catch (boost::property_tree::ini_parser_error &e) {
-        VLOG(log_info) << "error reading input, thus we use default property only. msg:" << e.what();
-    }
-    BOOST_FOREACH(const boost::property_tree::ptree::value_type &v, default_tree_) {
-        auto& dt = default_tree_.get_child(v.first);
-        if (property_file_exist_) {
-            try {
-                auto& pt = property_tree_.get_child(v.first);
-                map_.emplace(v.first, std::make_unique<section>(pt, dt));
-            } catch (boost::property_tree::ptree_error &e) {
-                VLOG(log_info) << "cannot find " << v.first << " section in the input, thus we use default property only.";
-                map_.emplace(v.first, std::make_unique<section>(dt));
-            }
-        } else {
-            map_.emplace(v.first, std::make_unique<section>(dt));
-        }
-    }
-    if (!check()) {
-        BOOST_PROPERTY_TREE_THROW(boost::property_tree::ptree_error("orphan entry error"));  // NOLINT
-    }
-}
-
-whole::whole(std::string_view file_name) {
-    file_ = boost::filesystem::path(std::string(file_name));
-    std::ifstream stream{};
-    if (boost::filesystem::exists(file_)) {
-        property_file_exist_ = true;
-        stream = std::ifstream{file_.c_str()};
-    } else {
-        VLOG(log_info) << "cannot find " << file_name << ", thus we use default property only.";
-    }
-    initialize(stream);
-}
-
-whole::whole(std::istream& content) :
-    // this constructor works as if property file exists and its content is provided as istream
-    property_file_exist_(true)
-{
-    initialize(content);
+std::string_view whole::default_property() {
+    return details::default_configuration;
 }
 
 } // tateyama::api::configuration
