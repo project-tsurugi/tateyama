@@ -26,6 +26,7 @@
 #include <tateyama/proto/test.pb.h>
 
 #include <gtest/gtest.h>
+#include <tateyama/utils/test_utils.h>
 
 namespace tateyama::framework {
 
@@ -37,7 +38,7 @@ public:
 };
 
 TEST_F(transactional_kvs_test, basic) {
-    auto cfg = api::configuration::create_configuration("");
+    auto cfg = api::configuration::create_configuration("", tateyama::test::default_configuration_for_tests);
     framework::environment env{boot_mode::database_server, cfg};
     transactional_kvs_resource kvs{};
     ASSERT_TRUE(kvs.setup(env));

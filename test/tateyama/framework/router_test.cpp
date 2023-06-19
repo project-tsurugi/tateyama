@@ -114,7 +114,7 @@ public:
 };
 
 TEST_F(router_test, basic) {
-    auto cfg = api::configuration::create_configuration("");
+    auto cfg = api::configuration::create_configuration("", tateyama::test::default_configuration_for_tests);
     set_dbpath(*cfg);
     server sv{boot_mode::database_server, cfg};
     auto svc0 = std::make_shared<test_service>();
@@ -143,7 +143,7 @@ TEST_F(router_test, basic) {
 }
 
 TEST_F(router_test, update_expiration_time) {
-    auto cfg = api::configuration::create_configuration();
+    auto cfg = api::configuration::create_configuration("", tateyama::test::default_configuration_for_tests);
     set_dbpath(*cfg);
     server sv{boot_mode::database_server, cfg};
     auto svc0 = std::make_shared<test_service>();

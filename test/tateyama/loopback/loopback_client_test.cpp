@@ -113,7 +113,7 @@ TEST_F(loopback_client_test, single) {
     const int nwriter = 5;
     const int nloop = 10;
     //
-    auto cfg = api::configuration::create_configuration("");
+    auto cfg = api::configuration::create_configuration("", tateyama::test::default_configuration_for_tests);
     set_dbpath(*cfg);
     tateyama::loopback::loopback_client loopback;
     tateyama::framework::server sv { tateyama::framework::boot_mode::database_server, cfg };
@@ -154,7 +154,7 @@ TEST_F(loopback_client_test, multi_request) {
     const int nloop = 10;
     const int nrequest = 10;
     //
-    auto cfg = api::configuration::create_configuration("");
+    auto cfg = api::configuration::create_configuration("", tateyama::test::default_configuration_for_tests);
     set_dbpath(*cfg);
     tateyama::loopback::loopback_client loopback;
     tateyama::framework::server sv { tateyama::framework::boot_mode::database_server, cfg };
@@ -193,7 +193,7 @@ TEST_F(loopback_client_test, unknown_service_id) {
     const std::size_t service_id = data_channel_service::tag;
     const std::string request { "loopback_test" };
     //
-    auto cfg = api::configuration::create_configuration("");
+    auto cfg = api::configuration::create_configuration("", tateyama::test::default_configuration_for_tests);
     set_dbpath(*cfg);
     tateyama::loopback::loopback_client loopback;
     tateyama::framework::server sv { tateyama::framework::boot_mode::database_server, cfg };

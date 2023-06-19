@@ -16,6 +16,7 @@
 #include <tateyama/api/configuration.h>
 
 #include <gtest/gtest.h>
+#include <tateyama/utils/test_utils.h>
 
 namespace tateyama::api {
 
@@ -29,7 +30,7 @@ public:
 using namespace std::string_view_literals;
 
 TEST_F(configuration_test, add_new_property) {
-    auto cfg = api::configuration::create_configuration();
+    auto cfg = api::configuration::create_configuration("", tateyama::test::default_configuration_for_tests);
     auto section = cfg->get_section("datastore"); // any section name is fine for testing
     ASSERT_TRUE(section);
     ASSERT_TRUE(section->set("test", "value"));
@@ -48,7 +49,7 @@ TEST_F(configuration_test, add_new_property) {
 }
 
 TEST_F(configuration_test, add_new_property_bool) {
-    auto cfg = api::configuration::create_configuration();
+    auto cfg = api::configuration::create_configuration("", tateyama::test::default_configuration_for_tests);
     auto section = cfg->get_section("datastore"); // any section name is fine for testing
     ASSERT_TRUE(section);
     ASSERT_TRUE(section->set("test", "true"));
@@ -62,7 +63,7 @@ TEST_F(configuration_test, add_new_property_bool) {
 }
 
 TEST_F(configuration_test, add_new_property_size_t) {
-    auto cfg = api::configuration::create_configuration();
+    auto cfg = api::configuration::create_configuration("", tateyama::test::default_configuration_for_tests);
     auto section = cfg->get_section("datastore"); // any section name is fine for testing
     ASSERT_TRUE(section);
     ASSERT_TRUE(section->set("test", "100"));
@@ -80,7 +81,7 @@ TEST_F(configuration_test, add_new_property_size_t) {
 }
 
 TEST_F(configuration_test, add_same_name_property_to_different_section) {
-    auto cfg = api::configuration::create_configuration();
+    auto cfg = api::configuration::create_configuration("", tateyama::test::default_configuration_for_tests);
     auto section0 = cfg->get_section("datastore"); // any section name is fine for testing
     auto section1 = cfg->get_section("sql"); // any section name is fine for testing
     ASSERT_TRUE(section0);
@@ -99,7 +100,7 @@ TEST_F(configuration_test, property_file_missing) {
     // even on invalid path, configuration object is created with default values
     auto cfg = api::configuration::create_configuration("/dummy/file/path");
     ASSERT_TRUE(cfg);
-    auto default_obj = api::configuration::create_configuration();
+    auto default_obj = api::configuration::create_configuration("", tateyama::test::default_configuration_for_tests);
     ASSERT_EQ(*default_obj, *cfg);
 }
 
@@ -130,12 +131,12 @@ TEST_F(configuration_test, equality_of_objs_created_from_same_content) {
 }
 
 TEST_F(configuration_test, inequality_when_new_property_is_added) {
-    auto cfg = api::configuration::create_configuration();
+    auto cfg = api::configuration::create_configuration("", tateyama::test::default_configuration_for_tests);
     auto section = cfg->get_section("datastore"); // any section name is fine for testing
     ASSERT_TRUE(section);
     ASSERT_TRUE(section->set("test", "true"));
 
-    auto orig = api::configuration::create_configuration();
+    auto orig = api::configuration::create_configuration("", tateyama::test::default_configuration_for_tests);
     EXPECT_EQ(*orig, *cfg);
 }
 

@@ -206,11 +206,6 @@ public:
         return true;
     }
 
-    /**
-     * @brief default property (should be moved to tateyama-bootstrap)
-     */
-    static std::string_view default_property();
-
 private:
     boost::property_tree::ptree property_tree_;
     boost::property_tree::ptree default_tree_;
@@ -247,6 +242,8 @@ private:
         }
         return rv;
     }
+
+    static std::string_view default_property();
 
     void initialize(std::istream& content, std::string_view default_property) {
         auto default_conf_string = std::string(default_property);
@@ -297,9 +294,20 @@ inline bool operator!=(whole const& a, whole const& b) noexcept {
     return !(a == b);
 }
 
-inline std::shared_ptr<whole> create_configuration(std::string_view file_name = "", std::string_view default_property = whole::default_property()) {
+inline std::shared_ptr<whole> create_configuration(std::string_view file_name, std::string_view default_property) {
     try {
         return std::make_shared<whole>(file_name, default_property);
+    } catch (boost::property_tree::ptree_error &e) {
+        LOG(ERROR) << "cannot create configuration, file name is '" << file_name << "'.";
+        return nullptr;
+    }
+}
+
+// for backward compatibility
+// remove this when src/tateyama/configuration/configuration.cpp is moved to somewhere in tateyama-bootstrap
+inline std::shared_ptr<whole> create_configuration(std::string_view file_name = "") {
+    try {
+        return std::make_shared<whole>(file_name);
     } catch (boost::property_tree::ptree_error &e) {
         LOG(ERROR) << "cannot create configuration, file name is '" << file_name << "'.";
         return nullptr;

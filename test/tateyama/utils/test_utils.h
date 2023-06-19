@@ -49,4 +49,42 @@ protected:
     temporary_folder temporary_{};
 };
 
+static constexpr std::string_view default_configuration_for_tests {  // NOLINT
+    "[sql]\n"
+        "thread_pool_size=5\n"
+        "lazy_worker=false\n"
+        "enable_index_join=false\n"
+        "stealing_enabled=true\n"
+        "default_partitions=5\n"
+        "stealing_wait=1\n"
+        "task_polling_wait=0\n"
+        "tasked_write=true\n"
+        "lightweight_job_level=0\n"
+        "enable_hybrid_scheduler=true\n"
+
+    "[ipc_endpoint]\n"
+        "database_name=tsurugi\n"
+        "threads=104\n"
+        "datachannel_buffer_size=64\n"
+
+    "[stream_endpoint]\n"
+        "port=12345\n"
+        "threads=104\n"
+
+    "[fdw]\n"
+        "name=tsurugi\n"
+        "threads=104\n"
+
+    "[datastore]\n"
+        "log_location=\n"
+        "logging_max_parallelism=112\n"
+
+    "[cc]\n"
+        "epoch_duration=40000\n"
+
+    "[system]\n"
+        "pid_directory = /tmp\n"
+
+};
+
 }
