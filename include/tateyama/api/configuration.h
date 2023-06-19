@@ -128,19 +128,19 @@ public:
         if (boost::filesystem::exists(file_)) {
             property_file_exist_ = true;
             stream = std::ifstream{file_.c_str()};
+            initialize(stream, default_property);
         } else {
             VLOG(log_info) << "cannot find " << file_name << ", thus we use default property only.";
+            std::stringstream empty_ss{};
+            initialize(empty_ss, default_property);
         }
-        initialize(stream, default_property);
     }
     // this constructor works as if property file exists and its content is provided as istream
     whole(std::istream& content, std::string_view default_property) : property_file_exist_(true) {
         initialize(content, default_property);
     }
-    explicit whole(std::string_view file_name) : whole(file_name, default_property()) {
-    }
-    explicit whole(std::istream& content) : whole(content, default_property()) {
-    }
+    explicit whole(std::string_view file_name) : whole(file_name, "") {};
+    explicit whole(std::istream& content) : whole(content, "") {};
 
     ~whole() = default;
 
@@ -247,10 +247,8 @@ private:
 
     void initialize(std::istream& content, std::string_view default_property) {
         auto default_conf_string = std::string(default_property);
-        if (!default_conf_string.empty()) {
-            std::istringstream default_iss(default_conf_string);  // NOLINT
-            boost::property_tree::read_ini(default_iss, default_tree_);
-        }
+        std::istringstream default_iss(default_conf_string);  // NOLINT
+        boost::property_tree::read_ini(default_iss, default_tree_);
 
         try {
             boost::property_tree::read_ini(content, property_tree_);
@@ -294,20 +292,9 @@ inline bool operator!=(whole const& a, whole const& b) noexcept {
     return !(a == b);
 }
 
-inline std::shared_ptr<whole> create_configuration(std::string_view file_name, std::string_view default_property) {
+inline std::shared_ptr<whole> create_configuration(std::string_view file_name = "", std::string_view default_property = "") {
     try {
         return std::make_shared<whole>(file_name, default_property);
-    } catch (boost::property_tree::ptree_error &e) {
-        LOG(ERROR) << "cannot create configuration, file name is '" << file_name << "'.";
-        return nullptr;
-    }
-}
-
-// for backward compatibility
-// remove this when src/tateyama/configuration/configuration.cpp is moved to somewhere in tateyama-bootstrap
-inline std::shared_ptr<whole> create_configuration(std::string_view file_name = "") {
-    try {
-        return std::make_shared<whole>(file_name);
     } catch (boost::property_tree::ptree_error &e) {
         LOG(ERROR) << "cannot create configuration, file name is '" << file_name << "'.";
         return nullptr;

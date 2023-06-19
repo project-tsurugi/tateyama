@@ -98,7 +98,7 @@ TEST_F(configuration_test, add_same_name_property_to_different_section) {
 
 TEST_F(configuration_test, property_file_missing) {
     // even on invalid path, configuration object is created with default values
-    auto cfg = api::configuration::create_configuration("/dummy/file/path");
+    auto cfg = api::configuration::create_configuration("/dummy/file/path", tateyama::test::default_configuration_for_tests);
     ASSERT_TRUE(cfg);
     auto default_obj = api::configuration::create_configuration("", tateyama::test::default_configuration_for_tests);
     ASSERT_EQ(*default_obj, *cfg);
@@ -110,7 +110,7 @@ TEST_F(configuration_test, create_from_input_stream) {
         "log_location=LOCATION\n"
     };
     std::stringstream ss0{content};
-    configuration::whole cfg{ss0};
+    configuration::whole cfg{ss0, tateyama::test::default_configuration_for_tests};
     auto section = cfg.get_section("datastore");
     ASSERT_TRUE(section);
     auto value = section->get<std::string>("log_location");
@@ -124,9 +124,9 @@ TEST_F(configuration_test, equality_of_objs_created_from_same_content) {
         "log_location=LOCATION\n"
     };
     std::stringstream ss0{content};
-    configuration::whole cfg{ss0};
+    configuration::whole cfg{ss0, tateyama::test::default_configuration_for_tests};
     std::stringstream ss1{content};
-    configuration::whole exp{ss1};
+    configuration::whole exp{ss1, tateyama::test::default_configuration_for_tests};
     EXPECT_EQ(exp, cfg);
 }
 
