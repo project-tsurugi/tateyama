@@ -23,6 +23,7 @@
 #include <tateyama/framework/environment.h>
 
 #include <gtest/gtest.h>
+#include <tateyama/utils/test_utils.h>
 
 namespace tateyama::framework {
 
@@ -87,7 +88,7 @@ public:
 };
 
 TEST_F(framework_test, server_api) {
-    auto cfg = api::configuration::create_configuration();
+    auto cfg = api::configuration::create_configuration("", tateyama::test::default_configuration_for_tests);
     server sv{boot_mode::database_server, cfg};
     sv.add_resource(std::make_shared<test_resource>());
     sv.add_service(std::make_shared<test_service>());
@@ -98,7 +99,7 @@ TEST_F(framework_test, server_api) {
 
 TEST_F(framework_test, resource_setup_failure) {
     // verify other components are shutdown when final resource failed to setup
-    auto cfg = api::configuration::create_configuration();
+    auto cfg = api::configuration::create_configuration("", tateyama::test::default_configuration_for_tests);
     server sv{boot_mode::database_server, cfg};
     add_core_components(sv);
     auto res = std::make_shared<test_resource>();
@@ -113,7 +114,7 @@ TEST_F(framework_test, resource_setup_failure) {
 
 TEST_F(framework_test, resource_start_failure) {
     // verify other components are shutdown when final resource failed to start
-    auto cfg = api::configuration::create_configuration();
+    auto cfg = api::configuration::create_configuration("", tateyama::test::default_configuration_for_tests);
     server sv{boot_mode::database_server, cfg};
     add_core_components(sv);
     auto res = std::make_shared<test_resource>();
@@ -128,7 +129,7 @@ TEST_F(framework_test, resource_start_failure) {
 
 TEST_F(framework_test, server_setup_failure) {
     // verify other components are shutdown when final service failed to setup
-    auto cfg = api::configuration::create_configuration();
+    auto cfg = api::configuration::create_configuration("", tateyama::test::default_configuration_for_tests);
     server sv{boot_mode::database_server, cfg};
     add_core_components(sv);
     sv.add_resource(std::make_shared<test_resource>());
@@ -142,7 +143,7 @@ TEST_F(framework_test, server_setup_failure) {
 
 TEST_F(framework_test, server_start_failure) {
     // verify other components are shutdown when final service failed to start
-    auto cfg = api::configuration::create_configuration();
+    auto cfg = api::configuration::create_configuration("", tateyama::test::default_configuration_for_tests);
     server sv{boot_mode::database_server, cfg};
     add_core_components(sv);
     sv.add_resource(std::make_shared<test_resource>());

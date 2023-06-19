@@ -99,7 +99,7 @@ public:
 };
 
 TEST_F(server_test, basic) {
-    auto cfg = api::configuration::create_configuration("");
+    auto cfg = api::configuration::create_configuration("", tateyama::test::default_configuration_for_tests);
     set_dbpath(*cfg);
     server sv{boot_mode::database_server, cfg};
     auto res0 = std::make_shared<test_resource0>();
@@ -126,7 +126,7 @@ TEST_F(server_test, basic) {
 }
 
 TEST_F(server_test, add_core_components) {
-    auto cfg = api::configuration::create_configuration("");
+    auto cfg = api::configuration::create_configuration("", tateyama::test::default_configuration_for_tests);
     set_dbpath(*cfg);
     server sv{boot_mode::database_server, cfg};
     auto res0 = std::make_shared<test_resource0>();

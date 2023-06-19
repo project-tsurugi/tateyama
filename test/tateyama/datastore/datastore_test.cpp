@@ -96,7 +96,7 @@ TEST_F(datastore_test, basic) {
     if (auto rc = ::sharksfin::implementation_id(&name); rc == ::sharksfin::StatusCode::OK && name == "memory") {
         GTEST_SKIP() << "tateyama-memory doesn't support datastore";
     }
-    auto cfg = api::configuration::create_configuration("");
+    auto cfg = api::configuration::create_configuration("", tateyama::test::default_configuration_for_tests);
     set_dbpath(*cfg);
     framework::server sv{framework::boot_mode::database_server, cfg};
     add_core_components(sv);
@@ -132,7 +132,7 @@ TEST_F(datastore_test, basic) {
 
 #if 0
 TEST_F(datastore_test, test_connectivity_with_limestone) {
-    auto cfg = api::configuration::create_configuration("");
+    auto cfg = api::configuration::create_configuration("", tateyama::test::default_configuration_for_tests);
     set_dbpath(*cfg);
     framework::server sv{framework::boot_mode::database_server, cfg};
     add_core_components(sv);

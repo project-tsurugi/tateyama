@@ -27,7 +27,7 @@ namespace tateyama::api::endpoint::loopback {
 class loopback_test_base: public ::testing::Test, public test::test_utils {
     void SetUp() override {
         temporary_.prepare();
-        cfg_ = tateyama::api::configuration::create_configuration("");
+        cfg_ = tateyama::api::configuration::create_configuration("", tateyama::test::default_configuration_for_tests);
         set_dbpath(*cfg_);
     }
     void TearDown() override {
