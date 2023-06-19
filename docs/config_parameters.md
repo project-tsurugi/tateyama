@@ -68,7 +68,7 @@ parameter=value
 
 |パラメーター名 | 型 | 値 |備考|
 |---:| :---: | :--- |---|
-|database_name | 文字列 | ipc_endpointに接続する際のurl名、デフォルトはtateyama（参）この文字列は/dev/shmに作成されるファイル名のprefixとして使われる。
+|database_name | 文字列 | ipc_endpointに接続する際のurl名、デフォルトはtsurugi（参）この文字列は/dev/shmに作成されるファイル名のprefixとして使われる。
 |threads | 整数 | ipc_endpointの最大同時接続数、デフォルトは104。
 |datachannel_buffer_size | 整数 | resultsetのbuffer size、単位はKB、デフォルトは64。ipcで扱える最大のraw sizeはdatachannel_buffer_size-4。
 
@@ -95,7 +95,7 @@ parameter=value
 
 |パラメーター名 | 型 | 値 |備考|
 |---:| :---: | :--- |---|
-|name | 整数 | 文字列 | ogawayamaと接続する際のurl名、default値はtateyama（参）この文字列は/dev/shmに作成されるファイル名のprefixとして使われる
+|name | 整数 | 文字列 | ogawayamaと接続する際のurl名、default値はtsurugi（参）この文字列は/dev/shmに作成されるファイル名のprefixとして使われる
 |threads | 整数 | fdwの最大同時接続数、デフォルトは104
 
 ## sessionセクション
