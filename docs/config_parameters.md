@@ -68,9 +68,9 @@ parameter=value
 
 |パラメーター名 | 型 | 値 |備考|
 |---:| :---: | :--- |---|
-|database_name | 文字列 | ipc_endpointに接続する際のurl名、デフォルトはtsurugi（参）この文字列は/dev/shmに作成されるファイル名のprefixとして使われる。
+|database_name | 文字列 | ipc_endpointに接続する際のurl名、デフォルトはtsurugi。 | この文字列は/dev/shmに作成されるファイル名のprefixとして使われる。
 |threads | 整数 | ipc_endpointの最大同時接続数、デフォルトは104。
-|datachannel_buffer_size | 整数 | resultsetのbuffer size、単位はKB、デフォルトは64。ipcで扱える最大のraw sizeはdatachannel_buffer_size-4。
+|datachannel_buffer_size | 整数 | resultsetのbuffer size、単位はKB、デフォルトは64。 | ipcで扱える最大のraw sizeはdatachannel_buffer_size-4B。
 
 ## stream_endpointセクション
 
@@ -95,7 +95,7 @@ parameter=value
 
 |パラメーター名 | 型 | 値 |備考|
 |---:| :---: | :--- |---|
-|name | 整数 | 文字列 | ogawayamaと接続する際のurl名、default値はtsurugi（参）この文字列は/dev/shmに作成されるファイル名のprefixとして使われる
+|name | 文字列 | ogawayamaと接続する際のurl名、default値はtsurugi。 | この文字列は/dev/shmに作成されるファイル名のprefixとして使われる。
 |threads | 整数 | fdwの最大同時接続数、デフォルトは104
 
 ## sessionセクション
@@ -111,3 +111,16 @@ parameter=value
 |enable_timeout | ブール(true/false) | セッションの自動タイムアウトの有効性、デフォルト値はtrue
 |refresh_timeout | 整数 | 通信によるセッションのライフタイム延長時間(秒)、デフォルト値は300
 |max_refresh_timeout | 整数 | 明示的な要求によるセッションのライフタイム延長時間の最大値(秒)、デフォルト値は10800
+
+## systemセクション
+
+セクション名
+  - system
+
+対象コンポーネント
+  - tateyama-bootstrap
+
+|パラメーター名 | 型 | 値 |備考|
+|---:| :---: | :--- |---|
+|pid_directory | 文字列 | .pidファイル([プロセスの排他制御について](https://github.com/project-tsurugi/tateyama/blob/master/docs/process-mutex-ja.md)を参照)を作成する一時ディレクトリを指定する、デフォルト値は/tmp。
+
