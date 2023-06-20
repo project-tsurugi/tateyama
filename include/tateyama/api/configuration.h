@@ -38,8 +38,8 @@ namespace tateyama::api::configuration {
 
 class section {
 public:
-    section (boost::property_tree::ptree& pt, boost::property_tree::ptree& dt) : property_tree_(pt), default_tree_(dt) {}
-    explicit section (boost::property_tree::ptree& dt) : property_tree_(dt), default_tree_(dt) {}
+    section (boost::property_tree::ptree& pt, boost::property_tree::ptree& dt) : property_tree_(pt), default_tree_(dt), default_valid_(true) {}
+    explicit section (boost::property_tree::ptree& dt) : property_tree_(dt), default_tree_(dt), default_valid_(false) {}
     template<typename T>
     [[nodiscard]] inline std::optional<T> get(std::string_view n) const {
         auto name = std::string(n);
@@ -48,15 +48,17 @@ public:
             VLOG(log_trace) << "property " << name << " has found in tsurugi.ini and is " << rv;
             return rv;
         }
-        if (auto it = default_tree_.find(name) ; it != default_tree_.not_found()) {
-            auto value = it->second.data();
-            if (!value.empty()) {
-                auto rv = boost::lexical_cast<T>(value);
-                VLOG(log_trace) << "property " << name << " has found in default and is " << rv;
-                return rv;
+        if (default_valid_) {
+            if (auto it = default_tree_.find(name) ; it != default_tree_.not_found()) {
+                auto value = it->second.data();
+                if (!value.empty()) {
+                    auto rv = boost::lexical_cast<T>(value);
+                    VLOG(log_trace) << "property " << name << " has found in default and is " << rv;
+                    return rv;
+                }
+                VLOG(log_trace) << "property " << name << " exists but the value is empty";
+                return std::nullopt;
             }
-            VLOG(log_trace) << "property " << name << " exists but the value is empty";
-            return std::nullopt;
         }
 
         // To support hidden configuration parameter, comment out the error msg for now.
@@ -91,6 +93,7 @@ public:
 private:
     boost::property_tree::ptree& property_tree_;
     boost::property_tree::ptree& default_tree_;
+    bool default_valid_;
 };
 
 /**
@@ -139,6 +142,7 @@ public:
     whole(std::istream& content, std::string_view default_property) : property_file_exist_(true) {
         initialize(content, default_property);
     }
+    // default_property can be empty only for test purpose
     explicit whole(std::string_view file_name) : whole(file_name, "") {};
     explicit whole(std::istream& content) : whole(content, "") {};
 
@@ -212,11 +216,12 @@ private:
     boost::filesystem::path file_{};
     bool property_file_exist_{};
     bool check_done_{};
+    bool default_valid_{};
 
     std::unordered_map<std::string, std::unique_ptr<section>> map_;
 
     bool check() {
-        if (!property_file_exist_ || check_done_) {
+        if (!property_file_exist_ || check_done_ || !default_valid_) {
             return true;
         }
         check_done_ = true;
@@ -247,30 +252,37 @@ private:
 
     void initialize(std::istream& content, std::string_view default_property) {
         auto default_conf_string = std::string(default_property);
-        std::istringstream default_iss(default_conf_string);  // NOLINT
-        boost::property_tree::read_ini(default_iss, default_tree_);
+        if (!default_conf_string.empty()) {
+            std::istringstream default_iss(default_conf_string);  // NOLINT
+            boost::property_tree::read_ini(default_iss, default_tree_);
+            default_valid_ = true;
+        } else {
+            default_valid_ = false;
+        }
 
         try {
             boost::property_tree::read_ini(content, property_tree_);
         } catch (boost::property_tree::ini_parser_error &e) {
             VLOG(log_info) << "error reading input, thus we use default property only. msg:" << e.what();
         }
-        BOOST_FOREACH(const boost::property_tree::ptree::value_type &v, default_tree_) {
-            auto& dt = default_tree_.get_child(v.first);
-            if (property_file_exist_) {
-                try {
-                    auto& pt = property_tree_.get_child(v.first);
-                    map_.emplace(v.first, std::make_unique<section>(pt, dt));
-                } catch (boost::property_tree::ptree_error &e) {
-                    VLOG(log_info) << "cannot find " << v.first << " section in the input, thus we use default property only.";
+        if (default_valid_) {
+            BOOST_FOREACH(const boost::property_tree::ptree::value_type &v, default_tree_) {
+                auto& dt = default_tree_.get_child(v.first);
+                if (property_file_exist_) {
+                    try {
+                        auto& pt = property_tree_.get_child(v.first);
+                        map_.emplace(v.first, std::make_unique<section>(pt, dt));
+                    } catch (boost::property_tree::ptree_error &e) {
+                        VLOG(log_info) << "cannot find " << v.first << " section in the input, thus we use default property only.";
+                        map_.emplace(v.first, std::make_unique<section>(dt));
+                    }
+                } else {
                     map_.emplace(v.first, std::make_unique<section>(dt));
                 }
-            } else {
-                map_.emplace(v.first, std::make_unique<section>(dt));
             }
-        }
-        if (!check()) {
-            BOOST_PROPERTY_TREE_THROW(boost::property_tree::ptree_error("orphan entry error"));  // NOLINT
+            if (!check()) {
+                BOOST_PROPERTY_TREE_THROW(boost::property_tree::ptree_error("orphan entry error"));  // NOLINT
+            }
         }
     }
 
