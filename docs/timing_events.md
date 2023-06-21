@@ -9,7 +9,7 @@ tateyamaがログメッセージに出力するsession開始・終了タイミ�
 
 ## タイミングイベント
 
-tateyamaは下記のイベントをverbose log level 35 (tateyama::og_debug_timing_event)で出力する
+tateyamaは下記のイベントをverbose log level 35 (tateyama::log_debug_timing_event)で出力する
 
 
 |  ログプレフィックス  |  イベント内容  | 備考 |
