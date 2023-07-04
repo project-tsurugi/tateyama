@@ -76,6 +76,20 @@ public:
         return active_;
     }
 
+    /**
+     * @brief wait initialization of the thread
+     * @details if init() is implemented by thread body callable, it will be called on the newly created thread
+     * at the construction of this object. This function is to synchronously wait for the init() call.
+     * This is useful especially when multiple thread_control objects share an object and initialization needs to be
+     * done before any of the thread_control is activated.
+     */
+    void wait_initialization() noexcept {
+        std::unique_lock lk{initialized_cv_->mutex_};
+        initialized_cv_->cv_.wait(lk, [this]() {
+            return initialized_;
+        });
+    }
+
     void activate() noexcept {
         {
             std::unique_lock lk{sleep_cv_->mutex_};
@@ -98,6 +112,8 @@ public:
 private:
     std::unique_ptr<cv> sleep_cv_{std::make_unique<cv>()};
     bool active_{};
+    std::unique_ptr<cv> initialized_cv_{std::make_unique<cv>()};
+    bool initialized_{};
 
     // thread must come last since the construction starts new thread, which accesses the member variables above.
     boost::thread origin_{};
@@ -137,6 +153,11 @@ private:
             if constexpr (has_init_v<F>) {
                 callable.init(thread_id);
             }
+            {
+                std::unique_lock lk{initialized_cv_->mutex_};
+                initialized_ = true;
+            }
+            initialized_cv_->cv_.notify_all();
             {
                 std::unique_lock lk{sleep_cv_->mutex_};
                 sleep_cv_->cv_.wait(lk, [&] {

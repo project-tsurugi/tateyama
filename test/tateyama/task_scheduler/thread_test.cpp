@@ -16,9 +16,11 @@
 #include <tateyama/api/task_scheduler/impl/thread_control.h>
 
 #include <regex>
+#include <xmmintrin.h>
 #include <gtest/gtest.h>
 
 #include <thread>
+#include <future>
 
 namespace tateyama::task_scheduler {
 
@@ -134,6 +136,51 @@ TEST_F(thread_test, modifying_thread_input) {
         t.join();
         EXPECT_EQ(1, x);
     }
+}
+
+TEST_F(thread_test, wait_initialization) {
+    // test wait_initialization() correctly wait completion of init()
+    struct callable {
+        explicit callable(std::atomic_bool& initialized) :
+            initialized_(initialized)
+        {}
+
+        void init(std::size_t index) {
+            (void) index;
+            while(! initialized_) {
+                _mm_pause();
+            }
+        }
+        void set_initialized() {
+            initialized_ = true;
+        }
+        std::atomic_bool& initialized_;
+        void operator()() {
+            // no-op
+        }
+    };
+
+    std::atomic_bool initialized = false;
+    callable c{initialized};
+    task_scheduler_cfg cfg{};
+    thread_control t{0, &cfg, c};
+    std::this_thread::sleep_for(1ms);
+    ASSERT_FALSE(c.initialized_);
+    std::atomic_bool wait_completed = false;
+    auto f = std::async(std::launch::async, [&]() {
+        t.wait_initialization();
+        wait_completed = true;
+    });
+    std::this_thread::sleep_for(1ms);
+    ASSERT_FALSE(c.initialized_);
+    ASSERT_FALSE(wait_completed);
+    c.set_initialized();
+    f.get();
+    ASSERT_TRUE(c.initialized_);
+    ASSERT_TRUE(wait_completed);
+
+    t.activate();
+    t.join();
 }
 
 }

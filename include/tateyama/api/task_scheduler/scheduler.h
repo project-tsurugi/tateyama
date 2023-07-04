@@ -160,6 +160,9 @@ public:
      */
     void start() {
         for(auto&& t : threads_) {
+            t.wait_initialization();
+        }
+        for(auto&& t : threads_) {
             t.activate();
         }
 
