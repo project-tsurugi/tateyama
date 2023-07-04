@@ -135,6 +135,8 @@ private:
     std::shared_ptr<stream_data_channel> data_channel_{};
 
     std::size_t session_id_{};
+
+    void server_diagnostics(std::string_view diagnostic_record);
 };
 
 }  // tateyama::common::stream
