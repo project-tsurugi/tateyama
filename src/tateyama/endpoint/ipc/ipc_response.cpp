@@ -19,6 +19,7 @@
 #include <glog/logging.h>
 
 #include <tateyama/logging.h>
+#include <tateyama/proto/diagnostics.pb.h>
 
 #include "ipc_response.h"
 #include "../common/endpoint_proto_utils.h"
@@ -57,6 +58,20 @@ tateyama::status ipc_response::body_head(std::string_view body_head) {
     return tateyama::status::ok;
 }
 
+void ipc_response::server_diagnostics(std::string_view diagnostic_record) {
+    VLOG_LP(log_trace) << static_cast<const void*>(&server_wire_);  //NOLINT
+
+    std::stringstream ss{};
+    endpoint::common::header_content arg{};
+    arg.session_id_ = session_id_;
+    if(! endpoint::common::append_response_header(ss, diagnostic_record, arg, tateyama::proto::framework::response::Header::SERVER_DIAGNOSTICS)) {
+        LOG_LP(ERROR) << "error formatting response message";
+        return;
+    }
+    auto s = ss.str();
+    server_wire_.get_response_wire().write(s.data(), response_header(index_, s.length(), RESPONSE_BODY));
+}
+
 void ipc_response::code(tateyama::api::server::response_code code) {
     VLOG_LP(log_trace) << static_cast<const void*>(&server_wire_);  //NOLINT
 
@@ -64,7 +79,23 @@ void ipc_response::code(tateyama::api::server::response_code code) {
 }
 
 tateyama::status ipc_response::acquire_channel(std::string_view name, std::shared_ptr<tateyama::api::server::data_channel>& ch) {
-    data_channel_ = std::make_shared<ipc_data_channel>(server_wire_.create_resultset_wires(name));
+    try {
+        data_channel_ = std::make_shared<ipc_data_channel>(server_wire_.create_resultset_wires(name));
+    } catch (std::runtime_error &ex) {
+        LOG_LP(ERROR) << ex.what();
+
+        ::tateyama::proto::diagnostics::Record record{};
+        record.set_code(::tateyama::proto::diagnostics::Code::OUT_OF_MEMORY);
+        record.set_message("error in acquire_channel");
+        std::string s{};
+        if(record.SerializeToString(&s)) {
+            server_diagnostics(s);
+        } else {
+            LOG_LP(ERROR) << "error formatting diagnostics message";
+            server_diagnostics("");
+        }
+        record.release_message();
+    }
     VLOG_LP(log_trace) << static_cast<const void*>(&server_wire_) << " data_channel_ = " << static_cast<const void*>(data_channel_.get());  //NOLINT
 
     if (ch = data_channel_; ch != nullptr) {
