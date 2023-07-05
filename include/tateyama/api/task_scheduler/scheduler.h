@@ -165,14 +165,6 @@ public:
         for(auto&& t : threads_) {
             t.activate();
         }
-
-        // using tbb concurrent queues very soon after the creation hit problems
-        // (especially in testcase in Debug or cli in RelWithDebInfo) :
-        // - tbb::concurrent_queue::try_pop doesn't return instantly (seems repeating sched_yield calls)
-        // - push to tbb::concurrent_queue throws __cxa_pure_virtual
-        // To work-around, sleep after starting the worker threads for stability
-        std::this_thread::sleep_for(std::chrono::milliseconds{1});
-
         started_ = true;
     }
 
