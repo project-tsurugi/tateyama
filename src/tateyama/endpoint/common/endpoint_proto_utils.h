@@ -48,9 +48,10 @@ struct header_content {
     std::size_t session_id_{};
 };
 
-inline bool append_response_header(std::stringstream& ss, std::string_view body, header_content input) {
+inline bool append_response_header(std::stringstream& ss, std::string_view body, header_content input, ::tateyama::proto::framework::response::Header::PayloadType type = ::tateyama::proto::framework::response::Header::UNKNOWN) {
     ::tateyama::proto::framework::response::Header hdr{};
     hdr.set_session_id(input.session_id_);
+    hdr.set_payload_type(type);
     if(auto res = utils::SerializeDelimitedToOstream(hdr, std::addressof(ss)); ! res) {
         return false;
     }

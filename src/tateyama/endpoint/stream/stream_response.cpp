@@ -19,6 +19,7 @@
 #include <glog/logging.h>
 
 #include <tateyama/logging.h>
+#include <tateyama/proto/diagnostics.pb.h>
 
 #include "stream_response.h"
 #include "../common/endpoint_proto_utils.h"
@@ -62,6 +63,20 @@ tateyama::status stream_response::body_head(std::string_view body_head) {
     return tateyama::status::ok;
 }
 
+void stream_response::server_diagnostics(std::string_view diagnostic_record) {
+    VLOG_LP(log_trace) << static_cast<const void*>(&session_socket_);  //NOLINT
+
+    std::stringstream ss{};
+    endpoint::common::header_content arg{};
+    arg.session_id_ = session_id_;
+    if(! endpoint::common::append_response_header(ss, diagnostic_record, arg, tateyama::proto::framework::response::Header::SERVER_DIAGNOSTICS)) {
+        LOG_LP(ERROR) << "error formatting response message";
+        return;
+    }
+    auto s = ss.str();
+    session_socket_.send(index_, s, true);
+}
+
 void stream_response::code(tateyama::api::server::response_code code) {
     VLOG_LP(log_trace) << static_cast<const void*>(&session_socket_);  //NOLINT
 
@@ -80,6 +95,18 @@ tateyama::status stream_response::acquire_channel(std::string_view name, std::sh
         }
     } catch (std::exception &ex) {
         LOG_LP(ERROR) << ex.what();
+
+        ::tateyama::proto::diagnostics::Record record{};
+        record.set_code(::tateyama::proto::diagnostics::Code::RESOURCE_LIMIT);
+        record.set_message("error in acquire_channel");
+        std::string s{};
+        if(record.SerializeToString(&s)) {
+            server_diagnostics(s);
+        } else {
+            LOG_LP(ERROR) << "error formatting diagnostics message";
+            server_diagnostics("");
+        }
+        record.release_message();
     }
     return tateyama::status::unknown;
 }
