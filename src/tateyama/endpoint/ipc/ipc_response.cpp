@@ -85,7 +85,7 @@ tateyama::status ipc_response::acquire_channel(std::string_view name, std::share
         LOG_LP(ERROR) << ex.what();
 
         ::tateyama::proto::diagnostics::Record record{};
-        record.set_code(::tateyama::proto::diagnostics::Code::OUT_OF_MEMORY);
+        record.set_code(::tateyama::proto::diagnostics::Code::RESOURCE_LIMIT);
         record.set_message("error in acquire_channel");
         std::string s{};
         if(record.SerializeToString(&s)) {
