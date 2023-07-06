@@ -97,7 +97,7 @@ tateyama::status stream_response::acquire_channel(std::string_view name, std::sh
         LOG_LP(ERROR) << ex.what();
 
         ::tateyama::proto::diagnostics::Record record{};
-        record.set_code(::tateyama::proto::diagnostics::Code::RESOURCE_LIMIT);
+        record.set_code(::tateyama::proto::diagnostics::Code::RESOURCE_LIMIT_REACHED);
         record.set_message("error in acquire_channel");
         std::string s{};
         if(record.SerializeToString(&s)) {
