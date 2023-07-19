@@ -27,7 +27,7 @@ NOTE: for developers
 * ユーザーが利用するコマンドを一つにまとめ、サブコマンドですべての機能を提供する
   * そこから `exec` などで真のコマンドを呼び出したり、 python などのスクリプトを起動したりしてもよい
   * メインコマンドを `/bin` へ、それ以外の executable は `/libexec` 以下に配置
-  * メインコマンドのバイナリ名を仮に `oltp` とおく
+  * メインコマンドのバイナリ名を仮に `tgctl` とおく
 * データベースの設定パスごとに、高々ひとつのデータベースプロセスを起動できる
   * 複数のデータベースプロセスを稼働させたい場合、異なる設定ファイルを用意する必要がある
   * 異なる設定ファイルであっても、設定ファイル間で競合するリソース (e.g. WAL出力先ディレクトリ等) が存在する場合、複数を同時に稼働できない
@@ -38,11 +38,11 @@ NOTE: for developers
 ### 起動・終了
 
 ```sh
-oltp start [--conf </path/to/conf>] [--recovery|--no-recovery]
-oltp shutdown [--conf </path/to/conf>] [--timeout <value>]
-oltp kill [--conf </path/to/conf>] [--timeout <value>]
-oltp quiesce [--conf </path/to/conf>] [--label <text>]
-oltp status [--conf </path/to/conf>]
+tgctl start [--conf </path/to/conf>] [--recovery|--no-recovery]
+tgctl shutdown [--conf </path/to/conf>] [--timeout <value>]
+tgctl kill [--conf </path/to/conf>] [--timeout <value>]
+tgctl quiesce [--conf </path/to/conf>] [--label <text>]
+tgctl status [--conf </path/to/conf>]
 ```
 
 * overview
@@ -150,8 +150,8 @@ oltp status [--conf </path/to/conf>]
 ### backup サブコマンド
 
 ```sh
-oltp backup create </path/to/backup> [--conf </path/to/conf>] [--overwrite] [--label <text>] [-v|--verbose]
-oltp backup estimate [--conf </path/to/conf>]
+tgctl backup create </path/to/backup> [--conf </path/to/conf>] [--overwrite] [--label <text>] [-v|--verbose]
+tgctl backup estimate [--conf </path/to/conf>]
 ```
 
 * overview
@@ -174,7 +174,7 @@ oltp backup estimate [--conf </path/to/conf>]
       * `--label` - この操作のラベルを指定する
       * `-v,--verbose` - 詳細情報を表示する
     * note
-      * 作成したバックアップは `oltp restore backup` で復元できる
+      * 作成したバックアップは `tgctl restore backup` で復元できる
       * 出力先に空でないディレクトリが既に存在し、かつ `--overwrite` が指定されていない場合、コマンドは失敗する
     * impl memo
       * if service is present
@@ -212,8 +212,8 @@ oltp backup estimate [--conf </path/to/conf>]
 ### restore サブコマンド
 
 ```sh
-oltp restore backup </path/to/backup> [--conf </path/to/conf>] [--keep-backup|--no-keep-backup] [--label <text>] [-f|--force] [--use-file-list </path/to/file-list>]
-oltp restore tag <tag-name> [--conf </path/to/conf>] [--label <text>] [-f|--force]
+tgctl restore backup </path/to/backup> [--conf </path/to/conf>] [--keep-backup|--no-keep-backup] [--label <text>] [-f|--force] [--use-file-list </path/to/file-list>]
+tgctl restore tag <tag-name> [--conf </path/to/conf>] [--label <text>] [-f|--force]
 ```
 
 * overview
@@ -273,10 +273,10 @@ oltp restore tag <tag-name> [--conf </path/to/conf>] [--label <text>] [-f|--forc
 ### Point-in-Time Recovery
 
 ```sh
-oltp tag list [--conf </path/to/conf>] [-v|--verbose]
-oltp tag show <tag-name> [--conf </path/to/conf>]
-oltp tag add <tag-name> [--comment <message>] [--conf </path/to/conf>]
-oltp tag remove <tag-name> [-f|--force] [--conf </path/to/conf>]
+tgctl tag list [--conf </path/to/conf>] [-v|--verbose]
+tgctl tag show <tag-name> [--conf </path/to/conf>]
+tgctl tag add <tag-name> [--comment <message>] [--conf </path/to/conf>]
+tgctl tag remove <tag-name> [-f|--force] [--conf </path/to/conf>]
 ```
 
 * overview
@@ -334,7 +334,7 @@ oltp tag remove <tag-name> [-f|--force] [--conf </path/to/conf>]
       * `<tag-name>` - 対象のタグ名
       * `--comment` - タグコメント
     * note
-      * 作成したタグは `oltp restore tag` で復元できる
+      * 作成したタグは `tgctl restore tag` で復元できる
       * 対象のタグ名が既に登録済みである場合、このコマンドは失敗する
       * 対象のデータベースが稼働中の場合、現在までの処理結果の反映を待ち合わせるため、多少時間がかかる場合がある
     * impl memo
@@ -355,7 +355,7 @@ oltp tag remove <tag-name> [-f|--force] [--conf </path/to/conf>]
       * `-f,--force` - 確認プロンプトなしで処理を続行する
     * note
       * 対象のタグ名の登録が存在しない場合、このコマンドは何も行わない
-      * `oltp tag list | grep '...' | xargs oltp tag remove -f` が通る
+      * `tgctl tag list | grep '...' | xargs tgctl tag remove -f` が通る
     * impl memo
       * if service is present
         * send `tag_remove` to "backup_service"
@@ -370,10 +370,10 @@ oltp tag remove <tag-name> [-f|--force] [--conf </path/to/conf>]
 ### コマンドグループ
 
 ```sh
-oltp [-h|--help]
-oltp backup [-h|--help]
-oltp restore [-h|--help]
-oltp tag [-h|--help]
+tgctl [-h|--help]
+tgctl backup [-h|--help]
+tgctl restore [-h|--help]
+tgctl tag [-h|--help]
 ```
 
 * overview
@@ -438,7 +438,7 @@ OLTP サービスプロセスと通信する全てのサブコマンドは、以
 TODO - 検討中
 
 ```sh
-oltp credentials [/path/to/credentials.json] [--user <user-name>] [--overwrite|--no-overwrite] [--conf </path/to/conf>]
+tgctl credentials [/path/to/credentials.json] [--user <user-name>] [--overwrite|--no-overwrite] [--conf </path/to/conf>]
 ```
 
 * overview
@@ -478,8 +478,8 @@ oltp credentials [/path/to/credentials.json] [--user <user-name>] [--overwrite|-
 ### SQL実行
 
 ```sh
-oltp exec </path/to/statement-list> [-v|--verbose] <connection-options>
-oltp shell [-e <sql-statement>] <connection-options>
+tgctl exec </path/to/statement-list> [-v|--verbose] <connection-options>
+tgctl shell [-e <sql-statement>] <connection-options>
 
 connection-options:
   [--conf </path/to/conf>] |
@@ -538,8 +538,8 @@ connection-options:
 ### dump/load
 
 ```sh
-oltp data dump <table-name> </path/to/dump-target> [--fresh|--safe] [--overwrite] [-v|--verbose]
-oltp data load <table-name> </path/to/load-source>.. [--insert|--skip|--replace|--truncate] [--transaction|--no-transaction] [-f|--force] [-v|--verbose] <connection-options>
+tgctl data dump <table-name> </path/to/dump-target> [--fresh|--safe] [--overwrite] [-v|--verbose]
+tgctl data load <table-name> </path/to/load-source>.. [--insert|--skip|--replace|--truncate] [--transaction|--no-transaction] [-f|--force] [-v|--verbose] <connection-options>
 
 connection-options:
   --conf </path/to/conf> |
