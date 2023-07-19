@@ -49,7 +49,9 @@ tgctl status [--conf </path/to/conf>]
   * データベースのライフサイクルを制御する
 * 共通
   * options
-    * `--conf` - 設定ファイルのパス。未指定の場合は環境変数TGDIRで指定されるディレクトリ下のtsurugi.iniを利用する。環境変数が設定されていない場合や${TGDIR}/tsurugi.iniが存在しない場合はエラーとなる。
+    * `--conf` - 設定ファイルのパス。未指定の場合は下記の順で設定ファイルを探す。
+      * 環境変数TSURUGI_CONFが設定されていたら、TSURUGI_CONFを設定ファイルのパスに使用する。TSURUGI_CONFで指定される設定ファイルが存在しない場合はエラーとする。
+      * 環境変数TSURUGI_CONFが設定されていない場合は、${TSURUGI_HOME}/var/etc/tsurugi.iniを使用する。環境変数TSURUGI_HOMEが設定されていない場合やTSURUGI_HOME/conf/tsurugi.ini が存在しない場合はエラーとする。
 * サブコマンド
   * `start`
     * overview
