@@ -22,6 +22,7 @@
 #include <unordered_map>
 #include <iterator>
 #include <sstream>
+#include <filesystem>
 
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/ini_parser.hpp>
@@ -161,6 +162,13 @@ public:
         return get_section_internal(n);
     }
 
+    [[nodiscard]] std::optional<std::filesystem::path> base_path() const {
+        return base_path_;
+    }
+    void base_path(const std::filesystem::path& base_path) {
+        base_path_ = base_path;
+    }
+
     /**
      * @brief get directory of the config file
      * @return path of the directory
@@ -217,6 +225,7 @@ private:
     bool property_file_exist_{};
     bool check_done_{};
     bool default_valid_{};
+    std::optional<std::filesystem::path> base_path_{std::nullopt};
 
     std::unordered_map<std::string, std::unique_ptr<section>> map_;
 
