@@ -165,7 +165,7 @@ public:
     [[nodiscard]] std::optional<std::filesystem::path> base_path() const {
         return base_path_;
     }
-    void base_path(std::filesystem::path base_path) {
+    void base_path(const std::filesystem::path& base_path) {
         base_path_ = base_path;
     }
 
