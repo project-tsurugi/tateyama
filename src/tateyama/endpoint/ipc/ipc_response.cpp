@@ -80,7 +80,7 @@ void ipc_response::code(tateyama::api::server::response_code code) {
 
 tateyama::status ipc_response::acquire_channel(std::string_view name, std::shared_ptr<tateyama::api::server::data_channel>& ch) {
     try {
-        data_channel_ = std::make_shared<ipc_data_channel>(server_wire_.create_resultset_wires(name));
+        data_channel_ = std::make_shared<ipc_data_channel>(server_wire_.create_resultset_wires(name), *this);
     } catch (std::runtime_error &ex) {
         LOG_LP(ERROR) << ex.what();
 
@@ -127,14 +127,31 @@ tateyama::status ipc_response::close_session() {
 
 // class ipc_data_channel
 tateyama::status ipc_data_channel::acquire(std::shared_ptr<tateyama::api::server::writer>& wrt) {
-    if (auto ipc_wrt = std::make_shared<ipc_writer>(data_channel_->acquire()); ipc_wrt != nullptr) {
-        wrt = ipc_wrt;
-        VLOG_LP(log_trace) << " data_channel_ = " << static_cast<const void*>(this) << " writer = " << static_cast<const void*>(wrt.get());  //NOLINT
-        {
-            std::unique_lock lock{mutex_};
-            data_writers_.emplace(std::move(ipc_wrt));
+    try {
+        if (auto ipc_wrt = std::make_shared<ipc_writer>(data_channel_->acquire()); ipc_wrt != nullptr) {
+            wrt = ipc_wrt;
+            VLOG_LP(log_trace) << " data_channel_ = " << static_cast<const void*>(this) << " writer = " << static_cast<const void*>(wrt.get());  //NOLINT
+            {
+                std::unique_lock lock{mutex_};
+                data_writers_.emplace(std::move(ipc_wrt));
+            }
+            return tateyama::status::ok;
         }
-        return tateyama::status::ok;
+        throw std::runtime_error("error in create ipc_writer");
+    } catch (std::runtime_error &ex) {
+        LOG_LP(ERROR) << ex.what();
+
+        ::tateyama::proto::diagnostics::Record record{};
+        record.set_code(::tateyama::proto::diagnostics::Code::RESOURCE_LIMIT_REACHED);
+        record.set_message("error in acquire_channel");
+        std::string s{};
+        if(record.SerializeToString(&s)) {
+            response_.server_diagnostics(s);
+        } else {
+            LOG_LP(ERROR) << "error formatting diagnostics message";
+            response_.server_diagnostics("");
+        }
+        record.release_message();
     }
     return tateyama::status::unknown;
 }

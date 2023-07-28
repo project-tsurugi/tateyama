@@ -68,6 +68,7 @@ struct pointer_comp {
 };
 
 class stream_data_channel;
+class stream_response;
 
 /**
  * @brief writer object for stream_endpoint
@@ -94,7 +95,8 @@ private:
 class stream_data_channel : public tateyama::api::server::data_channel {
 public:
     stream_data_channel() = delete;
-    explicit stream_data_channel(stream_socket& session_socket, unsigned int slot) : session_socket_(session_socket), slot_(slot) {}
+    explicit stream_data_channel(stream_socket& session_socket, unsigned int slot, stream_response& response)
+        : session_socket_(session_socket), slot_(slot), response_(response) {}
     tateyama::status acquire(std::shared_ptr<tateyama::api::server::writer>& wrt) override;
     tateyama::status release(tateyama::api::server::writer& wrt) override;
     [[nodiscard]] unsigned int get_slot() const { return slot_; }
@@ -104,6 +106,7 @@ private:
     std::set<std::shared_ptr<stream_writer>, pointer_comp<stream_writer>> data_writers_{};
     std::mutex mutex_{};
     unsigned int slot_;
+    stream_response& response_;
     std::atomic_char writer_id_{};
 };
 
@@ -111,6 +114,8 @@ private:
  * @brief response object for stream_endpoint
  */
 class stream_response : public tateyama::api::server::response {
+    friend stream_data_channel;
+
 public:
     stream_response(stream_request& request, unsigned char index);
     stream_response() = delete;

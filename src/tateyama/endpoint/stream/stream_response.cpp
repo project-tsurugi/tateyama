@@ -86,13 +86,14 @@ void stream_response::code(tateyama::api::server::response_code code) {
 tateyama::status stream_response::acquire_channel(std::string_view name, std::shared_ptr<tateyama::api::server::data_channel>& ch) {
     try {
         auto slot = session_socket_.look_for_slot();
-        data_channel_ = std::make_unique<stream_data_channel>(session_socket_, slot);
+        data_channel_ = std::make_unique<stream_data_channel>(session_socket_, slot, *this);
         VLOG_LP(log_trace) << static_cast<const void*>(&session_socket_) << " data_channel_ = " << static_cast<const void*>(data_channel_.get());  //NOLINT
 
         if (ch = data_channel_; ch != nullptr) {
             session_socket_.send_result_set_hello(slot, name);
             return tateyama::status::ok;
         }
+        throw std::runtime_error("error in create stream_data_channel");
     } catch (std::exception &ex) {
         LOG_LP(ERROR) << ex.what();
 
@@ -133,15 +134,32 @@ tateyama::status stream_response::close_session() {
 
 // class stream_data_channel
 tateyama::status stream_data_channel::acquire(std::shared_ptr<tateyama::api::server::writer>& wrt) {
-    if (auto stream_wrt = std::make_shared<stream_writer>(session_socket_, get_slot(), writer_id_.fetch_add(1)); stream_wrt != nullptr) {
-        wrt = stream_wrt;
-        VLOG_LP(log_trace) << " data_channel_ = " << static_cast<const void*>(this) << " writer = " << static_cast<const void*>(wrt.get());  //NOLINT
+    try {
+        if (auto stream_wrt = std::make_shared<stream_writer>(session_socket_, get_slot(), writer_id_.fetch_add(1)); stream_wrt != nullptr) {
+            wrt = stream_wrt;
+            VLOG_LP(log_trace) << " data_channel_ = " << static_cast<const void*>(this) << " writer = " << static_cast<const void*>(wrt.get());  //NOLINT
 
-        {
-            std::unique_lock lock{mutex_};
-            data_writers_.emplace(std::move(stream_wrt));
+            {
+                std::unique_lock lock{mutex_};
+                data_writers_.emplace(std::move(stream_wrt));
+            }
+            return tateyama::status::ok;
         }
-        return tateyama::status::ok;
+        throw std::runtime_error("error in create stream_writer");
+    } catch (std::exception &ex) {
+        LOG_LP(ERROR) << ex.what();
+
+        ::tateyama::proto::diagnostics::Record record{};
+        record.set_code(::tateyama::proto::diagnostics::Code::RESOURCE_LIMIT_REACHED);
+        record.set_message("error in acquire_channel");
+        std::string s{};
+        if(record.SerializeToString(&s)) {
+            response_.server_diagnostics(s);
+        } else {
+            LOG_LP(ERROR) << "error formatting diagnostics message";
+            response_.server_diagnostics("");
+        }
+        record.release_message();
     }
     return tateyama::status::unknown;
 }
