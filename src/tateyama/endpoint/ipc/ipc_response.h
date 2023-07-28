@@ -68,6 +68,7 @@ constexpr static response_header::msg_type RESPONSE_BODYHEAD = 2;
 constexpr static response_header::msg_type RESPONSE_CODE = 3;
 
 class ipc_data_channel;
+class ipc_response;
 
 /**
  * @brief writer object for ipc_endpoint
@@ -91,8 +92,8 @@ private:
  */
 class ipc_data_channel : public tateyama::api::server::data_channel {
 public:
-    explicit ipc_data_channel(server_wire_container::unq_p_resultset_wires_conteiner data_channel)
-        : data_channel_(std::move(data_channel)) {
+    explicit ipc_data_channel(server_wire_container::unq_p_resultset_wires_conteiner data_channel, ipc_response& response)
+        : data_channel_(std::move(data_channel)), response_(response) {
     }
 
     tateyama::status acquire(std::shared_ptr<tateyama::api::server::writer>& wrt) override;
@@ -103,6 +104,7 @@ public:
 
 private:
     server_wire_container::unq_p_resultset_wires_conteiner data_channel_;
+    ipc_response& response_;
 
     std::set<std::shared_ptr<ipc_writer>, pointer_comp<ipc_writer>> data_writers_{};
     std::mutex mutex_{};
@@ -112,6 +114,8 @@ private:
  * @brief response object for ipc_endpoint
  */
 class ipc_response : public tateyama::api::server::response {
+    friend ipc_data_channel;
+
 public:
     ipc_response(ipc_request& request, std::size_t index) :
         ipc_request_(request),
@@ -134,6 +138,7 @@ public:
     void session_id(std::size_t id) override {
         session_id_ = id;
     }
+
 private:
     ipc_request& ipc_request_;
     server_wire_container& server_wire_;
