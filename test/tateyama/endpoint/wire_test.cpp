@@ -30,7 +30,7 @@ class wire_test : public ::testing::Test {
 
     virtual void SetUp() {
         rv_ = system("if [ -f /dev/shm/tateyama-wire_test ]; then rm -f /dev/shm/tateyama-wire_test; fi ");
-        wire_ = std::make_unique<tateyama::common::wire::server_wire_container_impl>("tateyama-wire_test", "dummy_mutex_file_name", datachannel_buffer_size);
+        wire_ = std::make_unique<tateyama::common::wire::server_wire_container_impl>("tateyama-wire_test", "dummy_mutex_file_name", datachannel_buffer_size, 16);
     }
     virtual void TearDown() {
         rv_ = system("if [ -f /dev/shm/tateyama-wire_test ]; then rm -f /dev/shm/tateyama-wire_test*; fi ");

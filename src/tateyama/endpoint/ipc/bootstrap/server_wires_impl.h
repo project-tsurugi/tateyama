@@ -32,10 +32,10 @@ namespace tateyama::common::wire {
 
 class server_wire_container_impl : public server_wire_container
 {
-    static constexpr std::size_t shm_size = ((1<<16) * 16 * 16);  // 16M (= 64K * 16writes * 16result_sets) (tentative)  NOLINT
     static constexpr std::size_t request_buffer_size = (1<<12);   //  4K bytes NOLINT
     static constexpr std::size_t response_buffer_size = (1<<13);  //  8K bytes NOLINT
-    static constexpr std::size_t writer_count = 16;
+    static constexpr std::size_t writer_count = 32;
+    static constexpr std::size_t data_channel_overhead = (1<<12);   //  4K bytes NOLINT
 
 public:
     class resultset_wires_container_impl;
@@ -465,13 +465,14 @@ public:
         std::mutex mtx_{};
     };
 
-    server_wire_container_impl(std::string_view name, std::string_view mutex_file, std::size_t datachannel_buffer_size)
+    server_wire_container_impl(std::string_view name, std::string_view mutex_file, std::size_t datachannel_buffer_size, std::size_t max_datachannel_buffers)
         : name_(name), garbage_collector_impl_(std::make_unique<garbage_collector_impl>()), datachannel_buffer_size_(datachannel_buffer_size) {
         boost::interprocess::shared_memory_object::remove(name_.c_str());
         try {
             boost::interprocess::permissions  unrestricted_permissions;
             unrestricted_permissions.set_unrestricted();
 
+            std::size_t shm_size = (datachannel_buffer_size_ + data_channel_overhead) * max_datachannel_buffers + (request_buffer_size + response_buffer_size) * 2;
             managed_shared_memory_ =
                 std::make_unique<boost::interprocess::managed_shared_memory>(boost::interprocess::create_only, name_.c_str(), shm_size, nullptr, unrestricted_permissions);
             auto req_wire = managed_shared_memory_->construct<unidirectional_message_wire>(request_wire_name)(managed_shared_memory_.get(), request_buffer_size);

@@ -66,6 +66,7 @@ static constexpr std::string_view default_configuration_for_tests {  // NOLINT
         "database_name=tsurugi\n"
         "threads=104\n"
         "datachannel_buffer_size=64\n"
+        "max_datachannel_buffers=16\n"
 
     "[stream_endpoint]\n"
         "port=12345\n"
