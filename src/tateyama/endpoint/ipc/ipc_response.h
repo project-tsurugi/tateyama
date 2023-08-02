@@ -22,46 +22,12 @@
 #include <tateyama/api/server/response.h>
 #include <tateyama/api/server/response_code.h>
 
+#include "tateyama/endpoint/common/pointer_comp.h"
+#include "server_wires.h"
 #include "server_wires.h"
 #include "ipc_request.h"
 
 namespace tateyama::common::wire {
-
-template<class T>
-struct pointer_comp {
-    using is_transparent = std::true_type;
-    // helper does some magic in order to reduce the number of
-    // pairs of types we need to know how to compare: it turns
-    // everything into a pointer, and then uses `std::less<T*>`
-    // to do the comparison:
-    class helper {
-        T* ptr;
-    public:
-        helper():ptr(nullptr) {}
-        helper(helper const&) = default;
-        helper(helper&&) noexcept = default;
-        helper& operator = (helper const&) = default;
-        helper& operator = (helper&&) noexcept = default;
-        helper(T* const p):ptr(p) {}  //NOLINT
-        template<class U>
-        helper( std::shared_ptr<U> const& sp ):ptr(sp.get()) {}  //NOLINT
-        template<class U, class...Ts>
-        helper( std::unique_ptr<U, Ts...> const& up ):ptr(up.get()) {}  //NOLINT
-        ~helper() = default;
-        // && optional: enforces rvalue use only
-        bool operator<( helper const o ) const {
-            return std::less<T*>()( ptr, o.ptr );
-        }
-    };
-    // without helper, we would need 2^n different overloads, where
-    // n is the number of types we want to support (so, 8 with
-    // raw pointers, unique pointers, and shared pointers).  That
-    // seems silly:
-    // && helps enforce rvalue use only
-    bool operator()( helper const&& lhs, helper const&& rhs ) const {
-        return lhs < rhs;
-    }
-};
 
 constexpr static response_header::msg_type RESPONSE_BODY = 1;
 constexpr static response_header::msg_type RESPONSE_BODYHEAD = 2;
@@ -106,7 +72,7 @@ private:
     server_wire_container::unq_p_resultset_wires_conteiner data_channel_;
     ipc_response& response_;
 
-    std::set<std::shared_ptr<ipc_writer>, pointer_comp<ipc_writer>> data_writers_{};
+    std::set<std::shared_ptr<ipc_writer>, tateyama::endpoint::common::pointer_comp<ipc_writer>> data_writers_{};
     std::mutex mutex_{};
 };
 

@@ -20,7 +20,7 @@
 #include <tateyama/api/server/request.h>
 
 #include "stream.h"
-#include "../common/endpoint_proto_utils.h"
+#include "tateyama/endpoint/common/endpoint_proto_utils.h"
 
 namespace tateyama::common::stream {
 

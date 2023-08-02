@@ -22,7 +22,7 @@
 #include <tateyama/proto/diagnostics.pb.h>
 
 #include "stream_response.h"
-#include "../common/endpoint_proto_utils.h"
+#include "tateyama/endpoint/common/endpoint_proto_utils.h"
 
 namespace tateyama::common::stream {
 

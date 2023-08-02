@@ -32,7 +32,7 @@
 #include <glog/logging.h>
 
 #include <tateyama/logging.h>
-#include "../common/logging_helper.h"
+#include "tateyama/endpoint/common/logging_helper.h"
 
 namespace tateyama::common::stream {
 
