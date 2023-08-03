@@ -207,15 +207,10 @@ public:
         if(a.property_tree_ != b.property_tree_) {
             return false;
         }
-        for(auto&& section : a.property_tree_) {
+        return std::all_of(a.property_tree_.begin(), a.property_tree_.end(), [&a, &b](auto&& section) {
             auto& name = section.first;
-            auto* pa = a.get_section(name);
-            auto* pb = b.get_section(name);
-            if(*pa != *pb) {
-                return false;
-            }
-        }
-        return true;
+            return a.get_section(name) == b.get_section(name);
+        });
     }
 
 private:
