@@ -15,6 +15,10 @@
  */
 #pragma once
 
+#include <cstddef>
+#include <string>
+#include <string_view>
+
 #include <tateyama/api/server/request.h>
 
 namespace tateyama::endpoint::loopback {

@@ -8,13 +8,6 @@ PROTOBUF_GENERATE_CPP(TEST_PROTO_SRCS TEST_PROTO_HDRS ${ProtoFiles})
 add_custom_target(build_test_protos DEPENDS ${TEST_PROTO_SRCS})
 
 set_source_files_properties(
-        ${GENERATED_PROTO_SRCS}
-        PROPERTIES
-        GENERATED TRUE
-        COMPILE_FLAGS -Wno-unused-parameter
-)
-
-set_source_files_properties(
         ${TEST_PROTO_SRCS}
         PROPERTIES
         GENERATED TRUE
@@ -23,12 +16,10 @@ set_source_files_properties(
 
 add_executable(${test_target}
         main.cpp
-        ${GENERATED_PROTO_SRCS}
         ${TEST_PROTO_SRCS}
         )
 
 add_dependencies(${test_target}
-        build_protos
         build_test_protos
         )
 

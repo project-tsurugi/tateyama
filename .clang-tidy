@@ -4,6 +4,7 @@ abseil-*,\
 boost-*,\
 bugprone-*,\
 -bugprone-branch-clone,\
+-bugprone-easily-swappable-parameters,\
 cert-*,\
 -cert-oop54-cpp,\
 cppcoreguidelines-*,\
@@ -22,6 +23,7 @@ google-*,\
 -google-runtime-references,\
 hicpp-*,\
 -hicpp-braces-around-statements,\
+-hicpp-named-parameter,\
 -hicpp-no-array-decay,\
 llvm-*,\
 -llvm-include-order,\
@@ -35,6 +37,7 @@ modernize-*,\
 performance-*,\
 readability-*,\
 -readability-braces-around-statements,\
+-readability-identifier-length,\
 -readability-named-parameter,\
 -readability-magic-numbers,\
 -readability-qualified-auto,\
@@ -43,5 +46,9 @@ readability-*,\
 CheckOptions:
   - key: readability-implicit-bool-conversion.AllowPointerConditions
     value: 1
+  - key: readability-function-cognitive-complexity.IgnoreMacros
+    value: true
+  - key: readability-function-cognitive-complexity.Threshold
+    value: 50
 HeaderFilterRegex: '.*/(include|src|examples)/.*\.h$'
 ...

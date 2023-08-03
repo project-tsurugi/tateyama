@@ -24,7 +24,6 @@
 
 #include "tateyama/endpoint/common/pointer_comp.h"
 #include "server_wires.h"
-#include "server_wires.h"
 #include "ipc_request.h"
 
 namespace tateyama::common::wire {

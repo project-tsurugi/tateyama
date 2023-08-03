@@ -35,7 +35,7 @@ bool tateyama::datastore::service::core::operator()(const std::shared_ptr<reques
 
     auto data = req->payload();
     ns::Request rq{};
-    if(!rq.ParseFromArray(data.data(), data.size())) {
+    if(!rq.ParseFromArray(data.data(), static_cast<int>(data.size()))) {
         LOG(ERROR) << "request parse error";
         return false;
     }

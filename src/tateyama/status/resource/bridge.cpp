@@ -78,7 +78,7 @@ std::string_view bridge::mutex_file() {
     if (resource_status_memory_) {
         return resource_status_memory_->mutex_file();
     }
-    return std::string_view();
+    return {};
 }
 
 void bridge::set_maximum_sessions(std::size_t n) {

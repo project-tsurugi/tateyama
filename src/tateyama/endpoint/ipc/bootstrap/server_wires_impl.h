@@ -84,7 +84,7 @@ public:
                             return false;
                         }
                         wire->write(std::addressof(*read_point_), chunk_size_);
-                        read_point_ += chunk_size_;
+                        read_point_ += static_cast<std::int64_t>(chunk_size_);
                     }
                     return true;
                 }
@@ -96,7 +96,7 @@ public:
                 }
                 wire->write(std::addressof(*read_point_), record_size);
                 wire->flush();
-                read_point_ += record_size;
+                read_point_ += static_cast<std::int64_t>(record_size);
             }
             return true;
         }
@@ -243,9 +243,13 @@ public:
             }
         }
         ~resultset_wires_container_impl() override {
-            if (server_) {
-                std::lock_guard<std::mutex> lock(mtx_shm_);
-                managed_shm_ptr_->destroy<shm_resultset_wires>(rsw_name_.c_str());
+            try {
+                if (server_) {
+                    std::lock_guard<std::mutex> lock(mtx_shm_);
+                    managed_shm_ptr_->destroy<shm_resultset_wires>(rsw_name_.c_str());
+                }
+            } catch (std::exception& e) {
+                LOG_LP(WARNING) << e.what();
             }
         }
 
@@ -305,7 +309,7 @@ public:
             if (current_wire_ != nullptr) {
                 return current_wire_->get_chunk(current_wire_->get_bip_address(managed_shm_ptr_), wrap_around_);
             }
-            return std::string_view();
+            return {};
         }
         void dispose(std::size_t) {
             if (current_wire_ != nullptr) {
