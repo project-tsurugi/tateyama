@@ -209,7 +209,9 @@ public:
         }
         return std::all_of(a.property_tree_.begin(), a.property_tree_.end(), [&a, &b](auto&& section) {
             auto& name = section.first;
-            return a.get_section(name) == b.get_section(name);
+            auto* pa = a.get_section(name);
+            auto* pb = b.get_section(name);
+            return *pa == *pb;
         });
     }
 
