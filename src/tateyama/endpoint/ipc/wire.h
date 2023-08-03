@@ -1069,37 +1069,3 @@ private:
 };
 
 };  // namespace tateyama::common
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
