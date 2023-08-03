@@ -21,8 +21,8 @@
 #include <tateyama/api/server/request.h>
 
 #include "server_wires.h"
-#include "../common/endpoint_proto_utils.h"
-#include "../common/logging_helper.h"
+#include "tateyama/endpoint/common/endpoint_proto_utils.h"
+#include "tateyama/endpoint/common/logging_helper.h"
 
 namespace tateyama::common::wire {
 
