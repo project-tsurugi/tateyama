@@ -177,7 +177,7 @@ public:
         if (property_file_exist_) {
             return file_.parent_path();
         }
-        return boost::filesystem::path("");
+        return {""};
     }
 
     /**
@@ -188,7 +188,7 @@ public:
         if (property_file_exist_) {
             return boost::filesystem::canonical(file_);
         }
-        return boost::filesystem::path("");
+        return {""};
     }
 
 

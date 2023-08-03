@@ -51,7 +51,7 @@ bool ParseDelimitedFromCodedStream(
     int position_after_size = input->CurrentPosition();
 
     // Tell the stream not to read beyond that size.
-    google::protobuf::io::CodedInputStream::Limit limit = input->PushLimit(size);
+    google::protobuf::io::CodedInputStream::Limit limit = input->PushLimit(static_cast<int>(size));
 
     // Parse the message.
     if (!message->MergeFromCodedStream(input)) return false;
@@ -85,7 +85,7 @@ bool SerializeDelimitedToCodedStream(
     output->WriteVarint32(size);
 
     // Write the content.
-    google::protobuf::uint8* buffer = output->GetDirectBufferForNBytesAndAdvance(size);
+    google::protobuf::uint8* buffer = output->GetDirectBufferForNBytesAndAdvance(static_cast<int>(size));
     if (buffer != nullptr) {
         // Optimization: The message fits in one buffer, so use the faster
         // direct-to-array serialization path.
@@ -129,15 +129,15 @@ bool GetDelimitedBodyFromCodedStream(
     int position_after_size = input->CurrentPosition();
 
     // Tell the stream not to read beyond that size.
-    google::protobuf::io::CodedInputStream::Limit limit = input->PushLimit(size);
+    google::protobuf::io::CodedInputStream::Limit limit = input->PushLimit(static_cast<int>(size));
 
     void const* data{};
-    int sz{};
-    if (! input->GetDirectBufferPointer(std::addressof(data), std::addressof(sz))) {
+    int dsz{};
+    if (! input->GetDirectBufferPointer(std::addressof(data), std::addressof(dsz))) {
         return false;
     }
-    out = {static_cast<char const*>(data), static_cast<std::size_t>(sz)};
-    if (! input->Skip(sz)) {
+    out = {static_cast<char const*>(data), static_cast<std::size_t>(dsz)};
+    if (! input->Skip(dsz)) {
         return false;
     }
 //    if (!input->ConsumedEntireMessage()) return false;
@@ -160,29 +160,29 @@ bool GetDelimitedBodyFromZeroCopyStream(
     return GetDelimitedBodyFromCodedStream(&coded_input, clean_eof, out);
 }
 
-bool PutDelimitedBodyToOstream(std::string_view in, std::ostream* output) {
+bool PutDelimitedBodyToOstream(std::string_view input, std::ostream* output) {
     google::protobuf::io::OstreamOutputStream zero_copy_output(output);
-    if (!PutDelimitedBodyToZeroCopyStream(in, &zero_copy_output)) {
+    if (!PutDelimitedBodyToZeroCopyStream(input, &zero_copy_output)) {
         return false;
     }
     return output->good();
 
 }
 
-bool PutDelimitedBodyToZeroCopyStream(std::string_view in, google::protobuf::io::ZeroCopyOutputStream* output) {
+bool PutDelimitedBodyToZeroCopyStream(std::string_view input, google::protobuf::io::ZeroCopyOutputStream* output) {
     google::protobuf::io::CodedOutputStream coded_output(output);
-    return PutDelimitedBodyToCodedStream(in, &coded_output);
+    return PutDelimitedBodyToCodedStream(input, &coded_output);
 }
 
-bool PutDelimitedBodyToCodedStream(std::string_view in, google::protobuf::io::CodedOutputStream* output) {
+bool PutDelimitedBodyToCodedStream(std::string_view input, google::protobuf::io::CodedOutputStream* output) {
     // Write the size.
-    size_t size = in.size();
+    size_t size = input.size();
     if (size > INT_MAX) return false;
 
     output->WriteVarint32(size);
 
     // Write the content.
-    output->WriteRaw(in.data(), size);
+    output->WriteRaw(input.data(), static_cast<std::int32_t>(size));
     return true;
 }
 

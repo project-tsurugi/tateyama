@@ -20,7 +20,6 @@
 #include <tateyama/framework/resource.h>
 #include <tateyama/framework/service.h>
 #include <tateyama/framework/endpoint.h>
-#include <tateyama/framework/endpoint.h>
 #include <tateyama/api/configuration.h>
 #include <tateyama/framework/boot_mode.h>
 

@@ -21,6 +21,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include <glog/logging.h>
+
 #include <boost/interprocess/managed_shared_memory.hpp>
 #include <boost/interprocess/containers/map.hpp>
 #include <boost/interprocess/allocators/allocator.hpp>
@@ -31,6 +33,8 @@
 #include <boost/interprocess/sync/interprocess_condition.hpp>
 #include <boost/interprocess/containers/string.hpp>
 #include <boost/interprocess/containers/vector.hpp>
+
+#include <tateyama/logging.h>
 
 #include <tateyama/framework/component.h>
 
@@ -103,7 +107,7 @@ class resource_status_memory {
             mutex_file_ = file;
         }
         [[nodiscard]] std::string_view mutex_file() const {
-            return std::string_view(mutex_file_.data(), mutex_file_.size());
+            return {mutex_file_.data(), mutex_file_.size()};
         }
         void set_maximum_sessions(std::size_t n) {
             sessions_.resize(n);
@@ -155,8 +159,12 @@ class resource_status_memory {
         }
     }
     ~resource_status_memory() {
-        if (owner_ && resource_status_) {
-            mem_.destroy<resource_status>(std::string(area_name).c_str());
+        try {
+            if (owner_ && resource_status_) {
+                mem_.destroy<resource_status>(std::string(area_name).c_str());
+            }
+        } catch (std::exception& e) {
+            LOG(WARNING) << e.what();
         }
     }
 
