@@ -35,7 +35,8 @@ class server_wire_container_impl : public server_wire_container
     static constexpr std::size_t request_buffer_size = (1<<12);   //  4K bytes NOLINT
     static constexpr std::size_t response_buffer_size = (1<<13);  //  8K bytes NOLINT
     static constexpr std::size_t writer_count = 32;
-    static constexpr std::size_t data_channel_overhead = (1<<12);   //  4K bytes NOLINT
+    static constexpr std::size_t data_channel_overhead = 7700;   //  by experiment NOLINT
+    static constexpr std::size_t total_overhead = (1<<14);   //  16K bytes by experiment NOLINT
 
 public:
     class resultset_wires_container_impl;
@@ -158,6 +159,10 @@ public:
             }
         }
         void write(char const* data, std::size_t length) override {
+            current_record_size += length;
+            if ((current_record_size + tateyama::common::wire::length_header::size) > datachannel_buffer_size_) {
+                throw std::runtime_error("too large record size");
+            }
             if (!annex_mode_) {
                 if (shm_resultset_wire_->check_room(length)) {
                     shm_resultset_wire_->write(data, length);
@@ -185,6 +190,7 @@ public:
             current_annex_->write(data, length);
         }
         void flush() override {
+            current_record_size = 0;
             if (!annex_mode_) {
                 shm_resultset_wire_->flush();
                 return;
@@ -208,6 +214,7 @@ public:
         std::condition_variable cnd_queue_{};
 
         std::size_t datachannel_buffer_size_;
+        std::size_t current_record_size{};
 
         void add_deffered_count();
         void write_complete();
@@ -476,7 +483,7 @@ public:
             boost::interprocess::permissions  unrestricted_permissions;
             unrestricted_permissions.set_unrestricted();
 
-            std::size_t shm_size = (datachannel_buffer_size_ + data_channel_overhead) * max_datachannel_buffers + (request_buffer_size + response_buffer_size) * 2;
+            std::size_t shm_size = (datachannel_buffer_size_ + data_channel_overhead) * max_datachannel_buffers + (request_buffer_size + response_buffer_size) + total_overhead;
             managed_shared_memory_ =
                 std::make_unique<boost::interprocess::managed_shared_memory>(boost::interprocess::create_only, name_.c_str(), shm_size, nullptr, unrestricted_permissions);
             auto req_wire = managed_shared_memory_->construct<unidirectional_message_wire>(request_wire_name)(managed_shared_memory_.get(), request_buffer_size);

@@ -95,6 +95,8 @@ tateyama::status ipc_response::acquire_channel(std::string_view name, std::share
             server_diagnostics("");
         }
         record.release_message();
+        ch = nullptr;
+        return tateyama::status::unknown;
     }
     VLOG_LP(log_trace) << static_cast<const void*>(&server_wire_) << " data_channel_ = " << static_cast<const void*>(data_channel_.get());  //NOLINT
 
@@ -152,8 +154,9 @@ tateyama::status ipc_data_channel::acquire(std::shared_ptr<tateyama::api::server
             response_.server_diagnostics("");
         }
         record.release_message();
+        wrt = nullptr;
+        return tateyama::status::unknown;
     }
-    return tateyama::status::unknown;
 }
 
 tateyama::status ipc_data_channel::release(tateyama::api::server::writer& wrt) {
@@ -173,8 +176,13 @@ tateyama::status ipc_data_channel::release(tateyama::api::server::writer& wrt) {
 tateyama::status ipc_writer::write(char const* data, std::size_t length) {
     VLOG_LP(log_trace) << static_cast<const void*>(this);  //NOLINT
 
-    resultset_wire_->write(data, length);
-    return tateyama::status::ok;
+    try {
+        resultset_wire_->write(data, length);
+        return tateyama::status::ok;
+    } catch (std::runtime_error &ex) {
+        LOG_LP(ERROR) << ex.what();
+    }
+    return tateyama::status::unknown;
 }
 
 tateyama::status ipc_writer::commit() {
