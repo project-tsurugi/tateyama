@@ -94,7 +94,6 @@ tateyama::status ipc_response::acquire_channel(std::string_view name, std::share
             LOG_LP(ERROR) << "error formatting diagnostics message";
             server_diagnostics("");
         }
-        record.release_message();
         ch = nullptr;
         return tateyama::status::unknown;
     }
@@ -153,7 +152,6 @@ tateyama::status ipc_data_channel::acquire(std::shared_ptr<tateyama::api::server
             LOG_LP(ERROR) << "error formatting diagnostics message";
             response_.server_diagnostics("");
         }
-        record.release_message();
         wrt = nullptr;
         return tateyama::status::unknown;
     }
