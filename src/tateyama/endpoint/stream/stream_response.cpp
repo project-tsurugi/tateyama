@@ -107,7 +107,6 @@ tateyama::status stream_response::acquire_channel(std::string_view name, std::sh
             LOG_LP(ERROR) << "error formatting diagnostics message";
             server_diagnostics("");
         }
-        record.release_message();
     }
     return tateyama::status::unknown;
 }
@@ -159,7 +158,6 @@ tateyama::status stream_data_channel::acquire(std::shared_ptr<tateyama::api::ser
             LOG_LP(ERROR) << "error formatting diagnostics message";
             response_.server_diagnostics("");
         }
-        record.release_message();
     }
     return tateyama::status::unknown;
 }
