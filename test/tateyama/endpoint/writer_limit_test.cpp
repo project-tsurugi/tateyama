@@ -147,6 +147,25 @@ TEST_F(writer_limit_test, exceed_writers) {
     dcs.at(i) = std::move(dc);
     std::shared_ptr<tateyama::api::server::writer> w;
     EXPECT_NE(dcs.at(i)->acquire(w),tateyama::status::ok);
+
+
+    // response message check
+    // Verify that a SERVER_DIAGNOSTICS response is returned when the error occurs
+    auto& response_wire = dynamic_cast<tateyama::common::wire::server_wire_container_impl::response_wire_container_impl&>(wire_->get_response_wire());
+
+    response_wire.await();
+    auto length = response_wire.get_length();
+
+    std::string recv_message;
+    recv_message.resize(length);
+    response_wire.read(recv_message.data());
+
+    ::tateyama::proto::framework::response::Header response_hdr{};
+    google::protobuf::io::ArrayInputStream in{recv_message.data(), static_cast<int>(recv_message.size())};
+    if(auto res = utils::ParseDelimitedFromZeroCopyStream(std::addressof(response_hdr), std::addressof(in), nullptr); ! res) {
+        FAIL();
+    }
+    EXPECT_EQ(response_hdr.payload_type(), ::tateyama::proto::framework::response::Header::SERVER_DIAGNOSTICS);
 }
 
 }  // namespace tateyama::api::endpoint::ipc
