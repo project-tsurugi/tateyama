@@ -13,6 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <exception>
+
 #include "worker.h"
 
 #include <tateyama/endpoint/ipc/ipc_request.h>
@@ -25,16 +27,21 @@ void Worker::run()
     VLOG(log_debug_timing_event) << "/:tateyama:timing:session:started "
         << session_id_;
     while(true) {
-        auto h = request_wire_container_->peep(true);
-        if (h.get_length() == 0 && h.get_idx() == tateyama::common::wire::message_header::not_use) { break; }
-        auto request = std::make_shared<tateyama::common::wire::ipc_request>(*wire_, h);
-        auto response = std::make_shared<tateyama::common::wire::ipc_response>(*request, h.get_idx());
+        try {
+            auto h = request_wire_container_->peep(true);
+            if (h.get_length() == 0 && h.get_idx() == tateyama::common::wire::message_header::not_use) { break; }
+            auto request = std::make_shared<tateyama::common::wire::ipc_request>(*wire_, h);
+            auto response = std::make_shared<tateyama::common::wire::ipc_response>(*request, h.get_idx());
 
-        service_(static_cast<std::shared_ptr<tateyama::api::server::request>>(request),
-                 static_cast<std::shared_ptr<tateyama::api::server::response>>(std::move(response)));
-        request->dispose();
-        request = nullptr;
-        if (wire_->is_session_closed()) { break; }
+            service_(static_cast<std::shared_ptr<tateyama::api::server::request>>(request),
+                     static_cast<std::shared_ptr<tateyama::api::server::response>>(std::move(response)));
+            request->dispose();
+            request = nullptr;
+            if (wire_->is_session_closed()) { break; }
+        } catch (std::runtime_error &e) {
+            LOG_LP(ERROR) << e.what();
+            break;
+        }
     }
     clean_up_();
     VLOG_LP(log_trace) << "destroy session wire: session_id = " << std::to_string(session_id_);

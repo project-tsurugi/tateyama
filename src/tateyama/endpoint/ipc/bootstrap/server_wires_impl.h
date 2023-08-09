@@ -238,7 +238,7 @@ public:
                 throw std::runtime_error(ex.what());
             } catch (std::runtime_error &ex) {
                 LOG_LP(ERROR) << "running out of boost managed shared memory";
-                throw std::runtime_error(ex.what());
+                throw ex;
             }
         }
         //  constructor for client
@@ -275,10 +275,10 @@ public:
                     new resultset_wire_container_impl{shm_resultset_wires_->acquire(), *this, datachannel_buffer_size_}, resultset_wire_deleter_impl};
             } catch(const boost::interprocess::interprocess_exception& ex) {
                 LOG_LP(ERROR) << ex.what() << " on resultset_wires_container_impl::acquire()";
-                pthread_exit(nullptr);  // FIXME
+                throw std::runtime_error(ex.what());
             } catch (std::runtime_error &ex) {
                 LOG_LP(ERROR) << "running out of boost managed shared memory";
-                pthread_exit(nullptr);  // FIXME
+                throw ex;
             }
         }
 
@@ -494,10 +494,10 @@ public:
             response_wire_.initialize(res_wire, res_wire->get_bip_address(managed_shared_memory_.get()));
         } catch(const boost::interprocess::interprocess_exception& ex) {
             LOG_LP(ERROR) << ex.what() << " on server_wire_container_impl::server_wire_container_impl()";
-            pthread_exit(nullptr);  // FIXME
+            throw std::runtime_error(ex.what());
         } catch (std::runtime_error &ex) {
             LOG_LP(ERROR) << "running out of boost managed shared memory";
-            pthread_exit(nullptr);  // FIXME
+            throw ex;
         }
     }
 
@@ -523,7 +523,7 @@ public:
         }
         catch(const boost::interprocess::interprocess_exception& ex) {
             LOG_LP(ERROR) << "running out of boost managed shared memory";
-            pthread_exit(nullptr);  // FIXME
+            throw std::runtime_error(ex.what());
         }
     }
     unq_p_resultset_wires_conteiner create_resultset_wires(std::string_view name) override {

@@ -17,6 +17,7 @@
 
 #include <string_view>
 #include <array>
+#include <exception>
 
 #include <tateyama/api/server/request.h>
 
@@ -47,11 +48,14 @@ public:
             message = std::string_view(long_payload_.data(), length_);
         }
         endpoint::common::parse_result res{};
-        endpoint::common::parse_header(message, res); // TODO handle error
-        payload_ = res.payload_;
-        session_id_ = res.session_id_;
-        service_id_ = res.service_id_;
-        request_wire->dispose();
+        if (endpoint::common::parse_header(message, res)) {
+            payload_ = res.payload_;
+            session_id_ = res.session_id_;
+            service_id_ = res.service_id_;
+            request_wire->dispose();
+            return;
+        }
+        throw std::runtime_error("error in parse framework header");
     }
 
     ipc_request() = delete;

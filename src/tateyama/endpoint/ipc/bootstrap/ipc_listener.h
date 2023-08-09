@@ -92,38 +92,38 @@ public:
         status_->set_database_name(database_name_);
 
         while(true) {
-            auto session_id = connection_queue.listen();
-            if (connection_queue.is_terminated()) {
-                VLOG_LP(log_trace) << "receive terminate request";
-                for (auto& worker : workers_) {
-                    if (worker) {
-                        if (auto rv = worker->future_.wait_for(std::chrono::seconds(0)); rv != std::future_status::ready) {
-                            VLOG_LP(log_trace) << "exit: remaining thread " << worker->session_id_;
+            try {
+                auto session_id = connection_queue.listen();
+                if (connection_queue.is_terminated()) {
+                    VLOG_LP(log_trace) << "receive terminate request";
+                    for (auto& worker : workers_) {
+                        if (worker) {
+                            if (auto rv = worker->future_.wait_for(std::chrono::seconds(0)); rv != std::future_status::ready) {
+                                VLOG_LP(log_trace) << "exit: remaining thread " << worker->session_id_;
+                            }
                         }
                     }
+                    workers_.clear();
+                    connection_queue.confirm_terminated();
+                    break;
                 }
-                workers_.clear();
-                connection_queue.confirm_terminated();
-                break;
-            }
-            std::string session_name = database_name_;
-            session_name += "-";
-            session_name += std::to_string(session_id);
-            auto wire = std::make_unique<tateyama::common::wire::server_wire_container_impl>(session_name, proc_mutex_file_, datachannel_buffer_size_, max_datachannel_buffers_);
-            std::size_t index = connection_queue.accept(session_id);
-            VLOG_LP(log_trace) << "create session wire: " << session_name << " at index " << index;
-            try {
+                std::string session_name = database_name_;
+                session_name += "-";
+                session_name += std::to_string(session_id);
+                auto wire = std::make_unique<tateyama::common::wire::server_wire_container_impl>(session_name, proc_mutex_file_, datachannel_buffer_size_, max_datachannel_buffers_);
+                std::size_t index = connection_queue.accept(session_id);
+                VLOG_LP(log_trace) << "create session wire: " << session_name << " at index " << index;
                 status_->add_shm_entry(session_id, index);
                 auto& worker = workers_.at(index);
                 worker = std::make_unique<server::Worker>(*router_, session_id, std::move(wire),
-                                                          [&connection_queue, index](){ connection_queue.disconnect(index); });
+                                                              [&connection_queue, index](){ connection_queue.disconnect(index); });
                 worker->task_ = std::packaged_task<void()>([&]{worker->run();});
                 worker->future_ = worker->task_.get_future();
                 worker->thread_ = std::thread(std::move(worker->task_));
             } catch (std::exception& ex) {
                 LOG_LP(ERROR) << ex.what();
                 workers_.clear();
-                break;
+                break;    // shutdown the ipc_listener
             }
         }
     }
