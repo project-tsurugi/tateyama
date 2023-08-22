@@ -173,6 +173,49 @@ public:
         task_polling_wait_ = arg;
     }
 
+    /**
+     * @brief accessor for busy worker flag
+     * @return whether busy worker is enabled to frequently check task queues
+     * @note this is experimental feature and will be dropped soon
+     */
+    [[nodiscard]] bool busy_worker() const noexcept {
+        return busy_worker_;
+    }
+
+    /**
+     * @brief setter for busy worker flag
+     * @note this is experimental feature and will be dropped soon
+     */
+    void busy_worker(bool arg) noexcept {
+        busy_worker_ = arg;
+    }
+
+    [[nodiscard]] std::size_t watcher_interval() const noexcept {
+        return watcher_interval_;
+    }
+
+    void watcher_interval(std::size_t arg) noexcept {
+        watcher_interval_ = arg;
+    }
+
+
+    [[nodiscard]] std::size_t worker_try_count() const noexcept {
+        return worker_try_count_;
+    }
+
+    void worker_try_count(std::size_t arg) noexcept {
+        worker_try_count_ = arg;
+    }
+
+
+    [[nodiscard]] std::size_t worker_suspend_timeout() const noexcept {
+        return worker_suspend_timeout_;
+    }
+
+    void worker_suspend_timeout(std::size_t arg) noexcept {
+        worker_suspend_timeout_ = arg;
+    }
+
     friend inline std::ostream& operator<<(std::ostream& out, task_scheduler_cfg const& cfg) {
         return out << std::boolalpha <<
             "thread_count:" << cfg.thread_count() << " " <<
@@ -187,6 +230,10 @@ public:
             "frequency_promoting_delayed:" << cfg.frequency_promoting_delayed() << " " <<
             "stealing_wait:" << cfg.stealing_wait() << " " <<
             "task_polling_wait:" << cfg.task_polling_wait() << " " <<
+            "busy_worker:" << cfg.busy_worker() << " " <<
+            "watcher_interval:" << cfg.watcher_interval() << " " <<
+            "worker_try_count:" << cfg.worker_try_count() << " " <<
+            "worker_suspend_timeout:" << cfg.worker_suspend_timeout() << " " <<
             "";
     }
 
@@ -203,6 +250,10 @@ private:
     rational frequency_promoting_delayed_{1, 1000};
     std::size_t stealing_wait_ = 1;
     std::size_t task_polling_wait_ = 0;
+    bool busy_worker_ = true;
+    std::size_t watcher_interval_ = 1000;
+    std::size_t worker_try_count_ = 100000;
+    std::size_t worker_suspend_timeout_ = 1000000;
 };
 
 }
