@@ -45,7 +45,12 @@ struct cache_align cv {
  */
 class cache_align thread_control {
 public:
-    constexpr static std::size_t undefined = static_cast<std::size_t>(-1);
+
+    /**
+     * @brief undefined thread id
+     */
+    constexpr static std::size_t undefined_thread_id = static_cast<std::size_t>(-1);
+
     /**
      * @brief construct empty instance
      */
@@ -63,7 +68,7 @@ public:
 
     template <class F, class ...Args, class = std::enable_if_t<std::is_invocable_v<F, Args...>>>
     explicit thread_control(F&& callable, Args&&...args) :
-        thread_control(undefined, nullptr, std::forward<F>(callable), std::forward<Args>(args)...)
+        thread_control(undefined_thread_id , nullptr, std::forward<F>(callable), std::forward<Args>(args)...)
     {}
 
     void join() {
@@ -98,10 +103,11 @@ public:
         sleep_cv_->cv_.notify_all();
     }
 
-    void suspend() noexcept {
+    template<typename Rep, typename Period>
+    void suspend(std::chrono::duration<Rep, Period> timeout) {
         std::unique_lock lk{sleep_cv_->mutex_};
         active_ = false;
-        sleep_cv_->cv_.wait(lk, [this]() {
+        sleep_cv_->cv_.wait_for(lk, timeout, [this]() {
             return active_;
         });
     }
@@ -151,7 +157,7 @@ private:
             //pthread_setname_np(origin_.native_handle(), name.c_str());
             setup_core_affinity(thread_id, cfg);
             if constexpr (has_init_v<F>) {
-                callable.init(thread_id);
+                callable.init(thread_id, this);
             }
             {
                 std::unique_lock lk{initialized_cv_->mutex_};

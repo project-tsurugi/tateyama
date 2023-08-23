@@ -19,9 +19,9 @@
 #include <variant>
 #include <ios>
 #include <functional>
+#include <boost/rational.hpp>
 
 #include <glog/logging.h>
-#include <tateyama/api/task_scheduler/impl/thread_control.h>
 #include <tateyama/utils/cache_align.h>
 
 namespace tateyama::api::task_scheduler {

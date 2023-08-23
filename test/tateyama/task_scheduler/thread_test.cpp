@@ -145,8 +145,9 @@ TEST_F(thread_test, wait_initialization) {
             initialized_(initialized)
         {}
 
-        void init(std::size_t index) {
+        void init(std::size_t index, thread_control* th) {
             (void) index;
+            (void) th;
             while(! initialized_) {
                 _mm_pause();
             }

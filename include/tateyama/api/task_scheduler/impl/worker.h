@@ -34,6 +34,7 @@
 #include <tateyama/api/task_scheduler/task_scheduler_cfg.h>
 #include <tateyama/api/task_scheduler/impl/utils.h>
 #include <tateyama/api/task_scheduler/impl/backoff_waiter.h>
+#include <tateyama/utils/cache_align.h>
 
 namespace tateyama::task_scheduler {
 
@@ -94,8 +95,9 @@ public:
      * @brief initialize the worker
      * @param thread_id the thread index assigned for this worker
      */
-    void init(std::size_t thread_id) {
+    void init(std::size_t thread_id, thread_control* thread = nullptr) {
         // reconstruct the queues so that they are on each numa node
+        thread_ = thread;
         auto index = thread_id;
         (*queues_)[index].reconstruct();
         (*sticky_task_queues_)[index].reconstruct();
@@ -150,9 +152,11 @@ public:
                 return true;
             }
         }
-        if(cfg_ && cfg_->lazy_worker() && check_delayed_task_exists(ctx)) {
-            // If delayed task exists, pretend as if its small slice is executed so that worker won't suspend.
-            return true;
+        if(cfg_ && cfg_->lazy_worker()) {
+            if (cfg_->busy_worker() && check_delayed_task_exists(ctx)) {
+                // If delayed task exists, pretend as if its small slice is executed so that worker won't suspend.
+                return true;
+            }
         }
         auto pw = cfg_->task_polling_wait();
         if(pw > 0) { // if 0, no wait
@@ -193,6 +197,7 @@ private:
     worker_stat* stat_{};
     backoff_waiter waiter_{0};
     initializer_type initializer_{};
+    thread_control* thread_{};
 
     std::size_t next(std::size_t current) {
         auto sz = queues_->size();
@@ -254,7 +259,9 @@ private:
         basic_queue<task>& q,
         basic_queue<task>& sq
     ) {
-        promote_delayed_task_if_needed(ctx, q, sq);
+        if(cfg_ && cfg_->busy_worker()) {
+            promote_delayed_task_if_needed(ctx, q, sq);
+        }
         // using counter, check sticky sometimes for fairness
         auto& cnt = ctx.count_check_local_first();
         cnt += cfg_->ratio_check_local_first();

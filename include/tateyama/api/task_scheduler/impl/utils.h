@@ -24,10 +24,13 @@
 
 namespace tateyama::task_scheduler {
 
+class thread_control;
+
 namespace details {
 
 template<class T>
-using with_init_type = decltype( std::declval<T&>().init(static_cast<std::size_t>(0)) );
+using with_init_type =
+    decltype(std::declval<T&>().init(static_cast<std::size_t>(0), static_cast<thread_control*>(nullptr)));
 
 }
 
@@ -39,5 +42,4 @@ template<class T>
 inline constexpr bool has_init_v = takatori::util::is_detected_v<details::with_init_type, T>;
 
 }
-
 

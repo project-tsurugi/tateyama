@@ -23,6 +23,7 @@
 #include <boost/dynamic_bitset.hpp>
 
 #include <tateyama/api/task_scheduler/basic_task.h>
+#include <tateyama/api/task_scheduler/basic_conditional_task.h>
 
 namespace tateyama::api::task_scheduler {
 

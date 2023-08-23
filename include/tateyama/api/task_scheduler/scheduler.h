@@ -19,6 +19,8 @@
 
 #include <tateyama/logging.h>
 #include <tateyama/api/task_scheduler/impl/worker.h>
+#include <tateyama/api/task_scheduler/impl/conditional_worker.h>
+#include <tateyama/api/task_scheduler/basic_conditional_task.h>
 #include <tateyama/api/task_scheduler/impl/queue.h>
 #include <tateyama/api/task_scheduler/impl/thread_control.h>
 #include <tateyama/utils/cache_align.h>
@@ -29,8 +31,9 @@ namespace tateyama::api::task_scheduler {
 /**
  * @brief stealing based task scheduler
  * @tparam T the task type. See comments for `task`.
+ * @tparam S the conditional task type.
  */
-template <class T>
+template <class T, class S = tateyama::task_scheduler::basic_conditional_task>
 class cache_align scheduler {
 public:
 
@@ -42,14 +45,33 @@ public:
     using task = T;
 
     /**
-     * @brief queue used by this scheduler implementation
+     * @brief conditional task type scheduled by this
+     * @details the conditional task object with check() and operator()() member function that provide condition check
+     * function and task body. See `basic_conditional_task` for a prototype of conditional task.
+     * The task must be default constructible, move constructible, and move assignable.
+     * Interaction with conditional task queues are done in move semantics.
+     */
+    using conditional_task = S;
+
+    /**
+     * @brief queue type
      */
     using queue = tateyama::task_scheduler::basic_queue<task>;
 
     /**
-     * @brief worker used by this scheduler implementation
+     * @brief conditional task queue type
+     */
+    using conditional_task_queue = tateyama::task_scheduler::basic_queue<conditional_task>;
+
+    /**
+     * @brief worker type
      */
     using worker = tateyama::task_scheduler::worker<task>;
+
+    /**
+     * @brief conditional task worker type
+     */
+    using conditional_worker = tateyama::task_scheduler::conditional_worker<conditional_task>;
 
     /**
      * @brief copy construct
@@ -110,6 +132,15 @@ public:
     }
 
     /**
+     * @brief schedule conditional task
+     * @param t the task to be scheduled.
+     * @note this function is thread-safe. Multiple threads can safely call this function concurrently.
+     */
+    void schedule_conditional(conditional_task && t) {
+        conditional_queue_.push(std::move(t));
+    }
+
+    /**
      * @brief schedule task
      * @param t the task to be scheduled.
      * @note this function is thread-safe. Multiple threads can safely call this function concurrently.
@@ -162,8 +193,15 @@ public:
         for(auto&& t : threads_) {
             t.wait_initialization();
         }
+        if(! cfg_.busy_worker()) {
+            watcher_thread_->wait_initialization();
+        }
+
         for(auto&& t : threads_) {
             t.activate();
+        }
+        if(! cfg_.busy_worker()) {
+            watcher_thread_->activate();
         }
         started_ = true;
     }
@@ -180,6 +218,11 @@ public:
         for(auto&& q : sticky_task_queues_) {
             q.deactivate();
         }
+        if(! cfg_.busy_worker()) {
+            conditional_queue_.deactivate();
+            watcher_thread_->join();
+        }
+
         for(auto&& t : threads_) {
             t.join();
         }
@@ -267,6 +310,10 @@ private:
     std::vector<std::vector<task>> initial_tasks_{};
     std::atomic_bool started_{false};
     bool empty_thread_{false};
+    conditional_task_queue conditional_queue_{};
+    conditional_worker conditional_worker_{};
+    // use unique_ptr to avoid default constructor to spawn new thread
+    std::unique_ptr<tateyama::task_scheduler::thread_control> watcher_thread_{};
 
     void prepare() {
         auto sz = cfg_.thread_count();
@@ -287,6 +334,14 @@ private:
             if (! empty_thread_) {
                 threads_.emplace_back(i, std::addressof(cfg_), worker, ctx);
             }
+        }
+        if(! cfg_.busy_worker()) {
+            conditional_worker_ = conditional_worker{conditional_queue_, std::addressof(cfg_)};
+            watcher_thread_ = std::make_unique<tateyama::task_scheduler::thread_control>(
+                tateyama::task_scheduler::thread_control::undefined_thread_id,
+                std::addressof(cfg_),
+                conditional_worker_
+            );
         }
     }
 
@@ -316,6 +371,7 @@ private:
     }
 
     constexpr static auto undefined = static_cast<std::size_t>(-1);
+
     std::size_t set_preferred_worker_for_current_thread(std::size_t index = undefined) {
         thread_local std::size_t index_for_this_thread = undefined;
         if (index != undefined) {
