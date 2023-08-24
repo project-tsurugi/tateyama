@@ -100,19 +100,19 @@ public:
             negatives.clear();
             while(q_->try_pop(t)) {
                 if(execute_task(true, t)) {
-                    std::cerr << "check : true" << std::endl;
+//                    std::cerr << "check : true" << std::endl;
                     execute_task(false, t);
                     continue;
                 }
-                std::cerr << "check : false" << std::endl;
+//                std::cerr << "check : false" << std::endl;
                 negatives.emplace_back(std::move(t));
             }
-            std::cerr << "negatives: " << negatives.size() << std::endl;
+//            std::cerr << "negatives: " << negatives.size() << std::endl;
             for(auto&& e : negatives) {
                 q_->push(std::move(e));
             }
             thread_->suspend(std::chrono::microseconds{cfg_ ? cfg_->watcher_interval() : 0});
-            std::cerr << "suspend timed out" << std::endl;
+//            std::cerr << "suspend timed out" << std::endl;
         }
     }
 
