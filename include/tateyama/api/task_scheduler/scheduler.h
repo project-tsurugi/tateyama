@@ -179,12 +179,16 @@ public:
         if(t.sticky()) {
             auto& q = sticky_task_queues_[index];
             q.push(std::move(t));
-            thread.activate();
+            if(! cfg_.busy_worker()) {
+                thread.activate();
+            }
             return;
         }
         auto& q = queues_[index];
         q.push(std::move(t));
-        thread.activate();
+        if(! cfg_.busy_worker()) {
+            thread.activate();
+        }
     }
 
     /**
