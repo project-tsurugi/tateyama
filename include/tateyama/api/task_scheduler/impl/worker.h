@@ -169,6 +169,15 @@ public:
         return false;
     }
 
+    void suspend_worker_if_needed(std::size_t& empty_work_count) {
+        if(! cfg_->busy_worker() && ! cfg_->lazy_worker()) {
+            ++empty_work_count;
+            if(empty_work_count > cfg_->worker_try_count()) {
+                empty_work_count = 0;
+                thread_->suspend(std::chrono::microseconds{cfg_->worker_suspend_timeout()});
+            }
+        }
+    }
     /**
      * @brief the worker body
      * @param ctx the worker context information
@@ -178,11 +187,14 @@ public:
         auto& q = (*queues_)[index];
         auto& sq = (*sticky_task_queues_)[index];
         ctx.last_steal_from(index);
+        std::size_t empty_work_count = 0;
         while(sq.active() || q.active()) {
             if(! process_next(ctx, q, sq)) {
                 _mm_pause();
                 waiter_();
+                suspend_worker_if_needed(empty_work_count);
             } else {
+                empty_work_count = 0;
                 waiter_.reset();
             }
         }

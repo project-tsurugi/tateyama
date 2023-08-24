@@ -98,6 +98,7 @@ public:
     void activate() noexcept {
         {
             std::unique_lock lk{sleep_cv_->mutex_};
+            if(active_) return;
             active_ = true;
         }
         sleep_cv_->cv_.notify_all();

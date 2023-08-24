@@ -164,6 +164,7 @@ public:
      */
     void schedule_at(task&& t, std::size_t index) {
         BOOST_ASSERT(index < size_); //NOLINT
+        auto& thread = threads_[index];
         if (! started_) {
             auto& s = initial_tasks_[index];
             s.emplace_back(std::move(t));
@@ -178,10 +179,12 @@ public:
         if(t.sticky()) {
             auto& q = sticky_task_queues_[index];
             q.push(std::move(t));
+            thread.activate();
             return;
         }
         auto& q = queues_[index];
         q.push(std::move(t));
+        thread.activate();
     }
 
     /**
