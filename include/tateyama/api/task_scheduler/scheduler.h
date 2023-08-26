@@ -25,6 +25,7 @@
 #include <tateyama/api/task_scheduler/impl/thread_control.h>
 #include <tateyama/utils/cache_align.h>
 #include "task_scheduler_cfg.h"
+#include "schedule_option.h"
 
 namespace tateyama::api::task_scheduler {
 
@@ -148,12 +149,25 @@ public:
      * @param t the task to be scheduled.
      * @note this function is thread-safe. Multiple threads can safely call this function concurrently.
      */
-    void schedule(task&& t) {
+    void schedule(task&& t, schedule_option opt = {}) {
         std::size_t index{};
-        if (cfg_.use_preferred_worker_for_current_thread()) {
-            index = preferred_worker_for_current_thread();
-        } else {
-            index = next_worker();
+        bool found = false;
+        if (opt.policy() == schedule_policy_kind::suspended_worker) {
+            auto base = preferred_worker_for_current_thread();
+            for(auto cur = increment(base, size_); cur != base; increment(cur, size_)) {
+                if(! threads_[cur].active()) {
+                    index = cur;
+                    found = true;
+                    break;
+                }
+            }
+        }
+        if (! found || opt.policy() == schedule_policy_kind::undefined) {
+            if (cfg_.use_preferred_worker_for_current_thread()) {
+                index = preferred_worker_for_current_thread();
+            } else {
+                index = next_worker();
+            }
         }
         schedule_at(std::move(t), index);
     }
