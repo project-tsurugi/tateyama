@@ -128,9 +128,7 @@ public:
      * @return false if there are no more conditional task
      * @note this function is kept public just for testing
      */
-    bool process_next(
-        conditional_worker_context& ctx
-    ) {
+    bool process_next() {
         conditional_task t{};
         std::deque<conditional_task> negatives{};
         while(q_->try_pop(t)) {
@@ -155,7 +153,7 @@ public:
     void operator()(conditional_worker_context& ctx) {
         conditional_task t{};
         while(q_->active()) {
-            if(! process_next(ctx)) {
+            if(! process_next()) {
                 ctx.thread()->suspend();
                 continue;
             }

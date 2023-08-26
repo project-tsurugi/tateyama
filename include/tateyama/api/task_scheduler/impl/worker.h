@@ -171,7 +171,7 @@ public:
     }
 
     void suspend_worker_if_needed(std::size_t& empty_work_count, api::task_scheduler::context& ctx) {
-        if(! cfg_->busy_worker() && ! cfg_->lazy_worker()) {
+        if(! cfg_->busy_worker()) {
             ++empty_work_count;
             if(empty_work_count > cfg_->worker_try_count()) {
                 empty_work_count = 0;
@@ -271,7 +271,7 @@ private:
         basic_queue<task>& q,
         basic_queue<task>& sq
     ) {
-        if(cfg_ && cfg_->busy_worker()) {
+        if(cfg_ && ! cfg_->enable_watcher()) {
             promote_delayed_task_if_needed(ctx, q, sq);
         }
         // using counter, check sticky sometimes for fairness

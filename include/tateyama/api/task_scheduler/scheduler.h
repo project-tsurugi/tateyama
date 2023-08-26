@@ -203,14 +203,14 @@ public:
         for(auto&& t : threads_) {
             t.wait_initialization();
         }
-        if(! cfg_.busy_worker() && watcher_thread_) {
+        if(cfg_.enable_watcher() && watcher_thread_) {
             watcher_thread_->wait_initialization();
         }
 
         for(auto&& t : threads_) {
             t.activate();
         }
-        if(! cfg_.busy_worker() && watcher_thread_) {
+        if(cfg_.enable_watcher() && watcher_thread_) {
             watcher_thread_->activate();
         }
         started_ = true;
@@ -228,7 +228,7 @@ public:
         for(auto&& q : sticky_task_queues_) {
             q.deactivate();
         }
-        if(! cfg_.busy_worker()) {
+        if(cfg_.enable_watcher()) {
             conditional_queue_.deactivate();
             if(watcher_thread_) {
                 watcher_thread_->activate();
@@ -373,7 +373,7 @@ private:
                 threads_.emplace_back(i, std::addressof(cfg_), worker, ctx);
             }
         }
-        if(! cfg_.busy_worker()) {
+        if(cfg_.enable_watcher()) {
             conditional_worker_ = conditional_worker{conditional_queue_, std::addressof(cfg_)};
             if (! empty_thread_) {
                 watcher_thread_ = std::make_unique<tateyama::task_scheduler::thread_control>(

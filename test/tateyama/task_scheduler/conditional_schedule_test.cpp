@@ -60,6 +60,7 @@ TEST_F(conditional_schedule_test, simple) {
     task_scheduler_cfg cfg{};
     cfg.thread_count(1);
     cfg.busy_worker(false);
+    cfg.enable_watcher(true);
     scheduler<task, conditional_task> sched{cfg};
     std::atomic_bool executed = false;
     std::atomic_size_t cnt = 0;
@@ -103,6 +104,7 @@ TEST_F(conditional_schedule_test, step_by_step) {
     task_scheduler_cfg cfg{};
     cfg.thread_count(0);
     cfg.busy_worker(false);
+    cfg.enable_watcher(true);
     scheduler<task, conditional_task> sched{cfg, true};
     std::atomic_bool executed1 = false;
     std::atomic_size_t cnt1 = 0;
@@ -117,13 +119,13 @@ TEST_F(conditional_schedule_test, step_by_step) {
     sched.schedule_conditional(std::move(t1));
     sched.schedule_conditional(std::move(t2));
     EXPECT_EQ(2, q.size());
-    w.process_next(ctx);
+    w.process_next();
     EXPECT_TRUE(executed1);
     EXPECT_EQ(1, cnt1);
     EXPECT_EQ(1, q.size());
     EXPECT_FALSE(executed2);
     EXPECT_EQ(1, cnt2);
-    w.process_next(ctx);
+    w.process_next();
     EXPECT_TRUE(executed2);
     EXPECT_EQ(1, cnt1);
     EXPECT_EQ(2, cnt2);
@@ -138,6 +140,7 @@ TEST_F(conditional_schedule_test, stop_while_cond_task_repeat_checking) {
     task_scheduler_cfg cfg{};
     cfg.thread_count(1);
     cfg.busy_worker(false);
+    cfg.enable_watcher(true);
     cfg.watcher_interval(2*60*1000*1000);
     scheduler<task, conditional_task> sched{cfg};
     std::atomic_bool executed = false;
@@ -164,6 +167,7 @@ TEST_F(conditional_schedule_test, stop_with_empty_cond_task) {
     task_scheduler_cfg cfg{};
     cfg.thread_count(1);
     cfg.busy_worker(false);
+    cfg.enable_watcher(true);
     cfg.watcher_interval(2*60*1000*1000);
     scheduler<task, conditional_task> sched{cfg};
     sched.start();
