@@ -183,6 +183,14 @@ public:
     }
 
     /**
+     * @brief setter for busy worker flag
+     * @note this is experimental feature and will be dropped soon
+     */
+    void busy_worker(bool arg) noexcept {
+        busy_worker_ = arg;
+    }
+
+    /**
      * @brief setter for enable_watcher flag
      * @note this is experimental feature and will be dropped soon
      */
@@ -199,13 +207,6 @@ public:
         return enable_watcher_;
     }
 
-    /**
-     * @brief setter for busy worker flag
-     * @note this is experimental feature and will be dropped soon
-     */
-    void busy_worker(bool arg) noexcept {
-        busy_worker_ = arg;
-    }
     [[nodiscard]] std::size_t watcher_interval() const noexcept {
         return watcher_interval_;
     }

@@ -18,6 +18,7 @@
 #include <cstdint>
 #include <functional>
 #include <condition_variable>
+#include <atomic>
 
 #include <boost/thread.hpp>
 #include <glog/logging.h>
