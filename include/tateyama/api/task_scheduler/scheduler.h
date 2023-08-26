@@ -380,7 +380,7 @@ private:
         for(std::size_t i = 0; i < sz; ++i) {
             auto& ctx = contexts_.emplace_back(i);
             auto& worker = workers_.emplace_back(
-                queues_, sticky_task_queues_, delayed_task_queues_, initial_tasks_, worker_stats_[i], std::addressof(cfg_), [this](std::size_t index) {
+                queues_, sticky_task_queues_, delayed_task_queues_, initial_tasks_, worker_stats_[i], cfg_, [this](std::size_t index) {
                         this->initialize_preferred_worker_for_current_thread(index);
                 });
             if (! empty_thread_) {
@@ -388,7 +388,7 @@ private:
             }
         }
         if(cfg_.enable_watcher()) {
-            conditional_worker_ = conditional_worker{conditional_queue_, std::addressof(cfg_)};
+            conditional_worker_ = conditional_worker{conditional_queue_, cfg_};
             if (! empty_thread_) {
                 watcher_thread_ = std::make_unique<tateyama::task_scheduler::thread_control>(
                     tateyama::task_scheduler::thread_control::undefined_thread_id,
@@ -400,7 +400,8 @@ private:
         }
     }
 
-    std::size_t increment(std::atomic_size_t& index, std::size_t mod) {
+    template<class E>
+    std::size_t increment(E& index, std::size_t mod) {
         auto ret = index++;
         return ret % mod;
     }

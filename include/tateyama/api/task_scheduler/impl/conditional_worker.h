@@ -105,9 +105,9 @@ public:
      */
     explicit conditional_worker(
         basic_queue<conditional_task>& q,
-        task_scheduler_cfg const* cfg = nullptr
+        task_scheduler_cfg const& cfg
     ) noexcept:
-        cfg_(cfg),
+        cfg_(std::addressof(cfg)),
         q_(std::addressof(q))
     {}
 
@@ -157,7 +157,7 @@ public:
                 ctx.thread()->suspend();
                 continue;
             }
-            ctx.thread()->suspend(std::chrono::microseconds{cfg_ ? cfg_->watcher_interval() : 0});
+            ctx.thread()->suspend(std::chrono::microseconds{cfg_->watcher_interval()});
         }
     }
 

@@ -79,16 +79,16 @@ public:
         std::vector<basic_queue<task>>& delayed_task_queues,
         std::vector<std::vector<task>>& initial_tasks,
         worker_stat& stat,
-        task_scheduler_cfg const* cfg = nullptr,
+        task_scheduler_cfg const& cfg,
         initializer_type initializer = {}
     ) noexcept:
-        cfg_(cfg),
+        cfg_(std::addressof(cfg)),
         queues_(std::addressof(queues)),
         sticky_task_queues_(std::addressof(sticky_task_queues)),
         delayed_task_queues_(std::addressof(delayed_task_queues)),
         initial_tasks_(std::addressof(initial_tasks)),
         stat_(std::addressof(stat)),
-        waiter_(cfg->lazy_worker() ? backoff_waiter() : backoff_waiter(0)),
+        waiter_(cfg.lazy_worker() ? backoff_waiter() : backoff_waiter(0)),
         initializer_(std::move(initializer))
     {}
 
@@ -140,7 +140,7 @@ public:
         if (try_local_and_sticky(ctx, q, sq)) {
             return true;
         }
-        if (cfg_ && cfg_->stealing_enabled()) {
+        if (cfg_->stealing_enabled()) {
             // try local and sticky more times before stealing
             for(std::size_t i=0, n=cfg_->stealing_wait() * cfg_->thread_count(); i<n ; ++i) {
                 if(try_local_and_sticky(ctx, q, sq)) {
@@ -153,7 +153,7 @@ public:
                 return true;
             }
         }
-        if(cfg_ && cfg_->lazy_worker()) {
+        if(cfg_->lazy_worker()) {
             if (cfg_->busy_worker() && check_delayed_task_exists(ctx)) {
                 // If delayed task exists, pretend as if its small slice is executed so that worker won't suspend.
                 return true;
@@ -271,7 +271,7 @@ private:
         basic_queue<task>& q,
         basic_queue<task>& sq
     ) {
-        if(cfg_ && ! cfg_->enable_watcher()) {
+        if(! cfg_->enable_watcher()) {
             promote_delayed_task_if_needed(ctx, q, sq);
         }
         // using counter, check sticky sometimes for fairness
