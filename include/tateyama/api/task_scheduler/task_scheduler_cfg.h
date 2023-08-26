@@ -252,7 +252,7 @@ private:
     std::size_t task_polling_wait_ = 0;
     bool busy_worker_ = true;
     std::size_t watcher_interval_ = 1000;
-    std::size_t worker_try_count_ = 100000;
+    std::size_t worker_try_count_ = 1000;
     std::size_t worker_suspend_timeout_ = 1000000;
 };
 

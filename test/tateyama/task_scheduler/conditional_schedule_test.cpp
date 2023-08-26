@@ -81,13 +81,14 @@ TEST_F(conditional_schedule_test, simple) {
     ASSERT_EQ(5, cnt);
 }
 
-TEST_F(conditional_schedule_test, stop) {
-    // verify stopping task scheduler timely even conditional task remains
+TEST_F(conditional_schedule_test, stop_while_cond_task_repeat_checking) {
+    // verify stopping task scheduler timely even conditional task remains with large watcher_interval
     using task = tateyama::task_scheduler::basic_task<test_task>;
     using conditional_task = tateyama::task_scheduler::basic_conditional_task;
     task_scheduler_cfg cfg{};
     cfg.thread_count(1);
     cfg.busy_worker(false);
+    cfg.watcher_interval(2*60*1000*1000);
     scheduler<task, conditional_task> sched{cfg};
     std::atomic_bool executed = false;
     conditional_task t{
@@ -106,4 +107,18 @@ TEST_F(conditional_schedule_test, stop) {
     ASSERT_FALSE(executed);
 }
 
+TEST_F(conditional_schedule_test, stop_with_empty_cond_task) {
+    // verify stopping task scheduler timely even there is no conditional task
+    using task = tateyama::task_scheduler::basic_task<test_task>;
+    using conditional_task = tateyama::task_scheduler::basic_conditional_task;
+    task_scheduler_cfg cfg{};
+    cfg.thread_count(1);
+    cfg.busy_worker(false);
+    cfg.watcher_interval(2*60*1000*1000);
+    scheduler<task, conditional_task> sched{cfg};
+    sched.start();
+    std::this_thread::sleep_for(1ms);
+    ASSERT_FALSE(sched.conditional_worker_context().thread()->active());
+    sched.stop();
+}
 }

@@ -28,9 +28,9 @@ class thread_control;
 
 namespace details {
 
-template<class T>
+template<class T, class ...Args>
 using with_init_type =
-    decltype(std::declval<T&>().init(static_cast<std::size_t>(0), static_cast<thread_control*>(nullptr)));
+    decltype(std::declval<T&>().init(static_cast<std::size_t>(0), static_cast<thread_control*>(nullptr), std::declval<Args>()...));
 
 }
 
@@ -38,8 +38,8 @@ using with_init_type =
  * @brief utility to check if given type has the init(std::size_t) member function
  * @tparam T
  */
-template<class T>
-inline constexpr bool has_init_v = takatori::util::is_detected_v<details::with_init_type, T>;
+template<class T, class ...Args>
+inline constexpr bool has_init_v = takatori::util::is_detected_v<details::with_init_type, T, Args...>;
 
 }
 

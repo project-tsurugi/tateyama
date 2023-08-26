@@ -24,6 +24,10 @@
 #include <glog/logging.h>
 #include <tateyama/utils/cache_align.h>
 
+namespace tateyama::task_scheduler {
+class thread_control;
+}
+
 namespace tateyama::api::task_scheduler {
 
 /**
@@ -105,12 +109,28 @@ public:
         task_is_stolen_ = arg;
     }
 
+    /**
+     * @brief accessor to the thread that runs the worker with this context
+     * @return the thread
+     */
+    [[nodiscard]] tateyama::task_scheduler::thread_control* thread() const noexcept {
+        return thread_;
+    }
+
+    /**
+     * @brief setter to the thread that runs the worker with this context
+     * @param arg the thread
+     */
+    void thread(tateyama::task_scheduler::thread_control* arg) noexcept {
+        thread_ = arg;
+    }
 private:
     std::size_t index_{};
     std::size_t last_steal_from_{};
     rational count_check_local_first_{};
     rational count_promoting_delayed_{};
     bool task_is_stolen_{};
+    tateyama::task_scheduler::thread_control* thread_{};
 };
 
 }

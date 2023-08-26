@@ -73,7 +73,7 @@ public:
 
     void join() {
         origin_.join();
-        assert(! active_);  //NOLINT
+        assert(! active());  //NOLINT
     }
 
     [[nodiscard]] bool active() const noexcept {
@@ -96,6 +96,7 @@ public:
     }
 
     void activate() noexcept {
+        if(*completed_) return;
         {
             std::unique_lock lk{sleep_cv_->mutex_};
             if(active_) return;
@@ -104,8 +105,8 @@ public:
         sleep_cv_->cv_.notify_all();
     }
 
-    template<typename Rep, typename Period>
-    void suspend(std::chrono::duration<Rep, Period> timeout) {
+    template<typename Rep = std::chrono::hours::rep, typename Period = std::chrono::hours::period>
+    void suspend(std::chrono::duration<Rep, Period> timeout = std::chrono::hours{24}) {
         std::unique_lock lk{sleep_cv_->mutex_};
         active_ = false;
         sleep_cv_->cv_.wait_for(lk, timeout, [this]() {
@@ -121,6 +122,7 @@ private:
     bool active_{};
     std::unique_ptr<cv> initialized_cv_{std::make_unique<cv>()};
     bool initialized_{};
+    std::unique_ptr<std::atomic_bool> completed_{std::make_unique<std::atomic_bool>()};
 
     // thread must come last since the construction starts new thread, which accesses the member variables above.
     boost::thread origin_{};
@@ -157,8 +159,10 @@ private:
             //std::string name("Id"+std::to_string(thread_id));
             //pthread_setname_np(origin_.native_handle(), name.c_str());
             setup_core_affinity(thread_id, cfg);
-            if constexpr (has_init_v<F>) {
-                callable.init(thread_id, this);
+            if constexpr (has_init_v<F, Args...>) {
+                std::apply([&callable, thread_id, this](auto&& ...args) {
+                    callable.init(thread_id, this, args...);
+                }, args);
             }
             {
                 std::unique_lock lk{initialized_cv_->mutex_};
@@ -178,6 +182,7 @@ private:
             std::apply([&callable](auto&& ...args) {
                 callable(args...);
             }, std::move(args));
+            *completed_ = true;
             {
                 std::unique_lock lk{sleep_cv_->mutex_};
                 active_ = false;

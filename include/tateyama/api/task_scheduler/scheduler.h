@@ -138,6 +138,7 @@ public:
      */
     void schedule_conditional(conditional_task && t) {
         conditional_queue_.push(std::move(t));
+        watcher_thread_->activate();
     }
 
     /**
@@ -227,10 +228,12 @@ public:
         }
         if(! cfg_.busy_worker()) {
             conditional_queue_.deactivate();
+            watcher_thread_->activate();
             watcher_thread_->join();
         }
 
         for(auto&& t : threads_) {
+            t.activate();
             t.join();
         }
         started_ = false;
@@ -272,6 +275,14 @@ public:
      */
     [[nodiscard]] std::vector<worker>& workers() noexcept {
         return workers_;
+    }
+
+    /**
+     * @brief accessor to the conditional context for testing purpose
+     * @return the conditional worker context
+     */
+    [[nodiscard]] tateyama::task_scheduler::conditional_worker_context const& conditional_worker_context() const noexcept {
+        return conditional_worker_context_;
     }
 
     /**
@@ -318,9 +329,9 @@ private:
     std::atomic_bool started_{false};
     bool empty_thread_{false};
     conditional_task_queue conditional_queue_{};
-    conditional_worker conditional_worker_{};
     // use unique_ptr to avoid default constructor to spawn new thread
     std::unique_ptr<tateyama::task_scheduler::thread_control> watcher_thread_{};
+    tateyama::task_scheduler::conditional_worker_context conditional_worker_context_{};
 
     void prepare() {
         auto sz = cfg_.thread_count();
@@ -343,11 +354,11 @@ private:
             }
         }
         if(! cfg_.busy_worker()) {
-            conditional_worker_ = conditional_worker{conditional_queue_, std::addressof(cfg_)};
             watcher_thread_ = std::make_unique<tateyama::task_scheduler::thread_control>(
                 tateyama::task_scheduler::thread_control::undefined_thread_id,
                 std::addressof(cfg_),
-                conditional_worker_
+                conditional_worker{conditional_queue_, std::addressof(cfg_)},
+                conditional_worker_context_
             );
         }
     }

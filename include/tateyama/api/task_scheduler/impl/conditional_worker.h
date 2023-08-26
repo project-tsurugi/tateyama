@@ -38,6 +38,48 @@ namespace tateyama::task_scheduler {
 using api::task_scheduler::task_scheduler_cfg;
 
 /**
+ * @brief context object for conditional worker
+ * @details worker holds static information (given on constructor) only and dynamic context is separated to this object
+ */
+class conditional_worker_context {
+public:
+
+    /**
+     * @brief create new object
+     */
+    conditional_worker_context() = default;
+
+    /**
+     * @brief destruct the object
+     */
+    ~conditional_worker_context() = default;
+
+    conditional_worker_context(conditional_worker_context const& other) = default;
+    conditional_worker_context& operator=(conditional_worker_context const& other) = default;
+    conditional_worker_context(conditional_worker_context&& other) noexcept = default;
+    conditional_worker_context& operator=(conditional_worker_context&& other) noexcept = default;
+
+    /**
+     * @brief accessor to the thread control that runs conditional worker
+     * @return thread control
+     */
+    [[nodiscard]] thread_control* thread() const noexcept {
+        return thread_;
+    }
+
+    /**
+     * @brief set the thread control that runs conditional worker
+     */
+    void thread(thread_control* arg) noexcept {
+        thread_ = arg;
+    }
+
+private:
+    thread_control* thread_{};
+};
+
+
+/**
  * @brief condition watcher worker object
  * @details this represents the worker logic running on watcher thread that processes conditional task queue
  * @note this object is just a logic object and doesn't hold dynamic state, so safely be copied into thread_control.
@@ -68,12 +110,10 @@ public:
      */
     explicit conditional_worker(
         basic_queue<conditional_task>& q,
-        task_scheduler_cfg const* cfg = nullptr,
-        initializer_type initializer = {}
+        task_scheduler_cfg const* cfg = nullptr
     ) noexcept:
         cfg_(cfg),
         q_(std::addressof(q)),
-        initializer_(std::move(initializer))
     {}
 
     /**
@@ -81,19 +121,16 @@ public:
      * @param thread_id the thread index assigned for this worker
      * @param thread reference to thread control that runs this worker
      */
-    void init(std::size_t thread_id, thread_control* thread) {
+    void init(std::size_t thread_id, thread_control* thread, conditional_worker_context& ctx) {
         // reconstruct the queues so that they are on same numa node
         (*q_).reconstruct();
-        if(initializer_) {
-            initializer_(thread_id);
-        }
-        thread_ = thread;
+        ctx.thread(thread);
     }
 
     /**
      * @brief the condition watcher worker body
      */
-    void operator()() {
+    void operator()(conditional_worker_context& ctx) {
         conditional_task t{};
         std::deque<conditional_task> negatives{};
         while(q_->active()) {
@@ -108,10 +145,14 @@ public:
                 negatives.emplace_back(std::move(t));
             }
 //            std::cerr << "negatives: " << negatives.size() << std::endl;
+            if(negatives.empty()) {
+                ctx.thread()->suspend();
+                continue;
+            }
             for(auto&& e : negatives) {
                 q_->push(std::move(e));
             }
-            thread_->suspend(std::chrono::microseconds{cfg_ ? cfg_->watcher_interval() : 0});
+            ctx.thread()->suspend(std::chrono::microseconds{cfg_ ? cfg_->watcher_interval() : 0});
 //            std::cerr << "suspend timed out" << std::endl;
         }
     }
@@ -119,8 +160,6 @@ public:
 private:
     task_scheduler_cfg const* cfg_{};
     basic_queue<conditional_task>* q_{};
-    thread_control* thread_{};
-    initializer_type initializer_{};
 
     bool execute_task(bool check_condition, conditional_task& t) {
         bool ret{};

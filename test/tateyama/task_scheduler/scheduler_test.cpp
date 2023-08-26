@@ -171,7 +171,8 @@ TEST_F(scheduler_test, sticky_task_simple) {
     sched.schedule_at(task{test_task_sticky{[&](context& t) {
         executed02 = true;
     }}}, 0);
-    w0.init(0);
+    api::task_scheduler::context ctx{};
+    w0.init(0, nullptr, ctx);
 
     context ctx0{0};
     w0.process_next(ctx0, lq0, sq0);
@@ -208,8 +209,9 @@ TEST_F(scheduler_test, sticky_task_stealing) {
     sched.schedule_at(task{test_task_sticky{[&](context& t) {
         executed10 = true;
     }}}, 1);
-    w0.init(0);
-    w1.init(1);
+    api::task_scheduler::context ctx{};
+    w0.init(0, nullptr, ctx);
+    w0.init(1, nullptr, ctx);
 
     context ctx0{0};
     context ctx1{1};
@@ -243,7 +245,8 @@ TEST_F(scheduler_test, delayed_tasks_only) {
     sched.schedule_at(task{test_task_delayed{[&](context& t) {
         executed01 = true;
     }}}, 0);
-    w0.init(0);
+    api::task_scheduler::context ctx{};
+    w0.init(0, nullptr, ctx);
 
     context ctx0{0};
     EXPECT_TRUE(w0.process_next(ctx0, lq0, sq0));
@@ -301,7 +304,8 @@ TEST_F(scheduler_test, sticky_tasks_delayed_tasks) {
     sched.schedule_at(task{test_task_delayed{[&](context& t) {
         executed07 = true;
     }}}, 0);
-    w0.init(0);
+    api::task_scheduler::context ctx{};
+    w0.init(0, nullptr, ctx);
 
     context ctx0{0};
     w0.process_next(ctx0, lq0, sq0);
@@ -376,7 +380,8 @@ TEST_F(scheduler_test, task_sticky_and_delayed) {
     sched.schedule_at(task{test_task_sticky{[&](context& t) {
         executed02 = true;
     }}}, 0);
-    w0.init(0);
+    api::task_scheduler::context ctx{};
+    w0.init(0, nullptr, ctx);
 
     EXPECT_EQ(2, sq0.size());
     context ctx0{0};
@@ -415,7 +420,8 @@ TEST_F(scheduler_test, task_sticky_and_delayed_only) {
     sched.schedule_at(task{test_task_sticky_delayed{[&](context& t) {
         executed01 = true;
     }}}, 0);
-    w0.init(0);
+    api::task_scheduler::context ctx{};
+    w0.init(0, nullptr, ctx);
 
     context ctx0{0};
     EXPECT_TRUE(w0.process_next(ctx0, lq0, sq0)); // by existence check, 01 comes first (i.e. not FIFO)

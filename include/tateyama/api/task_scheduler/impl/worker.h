@@ -95,9 +95,9 @@ public:
      * @brief initialize the worker
      * @param thread_id the thread index assigned for this worker
      */
-    void init(std::size_t thread_id, thread_control* thread = nullptr) {
+    void init(std::size_t thread_id, thread_control* thread, api::task_scheduler::context& ctx) {
         // reconstruct the queues so that they are on each numa node
-        thread_ = thread;
+        ctx.thread(thread);
         auto index = thread_id;
         (*queues_)[index].reconstruct();
         (*sticky_task_queues_)[index].reconstruct();
@@ -169,12 +169,12 @@ public:
         return false;
     }
 
-    void suspend_worker_if_needed(std::size_t& empty_work_count) {
+    void suspend_worker_if_needed(std::size_t& empty_work_count, api::task_scheduler::context& ctx) {
         if(! cfg_->busy_worker() && ! cfg_->lazy_worker()) {
             ++empty_work_count;
             if(empty_work_count > cfg_->worker_try_count()) {
                 empty_work_count = 0;
-                thread_->suspend(std::chrono::microseconds{cfg_->worker_suspend_timeout()});
+                ctx.thread()->suspend(std::chrono::microseconds{cfg_->worker_suspend_timeout()});
             }
         }
     }
@@ -192,7 +192,7 @@ public:
             if(! process_next(ctx, q, sq)) {
                 _mm_pause();
                 waiter_();
-                suspend_worker_if_needed(empty_work_count);
+                suspend_worker_if_needed(empty_work_count, ctx);
             } else {
                 empty_work_count = 0;
                 waiter_.reset();
@@ -209,7 +209,6 @@ private:
     worker_stat* stat_{};
     backoff_waiter waiter_{0};
     initializer_type initializer_{};
-    thread_control* thread_{};
 
     std::size_t next(std::size_t current) {
         auto sz = queues_->size();
