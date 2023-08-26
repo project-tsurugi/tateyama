@@ -138,7 +138,9 @@ public:
      */
     void schedule_conditional(conditional_task && t) {
         conditional_queue_.push(std::move(t));
-        watcher_thread_->activate();
+        if(watcher_thread_) {
+            watcher_thread_->activate();
+        }
     }
 
     /**
@@ -201,14 +203,14 @@ public:
         for(auto&& t : threads_) {
             t.wait_initialization();
         }
-        if(! cfg_.busy_worker()) {
+        if(! cfg_.busy_worker() && watcher_thread_) {
             watcher_thread_->wait_initialization();
         }
 
         for(auto&& t : threads_) {
             t.activate();
         }
-        if(! cfg_.busy_worker()) {
+        if(! cfg_.busy_worker() && watcher_thread_) {
             watcher_thread_->activate();
         }
         started_ = true;
@@ -228,8 +230,10 @@ public:
         }
         if(! cfg_.busy_worker()) {
             conditional_queue_.deactivate();
-            watcher_thread_->activate();
-            watcher_thread_->join();
+            if(watcher_thread_) {
+                watcher_thread_->activate();
+                watcher_thread_->join();
+            }
         }
 
         for(auto&& t : threads_) {
@@ -278,6 +282,22 @@ public:
     }
 
     /**
+     * @brief accessor to the conditional worker for testing purpose
+     * @return the conditional worker
+     */
+    [[nodiscard]] conditional_worker& cond_worker() noexcept {
+        return conditional_worker_;
+    }
+
+    /**
+     * @brief accessor to the conditional queue for testing purpose
+     * @return the conditional queue
+     */
+    [[nodiscard]] conditional_task_queue & cond_queue() noexcept {
+        return conditional_queue_;
+    }
+
+    /**
      * @brief accessor to the conditional context for testing purpose
      * @return the conditional worker context
      */
@@ -293,7 +313,7 @@ public:
             // print nothing if not started yet
             return;
         }
-        auto count = workers_.size();
+        auto count = contexts_.size();
         os << "worker_count: " << count << std::endl;
         os << "workers:" << std::endl;
         for(std::size_t i=0; i<count; ++i) {
@@ -301,7 +321,6 @@ public:
             os << "    thread: " << std::endl;
             threads_[i].print_diagnostic(os);
             os << "    queues:" << std::endl;
-            auto&& w = workers_[i];
             os << "      local:" << std::endl;
             print_queue_diagnostic(queues_[i], os);
             os << "      sticky:" << std::endl;
@@ -320,7 +339,7 @@ private:
     std::vector<queue> queues_{};
     std::vector<queue> sticky_task_queues_{};
     std::vector<queue> delayed_task_queues_{};
-    std::vector<worker> workers_{};
+    std::vector<worker> workers_{};  // stored for testing
     std::vector<tateyama::task_scheduler::thread_control> threads_{};
     std::vector<tateyama::task_scheduler::worker_stat> worker_stats_{};
     std::vector<context> contexts_{};
@@ -332,6 +351,7 @@ private:
     // use unique_ptr to avoid default constructor to spawn new thread
     std::unique_ptr<tateyama::task_scheduler::thread_control> watcher_thread_{};
     tateyama::task_scheduler::conditional_worker_context conditional_worker_context_{};
+    conditional_worker conditional_worker_{}; // stored for testing
 
     void prepare() {
         auto sz = cfg_.thread_count();
@@ -354,12 +374,15 @@ private:
             }
         }
         if(! cfg_.busy_worker()) {
-            watcher_thread_ = std::make_unique<tateyama::task_scheduler::thread_control>(
-                tateyama::task_scheduler::thread_control::undefined_thread_id,
-                std::addressof(cfg_),
-                conditional_worker{conditional_queue_, std::addressof(cfg_)},
-                conditional_worker_context_
-            );
+            conditional_worker_ = conditional_worker{conditional_queue_, std::addressof(cfg_)};
+            if (! empty_thread_) {
+                watcher_thread_ = std::make_unique<tateyama::task_scheduler::thread_control>(
+                    tateyama::task_scheduler::thread_control::undefined_thread_id,
+                    std::addressof(cfg_),
+                    conditional_worker_,
+                    conditional_worker_context_
+                );
+            }
         }
     }
 

@@ -81,6 +81,56 @@ TEST_F(conditional_schedule_test, simple) {
     ASSERT_EQ(5, cnt);
 }
 
+using conditional_task = tateyama::task_scheduler::basic_conditional_task;
+conditional_task create_conditional_task(
+    std::size_t max,
+    std::atomic_bool& executed,
+    std::atomic_size_t& cnt
+) {
+    return conditional_task{
+        [&, max]() {
+            ++cnt;
+            return cnt >= max;
+        },
+        [&]() {
+            executed = true;
+        },
+    };
+}
+TEST_F(conditional_schedule_test, step_by_step) {
+    // verify conditional worker logic step by step using process_next()
+    using task = tateyama::task_scheduler::basic_task<test_task>;
+    task_scheduler_cfg cfg{};
+    cfg.thread_count(0);
+    cfg.busy_worker(false);
+    scheduler<task, conditional_task> sched{cfg, true};
+    std::atomic_bool executed1 = false;
+    std::atomic_size_t cnt1 = 0;
+    std::atomic_bool executed2 = false;
+    std::atomic_size_t cnt2 = 0;
+    auto t1 = create_conditional_task(1, executed1, cnt1);
+    auto t2 = create_conditional_task(2, executed2, cnt2);
+    sched.start();
+    auto& w = sched.cond_worker();
+    auto& q = sched.cond_queue();
+    tateyama::task_scheduler::conditional_worker_context ctx{};
+    sched.schedule_conditional(std::move(t1));
+    sched.schedule_conditional(std::move(t2));
+    EXPECT_EQ(2, q.size());
+    w.process_next(ctx);
+    EXPECT_TRUE(executed1);
+    EXPECT_EQ(1, cnt1);
+    EXPECT_EQ(1, q.size());
+    EXPECT_FALSE(executed2);
+    EXPECT_EQ(1, cnt2);
+    w.process_next(ctx);
+    EXPECT_TRUE(executed2);
+    EXPECT_EQ(1, cnt1);
+    EXPECT_EQ(2, cnt2);
+    EXPECT_EQ(0, q.size());
+    sched.stop();
+}
+
 TEST_F(conditional_schedule_test, stop_while_cond_task_repeat_checking) {
     // verify stopping task scheduler timely even conditional task remains with large watcher_interval
     using task = tateyama::task_scheduler::basic_task<test_task>;

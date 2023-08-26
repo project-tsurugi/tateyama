@@ -122,32 +122,44 @@ public:
     }
 
     /**
+     * @brief proceed one step
+     * @param ctx the scheduler context
+     * @return true if there are remaining conditional task(s) and should be checked periodically
+     * @return false if there are no more conditional task
+     * @note this function is kept public just for testing
+     */
+    bool process_next(
+        conditional_worker_context& ctx
+    ) {
+        conditional_task t{};
+        std::deque<conditional_task> negatives{};
+        while(q_->try_pop(t)) {
+            if(execute_task(true, t)) {
+                execute_task(false, t);
+                continue;
+            }
+            negatives.emplace_back(std::move(t));
+        }
+        if(negatives.empty()) {
+            return false;
+        }
+        for(auto&& e : negatives) {
+            q_->push(std::move(e));
+        }
+        return true;
+    }
+
+    /**
      * @brief the condition watcher worker body
      */
     void operator()(conditional_worker_context& ctx) {
         conditional_task t{};
-        std::deque<conditional_task> negatives{};
         while(q_->active()) {
-            negatives.clear();
-            while(q_->try_pop(t)) {
-                if(execute_task(true, t)) {
-//                    std::cerr << "check : true" << std::endl;
-                    execute_task(false, t);
-                    continue;
-                }
-//                std::cerr << "check : false" << std::endl;
-                negatives.emplace_back(std::move(t));
-            }
-//            std::cerr << "negatives: " << negatives.size() << std::endl;
-            if(negatives.empty()) {
+            if(! process_next(ctx)) {
                 ctx.thread()->suspend();
                 continue;
             }
-            for(auto&& e : negatives) {
-                q_->push(std::move(e));
-            }
             ctx.thread()->suspend(std::chrono::microseconds{cfg_ ? cfg_->watcher_interval() : 0});
-//            std::cerr << "suspend timed out" << std::endl;
         }
     }
 
