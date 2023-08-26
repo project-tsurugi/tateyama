@@ -98,9 +98,9 @@ public:
     }
 
     void activate() noexcept {
-        if(*completed_) return;
         {
             std::unique_lock lk{sleep_cv_->mutex_};
+            if(*completed_) return;
             if(active_) return;
             active_ = true;
         }
@@ -185,9 +185,9 @@ private:
             std::apply([&callable](auto&& ...args) {
                 callable(args...);
             }, std::move(args));
-            *completed_ = true;
             {
                 std::unique_lock lk{sleep_cv_->mutex_};
+                *completed_ = true;
                 active_ = false;
             }
         };
