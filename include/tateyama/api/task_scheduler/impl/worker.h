@@ -31,6 +31,7 @@
 #include <tateyama/api/task_scheduler/context.h>
 #include <tateyama/api/task_scheduler/impl/queue.h>
 #include <tateyama/api/task_scheduler/impl/thread_control.h>
+#include <tateyama/api/task_scheduler/impl/thread_initialization_info.h>
 #include <tateyama/api/task_scheduler/task_scheduler_cfg.h>
 #include <tateyama/api/task_scheduler/impl/utils.h>
 #include <tateyama/api/task_scheduler/impl/backoff_waiter.h>
@@ -95,10 +96,10 @@ public:
      * @brief initialize the worker
      * @param thread_id the thread index assigned for this worker
      */
-    void init(std::size_t thread_id, thread_control* thread, api::task_scheduler::context& ctx) {
+    void init(thread_initialization_info const& info, api::task_scheduler::context& ctx) {
         // reconstruct the queues so that they are on each numa node
-        ctx.thread(thread);
-        auto index = thread_id;
+        ctx.thread(info.thread());
+        auto index = info.thread_id();
         (*queues_)[index].reconstruct();
         (*sticky_task_queues_)[index].reconstruct();
         auto& q = (*queues_)[index];
@@ -120,7 +121,7 @@ public:
         s.clear();
 
         if(initializer_) {
-            initializer_(thread_id);
+            initializer_(index);
         }
     }
 

@@ -93,11 +93,6 @@ public:
     using conditional_task = T;
 
     /**
-     * @brief initializer type
-     */
-    using initializer_type = std::function<void(std::size_t)>;
-
-    /**
      * @brief create empty object
      */
     conditional_worker() = default;
@@ -113,18 +108,17 @@ public:
         task_scheduler_cfg const* cfg = nullptr
     ) noexcept:
         cfg_(cfg),
-        q_(std::addressof(q)),
+        q_(std::addressof(q))
     {}
 
     /**
      * @brief initialize the worker
-     * @param thread_id the thread index assigned for this worker
-     * @param thread reference to thread control that runs this worker
+     * @param info thread information that runs this worker
      */
-    void init(std::size_t thread_id, thread_control* thread, conditional_worker_context& ctx) {
+    void init(thread_initialization_info const& info, conditional_worker_context& ctx) {
         // reconstruct the queues so that they are on same numa node
         (*q_).reconstruct();
-        ctx.thread(thread);
+        ctx.thread(info.thread());
     }
 
     /**

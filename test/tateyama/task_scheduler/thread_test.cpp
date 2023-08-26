@@ -22,6 +22,8 @@
 #include <thread>
 #include <future>
 
+#include <tateyama/api/task_scheduler/impl/thread_initialization_info.h>
+
 namespace tateyama::task_scheduler {
 
 using namespace std::literals::string_literals;
@@ -145,9 +147,8 @@ TEST_F(thread_test, wait_initialization) {
             initialized_(initialized)
         {}
 
-        void init(std::size_t index, thread_control* th) {
-            (void) index;
-            (void) th;
+        void init(thread_initialization_info const& info) {
+            (void) info;
             while(! initialized_) {
                 _mm_pause();
             }

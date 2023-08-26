@@ -24,6 +24,7 @@
 #include <numa.h>
 
 #include <tateyama/api/task_scheduler/task_scheduler_cfg.h>
+#include <tateyama/api/task_scheduler/impl/thread_initialization_info.h>
 #include <tateyama/utils/thread_affinity.h>
 #include <tateyama/utils/cache_align.h>
 #include <tateyama/utils/hex.h>
@@ -160,8 +161,9 @@ private:
             //pthread_setname_np(origin_.native_handle(), name.c_str());
             setup_core_affinity(thread_id, cfg);
             if constexpr (has_init_v<F, Args...>) {
-                std::apply([&callable, thread_id, this](auto&& ...args) {
-                    callable.init(thread_id, this, args...);
+                thread_initialization_info info{thread_id, this};
+                std::apply([&callable, &info](auto&& ...args) {
+                    callable.init(info, args...);
                 }, args);
             }
             {

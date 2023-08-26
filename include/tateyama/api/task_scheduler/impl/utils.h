@@ -21,21 +21,20 @@
 #include <sstream>
 
 #include <takatori/util/detect.h>
+#include "thread_initialization_info.h"
 
 namespace tateyama::task_scheduler {
-
-class thread_control;
 
 namespace details {
 
 template<class T, class ...Args>
 using with_init_type =
-    decltype(std::declval<T&>().init(static_cast<std::size_t>(0), static_cast<thread_control*>(nullptr), std::declval<Args>()...));
+    decltype(std::declval<T&>().init(static_cast<thread_initialization_info const&>(thread_initialization_info{}), std::declval<Args>()...));
 
 }
 
 /**
- * @brief utility to check if given type has the init(std::size_t) member function
+ * @brief utility to check if given type has the init(thread_initialization_info, args...) member function
  * @tparam T
  */
 template<class T, class ...Args>

@@ -24,6 +24,7 @@
 
 #include <tateyama/api/task_scheduler/basic_task.h>
 #include <tateyama/api/task_scheduler/basic_conditional_task.h>
+#include <tateyama/api/task_scheduler/impl/thread_initialization_info.h>
 
 namespace tateyama::api::task_scheduler {
 
@@ -32,6 +33,7 @@ using namespace std::string_view_literals;
 using namespace std::chrono_literals;
 
 using namespace testing;
+using tateyama::task_scheduler::thread_initialization_info;
 
 class scheduler_test : public ::testing::Test {
 public:
@@ -172,7 +174,7 @@ TEST_F(scheduler_test, sticky_task_simple) {
         executed02 = true;
     }}}, 0);
     api::task_scheduler::context ctx{};
-    w0.init(0, nullptr, ctx);
+    w0.init(thread_initialization_info{0}, ctx);
 
     context ctx0{0};
     w0.process_next(ctx0, lq0, sq0);
@@ -210,8 +212,8 @@ TEST_F(scheduler_test, sticky_task_stealing) {
         executed10 = true;
     }}}, 1);
     api::task_scheduler::context ctx{};
-    w0.init(0, nullptr, ctx);
-    w0.init(1, nullptr, ctx);
+    w0.init(thread_initialization_info{0}, ctx);
+    w0.init(thread_initialization_info{1}, ctx);
 
     context ctx0{0};
     context ctx1{1};
@@ -246,7 +248,7 @@ TEST_F(scheduler_test, delayed_tasks_only) {
         executed01 = true;
     }}}, 0);
     api::task_scheduler::context ctx{};
-    w0.init(0, nullptr, ctx);
+    w0.init(thread_initialization_info{0}, ctx);
 
     context ctx0{0};
     EXPECT_TRUE(w0.process_next(ctx0, lq0, sq0));
@@ -305,7 +307,7 @@ TEST_F(scheduler_test, sticky_tasks_delayed_tasks) {
         executed07 = true;
     }}}, 0);
     api::task_scheduler::context ctx{};
-    w0.init(0, nullptr, ctx);
+    w0.init(thread_initialization_info{0}, ctx);
 
     context ctx0{0};
     w0.process_next(ctx0, lq0, sq0);
@@ -381,7 +383,7 @@ TEST_F(scheduler_test, task_sticky_and_delayed) {
         executed02 = true;
     }}}, 0);
     api::task_scheduler::context ctx{};
-    w0.init(0, nullptr, ctx);
+    w0.init(thread_initialization_info{0}, ctx);
 
     EXPECT_EQ(2, sq0.size());
     context ctx0{0};
@@ -421,7 +423,7 @@ TEST_F(scheduler_test, task_sticky_and_delayed_only) {
         executed01 = true;
     }}}, 0);
     api::task_scheduler::context ctx{};
-    w0.init(0, nullptr, ctx);
+    w0.init(thread_initialization_info{0}, ctx);
 
     context ctx0{0};
     EXPECT_TRUE(w0.process_next(ctx0, lq0, sq0)); // by existence check, 01 comes first (i.e. not FIFO)
