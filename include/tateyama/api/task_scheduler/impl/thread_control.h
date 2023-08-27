@@ -119,6 +119,11 @@ public:
     void print_diagnostic(std::ostream& os) {
         os << "      physical_id: " << utils::hex(origin_.get_id()) << std::endl;
     }
+
+    bool completed() noexcept {
+        std::unique_lock lk{sleep_cv_->mutex_};
+        return (*completed_);
+    }
 private:
     std::unique_ptr<cv> sleep_cv_{std::make_unique<cv>()};
     bool active_{};

@@ -245,14 +245,12 @@ public:
         if(cfg_.enable_watcher()) {
             conditional_queue_.deactivate();
             if(watcher_thread_) {
-                watcher_thread_->activate();
-                watcher_thread_->join();
+                ensure_stopping_thread(*watcher_thread_);
             }
         }
 
         for(auto&& t : threads_) {
-            t.activate();
-            t.join();
+            ensure_stopping_thread(t);
         }
         started_ = false;
     }
@@ -439,6 +437,15 @@ private:
             DVLOG(log_debug) << "worker " << index_for_this_thread << " assigned for thread on core " << sched_getcpu();
         }
         return index_for_this_thread;
+    }
+
+    void ensure_stopping_thread(tateyama::task_scheduler::thread_control& th) {
+        while(! th.completed()) {
+            // in case thread suspends on cv, activate and wait for completion
+            th.activate();
+            std::this_thread::sleep_for(std::chrono::milliseconds{1});
+        }
+        th.join();
     }
 
     static_assert(std::is_default_constructible_v<task>);
