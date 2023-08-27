@@ -18,16 +18,16 @@
 #include <sched.h>
 
 #include <tateyama/logging.h>
-#include <tateyama/api/task_scheduler/impl/worker.h>
-#include <tateyama/api/task_scheduler/impl/conditional_worker.h>
-#include <tateyama/api/task_scheduler/basic_conditional_task.h>
-#include <tateyama/api/task_scheduler/impl/queue.h>
-#include <tateyama/api/task_scheduler/impl/thread_control.h>
+#include <tateyama/task_scheduler/impl/worker.h>
+#include <tateyama/task_scheduler/impl/conditional_worker.h>
+#include <tateyama/task_scheduler/basic_conditional_task.h>
+#include <tateyama/task_scheduler/impl/queue.h>
+#include <tateyama/task_scheduler/impl/thread_control.h>
 #include <tateyama/utils/cache_align.h>
 #include "task_scheduler_cfg.h"
 #include "schedule_option.h"
 
-namespace tateyama::api::task_scheduler {
+namespace tateyama::task_scheduler {
 
 /**
  * @brief stealing based task scheduler
@@ -57,22 +57,22 @@ public:
     /**
      * @brief queue type
      */
-    using queue = tateyama::task_scheduler::basic_queue<task>;
+    using queue = tateyama::task_scheduler::impl::basic_queue<task>;
 
     /**
      * @brief conditional task queue type
      */
-    using conditional_task_queue = tateyama::task_scheduler::basic_queue<conditional_task>;
+    using conditional_task_queue = tateyama::task_scheduler::impl::basic_queue<conditional_task>;
 
     /**
      * @brief worker type
      */
-    using worker = tateyama::task_scheduler::worker<task>;
+    using worker = tateyama::task_scheduler::impl::worker<task>;
 
     /**
      * @brief conditional task worker type
      */
-    using conditional_worker = tateyama::task_scheduler::conditional_worker<conditional_task>;
+    using conditional_worker = tateyama::task_scheduler::impl::conditional_worker<conditional_task>;
 
     /**
      * @brief copy construct
@@ -267,7 +267,7 @@ public:
      * @brief accessor to the worker statistics
      * @note this function is thread-safe. Multiple threads can safely call this function concurrently.
      */
-    [[nodiscard]] std::vector<tateyama::task_scheduler::worker_stat> const& worker_stats() const noexcept {
+    [[nodiscard]] std::vector<tateyama::task_scheduler::impl::worker_stat> const& worker_stats() const noexcept {
         return worker_stats_;
     }
 
@@ -313,7 +313,7 @@ public:
      * @brief accessor to the conditional context for testing purpose
      * @return the conditional worker context
      */
-    [[nodiscard]] tateyama::task_scheduler::conditional_worker_context const& conditional_worker_context() const noexcept {
+    [[nodiscard]] tateyama::task_scheduler::impl::conditional_worker_context const& conditional_worker_context() const noexcept {
         return conditional_worker_context_;
     }
 
@@ -352,8 +352,8 @@ private:
     std::vector<queue> sticky_task_queues_{};
     std::vector<queue> delayed_task_queues_{};
     std::vector<worker> workers_{};  // stored for testing
-    std::vector<tateyama::task_scheduler::thread_control> threads_{};
-    std::vector<tateyama::task_scheduler::worker_stat> worker_stats_{};
+    std::vector<impl::thread_control> threads_{};
+    std::vector<impl::worker_stat> worker_stats_{};
     std::vector<context> contexts_{};
     std::atomic_size_t current_index_{};
     std::vector<std::vector<task>> initial_tasks_{};
@@ -361,8 +361,8 @@ private:
     bool empty_thread_{false};
     conditional_task_queue conditional_queue_{};
     // use unique_ptr to avoid default constructor to spawn new thread
-    std::unique_ptr<tateyama::task_scheduler::thread_control> watcher_thread_{};
-    tateyama::task_scheduler::conditional_worker_context conditional_worker_context_{};
+    std::unique_ptr<impl::thread_control> watcher_thread_{};
+    impl::conditional_worker_context conditional_worker_context_{};
     conditional_worker conditional_worker_{}; // stored for testing
 
     void prepare() {
@@ -388,8 +388,8 @@ private:
         if(cfg_.enable_watcher()) {
             conditional_worker_ = conditional_worker{conditional_queue_, cfg_};
             if (! empty_thread_) {
-                watcher_thread_ = std::make_unique<tateyama::task_scheduler::thread_control>(
-                    tateyama::task_scheduler::thread_control::undefined_thread_id,
+                watcher_thread_ = std::make_unique<impl::thread_control>(
+                    impl::thread_control::undefined_thread_id,
                     std::addressof(cfg_),
                     conditional_worker_,
                     conditional_worker_context_
@@ -439,7 +439,7 @@ private:
         return index_for_this_thread;
     }
 
-    void ensure_stopping_thread(tateyama::task_scheduler::thread_control& th) {
+    void ensure_stopping_thread(impl::thread_control& th) {
         while(! th.completed()) {
             // in case thread suspends on cv, activate and wait for completion
             th.activate();

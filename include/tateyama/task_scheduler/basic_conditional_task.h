@@ -15,7 +15,7 @@
  */
 #pragma once
 
-#include <tateyama/api/task_scheduler/context.h>
+#include <tateyama/task_scheduler/context.h>
 #include <tateyama/utils/cache_align.h>
 
 namespace tateyama::task_scheduler {

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <tateyama/api/task_scheduler/scheduler.h>
+#include <tateyama/task_scheduler/scheduler.h>
 
 #include <chrono>
 #include <thread>
@@ -22,18 +22,18 @@
 #include <glog/logging.h>
 #include <boost/dynamic_bitset.hpp>
 
-#include <tateyama/api/task_scheduler/basic_task.h>
-#include <tateyama/api/task_scheduler/basic_conditional_task.h>
-#include <tateyama/api/task_scheduler/impl/thread_initialization_info.h>
+#include <tateyama/task_scheduler/basic_task.h>
+#include <tateyama/task_scheduler/basic_conditional_task.h>
+#include <tateyama/task_scheduler/impl/thread_initialization_info.h>
 
-namespace tateyama::api::task_scheduler {
+namespace tateyama::task_scheduler {
 
 using namespace std::string_literals;
 using namespace std::string_view_literals;
 using namespace std::chrono_literals;
 
 using namespace testing;
-using tateyama::task_scheduler::thread_initialization_info;
+using impl::thread_initialization_info;
 
 class scheduler_test : public ::testing::Test {
 public:
@@ -173,7 +173,7 @@ TEST_F(scheduler_test, sticky_task_simple) {
     sched.schedule_at(task{test_task_sticky{[&](context& t) {
         executed02 = true;
     }}}, 0);
-    api::task_scheduler::context ctx{};
+    context ctx{};
     w0.init(thread_initialization_info{0}, ctx);
 
     context ctx0{0};
@@ -211,7 +211,7 @@ TEST_F(scheduler_test, sticky_task_stealing) {
     sched.schedule_at(task{test_task_sticky{[&](context& t) {
         executed10 = true;
     }}}, 1);
-    api::task_scheduler::context ctx{};
+    context ctx{};
     w0.init(thread_initialization_info{0}, ctx);
     w0.init(thread_initialization_info{1}, ctx);
 
@@ -247,7 +247,7 @@ TEST_F(scheduler_test, delayed_tasks_only) {
     sched.schedule_at(task{test_task_delayed{[&](context& t) {
         executed01 = true;
     }}}, 0);
-    api::task_scheduler::context ctx{};
+    context ctx{};
     w0.init(thread_initialization_info{0}, ctx);
 
     context ctx0{0};
@@ -306,7 +306,7 @@ TEST_F(scheduler_test, sticky_tasks_delayed_tasks) {
     sched.schedule_at(task{test_task_delayed{[&](context& t) {
         executed07 = true;
     }}}, 0);
-    api::task_scheduler::context ctx{};
+    context ctx{};
     w0.init(thread_initialization_info{0}, ctx);
 
     context ctx0{0};
@@ -382,7 +382,7 @@ TEST_F(scheduler_test, task_sticky_and_delayed) {
     sched.schedule_at(task{test_task_sticky{[&](context& t) {
         executed02 = true;
     }}}, 0);
-    api::task_scheduler::context ctx{};
+    context ctx{};
     w0.init(thread_initialization_info{0}, ctx);
 
     EXPECT_EQ(2, sq0.size());
@@ -422,7 +422,7 @@ TEST_F(scheduler_test, task_sticky_and_delayed_only) {
     sched.schedule_at(task{test_task_sticky_delayed{[&](context& t) {
         executed01 = true;
     }}}, 0);
-    api::task_scheduler::context ctx{};
+    context ctx{};
     w0.init(thread_initialization_info{0}, ctx);
 
     context ctx0{0};

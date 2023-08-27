@@ -27,15 +27,15 @@
 #include <takatori/util/exception.h>
 
 #include <tateyama/common.h>
-#include <tateyama/api/task_scheduler/context.h>
-#include <tateyama/api/task_scheduler/impl/thread_control.h>
-#include <tateyama/api/task_scheduler/task_scheduler_cfg.h>
-#include <tateyama/api/task_scheduler/impl/utils.h>
+#include <tateyama/task_scheduler/context.h>
+#include <tateyama/task_scheduler/impl/thread_control.h>
+#include <tateyama/task_scheduler/task_scheduler_cfg.h>
+#include <tateyama/task_scheduler/impl/utils.h>
 #include <tateyama/utils/cache_align.h>
 
-namespace tateyama::task_scheduler {
+namespace tateyama::task_scheduler::impl {
 
-using api::task_scheduler::task_scheduler_cfg;
+using task_scheduler::task_scheduler_cfg;
 
 /**
  * @brief context object for conditional worker

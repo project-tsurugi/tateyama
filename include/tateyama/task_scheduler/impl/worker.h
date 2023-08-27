@@ -28,18 +28,16 @@
 #include <takatori/util/exception.h>
 
 #include <tateyama/common.h>
-#include <tateyama/api/task_scheduler/context.h>
-#include <tateyama/api/task_scheduler/impl/queue.h>
-#include <tateyama/api/task_scheduler/impl/thread_control.h>
-#include <tateyama/api/task_scheduler/impl/thread_initialization_info.h>
-#include <tateyama/api/task_scheduler/task_scheduler_cfg.h>
-#include <tateyama/api/task_scheduler/impl/utils.h>
-#include <tateyama/api/task_scheduler/impl/backoff_waiter.h>
+#include <tateyama/task_scheduler/context.h>
+#include <tateyama/task_scheduler/impl/queue.h>
+#include <tateyama/task_scheduler/impl/thread_control.h>
+#include <tateyama/task_scheduler/impl/thread_initialization_info.h>
+#include <tateyama/task_scheduler/task_scheduler_cfg.h>
+#include <tateyama/task_scheduler/impl/utils.h>
+#include <tateyama/task_scheduler/impl/backoff_waiter.h>
 #include <tateyama/utils/cache_align.h>
 
-namespace tateyama::task_scheduler {
-
-using api::task_scheduler::task_scheduler_cfg;
+namespace tateyama::task_scheduler::impl {
 
 struct cache_align worker_stat {
     std::size_t count_{};
@@ -96,7 +94,7 @@ public:
      * @brief initialize the worker
      * @param thread_id the thread index assigned for this worker
      */
-    void init(thread_initialization_info const& info, api::task_scheduler::context& ctx) {
+    void init(thread_initialization_info const& info, context& ctx) {
         // reconstruct the queues so that they are on each numa node
         ctx.thread(info.thread());
         auto index = info.thread_id();
@@ -133,7 +131,7 @@ public:
      * @note this function is kept public just for testing
      */
     bool process_next(
-        api::task_scheduler::context& ctx,
+        context& ctx,
         basic_queue<task>& q,
         basic_queue<task>& sq
     ) {
@@ -172,7 +170,7 @@ public:
 
     void suspend_worker_if_needed(
         std::size_t& empty_work_count,
-        api::task_scheduler::context& ctx
+        context& ctx
     ) {
         if(! cfg_->busy_worker()) {
             ++empty_work_count;
@@ -186,7 +184,7 @@ public:
      * @brief the worker body
      * @param ctx the worker context information
      */
-    void operator()(api::task_scheduler::context& ctx) {
+    void operator()(context& ctx) {
         auto index = ctx.index();
         auto& q = (*queues_)[index];
         auto& sq = (*sticky_task_queues_)[index];
@@ -223,7 +221,7 @@ private:
         return current + 1;
     }
 
-    bool steal_and_execute(api::task_scheduler::context& ctx) {
+    bool steal_and_execute(context& ctx) {
         std::size_t last = ctx.last_steal_from();
         task t{};
         for(auto idx = next(last); idx != last; idx = next(idx)) {
@@ -241,7 +239,7 @@ private:
         return false;
     }
 
-    void execute_task(task& t, api::task_scheduler::context& ctx) {
+    void execute_task(task& t, context& ctx) {
         try {
             // use try-catch to avoid server crash even on fatal internal error
             t(ctx);
@@ -258,7 +256,7 @@ private:
     }
 
     bool try_process(
-        api::task_scheduler::context& ctx,
+        context& ctx,
         basic_queue<task>& q
     ) {
         task t{};
@@ -271,7 +269,7 @@ private:
     }
 
     bool try_local_and_sticky(
-        api::task_scheduler::context& ctx,
+        context& ctx,
         basic_queue<task>& q,
         basic_queue<task>& sq
     ) {
@@ -294,7 +292,7 @@ private:
 
 
     void promote_delayed_task_if_needed(
-        api::task_scheduler::context& ctx,
+        context& ctx,
         basic_queue<task>& q,
         basic_queue<task>& sq
     ) {
@@ -315,7 +313,7 @@ private:
     }
 
     bool check_delayed_task_exists(
-        api::task_scheduler::context& ctx
+        context& ctx
     ) {
         // caution: this logic re-order an element (if exists) in the queue, and can result in live-lock
         // e.g. some task always get re-ordered and never executed. Use with care.

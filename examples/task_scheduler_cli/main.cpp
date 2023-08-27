@@ -19,10 +19,10 @@
 
 #include <glog/logging.h>
 
-#include <tateyama/api/task_scheduler/basic_task.h>
-#include <tateyama/api/task_scheduler/scheduler.h>
-#include <tateyama/api/task_scheduler/task_scheduler_cfg.h>
-#include <tateyama/api/task_scheduler/impl/queue.h>
+#include <tateyama/task_scheduler/basic_task.h>
+#include <tateyama/task_scheduler/scheduler.h>
+#include <tateyama/task_scheduler/task_scheduler_cfg.h>
+#include <tateyama/task_scheduler/impl/queue.h>
 #include "utils.h"
 
 DEFINE_int64(duration, 5000, "Run duration in milli-seconds");  //NOLINT
@@ -39,7 +39,7 @@ namespace tateyama::task_scheduler_cli {
 using namespace std::string_literals;
 using namespace std::string_view_literals;
 
-using namespace tateyama::api::task_scheduler;
+using namespace tateyama::task_scheduler;
 
 using clock = std::chrono::high_resolution_clock;
 
@@ -107,7 +107,7 @@ public:
     std::size_t generation_{};
 };
 
-using queue = task_scheduler::basic_queue<task>;
+using queue = impl::basic_queue<task>;
 
 bool fill_from_flags(
     task_scheduler_cfg& cfg,
@@ -141,7 +141,7 @@ bool fill_from_flags(
 void show_result(
     std::vector<queue> const& queues,
     std::size_t duration_ms,
-    std::vector<task_scheduler::worker_stat> const& worker_stats,
+    std::vector<impl::worker_stat> const& worker_stats,
     bool debug
 ) {
     std::size_t total_executions = 0;
@@ -179,7 +179,7 @@ void show_result(
     LOG(INFO) << "avg throughput: " << format((std::int64_t)((double)total_executions / queues.size() / duration_ms * 1000)) << " tasks/s/thread";
 }
 
-static int run(tateyama::api::task_scheduler::task_scheduler_cfg const& cfg, bool debug, std::size_t duration) {
+static int run(tateyama::task_scheduler::task_scheduler_cfg const& cfg, bool debug, std::size_t duration) {
     LOG(INFO) << "configuration " << cfg;
     scheduler<task> sched{cfg};
     for(std::size_t i=0, n=cfg.thread_count(); i < n; ++i) {
@@ -210,7 +210,7 @@ extern "C" int main(int argc, char* argv[]) {
         gflags::ShowUsageWithFlags(argv[0]); // NOLINT
         return -1;
     }
-    tateyama::api::task_scheduler::task_scheduler_cfg cfg{};
+    tateyama::task_scheduler::task_scheduler_cfg cfg{};
     if(! tateyama::task_scheduler_cli::fill_from_flags(cfg)) return -1;
     try {
         tateyama::task_scheduler_cli::run(cfg, FLAGS_debug, FLAGS_duration);  // NOLINT

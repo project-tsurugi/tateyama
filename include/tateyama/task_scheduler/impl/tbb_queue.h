@@ -20,36 +20,35 @@
 #include <ios>
 #include <functional>
 
+#include <tbb/concurrent_queue.h>
 #include <glog/logging.h>
-
-#include <concurrentqueue/concurrentqueue.h>
 
 #include <tateyama/utils/cache_align.h>
 
-namespace tateyama::task_scheduler {
+namespace tateyama::task_scheduler::impl {
 
 template <class T>
-class cache_align mc_queue {
+class cache_align tbb_queue {
 public:
     /**
      * @brief construct empty instance
      */
-    mc_queue() = default;
+    tbb_queue() = default;
 
     void push(T const& t) {
-        origin_.enqueue(t);
+        origin_.push(t);
     }
 
     void push(T&& t) {
-        origin_.enqueue(std::move(t));
+        origin_.push(std::move(t));
     }
 
     bool try_pop(T& t) {
-        return origin_.try_dequeue(t);
+        return origin_.try_pop(t);
     }
 
     [[nodiscard]] std::size_t size() const {
-        return origin_.size_approx();
+        return origin_.unsafe_size();
     }
 
     [[nodiscard]] bool empty() const {
@@ -57,17 +56,15 @@ public:
     }
 
     void clear() {
-        T value;
-        while( !empty() ) {
-            try_pop(value);
-        }
+        origin_.clear();
     }
+
     void reconstruct() {
-        origin_.~ConcurrentQueue();
-        new (&origin_)moodycamel::ConcurrentQueue<T>();
+        origin_.~concurrent_queue();
+        new (&origin_)tbb::concurrent_queue<T>();
     }
 private:
-    moodycamel::ConcurrentQueue<T> origin_{};
+    tbb::concurrent_queue<T> origin_{};
 
 };
 

@@ -23,7 +23,7 @@
 #endif
 #include <tateyama/utils/cache_align.h>
 
-namespace tateyama::task_scheduler {
+namespace tateyama::task_scheduler::impl {
 
 template <class T>
 class cache_align basic_queue {

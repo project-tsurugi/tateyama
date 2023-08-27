@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <tateyama/api/task_scheduler/impl/thread_control.h>
+#include <tateyama/task_scheduler/impl/thread_control.h>
 
 #include <regex>
 #include <xmmintrin.h>
@@ -22,9 +22,9 @@
 #include <thread>
 #include <future>
 
-#include <tateyama/api/task_scheduler/impl/thread_initialization_info.h>
+#include <tateyama/task_scheduler/impl/thread_initialization_info.h>
 
-namespace tateyama::task_scheduler {
+namespace tateyama::task_scheduler::impl {
 
 using namespace std::literals::string_literals;
 using namespace std::chrono_literals;

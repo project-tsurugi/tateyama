@@ -15,7 +15,7 @@
  */
 #pragma once
 
-#include <tateyama/api/task_scheduler/context.h>
+#include <tateyama/task_scheduler/context.h>
 #include <tateyama/utils/cache_align.h>
 
 namespace tateyama::task_scheduler {
@@ -68,7 +68,7 @@ public:
      * @brief execute the task
      * @param ctx the context information on the worker that is running the task
      */
-    void operator()(api::task_scheduler::context& ctx) {
+    void operator()(context& ctx) {
         std::visit([&](auto&& arg){
             arg(ctx);
         }, entity_);

@@ -18,7 +18,7 @@
 #include <thread>
 #include <chrono>
 
-namespace tateyama::task_scheduler {
+namespace tateyama::task_scheduler::impl {
 
 /**
  * @brief utility class to wait with exponential backoff

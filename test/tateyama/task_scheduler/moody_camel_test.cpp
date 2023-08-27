@@ -18,7 +18,7 @@
 #include <regex>
 #include <gtest/gtest.h>
 
-#include <tateyama/api/task_scheduler/context.h>
+#include <tateyama/task_scheduler/context.h>
 
 namespace tateyama::task_scheduler {
 
@@ -33,7 +33,7 @@ public:
 
         explicit test_task(std::size_t id) : id_(id) {}
 
-        void operator()(api::task_scheduler::context& ctx) {
+        void operator()(context& ctx) {
             (void)ctx;
         }
         [[nodiscard]] bool sticky() {

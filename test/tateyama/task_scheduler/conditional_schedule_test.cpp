@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <tateyama/api/task_scheduler/scheduler.h>
+#include <tateyama/task_scheduler/scheduler.h>
 
 #include <chrono>
 #include <thread>
@@ -22,10 +22,10 @@
 #include <glog/logging.h>
 #include <boost/dynamic_bitset.hpp>
 
-#include <tateyama/api/task_scheduler/basic_task.h>
-#include <tateyama/api/task_scheduler/basic_conditional_task.h>
+#include <tateyama/task_scheduler/basic_task.h>
+#include <tateyama/task_scheduler/basic_conditional_task.h>
 
-namespace tateyama::api::task_scheduler {
+namespace tateyama::task_scheduler {
 
 using namespace std::string_literals;
 using namespace std::string_view_literals;
@@ -115,7 +115,7 @@ TEST_F(conditional_schedule_test, step_by_step) {
     sched.start();
     auto& w = sched.cond_worker();
     auto& q = sched.cond_queue();
-    tateyama::task_scheduler::conditional_worker_context ctx{};
+    impl::conditional_worker_context ctx{};
     sched.schedule_conditional(std::move(t1));
     sched.schedule_conditional(std::move(t2));
     EXPECT_EQ(2, q.size());

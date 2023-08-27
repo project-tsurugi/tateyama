@@ -15,7 +15,7 @@
  */
 #pragma once
 
-namespace tateyama::task_scheduler {
+namespace tateyama::task_scheduler::impl {
 
 class thread_control;
 

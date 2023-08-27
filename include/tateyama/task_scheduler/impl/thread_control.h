@@ -24,17 +24,15 @@
 #include <glog/logging.h>
 #include <numa.h>
 
-#include <tateyama/api/task_scheduler/task_scheduler_cfg.h>
-#include <tateyama/api/task_scheduler/impl/thread_initialization_info.h>
+#include <tateyama/task_scheduler/task_scheduler_cfg.h>
+#include <tateyama/task_scheduler/impl/thread_initialization_info.h>
 #include <tateyama/utils/thread_affinity.h>
 #include <tateyama/utils/cache_align.h>
 #include <tateyama/utils/hex.h>
 #include "utils.h"
 #include <tateyama/common.h>
 
-namespace tateyama::task_scheduler {
-
-using tateyama::api::task_scheduler::task_scheduler_cfg;
+namespace tateyama::task_scheduler::impl {
 
 // separating mutex and cv from thread in order to make thread movable
 struct cache_align cv {
@@ -135,7 +133,7 @@ private:
     // thread must come last since the construction starts new thread, which accesses the member variables above.
     boost::thread origin_{};
 
-    bool setup_core_affinity(std::size_t id, api::task_scheduler::task_scheduler_cfg const* cfg) {
+    bool setup_core_affinity(std::size_t id, task_scheduler_cfg const* cfg) {
         if (! cfg) return false;
         utils::affinity_profile prof{};
         if(cfg->force_numa_node() != task_scheduler_cfg::numa_node_unspecified) {

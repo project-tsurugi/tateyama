@@ -23,7 +23,7 @@
 #include <takatori/util/detect.h>
 #include "thread_initialization_info.h"
 
-namespace tateyama::task_scheduler {
+namespace tateyama::task_scheduler::impl {
 
 namespace details {
 

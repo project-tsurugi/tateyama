@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <tateyama/api/task_scheduler/impl/queue.h>
-#include <tateyama/api/task_scheduler/impl/tbb_queue.h>
-#include <tateyama/api/task_scheduler/impl/mc_queue.h>
+#include <tateyama/task_scheduler/impl/queue.h>
+#include <tateyama/task_scheduler/impl/tbb_queue.h>
+#include <tateyama/task_scheduler/impl/mc_queue.h>
 
 #include <regex>
 #include <gtest/gtest.h>
 
-namespace tateyama::task_scheduler {
+namespace tateyama::task_scheduler::impl {
 
 using namespace std::literals::string_literals;
 

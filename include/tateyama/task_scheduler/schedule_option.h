@@ -20,7 +20,7 @@
 
 #include <boost/rational.hpp>
 
-namespace tateyama::api::task_scheduler {
+namespace tateyama::task_scheduler {
 
 
 /**
