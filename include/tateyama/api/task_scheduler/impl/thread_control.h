@@ -110,6 +110,7 @@ public:
     template<typename Rep = std::chrono::hours::rep, typename Period = std::chrono::hours::period>
     void suspend(std::chrono::duration<Rep, Period> timeout = std::chrono::hours{24}) {
         std::unique_lock lk{sleep_cv_->mutex_};
+        if(*completed_) return;
         active_ = false;
         sleep_cv_->cv_.wait_for(lk, timeout, [this]() {
             return active_;

@@ -170,7 +170,10 @@ public:
         return false;
     }
 
-    void suspend_worker_if_needed(std::size_t& empty_work_count, api::task_scheduler::context& ctx) {
+    void suspend_worker_if_needed(
+        std::size_t& empty_work_count,
+        api::task_scheduler::context& ctx
+    ) {
         if(! cfg_->busy_worker()) {
             ++empty_work_count;
             if(empty_work_count > cfg_->worker_try_count()) {
@@ -193,6 +196,7 @@ public:
             if(! process_next(ctx, q, sq)) {
                 _mm_pause();
                 waiter_();
+                if(! sq.active() && ! q.active()) break;
                 suspend_worker_if_needed(empty_work_count, ctx);
             } else {
                 empty_work_count = 0;

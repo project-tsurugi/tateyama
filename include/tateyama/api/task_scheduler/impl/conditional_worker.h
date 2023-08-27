@@ -153,7 +153,11 @@ public:
     void operator()(conditional_worker_context& ctx) {
         conditional_task t{};
         while(q_->active()) {
-            if(! process_next()) {
+            auto r = process_next();
+            if(! q_->active()) {
+                break;
+            }
+            if(! r) {
                 ctx.thread()->suspend();
                 continue;
             }
