@@ -127,7 +127,7 @@ parameter=value
 |パラメーター名 | 型 | 値 |備考|
 |---:| :---: | :--- |---|
 |pid_directory | 文字列 | .pidファイル([プロセスの排他制御について](https://github.com/project-tsurugi/tateyama/blob/master/docs/process-mutex-ja.md)を参照)を作成する一時ディレクトリを指定する、デフォルト値は/var/lock。
-|logtostderr | ブール(true/false) | ログをstderrにも出力する、デフォルト値はtrue。
+|logtostderr | ブール(true/false) | ログをstderrに出力する、デフォルト値はtrue。
 |log_directory | 文字列 | 稼働ログを記録するディレクトリを指定する、デフォルト値は"/tmp"。 | logstderr（上欄）がfalseかつtgctl startコマンドに--logtostderrが指定されていない場合のみ有効。
 |vlog_level | 数値 | 出力するverbose loggingのレベルを設定する、デフォルト値は0 | tgctl startコマンドに--vオプションが指定され場合、その指定が優先される。
 
