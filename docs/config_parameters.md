@@ -46,21 +46,20 @@ parameter=value
 
 |パラメーター名 | 型 | 値 |備考|
 |---:| :---: | :--- |---|
-|thread_pool_size | 整数 | SQLサービスが使用するタスクスケジューラの使用するスレッド数。デフォルトは5|開発用のため将来的に削除/変更される可能性あり|
+|thread_pool_size | 整数 | SQLサービスが使用するタスクスケジューラの使用するスレッド数。デフォルトは5
 |lazy_worker | ブール(true/false) | SQLサービスが使用するタスクスケジューラが省CPUのためにワーカースレッドをスリープさせるかどうか。デフォルトはfalse|開発用のため将来的に削除される可能性あり|
-|enable_index_join | ブール(true/false) | 性能向上のためインデックスを利用した結合処理を行うか。デフォルトはfalse|開発用のため将来的に削除される可能性あり|
-|stealing_enabled | ブール(true/false) | 空いたCPUコアを活用するためにスケジューラーがタスクのstealingを行うか。デフォルトはtrue|開発用のため将来的に削除される可能性あり|
-|default_partitions | 整数 | 並列化可能な関係演算子の実行においてデータ分割を行う際のパーティション数。デフォルトは5|開発用のため将来的に削除/変更される可能性あり|
+|enable_index_join | ブール(true/false) | 性能向上のためインデックスを利用した結合処理を行うか。デフォルトはfalse
+|stealing_enabled | ブール(true/false) | 空いたCPUコアを活用するためにスケジューラーがタスクのstealingを行うか。デフォルトはtrue
+|default_partitions | 整数 | 並列化可能な関係演算子の実行においてデータ分割を行う際のパーティション数。デフォルトは5
 |use_preferred_worker_for_current_thread | ブール(true/false) | スケジューラーがワーカーを選択する際、タスクを提出したスレッドごとに固定的なワーカーを使うようにするか。デフォルトはtrue|開発用のため将来的に削除される可能性あり|
 |stealing_wait| 整数 | タスクスケジューラのワーカーがスティーリングを行う前に自身のタスクキューを余分にチェックする回数の係数。`<ワーカー数> * <stealing_wait>` 回だけ自身のタスクキューを多くチェックするようになる。デフォルトは1|開発用のため将来的に削除/変更される可能性あり|
 |task_polling_wait| 整数 | タスクスケジューラのワーカーが自身のタスクキューやスティール候補のポーリングに失敗した際、次のポーリングまでスリープする時間(us)。デフォルトは0|開発用のため将来的に削除/変更される可能性あり|
 |tasked_write | ブール(true/false) | INSERT文の操作をタスクを作成して行うか。デフォルトはtrue|開発用のため将来的に削除される可能性あり|
 |enable_hybrid_scheduler| ブール(true/false) | ハイブリッドスケジューラを使用するか。デフォルトはtrue|開発用のため将来的に削除される可能性あり|
 |lightweight_job_level| 整数 | 短時間で終わるジョブを定義する閾値。設定値以下のlevelを持つジョブが短時間で終わるジョブとして分類され、リクエストスレッドで実行される候補となる。0を指定すると全てのジョブは短時間でないものとして扱われる。デフォルトは0。enable_hybrid_scheduler=trueのときのみ有効。|開発用のため将来的に削除/変更される可能性あり|
-|busy_worker| ブール(true/false) | タスクスケジューラのワーカーが高頻度でタスクキューをチェックするか。enable_watcher=falseの場合はfalseであってはならない。デフォルトはtrue|開発用のため将来的に削除される可能性あり|
-|enable_watcher| ブール(true/false) | タスクスケジューラで条件確認スレッドを使用するか。busy_worker=falseの場合はfalseであってはならない。デフォルトはfalse|開発用のため将来的に削除される可能性あり|
-|watcher_interval| 整数 | タスクスケジューラの条件確認スレッドが一時停止してから次に再開するまでの間隔(us)。enable_watcher=trueの場合のみ有効。デフォルトは1000|開発用のため将来的に削除/変更される可能性あり|
-|worker_try_count| 整数 | タスクスケジューラのワーカーがサスペンド前にタスクキューを確認する回数。busy_worker=falseの場合のみ有効。デフォルトは1000|開発用のため将来的に削除/変更される可能性あり|
+|busy_worker| ブール(true/false) | タスクスケジューラのワーカーが高頻度でタスクキューをチェックするか。デフォルトはtrue|開発用のため将来的に削除される可能性あり|
+|watcher_interval| 整数 | タスクスケジューラの条件確認スレッドが一時停止してから次に再開するまでの間隔(us)。busy_worker=falseの場合のみ有効。デフォルトは1000|開発用のため将来的に削除/変更される可能性あり|
+|worker_try_count| 整数 | タスクスケジューラのワーカーがサスペンド前にタスクキューを確認する回数。busy_worker=falseの場合のみ有効。デフォルトは100000|開発用のため将来的に削除/変更される可能性あり|
 |worker_suspend_timeout| 整数 | タスクスケジューラのワーカーがサスペンドしてから復帰するまでの時間(us)。busy_worker=falseの場合のみ有効。デフォルトは1000000|開発用のため将来的に削除/変更される可能性あり|
 
 ## ipc_endpointセクション
@@ -90,7 +89,7 @@ parameter=value
 |port | 整数 | stream_endpointに接続する際のport番号、デフォルトは12345
 |threads | 整数 | stream_endpointの最大同時接続数、デフォルトは104
 
-## fdwセクション
+## fdwセクション(廃止予定)
 
 セクション名
   - fdw
@@ -127,5 +126,12 @@ parameter=value
 
 |パラメーター名 | 型 | 値 |備考|
 |---:| :---: | :--- |---|
-|pid_directory | 文字列 | .pidファイル([プロセスの排他制御について](https://github.com/project-tsurugi/tateyama/blob/master/docs/process-mutex-ja.md)を参照)を作成する一時ディレクトリを指定する、デフォルト値は/tmp。
+|pid_directory | 文字列 | .pidファイル([プロセスの排他制御について](https://github.com/project-tsurugi/tateyama/blob/master/docs/process-mutex-ja.md)を参照)を作成する一時ディレクトリを指定する、デフォルト値は/var/lock。
+|logtostderr | ブール(true/false) | ログをstderrにも出力する、デフォルト値はtrue。
+|log_directory | 文字列 | 稼働ログを記録するディレクトリを指定する、デフォルト値は"/tmp"。 | logstderr（上欄）がfalseかつtgctl startコマンドに--logtostderrが指定されていない場合のみ有効。
+|vlog_level | 数値 | 出力するverbose loggingのレベルを設定する、デフォルト値は0 | tgctl startコマンドに--vオプションが指定され場合、その指定が優先される。
 
+## ディレクトリの相対パス指定について
+ディレクトリを指定するパラメータで相対パスが設定された場合、環境変数 TSURUGI_HOME からの相対パスとなります。
+環境変数 TSURUGI_HOME が設定されていない場合はその相対パスは解決できないため、tsurugidbの起動は失敗します。
+なお、すべてのディレクトリが絶対パスで指定されている場合は、tsurugidb起動に環境変数 TSURUGI_HOME の設定は関与しません。
