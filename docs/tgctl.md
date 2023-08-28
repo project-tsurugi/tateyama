@@ -12,7 +12,7 @@ tgctlの各サブコマンドについて、実行結果とexit codeの関係を
 ### start
 * tsurugidbプロセスの起動に成功したことを確認できた -> successfully launched tsurugidb
 * tsurugidbプロセスの起動に失敗したことを確認できた -> could not launch tsurugidb
-* 起動操作を行ってからtimeout時間が経過しても起動成功を確認できなかった -> could not check tsurugidb status
+* 起動操作を行ってからtimeout時間が経過しても起動成功を確認できなかった -> failed to confirm tsurugidb launch  within the specified time
 * 他のtsurugidbプロセスが実行されていたため、起動操作を行わなかった -> another tsurugidb was already running
   
 ### shutdown, kill 
