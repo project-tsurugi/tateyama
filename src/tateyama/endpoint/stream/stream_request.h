@@ -30,7 +30,7 @@ namespace tateyama::common::stream {
 class stream_request : public tateyama::api::server::request {
 public:
     stream_request() = delete;
-    explicit stream_request(stream_socket& session_socket, std::string& payload) : session_socket_(session_socket) {
+    explicit stream_request(std::shared_ptr<stream_socket> session_socket, std::string& payload) : session_socket_(std::move(session_socket)) {
         endpoint::common::parse_result res{};
         endpoint::common::parse_header(payload, res); // TODO handle error
         payload_ = res.payload_;
@@ -39,12 +39,12 @@ public:
     }
 
     [[nodiscard]] std::string_view payload() const override;
-    stream_socket& get_session_socket() { return session_socket_; }
+    stream_socket& get_session_socket() { return *session_socket_; }
     [[nodiscard]] std::size_t session_id() const override;
     [[nodiscard]] std::size_t service_id() const override;
 
 private:
-    stream_socket& session_socket_;
+    std::shared_ptr<stream_socket> session_socket_;
     std::string_view payload_{};
     std::size_t session_id_{};
     std::size_t service_id_{};

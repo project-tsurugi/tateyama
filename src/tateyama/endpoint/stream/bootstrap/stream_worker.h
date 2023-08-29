@@ -30,7 +30,7 @@ class stream_provider;
 
 class stream_worker {
  public:
-    stream_worker(tateyama::framework::routing_service& service, std::size_t session_id, std::unique_ptr<tateyama::common::stream::stream_socket> stream)
+    stream_worker(tateyama::framework::routing_service& service, std::size_t session_id, std::shared_ptr<tateyama::common::stream::stream_socket> stream)
         : service_(service), session_stream_(std::move(stream)), session_id_(session_id) {
     }
     ~stream_worker() {
@@ -51,7 +51,7 @@ class stream_worker {
 
  private:
     tateyama::framework::routing_service& service_;
-    std::unique_ptr<tateyama::common::stream::stream_socket> session_stream_;
+    std::shared_ptr<tateyama::common::stream::stream_socket> session_stream_;
     std::size_t session_id_;
 
     // for future

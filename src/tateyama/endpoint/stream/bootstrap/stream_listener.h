@@ -49,7 +49,7 @@ public:
     // in case for session limit
     class undertaker {
     public:
-        explicit undertaker(std::unique_ptr<tateyama::common::stream::stream_socket> stream) : stream_(std::move(stream)) {}
+        explicit undertaker(std::shared_ptr<tateyama::common::stream::stream_socket> stream) : stream_(std::move(stream)) {}
         void operator()() {
             while (stream_->wait_hello(""));
             done = true;
@@ -58,7 +58,7 @@ public:
             return done;
         }
     private:
-        std::unique_ptr<tateyama::common::stream::stream_socket> stream_;
+        std::shared_ptr<tateyama::common::stream::stream_socket> stream_;
         bool done{};
     };
 
@@ -104,7 +104,7 @@ public:
 
         while(true) {
             undertakers_.erase(std::remove_if(std::begin(undertakers_), std::end(undertakers_), [](std::unique_ptr<undertaker>& ut){ return ut->is_done(); }), std::cend(undertakers_));
-            std::unique_ptr<tateyama::common::stream::stream_socket> stream{};
+            std::shared_ptr<tateyama::common::stream::stream_socket> stream{};
             try {
                 stream = connection_socket_->accept();
             } catch (std::exception& ex) {
