@@ -167,5 +167,20 @@ TEST_F(configuration_test, empty_string) {
     ASSERT_FALSE(novalue);
 }
 
+TEST_F(configuration_test, empty_number) {
+    std::string content{
+            "[sql]\n"
+            "default_partitions=\n"
+    };
+    std::stringstream ss0{content};
+    configuration::whole cfg{ss0, tateyama::test::default_configuration_for_tests};
+
+    auto section = cfg.get_section("sql");
+    ASSERT_TRUE(section);
+
+    auto value = section->get<std::size_t>("default_partitions");
+    ASSERT_FALSE(value);
+}
+
 
 }

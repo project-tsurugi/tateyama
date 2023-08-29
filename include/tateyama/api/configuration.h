@@ -44,10 +44,15 @@ public:
     template<typename T>
     [[nodiscard]] inline std::optional<T> get(std::string_view n) const {
         auto name = std::string(n);
-        if (auto it = property_tree_.find(name) ; it != property_tree_.not_found()) {
-            auto rv = boost::lexical_cast<T>(it->second.data());
-            VLOG(log_trace) << "property " << name << " has found in tsurugi.ini and is " << rv;
-            return rv;
+        try {
+            if (auto it = property_tree_.find(name) ; it != property_tree_.not_found()) {
+                auto rv = boost::lexical_cast<T>(it->second.data());
+                VLOG(log_trace) << "property " << name << " has found in tsurugi.ini and is " << rv;
+                return rv;
+            }
+        } catch (boost::bad_lexical_cast &) {
+            LOG(ERROR) << "value of " << name << " can not be converted to the type specified";
+            return std::nullopt;
         }
         if (default_valid_) {
             if (auto it = default_tree_.find(name) ; it != default_tree_.not_found()) {
