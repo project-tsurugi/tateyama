@@ -149,5 +149,23 @@ TEST_F(configuration_test, warn_on_invalid_property) {
     configuration::whole cfg{ss0};
 }
 
+TEST_F(configuration_test, empty_string) {
+    std::string content{
+        "[datastore]\n"
+        "log_location=\n"
+    };
+    std::stringstream ss0{content};
+    configuration::whole cfg{ss0, tateyama::test::default_configuration_for_tests};
+    auto section = cfg.get_section("datastore");
+    ASSERT_TRUE(section);
+
+    auto value = section->get<std::string>("log_location");
+    ASSERT_TRUE(value);
+    EXPECT_EQ("", *value);
+
+    auto novalue = section->get<std::string>("log_loc");
+    ASSERT_FALSE(novalue);
+}
+
 
 }
