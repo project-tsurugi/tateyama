@@ -193,8 +193,12 @@ TEST_F(configuration_test, overflow_number) {
     auto section = cfg.get_section("sql");
     ASSERT_TRUE(section);
 
-    auto value = section->get<std::int32_t>("default_partitions");
-    ASSERT_FALSE(value);
+    try {
+        auto value = section->get<std::int32_t>("default_partitions");
+        FAIL();
+    } catch (std::runtime_error &) {
+        SUCCEED();
+    }
 }
 
 
