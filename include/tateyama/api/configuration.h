@@ -148,7 +148,7 @@ template<>
             return false;
         }
         LOG(ERROR) << "value of " << name << " is '" << str << "', which is not boolean";
-        return std::nullopt;
+        throw std::runtime_error("the parameter string can not be converted to bool");
     }
     return std::nullopt;
 }
