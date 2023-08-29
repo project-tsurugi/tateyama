@@ -68,6 +68,7 @@ public:
                         return rv;
                     } catch (boost::bad_lexical_cast &) {
                         VLOG(log_trace) << "value of " << name << " is '" << value << "', which can not be converted to the type specified";
+                        throw std::runtime_error("the parameter string can not be converted to the type specified");
                     }
                 }
                 return std::nullopt;
