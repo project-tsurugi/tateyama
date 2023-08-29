@@ -182,5 +182,20 @@ TEST_F(configuration_test, empty_number) {
     ASSERT_FALSE(value);
 }
 
+TEST_F(configuration_test, overflow_number) {
+    std::string content{
+            "[sql]\n"
+            "default_partitions=1234567890123456789\n"
+    };
+    std::stringstream ss0{content};
+    configuration::whole cfg{ss0, tateyama::test::default_configuration_for_tests};
+
+    auto section = cfg.get_section("sql");
+    ASSERT_TRUE(section);
+
+    auto value = section->get<std::int32_t>("default_partitions");
+    ASSERT_FALSE(value);
+}
+
 
 }

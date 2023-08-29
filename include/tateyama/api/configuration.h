@@ -46,27 +46,30 @@ public:
         auto name = std::string(n);
         if (auto it = property_tree_.find(name) ; it != property_tree_.not_found()) {
             auto value = it->second.data();
-            try {
-                auto rv = boost::lexical_cast<T>(value);
-                VLOG(log_trace) << "property " << name << " has found in tsurugi.ini and is " << rv;
-                return rv;
-            } catch (boost::bad_lexical_cast &) {
-                LOG(ERROR) << "value of " << name << " is '" << value << "', which can not be converted to the type specified";
-                return std::nullopt;
+            if (!value.empty()) {
+                try {
+                    auto rv = boost::lexical_cast<T>(value);
+                    VLOG(log_trace) << "property " << name << " has found in tsurugi.ini and is " << rv;
+                    return rv;
+                } catch (boost::bad_lexical_cast &) {
+                    LOG(ERROR) << "value of " << name << " is '" << value << "', which can not be converted to the type specified";
+                }
             }
+            return std::nullopt;
         }
         if (default_valid_) {
             if (auto it = default_tree_.find(name) ; it != default_tree_.not_found()) {
                 auto value = it->second.data();
-                try {
-                    auto rv = boost::lexical_cast<T>(value);
-                    VLOG(log_trace) << "property " << name << " has found in default and is " << rv;
-                    return rv;
-
-                } catch (boost::bad_lexical_cast &) {
-                    VLOG(log_trace) << "value of " << name << " is '" << value << "', which can not be converted to the type specified";
-                    return std::nullopt;
+                if (!value.empty()) {
+                    try {
+                        auto rv = boost::lexical_cast<T>(value);
+                        VLOG(log_trace) << "property " << name << " has found in default and is " << rv;
+                        return rv;
+                    } catch (boost::bad_lexical_cast &) {
+                        VLOG(log_trace) << "value of " << name << " is '" << value << "', which can not be converted to the type specified";
+                    }
                 }
+                return std::nullopt;
             }
         }
 
@@ -110,6 +113,23 @@ private:
  */
 inline bool operator!=(section const& a, section const& b) noexcept {
     return !(a == b);
+}
+
+template<>
+[[nodiscard]] inline std::optional<std::string> section::get<std::string>(std::string_view n) const {
+        auto name = std::string(n);
+        if (auto it = property_tree_.find(name) ; it != property_tree_.not_found()) {
+            return it->second.data();
+        }
+        if (default_valid_) {
+            if (auto it = default_tree_.find(name) ; it != default_tree_.not_found()) {
+                return it->second.data();
+            }
+        }
+
+        // To support hidden configuration parameter, comment out the error msg for now.
+        // LOG(ERROR) << "both tree did not have such property: " << name;
+        return std::nullopt;
 }
 
 template<>
