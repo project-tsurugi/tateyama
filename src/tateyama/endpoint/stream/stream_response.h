@@ -25,7 +25,6 @@
 
 #include "tateyama/endpoint/common/pointer_comp.h"
 #include "stream.h"
-#include "stream_request.h"
 
 namespace tateyama::common::stream {
 
@@ -81,7 +80,7 @@ class stream_response : public tateyama::api::server::response {
     friend stream_data_channel;
 
 public:
-    stream_response(stream_request& request, unsigned char index);
+    stream_response(std::shared_ptr<tateyama::common::stream::stream_socket> stream, unsigned char index);
     stream_response() = delete;
 
     void code(tateyama::api::server::response_code code) override;
@@ -95,7 +94,7 @@ public:
         session_id_ = id;
     }
 private:
-    stream_socket& session_socket_;
+    std::shared_ptr<tateyama::common::stream::stream_socket> session_socket_;
     unsigned char index_;
 
     tateyama::api::server::response_code response_code_{tateyama::api::server::response_code::unknown};
