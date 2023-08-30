@@ -390,7 +390,7 @@ public:
     connection_socket& operator = (connection_socket const&) = delete;
     connection_socket& operator = (connection_socket&&) = delete;
 
-    std::unique_ptr<stream_socket> accept([[maybe_unused]] bool wait = false) {
+    std::shared_ptr<stream_socket> accept([[maybe_unused]] bool wait = false) {
         fd_set fds;
         FD_ZERO(&fds);  // NOLINT
         FD_SET(socket_, &fds);  // NOLINT
@@ -402,7 +402,7 @@ public:
             struct sockaddr_in address{};
             unsigned int len = sizeof(address);
             int ts = ::accept(socket_, (struct sockaddr *)&address, &len);  // NOLINT
-            return std::make_unique<stream_socket>(ts);
+            return std::make_shared<stream_socket>(ts);
         }
         if (FD_ISSET(pair_[0], &fds)) {  //  NOLINT
             char trash{};
