@@ -29,12 +29,12 @@ namespace tateyama::common::stream {
 class stream_request;
 
 // class stream_response
-stream_response::stream_response(stream_request& request, unsigned char index)
-    : session_socket_(request.get_session_socket()), index_(index) {
+stream_response::stream_response(std::shared_ptr<tateyama::common::stream::stream_socket> stream, unsigned char index)
+    : session_socket_(std::move(stream)), index_(index) {
 }
 
 tateyama::status stream_response::body(std::string_view body) {
-    VLOG_LP(log_trace) << static_cast<const void*>(&session_socket_) << " length = " << body.length();  //NOLINT
+    VLOG_LP(log_trace) << static_cast<const void*>(session_socket_.get()) << " length = " << body.length();  //NOLINT
 
     std::stringstream ss{};
     endpoint::common::header_content arg{};
@@ -44,12 +44,12 @@ tateyama::status stream_response::body(std::string_view body) {
         return status::unknown;
     }
     auto s = ss.str();
-    session_socket_.send(index_, s, true);
+    session_socket_->send(index_, s, true);
     return tateyama::status::ok;
 }
 
 tateyama::status stream_response::body_head(std::string_view body_head) {
-    VLOG_LP(log_trace) << static_cast<const void*>(&session_socket_);  //NOLINT
+    VLOG_LP(log_trace) << static_cast<const void*>(session_socket_.get());  //NOLINT
 
     std::stringstream ss{};
     endpoint::common::header_content arg{};
@@ -59,12 +59,12 @@ tateyama::status stream_response::body_head(std::string_view body_head) {
         return status::unknown;
     }
     auto s = ss.str();
-    session_socket_.send(index_, s, false);
+    session_socket_->send(index_, s, false);
     return tateyama::status::ok;
 }
 
 void stream_response::server_diagnostics(std::string_view diagnostic_record) {
-    VLOG_LP(log_trace) << static_cast<const void*>(&session_socket_);  //NOLINT
+    VLOG_LP(log_trace) << static_cast<const void*>(session_socket_.get());  //NOLINT
 
     std::stringstream ss{};
     endpoint::common::header_content arg{};
@@ -74,23 +74,23 @@ void stream_response::server_diagnostics(std::string_view diagnostic_record) {
         return;
     }
     auto s = ss.str();
-    session_socket_.send(index_, s, true);
+    session_socket_->send(index_, s, true);
 }
 
 void stream_response::code(tateyama::api::server::response_code code) {
-    VLOG_LP(log_trace) << static_cast<const void*>(&session_socket_);  //NOLINT
+    VLOG_LP(log_trace) << static_cast<const void*>(session_socket_.get());  //NOLINT
 
     response_code_ = code;
 }
 
 tateyama::status stream_response::acquire_channel(std::string_view name, std::shared_ptr<tateyama::api::server::data_channel>& ch) {
     try {
-        auto slot = session_socket_.look_for_slot();
-        data_channel_ = std::make_unique<stream_data_channel>(session_socket_, slot, *this);
-        VLOG_LP(log_trace) << static_cast<const void*>(&session_socket_) << " data_channel_ = " << static_cast<const void*>(data_channel_.get());  //NOLINT
+        auto slot = session_socket_->look_for_slot();
+        data_channel_ = std::make_unique<stream_data_channel>(*session_socket_, slot, *this);
+        VLOG_LP(log_trace) << static_cast<const void*>(session_socket_.get()) << " data_channel_ = " << static_cast<const void*>(data_channel_.get());  //NOLINT
 
         if (ch = data_channel_; ch != nullptr) {
-            session_socket_.send_result_set_hello(slot, name);
+            session_socket_->send_result_set_hello(slot, name);
             return tateyama::status::ok;
         }
         throw std::runtime_error("error in create stream_data_channel");
@@ -112,11 +112,11 @@ tateyama::status stream_response::acquire_channel(std::string_view name, std::sh
 }
 
 tateyama::status stream_response::release_channel(tateyama::api::server::data_channel& ch) {
-    VLOG_LP(log_trace) << static_cast<const void*>(&session_socket_) << " data_channel_ = " << static_cast<const void*>(data_channel_.get());  //NOLINT
+    VLOG_LP(log_trace) << static_cast<const void*>(session_socket_.get()) << " data_channel_ = " << static_cast<const void*>(data_channel_.get());  //NOLINT
 
     if (auto dc = dynamic_cast<stream_data_channel*>(&ch); data_channel_.get() == dc) {
         auto slot = dc->get_slot();
-        session_socket_.send_result_set_bye(slot);
+        session_socket_->send_result_set_bye(slot);
         data_channel_ = nullptr;
         return tateyama::status::ok;
     }
@@ -126,7 +126,7 @@ tateyama::status stream_response::release_channel(tateyama::api::server::data_ch
 
 // deprecated
 tateyama::status stream_response::close_session() {
-    VLOG_LP(log_trace) << static_cast<const void*>(&session_socket_);  //NOLINT
+    VLOG_LP(log_trace) << static_cast<const void*>(session_socket_.get());  //NOLINT
 
     return tateyama::status::ok;
 }
