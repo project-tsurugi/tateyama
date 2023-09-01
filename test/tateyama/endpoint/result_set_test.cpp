@@ -36,7 +36,7 @@ class result_set_test : public ::testing::Test {
 
         rv_ = system("if [ -f /dev/shm/tateyama-result_set_test ]; then rm -f /dev/shm/tateyama-result_set_test; fi ");
 
-        wire_ = std::make_unique<tateyama::common::wire::server_wire_container_impl>("tateyama-result_set_test", "dummy_mutex_file_name", datachannel_buffer_size, 16);
+        wire_ = std::make_shared<tateyama::common::wire::server_wire_container_impl>("tateyama-result_set_test", "dummy_mutex_file_name", datachannel_buffer_size, 16);
 
     }
     virtual void TearDown() {
@@ -52,7 +52,7 @@ public:
     static constexpr tateyama::common::wire::message_header::index_type index_ = 1;
     static constexpr std::string_view r_ = "row_data_test";  // length = 13
 
-    std::unique_ptr<tateyama::common::wire::server_wire_container_impl> wire_;
+    std::shared_ptr<tateyama::common::wire::server_wire_container_impl> wire_;
 
     class test_service {
     public:
@@ -97,7 +97,7 @@ TEST_F(result_set_test, normal) {
     EXPECT_EQ(request_wire->payload(), request_message);
 
     auto request = std::make_shared<tateyama::common::wire::ipc_request>(*wire_, h);
-    auto response = std::make_shared<tateyama::common::wire::ipc_response>(*request, h.get_idx());
+    auto response = std::make_shared<tateyama::common::wire::ipc_response>(wire_, h.get_idx());
 
     test_service sv;
     sv(static_cast<std::shared_ptr<tateyama::api::server::request>>(request),
@@ -154,7 +154,7 @@ TEST_F(result_set_test, large) {
     EXPECT_EQ(request_wire->payload(), request_message);
 
     auto request = std::make_shared<tateyama::common::wire::ipc_request>(*wire_, h);
-    auto response = std::make_shared<tateyama::common::wire::ipc_response>(*request, h.get_idx());
+    auto response = std::make_shared<tateyama::common::wire::ipc_response>(wire_, h.get_idx());
 
 
     // server side

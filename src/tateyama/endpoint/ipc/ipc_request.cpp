@@ -21,11 +21,6 @@
 
 namespace tateyama::common::wire {
 
-server_wire_container&
-ipc_request::get_server_wire_container() {
-    return server_wire_;
-}
-
 std::string_view
 ipc_request::payload() const {
     VLOG_LP(log_trace) << static_cast<const void*>(&server_wire_) << " length = " << payload_.length();  //NOLINT

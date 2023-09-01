@@ -82,11 +82,10 @@ class ipc_response : public tateyama::api::server::response {
     friend ipc_data_channel;
 
 public:
-    ipc_response(ipc_request& request, std::size_t index) :
-        ipc_request_(request),
-        server_wire_(ipc_request_.get_server_wire_container()),
+    ipc_response(std::shared_ptr<server_wire_container> server_wire, std::size_t index) :
+        server_wire_(std::move(server_wire)),
         index_(index),
-        garbage_collector_(server_wire_.get_garbage_collector()) {
+        garbage_collector_(server_wire_->get_garbage_collector()) {
         // do dump here
         garbage_collector_->dump();
     }
@@ -105,8 +104,7 @@ public:
     }
 
 private:
-    ipc_request& ipc_request_;
-    server_wire_container& server_wire_;
+    std::shared_ptr<server_wire_container> server_wire_;
     std::size_t index_;
     tateyama::common::wire::garbage_collector* garbage_collector_;
 
