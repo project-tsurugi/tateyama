@@ -32,7 +32,7 @@ class ipc_provider;
 
 class Worker {
  public:
-    Worker(tateyama::framework::routing_service& service, std::size_t session_id, std::unique_ptr<tateyama::common::wire::server_wire_container_impl> wire, std::function<void(void)> clean_up)
+    Worker(tateyama::framework::routing_service& service, std::size_t session_id, std::shared_ptr<tateyama::common::wire::server_wire_container_impl> wire, std::function<void(void)> clean_up)
         : service_(service), wire_(std::move(wire)),
           request_wire_container_(dynamic_cast<tateyama::common::wire::server_wire_container_impl::wire_container_impl*>(wire_->get_request_wire())),
           session_id_(session_id),
@@ -57,7 +57,7 @@ class Worker {
 
  private:
     tateyama::framework::routing_service& service_;
-    std::unique_ptr<tateyama::common::wire::server_wire_container_impl> wire_;
+    std::shared_ptr<tateyama::common::wire::server_wire_container_impl> wire_;
     tateyama::common::wire::server_wire_container_impl::wire_container_impl* request_wire_container_;
     std::size_t session_id_;
     std::function<void(void)> clean_up_;

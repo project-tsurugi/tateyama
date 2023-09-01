@@ -38,7 +38,7 @@ class writer_limit_test : public ::testing::Test {
 
         rv_ = system("if [ -f /dev/shm/tateyama-writer_limit_test ]; then rm -f /dev/shm/tateyama-writer_limit_test; fi ");
 
-        wire_ = std::make_unique<tateyama::common::wire::server_wire_container_impl>("tateyama-writer_limit_test", "dummy_mutex_file_name", datachannel_buffer_size, writers);
+        wire_ = std::make_shared<tateyama::common::wire::server_wire_container_impl>("tateyama-writer_limit_test", "dummy_mutex_file_name", datachannel_buffer_size, writers);
         buffer.resize(value_size);
     }
     virtual void TearDown() {
@@ -58,7 +58,7 @@ public:
     static constexpr tateyama::common::wire::message_header::index_type index_ = 1;
     std::string buffer{};
 
-    std::unique_ptr<tateyama::common::wire::server_wire_container_impl> wire_;
+    std::shared_ptr<tateyama::common::wire::server_wire_container_impl> wire_;
 
     bool timeout(std::function<void()>&& test_behavior) {
         std::promise<bool> promisedFinished;
@@ -87,7 +87,7 @@ TEST_F(writer_limit_test, within_writers) {
     EXPECT_EQ(request_wire->payload(), request_message);
 
     auto request = std::make_shared<tateyama::common::wire::ipc_request>(*wire_, h);
-    auto response = std::make_shared<tateyama::common::wire::ipc_response>(*request, h.get_idx());
+    auto response = std::make_shared<tateyama::common::wire::ipc_response>(wire_, h.get_idx());
 
     std::array<std::shared_ptr<tateyama::api::server::data_channel>, writers> dcs{};
     std::array<std::shared_ptr<tateyama::api::server::writer>, writers> ws{};
@@ -120,7 +120,7 @@ TEST_F(writer_limit_test, exceed_writers) {
     EXPECT_EQ(request_wire->payload(), request_message);
 
     auto request = std::make_shared<tateyama::common::wire::ipc_request>(*wire_, h);
-    auto response = std::make_shared<tateyama::common::wire::ipc_response>(*request, h.get_idx());
+    auto response = std::make_shared<tateyama::common::wire::ipc_response>(wire_, h.get_idx());
 
     std::array<std::shared_ptr<tateyama::api::server::data_channel>, writers+1> dcs{};
     std::array<std::shared_ptr<tateyama::api::server::writer>, writers+1> ws{};

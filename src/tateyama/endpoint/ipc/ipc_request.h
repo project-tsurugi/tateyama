@@ -61,7 +61,6 @@ public:
     ipc_request() = delete;
 
     [[nodiscard]] std::string_view payload() const override;
-    server_wire_container& get_server_wire_container();
     void dispose();
     [[nodiscard]] std::size_t session_id() const override;
     [[nodiscard]] std::size_t service_id() const override;
