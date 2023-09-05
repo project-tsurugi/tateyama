@@ -18,6 +18,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <netinet/tcp.h>
 #include <unistd.h>
 #include <memory>
 #include <string_view>
@@ -78,6 +79,10 @@ class stream_socket
 
 public:
     explicit stream_socket(int socket) noexcept : socket_(socket) {
+        const int enable = 1;
+        if (setsockopt(socket, SOL_TCP, TCP_NODELAY, &enable, sizeof(enable)) < 0) {
+            LOG_LP(ERROR) << "setsockopt() fail";
+        }
     }
 
     ~stream_socket() {
@@ -154,8 +159,8 @@ public:
         char buffer[sizeof(std::uint16_t)];  // NOLINT
         buffer[0] = slot & 0xff;  // NOLINT
         buffer[1] = (slot / 0x100) & 0xff;  // NOLINT
-        ::send(socket_, &buffer[0], sizeof(std::uint16_t), 0);
-        ::send(socket_, &writer, 1, 0);
+        ::send(socket_, &buffer[0], sizeof(std::uint16_t), MSG_MORE);
+        ::send(socket_, &writer, 1, MSG_MORE);
         send_payload(payload);
     }
 
@@ -322,7 +327,7 @@ private:
         ::send(socket_, &info, 1, 0);
         buffer[0] = slot & 0xff;  // NOLINT
         buffer[1] = (slot / 0x100) & 0xff;  // NOLINT
-        ::send(socket_, &buffer[0], sizeof(std::uint16_t), 0);
+        ::send(socket_, &buffer[0], sizeof(std::uint16_t), MSG_MORE);
         send_payload(payload);
     }
     void send_payload(std::string_view payload) const {  // a support function, assumes caller hold lock
@@ -332,9 +337,11 @@ private:
         buffer[1] = (length / 0x100) & 0xff;  // NOLINT
         buffer[2] = (length / 0x10000) & 0xff;  // NOLINT
         buffer[3] = (length / 0x1000000) & 0xff;  // NOLINT
-        ::send(socket_, &buffer[0], sizeof(length), 0);
         if (length > 0) {
+            ::send(socket_, &buffer[0], sizeof(length), MSG_MORE);
             ::send(socket_, payload.data(), length, 0);
+        } else {
+            ::send(socket_, &buffer[0], sizeof(length), 0);
         }
     }
 
