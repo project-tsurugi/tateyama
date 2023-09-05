@@ -124,6 +124,23 @@ public:
     void thread(impl::thread_control* arg) noexcept {
         thread_ = arg;
     }
+
+    /**
+     * @brief accessor to the busy_working flag
+     * @return whether the worker has been working busily or suspended
+     */
+    [[nodiscard]] bool busy_working() const noexcept {
+        return busy_working_;
+    }
+
+    /**
+     * @brief setter to the busy_working flag
+     * @param arg whether the worker has been working busily or suspended
+     */
+    void busy_working(bool arg) noexcept {
+        busy_working_ = arg;
+    }
+
 private:
     std::size_t index_{};
     std::size_t last_steal_from_{};
@@ -131,6 +148,7 @@ private:
     rational count_promoting_delayed_{};
     bool task_is_stolen_{};
     impl::thread_control* thread_{};
+    bool busy_working_{};
 };
 
 }

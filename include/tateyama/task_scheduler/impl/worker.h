@@ -40,8 +40,25 @@
 namespace tateyama::task_scheduler::impl {
 
 struct cache_align worker_stat {
+    /**
+     * @brief total number of tasks (including both normal/sticky, and stolen tasks) executed by the worker
+     */
     std::size_t count_{};
-    std::size_t stolen_{};
+
+    /**
+     * @brief the number of tasks stolen (from other workers) and executed by the worker
+     */
+    std::size_t steal_{};
+
+    /**
+     * @brief the number of sticky tasks executed by the worker
+     */
+    std::size_t sticky_{};
+
+    /**
+     * @brief the count of when worker gets up (from suspension) and executes at least one task
+     */
+    std::size_t wakeup_{};
 };
 
 /**
@@ -148,6 +165,7 @@ public:
             }
             bool stolen = steal_and_execute(ctx);
             if(stolen) {
+                ++stat_->steal_;
                 return true;
             }
         }
@@ -176,6 +194,7 @@ public:
             ++empty_work_count;
             if(empty_work_count > cfg_->worker_try_count()) {
                 empty_work_count = 0;
+                ctx.busy_working(false);
                 ctx.thread()->suspend(std::chrono::microseconds{cfg_->worker_suspend_timeout()});
             }
         }
@@ -227,12 +246,10 @@ private:
         for(auto idx = next(last); idx != last; idx = next(idx)) {
             auto& tgt = (*queues_)[idx];
             if(tgt.active() && tgt.try_pop(t)) {
-                ++stat_->stolen_;
                 ctx.last_steal_from(idx);
                 ctx.task_is_stolen(true);
                 execute_task(t, ctx);
                 ctx.task_is_stolen(false);
-                ++stat_->count_;
                 return true;
             }
         }
@@ -240,6 +257,10 @@ private:
     }
 
     void execute_task(task& t, context& ctx) {
+        if(! ctx.busy_working()) {
+            ++stat_->wakeup_;
+        }
+        ctx.busy_working(true);
         try {
             // use try-catch to avoid server crash even on fatal internal error
             t(ctx);
@@ -253,6 +274,7 @@ private:
                 LOG(ERROR) << *tr;
             }
         }
+        ++stat_->count_;
     }
 
     bool try_process(
@@ -262,7 +284,6 @@ private:
         task t{};
         if (q.active() && q.try_pop(t)) {
             execute_task(t, ctx);
-            ++stat_->count_;
             return true;
         }
         return false;
@@ -280,12 +301,18 @@ private:
         auto& cnt = ctx.count_check_local_first();
         cnt += cfg_->ratio_check_local_first();
         if(cnt < 1) {
-            if(try_process(ctx, sq)) return true;
+            if(try_process(ctx, sq)) {
+                ++stat_->sticky_;
+                return true;
+            }
             if(try_process(ctx, q)) return true;
         } else {
             --cnt;
             if(try_process(ctx, q)) return true;
-            if(try_process(ctx, sq)) return true;
+            if(try_process(ctx, sq)) {
+                ++stat_->sticky_;
+                return true;
+            }
         }
         return false;
     }

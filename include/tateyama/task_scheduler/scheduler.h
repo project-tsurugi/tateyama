@@ -345,6 +345,31 @@ public:
     std::size_t next_worker() {
         return increment(current_index_, size_);
     }
+
+    /**
+     * @brief print worker stats
+     */
+    void print_worker_stats(std::ostream& os) {
+        auto count = contexts_.size();
+        os << "{";
+        os << "worker_count:" << count << ",";
+        os << "workers:[";
+        for(std::size_t i=0; i < count; ++i) {
+            auto& stat = worker_stats_[i];
+            if(i != 0) {
+                os << ",";
+            }
+            os << "{";
+            os << "worker_index:" << i << ",";
+            os << "count:" << stat.count_ << ",";
+            os << "sticky:" << stat.sticky_ << ",";
+            os << "steal:" << stat.steal_ << ",";
+            os << "wakeup:" << stat.wakeup_;
+            os << "}";
+        }
+        os << "]";
+        os << "}";
+    }
 private:
     task_scheduler_cfg cfg_{};
     std::size_t size_{};
