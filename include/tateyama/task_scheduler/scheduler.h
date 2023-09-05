@@ -352,19 +352,19 @@ public:
     void print_worker_stats(std::ostream& os) {
         auto count = contexts_.size();
         os << "{";
-        os << "worker_count:" << count << ",";
-        os << "workers:[";
+        os << "\"worker_count\":" << count << ",";
+        os << "\"workers\":[";
         for(std::size_t i=0; i < count; ++i) {
             auto& stat = worker_stats_[i];
             if(i != 0) {
                 os << ",";
             }
             os << "{";
-            os << "worker_index:" << i << ",";
-            os << "count:" << stat.count_ << ",";
-            os << "sticky:" << stat.sticky_ << ",";
-            os << "steal:" << stat.steal_ << ",";
-            os << "wakeup:" << stat.wakeup_;
+            os << "\"worker_index\":" << i << ",";
+            os << "\"count\":" << stat.count_ << ",";
+            os << "\"sticky\":" << stat.sticky_ << ",";
+            os << "\"steal\":" << stat.steal_ << ",";
+            os << "\"wakeup\":" << stat.wakeup_;
             os << "}";
         }
         os << "]";
