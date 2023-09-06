@@ -348,7 +348,7 @@ template<>
         auto str = opt.value();
         if (!str.empty()) {
             std::filesystem::path ep = str;
-            if (str.at(0) == '/') {
+            if (ep.is_absolute()) {
                 return ep;
             }
             auto bp = parent_->base_path();
