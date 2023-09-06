@@ -357,14 +357,13 @@ template<>
             }
             LOG(ERROR) << "value of " << name << " is '" << str << "', which is relative path and the the base path is empty";
             throw std::runtime_error("the parameter string is relative path and the base path is empty");
-        } else {
-            auto bp = parent_->base_path();
-            if (bp) {
-                return bp.value();
-            }
-            LOG(ERROR) << "value of " << name << " is empty and  the base path is also empty";
-            throw std::runtime_error("the parameter string and the base path are both empty");
         }
+        auto bp = parent_->base_path();
+        if (bp) {
+            return bp.value();
+        }
+        LOG(ERROR) << "value of " << name << " is empty and  the base path is also empty";
+        throw std::runtime_error("the parameter string and the base path are both empty");
     }
     return std::nullopt;
 }
