@@ -201,5 +201,57 @@ TEST_F(configuration_test, overflow_number) {
     }
 }
 
+TEST_F(configuration_test, abs_path) {
+    std::string content{
+            "[datastore]\n"
+            "log_location=/tmp\n"
+    };
+    std::stringstream ss0{content};
+    configuration::whole cfg{ss0, tateyama::test::default_configuration_for_tests};
+
+    auto section = cfg.get_section("datastore");
+    ASSERT_TRUE(section);
+
+    auto loc = section->get<std::filesystem::path>("log_location");
+    EXPECT_TRUE(loc);
+    EXPECT_EQ(loc.value(), "/tmp");
+}
+
+TEST_F(configuration_test, rel_path) {
+    std::string content{
+            "[datastore]\n"
+            "log_location=relpath\n"
+    };
+    std::stringstream ss0{content};
+    configuration::whole cfg{ss0, tateyama::test::default_configuration_for_tests};
+    std::filesystem::path bp = "/tmp";
+    cfg.base_path(bp);
+
+    auto section = cfg.get_section("datastore");
+    ASSERT_TRUE(section);
+
+    auto loc = section->get<std::filesystem::path>("log_location");
+    EXPECT_TRUE(loc);
+    EXPECT_EQ(loc.value(), "/tmp/relpath");
+}
+
+TEST_F(configuration_test, rel_path_base_empty) {
+    std::string content{
+            "[datastore]\n"
+            "log_location=relpath\n"
+    };
+    std::stringstream ss0{content};
+    configuration::whole cfg{ss0, tateyama::test::default_configuration_for_tests};
+
+    auto section = cfg.get_section("datastore");
+    ASSERT_TRUE(section);
+
+    try {
+        auto loc = section->get<std::filesystem::path>("log_location");
+        FAIL();
+    } catch (std::runtime_error &) {
+        SUCCEED();
+    }
+}
 
 }
