@@ -113,6 +113,7 @@ public:
         sleep_cv_->cv_.wait_for(lk, timeout, [this]() {
             return active_;
         });
+        active_ = true; // in case timeout occurs
     }
 
     void print_diagnostic(std::ostream& os) {
