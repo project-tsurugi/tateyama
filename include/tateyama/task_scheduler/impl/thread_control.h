@@ -186,6 +186,7 @@ private:
                 sleep_cv_->cv_.wait(lk, [&] {
                     return activate_requested_;
                 });
+                activate_requested_ = false;
                 *active_ = true;
             }
             DLOG(INFO) << "thread " << thread_id
