@@ -77,8 +77,7 @@ public:
     }
 
     [[nodiscard]] bool active() const noexcept {
-        std::unique_lock lk{sleep_cv_->mutex_};
-        return active_;
+        return *active_;
     }
 
     /**
@@ -99,8 +98,7 @@ public:
         {
             std::unique_lock lk{sleep_cv_->mutex_};
             if(*completed_) return;
-            if(active_) return;
-            active_ = true;
+            activate_requested_ = true;
         }
         sleep_cv_->cv_.notify_all();
     }
@@ -109,11 +107,16 @@ public:
     void suspend(std::chrono::duration<Rep, Period> timeout = std::chrono::hours{24}) {
         std::unique_lock lk{sleep_cv_->mutex_};
         if(*completed_) return;
-        active_ = false;
+        if(activate_requested_) {
+            activate_requested_ = false;
+            return;
+        }
+        *active_ = false;
         sleep_cv_->cv_.wait_for(lk, timeout, [this]() {
-            return active_;
+            return activate_requested_;
         });
-        active_ = true; // in case timeout occurs
+        activate_requested_ = false;
+        *active_ = true;
     }
 
     void print_diagnostic(std::ostream& os) {
@@ -126,7 +129,8 @@ public:
     }
 private:
     std::unique_ptr<cv> sleep_cv_{std::make_unique<cv>()};
-    bool active_{};
+    bool activate_requested_{};
+    std::unique_ptr<std::atomic_bool> active_{std::make_unique<std::atomic_bool>()};
     std::unique_ptr<cv> initialized_cv_{std::make_unique<cv>()};
     bool initialized_{};
     std::unique_ptr<std::atomic_bool> completed_{std::make_unique<std::atomic_bool>()};
@@ -180,8 +184,9 @@ private:
             {
                 std::unique_lock lk{sleep_cv_->mutex_};
                 sleep_cv_->cv_.wait(lk, [&] {
-                    return active_;
+                    return activate_requested_;
                 });
+                *active_ = true;
             }
             DLOG(INFO) << "thread " << thread_id
                 << " physical_id:" << utils::hex(boost::this_thread::get_id())
@@ -193,7 +198,7 @@ private:
             {
                 std::unique_lock lk{sleep_cv_->mutex_};
                 *completed_ = true;
-                active_ = false;
+                *active_ = false;
             }
         };
     }
