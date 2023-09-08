@@ -29,8 +29,6 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/foreach.hpp>
 #include <boost/algorithm/string.hpp>
-#include <boost/filesystem/path.hpp>
-#include <boost/filesystem/operations.hpp>
 
 #include <glog/logging.h>
 #include <tateyama/logging.h>
@@ -160,9 +158,9 @@ template<>
 class whole {
 public:
     whole(std::string_view file_name, std::string_view default_property) {
-        file_ = boost::filesystem::path(std::string(file_name));
+        file_ = std::filesystem::path(std::string(file_name));
         std::ifstream stream{};
-        if (boost::filesystem::exists(file_)) {
+        if (std::filesystem::exists(file_)) {
             property_file_exist_ = true;
             stream = std::ifstream{file_.c_str()};
             initialize(stream, default_property);
@@ -206,7 +204,7 @@ public:
      * @brief get directory of the config file
      * @return path of the directory
      */
-    boost::filesystem::path get_directory() {
+    std::filesystem::path get_directory() {
         if (property_file_exist_) {
             return file_.parent_path();
         }
@@ -217,9 +215,9 @@ public:
      * @brief get canonical path of the config file
      * @return canonical path of the config file
      */
-    boost::filesystem::path get_canonical_path() {
+    std::filesystem::path get_canonical_path() {
         if (property_file_exist_) {
-            return boost::filesystem::canonical(file_);
+            return std::filesystem::canonical(file_);
         }
         return {""};
     }
@@ -251,7 +249,7 @@ public:
 private:
     boost::property_tree::ptree property_tree_;
     boost::property_tree::ptree default_tree_;
-    boost::filesystem::path file_{};
+    std::filesystem::path file_{};
     bool property_file_exist_{};
     bool check_done_{};
     bool default_valid_{};
