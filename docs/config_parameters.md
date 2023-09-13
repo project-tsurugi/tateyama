@@ -19,7 +19,8 @@ parameter=value
 
 |                  パラメーター名 | 型 | 値                   | 備考                                                                                                                                                           |
 |-------------------------:| :---: |:--------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| epoch_duration  | 整数 | エポックの長さ(us)    | デフォルトは40000                                                                                                                                  |
+| epoch_duration  | 整数 | エポックの長さ(us)。デフォルトは40000。 |
+| waiting_resolver_threads | 整数 | コミット待ちとなったLTX群の待ち判定とプレコミット処理を行うスレッド数。デフォルト2。 |
 
 ## datastoreセクション
 
@@ -34,7 +35,6 @@ parameter=value
 |                  パラメーター名 | 型 | 値                   | 備考                                                                                                                                                           |
 |-------------------------:| :---: |:--------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
 |             log_location | 文字列 | ログを保存するディレクトリへの絶対パス | デフォルトはshirakamiの決めるデフォルトパス([database_options::log_directory_path_の記述](https://github.com/project-tsurugi/shirakami/blob/master/docs/database_options.md)を参照) |
-| logging_max_parallelism  | 整数 | 同時並行に動作するロガーの最大数    | 開発中のためまだ完全には動作しない。デフォルトは112                                                                                                                                  |
 
 ## sqlセクション
 
@@ -62,6 +62,7 @@ parameter=value
 |watcher_interval| 整数 | タスクスケジューラの条件確認スレッドが一時停止してから次に再開するまでの間隔(us)。enable_watcher=trueの場合のみ有効。デフォルトは1000|開発用のため将来的に削除/変更される可能性あり|
 |worker_try_count| 整数 | タスクスケジューラのワーカーがサスペンド前にタスクキューを確認する回数。busy_worker=falseの場合のみ有効。デフォルトは1000|開発用のため将来的に削除/変更される可能性あり|
 |worker_suspend_timeout| 整数 | タスクスケジューラのワーカーがサスペンドしてから復帰するまでの時間(us)。busy_worker=falseの場合のみ有効。デフォルトは1000000|開発用のため将来的に削除/変更される可能性あり|
+|commit_response| 文字列 | commit待ち合わせの既定値。次のいずれかから選択 (ACCEPTED, AVAILABLE, STORED, PROPAGATED)。デフォルトはPROPAGATED|クライアントからコミット時に明示的に指定することで、トランザクションごとに上記設定を上書き可能|
 
 ## ipc_endpointセクション
 
@@ -76,6 +77,7 @@ parameter=value
 |database_name | 文字列 | ipc_endpointに接続する際のurl名、デフォルトはtsurugi。 | この文字列は/dev/shmに作成されるファイル名のprefixとして使われる。
 |threads | 整数 | ipc_endpointの最大同時接続数、デフォルトは104。
 |datachannel_buffer_size | 整数 | resultsetのbuffer size、単位はKB、デフォルトは64。 | ipcで扱える最大のraw sizeはdatachannel_buffer_size-4B。
+|max_datachannel_buffers | 整数 | 1セッションで同時使用可能なwriterの数。デフォルト値は256。 | このパラメータはセッションに対する上限値であり、システム（データベース・インスタンス）全体に対する上限値ではない。
 
 ## stream_endpointセクション
 
@@ -89,19 +91,6 @@ parameter=value
 |---:| :---: | :--- |---|
 |port | 整数 | stream_endpointに接続する際のport番号、デフォルトは12345
 |threads | 整数 | stream_endpointの最大同時接続数、デフォルトは104
-
-## fdwセクション(廃止予定)
-
-セクション名
-  - fdw
-
-対象コンポーネント
-  - ogawayama
-
-|パラメーター名 | 型 | 値 |備考|
-|---:| :---: | :--- |---|
-|name | 文字列 | ogawayamaと接続する際のurl名、default値はtsurugi。 | この文字列は/dev/shmに作成されるファイル名のprefixとして使われる。
-|threads | 整数 | fdwの最大同時接続数、デフォルトは104
 
 ## sessionセクション
 
@@ -128,9 +117,23 @@ parameter=value
 |パラメーター名 | 型 | 値 |備考|
 |---:| :---: | :--- |---|
 |pid_directory | 文字列 | .pidファイル([プロセスの排他制御について](https://github.com/project-tsurugi/tateyama/blob/master/docs/process-mutex-ja.md)を参照)を作成する一時ディレクトリを指定する、デフォルト値は/var/lock。
-|logtostderr | ブール(true/false) | ログをstderrに出力する、デフォルト値はtrue。
-|log_directory | 文字列 | 稼働ログを記録するディレクトリを指定する、デフォルト値は"/tmp"。 | logstderr（上欄）がfalseかつtgctl startコマンドに--logtostderrが指定されていない場合のみ有効。
-|vlog_level | 数値 | 出力するverbose loggingのレベルを設定する、デフォルト値は0 | tgctl startコマンドに--vオプションが指定され場合、その指定が優先される。
+
+## glogセクション
+
+セクション名
+  - glog
+
+対象コンポーネント
+  - glog（logger）
+
+|パラメーター名 | 型 | 値 |備考|
+|---:| :---: | :--- |---|
+|logtostderr | ブール(true/false) | ログファイルを出力せず、代わりに標準エラー出力にすべてのメッセージを出力する。デフォルト値はfalse。 |
+|stderrthreshold | 整数 | 標準エラー出力に出力するログレベルの閾値。デフォルト値は2（ERRORに相当）。|
+|minloglevel | 整数 | 出力するログレベル。デフォルト値は0（INFOに相当） |
+|log_dir | 文字列 | ログファイルの出力先ディレクトリ。デフォルトは未指定（glogの既定のディレクトリに出力）。 |
+|max_log_size | 整数 | ログファイルの最大サイズ。デフォルト値は未指定。 |
+|v | 数値 | 出力する詳細ログのレベル。デフォルト値は0（出力しない）。|
 
 ## ディレクトリの相対パス指定について
 ディレクトリを指定するパラメータで相対パスが設定された場合、環境変数 TSURUGI_HOME からの相対パスとなります。
