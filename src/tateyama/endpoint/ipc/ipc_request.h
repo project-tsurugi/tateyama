@@ -23,7 +23,7 @@
 
 #include "server_wires.h"
 #include "tateyama/endpoint/common/endpoint_proto_utils.h"
-#include "tateyama/endpoint/common/logging_helper.h"
+#include "tateyama/logging_helper.h"
 
 namespace tateyama::common::wire {
 
