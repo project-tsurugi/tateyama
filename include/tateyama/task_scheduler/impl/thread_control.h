@@ -24,6 +24,7 @@
 #include <glog/logging.h>
 #include <numa.h>
 
+#include <tateyama/logging_helper.h>
 #include <tateyama/task_scheduler/task_scheduler_cfg.h>
 #include <tateyama/task_scheduler/impl/thread_initialization_info.h>
 #include <tateyama/utils/thread_affinity.h>
@@ -163,6 +164,7 @@ private:
     auto create_thread_body(std::size_t thread_id, task_scheduler_cfg const* cfg, F&& callable, Args&&...args) {
         // libnuma initialize some static variables on the first call numa_node_of_cpu(). To avoid multiple threads race initialization, call it here.
         numa_node_of_cpu(sched_getcpu());
+        auto log_location_prefix = "/:tateyama:task_scheduler:impl:thread_control:create_thread_body ";
 
         // C++20 supports forwarding captured parameter packs. Use forward as tuple for now.
         return [=, args=std::tuple<Args...>(std::forward<Args>(args)...)]() mutable { // assuming args are copyable
@@ -189,7 +191,7 @@ private:
                 activate_requested_ = false;
                 *active_ = true;
             }
-            DLOG(INFO) << "thread " << thread_id
+            LOG(INFO) << log_location_prefix << "thread " << thread_id
                 << " physical_id:" << utils::hex(boost::this_thread::get_id())
                 << " runs on cpu:" << sched_getcpu()
                 << " node:" << numa_node_of_cpu(sched_getcpu());

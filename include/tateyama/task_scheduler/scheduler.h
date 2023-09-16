@@ -459,7 +459,7 @@ private:
         }
         if (index_for_this_thread == undefined) {
             index_for_this_thread = next_worker();
-            DVLOG(log_debug) << "worker " << index_for_this_thread << " assigned for thread on core " << sched_getcpu();
+            LOG_LP(INFO) << "worker " << index_for_this_thread << " assigned for thread on core " << sched_getcpu();
         }
         return index_for_this_thread;
     }
