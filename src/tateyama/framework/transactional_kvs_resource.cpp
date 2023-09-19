@@ -24,21 +24,30 @@
 namespace tateyama::framework {
 
 bool transactional_kvs_resource::setup(environment& env) {
-    auto s = env.configuration()->get_section("datastore");
-    BOOST_ASSERT(s != nullptr); //NOLINT
+    auto ds = env.configuration()->get_section("datastore");
+    BOOST_ASSERT(ds != nullptr); //NOLINT
     sharksfin::DatabaseOptions options{};
-    if(auto res = s->get<std::string>("log_location"); res) {
+    if(auto res = ds->get<std::string>("log_location"); res) {
         auto location = res.value();
         if(!location.empty()) {
             static constexpr std::string_view KEY_LOCATION{"location"};
             options.attribute(KEY_LOCATION, location);
         }
     }
-    if(auto res = s->get<std::size_t>("logging_max_parallelism"); res) {
+    auto cc = env.configuration()->get_section("cc");
+    BOOST_ASSERT(cc != nullptr); //NOLINT
+    if(auto res = cc->get<std::size_t>("epoch_duration"); res) {
         auto sz = res.value();
         if(sz > 0) {
-            static constexpr std::string_view KEY_LOGGING_MAX_PARALLELISM{"logging_max_parallelism"};
-            options.attribute(KEY_LOGGING_MAX_PARALLELISM, std::to_string(sz));
+            static constexpr std::string_view KEY_EPOCH_DURATION{"epoch_duration"};
+            options.attribute(KEY_EPOCH_DURATION, std::to_string(sz));
+        }
+    }
+    if(auto res = cc->get<std::size_t>("waiting_resolver_threads"); res) {
+        auto sz = res.value();
+        if(sz > 0) {
+            static constexpr std::string_view KEY_WAITING_RESOLVER_THREADS{"waiting_resolver_threads"};
+            options.attribute(KEY_WAITING_RESOLVER_THREADS, std::to_string(sz));
         }
     }
     if(auto res = sharksfin::database_open(options, std::addressof(database_handle_)); res != sharksfin::StatusCode::OK) {
