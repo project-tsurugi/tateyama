@@ -459,7 +459,8 @@ private:
         }
         if (index_for_this_thread == undefined) {
             index_for_this_thread = next_worker();
-            LOG_LP(INFO) << "worker " << index_for_this_thread << " assigned for thread on core " << sched_getcpu();
+            // using VLOG since caller threads are frequently re-created and this message is displayed often
+            VLOG_LP(log_debug) << "worker " << index_for_this_thread << " assigned for thread on core " << sched_getcpu();
         }
         return index_for_this_thread;
     }
