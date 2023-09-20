@@ -23,33 +23,45 @@
 
 namespace tateyama::framework {
 
+bool extract_config(environment& env, sharksfin::DatabaseOptions& options) {
+    try {
+        if(auto ds = env.configuration()->get_section("datastore")) {
+            if(auto res = ds->get<std::string>("log_location"); res) {
+                auto location = res.value();
+                if(!location.empty()) {
+                    // sharksfin db location name is different for historical reason
+                    static constexpr std::string_view KEY_LOCATION{"location"};
+                    options.attribute(KEY_LOCATION, location);
+                }
+            }
+        }
+        if(auto cc = env.configuration()->get_section("cc")) {
+            if(auto res = cc->get<std::size_t>("epoch_duration"); res) {
+                auto sz = res.value();
+                if(sz > 0) {
+                    static constexpr std::string_view KEY_EPOCH_DURATION{"epoch_duration"};
+                    options.attribute(KEY_EPOCH_DURATION, std::to_string(sz));
+                }
+            }
+            if(auto res = cc->get<std::size_t>("waiting_resolver_threads"); res) {
+                auto sz = res.value();
+                if(sz > 0) {
+                    static constexpr std::string_view KEY_WAITING_RESOLVER_THREADS{"waiting_resolver_threads"};
+                    options.attribute(KEY_WAITING_RESOLVER_THREADS, std::to_string(sz));
+                }
+            }
+        }
+    } catch(std::exception const& e) {
+        // error log should have been made
+        return false;
+    }
+    return true;
+}
+
 bool transactional_kvs_resource::setup(environment& env) {
     sharksfin::DatabaseOptions options{};
-    if(auto ds = env.configuration()->get_section("datastore")) {
-        if(auto res = ds->get<std::string>("log_location"); res) {
-            auto location = res.value();
-            if(!location.empty()) {
-                // sharksfin db location name is different for historical reason
-                static constexpr std::string_view KEY_LOCATION{"location"};
-                options.attribute(KEY_LOCATION, location);
-            }
-        }
-    }
-    if(auto cc = env.configuration()->get_section("cc")) {
-        if(auto res = cc->get<std::size_t>("epoch_duration"); res) {
-            auto sz = res.value();
-            if(sz > 0) {
-                static constexpr std::string_view KEY_EPOCH_DURATION{"epoch_duration"};
-                options.attribute(KEY_EPOCH_DURATION, std::to_string(sz));
-            }
-        }
-        if(auto res = cc->get<std::size_t>("waiting_resolver_threads"); res) {
-            auto sz = res.value();
-            if(sz > 0) {
-                static constexpr std::string_view KEY_WAITING_RESOLVER_THREADS{"waiting_resolver_threads"};
-                options.attribute(KEY_WAITING_RESOLVER_THREADS, std::to_string(sz));
-            }
-        }
+    if(! extract_config(env, options)) {
+        return false;
     }
     if(auto res = sharksfin::database_open(options, std::addressof(database_handle_)); res != sharksfin::StatusCode::OK) {
         LOG(ERROR) << "opening database failed";
