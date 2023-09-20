@@ -33,8 +33,16 @@ namespace tateyama::framework {
 using namespace std::literals::string_literals;
 using namespace std::string_view_literals;
 
-class transactional_kvs_test : public ::testing::Test {
+class transactional_kvs_test :
+    public ::testing::Test,
+    public test::test_utils {
 public:
+    void SetUp() override {
+        temporary_.prepare();
+    }
+    void TearDown() override {
+        temporary_.clean();
+    }
 };
 
 TEST_F(transactional_kvs_test, basic) {
@@ -46,4 +54,37 @@ TEST_F(transactional_kvs_test, basic) {
     ASSERT_TRUE(kvs.shutdown(env));
 }
 
+TEST_F(transactional_kvs_test, relative_path) {
+    // verify relative path appended after base path
+    std::stringstream ss{
+        "[datastore]\n"
+        "log_location=db\n",
+    };
+    auto cfg = std::make_shared<tateyama::api::configuration::whole>(ss, tateyama::test::default_configuration_for_tests);
+    cfg->base_path(path());
+    framework::environment env{boot_mode::database_server, cfg};
+    transactional_kvs_resource kvs{};
+    // we can only check following calls are successful
+    // manually verify with GLOG_v=50 env. var. and shirakami::init receives db directory under tmp folder as log_directory_path
+    ASSERT_TRUE(kvs.setup(env));
+    ASSERT_TRUE(kvs.start(env));
+    ASSERT_TRUE(kvs.shutdown(env));
+}
+
+TEST_F(transactional_kvs_test, relative_path_empty_string) {
+    // verify empty string is not handled as relative path
+    std::stringstream ss{
+        "[datastore]\n"
+        "log_location=\n",
+    };
+    auto cfg = std::make_shared<tateyama::api::configuration::whole>(ss, tateyama::test::default_configuration_for_tests);
+    cfg->base_path(path());
+    framework::environment env{boot_mode::database_server, cfg};
+    transactional_kvs_resource kvs{};
+    // we can only check following calls are successful
+    // manually verify with GLOG_v=50 env. var. and shirakami::init receives empty string as log_directory_path
+    ASSERT_TRUE(kvs.setup(env));
+    ASSERT_TRUE(kvs.start(env));
+    ASSERT_TRUE(kvs.shutdown(env));
+}
 }
