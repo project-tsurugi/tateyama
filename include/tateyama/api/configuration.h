@@ -82,6 +82,13 @@ public:
         return std::nullopt;
     }
 
+    // just to suppress clang clang-diagnostic-unused-private-field error
+    inline void dummy_message_output(std::string_view name) const {  
+        if (default_required_) {
+            LOG(ERROR) << "both tree did not have such property: " << name;
+        }
+    }
+    
     /**
      * @brief set property value for the given key
      * @param n key
@@ -106,6 +113,7 @@ public:
     friend bool operator==(section const& a, section const& b) noexcept {
         return a.property_tree_ == b.property_tree_;
     }
+
 private:
     boost::property_tree::ptree& property_tree_;
     boost::property_tree::ptree& default_tree_;
