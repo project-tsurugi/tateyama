@@ -39,8 +39,8 @@ class whole;
 
 class section {
 public:
-    section (boost::property_tree::ptree& pt, boost::property_tree::ptree& dt, whole* parent) : property_tree_(pt), default_tree_(dt), default_valid_(true), parent_(parent) {}
-    section (boost::property_tree::ptree& dt, whole* parent) : property_tree_(dt), default_tree_(dt), default_valid_(false), parent_(parent) {}
+    section (boost::property_tree::ptree& pt, boost::property_tree::ptree& dt, whole* parent, bool default_required) : property_tree_(pt), default_tree_(dt), default_valid_(true), parent_(parent), default_required_(default_required) {}
+    section (boost::property_tree::ptree& dt, whole* parent, bool default_required) : property_tree_(dt), default_tree_(dt), default_valid_(false), parent_(parent), default_required_(default_required) {}
     template<typename T>
     [[nodiscard]] inline std::optional<T> get(std::string_view n) const {
         auto name = std::string(n);
@@ -76,7 +76,9 @@ public:
         }
 
         // To support hidden configuration parameter, comment out the error msg for now.
-        // LOG(ERROR) << "both tree did not have such property: " << name;
+        // if (default_required_) {
+        //     LOG(ERROR) << "both tree did not have such property: " << name;
+        // }
         return std::nullopt;
     }
 
@@ -109,6 +111,7 @@ private:
     boost::property_tree::ptree& default_tree_;
     bool default_valid_;
     whole* parent_;
+    bool default_required_;
 };
 
 /**
@@ -305,16 +308,17 @@ private:
         if (default_valid_) {
             BOOST_FOREACH(const boost::property_tree::ptree::value_type &v, default_tree_) {
                 auto& dt = default_tree_.get_child(v.first);
+                bool default_required = (v.first != "glog");
                 if (property_file_exist_) {
                     try {
                         auto& pt = property_tree_.get_child(v.first);
-                        map_.emplace(v.first, std::make_unique<section>(pt, dt, this));
+                        map_.emplace(v.first, std::make_unique<section>(pt, dt, this, default_required));
                     } catch (boost::property_tree::ptree_error &e) {
                         VLOG(log_info) << "cannot find " << v.first << " section in the input, thus we use default property only.";
-                        map_.emplace(v.first, std::make_unique<section>(dt, this));
+                        map_.emplace(v.first, std::make_unique<section>(dt, this, default_required));
                     }
                 } else {
-                    map_.emplace(v.first, std::make_unique<section>(dt, this));
+                    map_.emplace(v.first, std::make_unique<section>(dt, this, default_required));
                 }
             }
             if (!check()) {
@@ -344,24 +348,19 @@ template<>
     std::optional<std::string> opt = get<std::string>(name);
     if (opt) {
         auto str = opt.value();
-        if (!str.empty()) {
-            std::filesystem::path ep = str;
-            if (ep.is_absolute()) {
-                return ep;
-            }
-            auto bp = parent_->base_path();
-            if (bp) {
-                return bp.value() / ep;
-            }
-            LOG(ERROR) << "value of " << name << " is '" << str << "', which is relative path and the the base path is empty";
-            throw std::runtime_error("the parameter string is relative path and the base path is empty");
+        if (str.empty()) {
+            return std::filesystem::path{};
+        }
+        std::filesystem::path ep = str;
+        if (ep.is_absolute()) {
+            return ep;
         }
         auto bp = parent_->base_path();
         if (bp) {
-            return bp.value();
+            return bp.value() / ep;
         }
-        LOG(ERROR) << "value of " << name << " is empty and  the base path is also empty";
-        throw std::runtime_error("the parameter string and the base path are both empty");
+        LOG(ERROR) << "value of " << name << " is '" << str << "', which is relative path and the the base path is empty";
+        throw std::runtime_error("the parameter string is relative path and the base path is empty");
     }
     return std::nullopt;
 }
