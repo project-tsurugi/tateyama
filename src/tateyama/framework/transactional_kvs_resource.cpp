@@ -27,18 +27,11 @@ namespace tateyama::framework {
 bool extract_config(environment& env, sharksfin::DatabaseOptions& options) {
     try {
         if(auto ds = env.configuration()->get_section("datastore")) {
-            // check emptiness first
             // if value is empty, it's not relative path so skip assigning location option
-            if(auto str = ds->get<std::string>("log_location"); str && !str->empty()) {
-                if(auto res = ds->get<std::filesystem::path>("log_location"); res) {
-                    auto location = res.value();
-                    if(! location.empty()) {
-                        // sharksfin db location name is different for historical reason
-                        static constexpr std::string_view KEY_LOCATION{"location"};
-                        auto loc = location.string();
-                        options.attribute(KEY_LOCATION, loc);
-                    }
-                }
+            if(auto res = ds->get<std::filesystem::path>("log_location"); res && !res->empty()) {
+                // sharksfin db location name is different for historical reason
+                static constexpr std::string_view KEY_LOCATION{"location"};
+                options.attribute(KEY_LOCATION, res->string());
             }
             if(auto res = ds->get<int>("recover_max_parallelism"); res) {
                 auto sz = res.value();
