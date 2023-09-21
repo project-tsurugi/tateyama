@@ -40,6 +40,13 @@ bool extract_config(environment& env, sharksfin::DatabaseOptions& options) {
                     }
                 }
             }
+            if(auto res = ds->get<int>("recover_max_parallelism"); res) {
+                auto sz = res.value();
+                if(sz > 0) {
+                    static constexpr std::string_view KEY_RECOVER_MAX_PARALLELISM{"recover_max_parallelism"};
+                    options.attribute(KEY_RECOVER_MAX_PARALLELISM, std::to_string(sz));
+                }
+            }
         }
         if(auto cc = env.configuration()->get_section("cc")) {
             if(auto res = cc->get<std::size_t>("epoch_duration"); res) {
