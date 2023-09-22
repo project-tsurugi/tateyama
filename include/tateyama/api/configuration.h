@@ -276,20 +276,26 @@ private:
 
         bool rv = true;
         BOOST_FOREACH(const boost::property_tree::ptree::value_type &s, property_tree_) {
+            auto& section_name = s.first;
+            bool default_required = (section_name != "glog");
             try {
-                boost::property_tree::ptree& default_section = default_tree_.get_child(s.first);
+                boost::property_tree::ptree& default_section = default_tree_.get_child(section_name);
                 BOOST_FOREACH(const boost::property_tree::ptree::value_type &p, s.second) {
                     try {
                         default_section.get<std::string>(p.first);
                     } catch (boost::property_tree::ptree_error &e) {
-                        LOG(ERROR) << "property '" << p.first << "' is not in the '" << s.first << "' section in the default configuration.";
-//                        rv = false;  //  FIXME  As a provisional measure, treat as not an error if the property is not in the default configuration.
+                        if (default_required) {
+                            LOG(ERROR) << "property '" << p.first << "' is not in the '" << section_name << "' section in the default configuration.";
+//                          rv = false;  //  FIXME  As a provisional measure, treat as not an error if the property is not in the default configuration.
+                        }
                         continue;
                     }
                 }
             } catch (boost::property_tree::ptree_error &e) {
-                LOG(ERROR) << "section '" << s.first << "' is not in the default configuration.";
-//                rv = false;  //  FIXME  As a provisional measure, treat as not an error if the property is not in the default configuration.
+                if (default_required) {
+                    LOG(ERROR) << "section '" << section_name << "' is not in the default configuration.";
+//                  rv = false;  //  FIXME  As a provisional measure, treat as not an error if the property is not in the default configuration.
+                }
                 continue;
             }
         }
