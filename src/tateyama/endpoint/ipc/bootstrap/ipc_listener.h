@@ -21,6 +21,8 @@
 #include <chrono>
 #include <csignal>
 
+#include <boost/thread/barrier.hpp>
+
 #include <gflags/gflags.h>
 #include <glog/logging.h>
 
@@ -90,6 +92,7 @@ public:
         auto& connection_queue = container_->get_connection_queue();
         proc_mutex_file_ = status_->mutex_file();
         status_->set_database_name(database_name_);
+        arrive_and_wait();
 
         while(true) {
             try {
@@ -132,6 +135,10 @@ public:
         container_->get_connection_queue().request_terminate();
     }
 
+    void arrive_and_wait() {
+        sync.wait();
+    }
+
 private:
     const std::shared_ptr<api::configuration::whole> cfg_{};
     const std::shared_ptr<framework::routing_service> router_{};
@@ -142,6 +149,8 @@ private:
     std::string proc_mutex_file_;
     std::size_t datachannel_buffer_size_{};
     std::size_t max_datachannel_buffers_{};
+
+    boost::barrier sync{2};
 };
 
 }
