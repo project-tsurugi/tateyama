@@ -22,6 +22,8 @@
 #include <chrono>
 #include <csignal>
 
+#include <boost/thread/barrier.hpp>
+
 #include <gflags/gflags.h>
 #include <glog/logging.h>
 
@@ -102,6 +104,7 @@ public:
     void operator()() {
         std::size_t session_id = 0x1000000000000000LL;
 
+        arrive_and_wait();
         while(true) {
             undertakers_.erase(std::remove_if(std::begin(undertakers_), std::end(undertakers_), [](std::unique_ptr<undertaker>& ut){ return ut->is_done(); }), std::cend(undertakers_));
             std::shared_ptr<tateyama::common::stream::stream_socket> stream{};
@@ -152,6 +155,10 @@ public:
         }
     }
 
+    void arrive_and_wait() {
+        sync.wait();
+    }
+
     void terminate() {
         connection_socket_->request_terminate();
     }
@@ -162,6 +169,8 @@ private:
     std::unique_ptr<tateyama::common::stream::connection_socket> connection_socket_{};
     std::vector<std::unique_ptr<stream_worker>> workers_{};
     std::vector<std::unique_ptr<undertaker>> undertakers_{};
+
+    boost::barrier sync{2};
 };
 
 }  // tateyama::server

@@ -69,6 +69,7 @@ public:
      */
     bool start(environment&) override {
         listener_thread_ = std::thread(std::ref(*listener_));
+        listener_->arrive_and_wait();
         return true;
     }
 
@@ -100,4 +101,3 @@ private:
 };
 
 }
-
