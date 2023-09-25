@@ -81,23 +81,6 @@ public:
     }
 
     /**
-     * @brief accessor for lazy worker flag
-     * @return whether lazy worker is enabled to sleep frequently for less cpu consumption
-     * @note this is experimental feature and will be dropped soon
-     */
-    [[nodiscard]] bool lazy_worker() const noexcept {
-        return lazy_worker_;
-    }
-
-    /**
-     * @brief setter for lazy worker flag
-     * @note this is experimental feature and will be dropped soon
-     */
-    void lazy_worker(bool arg) noexcept {
-        lazy_worker_ = arg;
-    }
-
-    /**
      * @brief accessor for use_preferred_worker_for_current_thread flag
      * @return whether use_preferred_worker_for_current_thread is enabled for max performance from same client thread
      * @note this is experimental feature and will be dropped soon
@@ -241,7 +224,6 @@ public:
             "assign_numa_nodes_uniformly:" << cfg.assign_numa_nodes_uniformly() << " " <<
             "force_numa_node:" << (cfg.force_numa_node() == numa_node_unspecified ? "unspecified" : std::to_string(cfg.force_numa_node())) << " " <<
             "stealing_enabled:" << cfg.stealing_enabled() << " " <<
-            "lazy_worker:" << cfg.lazy_worker() << " " <<
             "use_preferred_worker_for_current_thread:" << cfg.use_preferred_worker_for_current_thread() << " " <<
             "ratio_check_local_first:" << cfg.ratio_check_local_first() << " " <<
             "frequency_promoting_delayed:" << cfg.frequency_promoting_delayed() << " " <<
@@ -262,7 +244,6 @@ private:
     bool assign_numa_nodes_uniformly_ = true;
     std::size_t force_numa_node_ = numa_node_unspecified;
     bool stealing_enabled_ = true;
-    bool lazy_worker_ = false;
     bool use_preferred_worker_for_current_thread_ = false;
     rational ratio_check_local_first_{1, 10};
     rational frequency_promoting_delayed_{1, 1000};

@@ -52,7 +52,6 @@ protected:
 static constexpr std::string_view default_configuration_for_tests {  // NOLINT
     "[sql]\n"
         "thread_pool_size=5\n"
-        "lazy_worker=false\n"
         "enable_index_join=false\n"
         "stealing_enabled=true\n"
         "default_partitions=5\n"

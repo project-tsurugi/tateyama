@@ -21,6 +21,7 @@
 #include <functional>
 #include <emmintrin.h>
 #include <deque>
+#include <thread>
 
 #include <glog/logging.h>
 #include <boost/rational.hpp>
@@ -34,7 +35,6 @@
 #include <tateyama/task_scheduler/impl/thread_initialization_info.h>
 #include <tateyama/task_scheduler/task_scheduler_cfg.h>
 #include <tateyama/task_scheduler/impl/utils.h>
-#include <tateyama/task_scheduler/impl/backoff_waiter.h>
 #include <tateyama/utils/cache_align.h>
 
 namespace tateyama::task_scheduler::impl {
@@ -103,7 +103,6 @@ public:
         delayed_task_queues_(std::addressof(delayed_task_queues)),
         initial_tasks_(std::addressof(initial_tasks)),
         stat_(std::addressof(stat)),
-        waiter_(cfg.lazy_worker() ? backoff_waiter() : backoff_waiter(0)),
         initializer_(std::move(initializer))
     {}
 
@@ -169,12 +168,6 @@ public:
                 return true;
             }
         }
-        if(cfg_->lazy_worker()) {
-            if (cfg_->busy_worker() && check_delayed_task_exists(ctx)) {
-                // If delayed task exists, pretend as if its small slice is executed so that worker won't suspend.
-                return true;
-            }
-        }
         auto pw = cfg_->task_polling_wait();
         if(pw > 0) { // if 0, no wait
             if(pw == 1) {
@@ -212,12 +205,10 @@ public:
         while(sq.active() || q.active()) {
             if(! process_next(ctx, q, sq)) {
                 _mm_pause();
-                waiter_();
                 if(! sq.active() && ! q.active()) break;
                 suspend_worker_if_needed(empty_work_count, ctx);
             } else {
                 empty_work_count = 0;
-                waiter_.reset();
             }
         }
     }
@@ -229,7 +220,6 @@ private:
     std::vector<basic_queue<task>>* delayed_task_queues_{};
     std::vector<std::vector<task>>* initial_tasks_{};
     worker_stat* stat_{};
-    backoff_waiter waiter_{0};
     initializer_type initializer_{};
 
     std::size_t next(std::size_t current) {
@@ -338,21 +328,6 @@ private:
             }
         }
     }
-
-    bool check_delayed_task_exists(
-        context& ctx
-    ) {
-        // caution: this logic re-order an element (if exists) in the queue, and can result in live-lock
-        // e.g. some task always get re-ordered and never executed. Use with care.
-        auto& dtq = (*delayed_task_queues_)[ctx.index()];
-        task dt{};
-        if(dtq.try_pop(dt)) {
-            dtq.push(std::move(dt));
-            return true;
-        }
-        return false;
-    }
-
 };
 
 }
