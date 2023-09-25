@@ -86,14 +86,6 @@ public:
     }
 
     /**
-     * @brief accessor to the count_promoting_sleep parameter
-     * @return counter used to accumulate frequentcy_promoting_delayed
-     */
-    [[nodiscard]] rational& count_promoting_delayed() noexcept {
-        return count_promoting_delayed_;
-    }
-
-    /**
      * @brief accessor to the stealing flag
      * @return whether the task is being executed by stealing
      */
@@ -145,7 +137,6 @@ private:
     std::size_t index_{};
     std::size_t last_steal_from_{};
     rational count_check_local_first_{};
-    rational count_promoting_delayed_{};
     bool task_is_stolen_{};
     impl::thread_control* thread_{};
     bool busy_working_{};

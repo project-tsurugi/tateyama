@@ -120,26 +120,6 @@ public:
         ratio_check_local_first_ = arg;
     }
 
-    /**
-     * @brief accessor for frequency_promoting_delayed configuration
-     * @return the ratio how frequently delayed tasks are promoted as local/sticky task
-     * @details The rational number N/M indicates N delayed tasks are promoted while task queues are checked M times.
-     * This number must be in range (0, 1).
-     * Normally this number is expected to be close to zero because delayed tasks should rarely be promoted.
-     */
-    [[nodiscard]] rational frequency_promoting_delayed() const noexcept {
-        return frequency_promoting_delayed_;
-    }
-
-    /**
-     * @brief setter for frequency_promoting_delayed
-     */
-    void frequency_promoting_delayed(rational arg) noexcept {
-        BOOST_ASSERT(frequency_promoting_delayed_ > 0);  //NOLINT
-        BOOST_ASSERT(frequency_promoting_delayed_ < 1);  //NOLINT
-        frequency_promoting_delayed_ = arg;
-    }
-
     [[nodiscard]] std::size_t stealing_wait() const noexcept {
         return stealing_wait_;
     }
@@ -171,23 +151,6 @@ public:
      */
     void busy_worker(bool arg) noexcept {
         busy_worker_ = arg;
-    }
-
-    /**
-     * @brief setter for enable_watcher flag
-     * @note this is experimental feature and will be dropped soon
-     */
-    void enable_watcher(bool arg) noexcept {
-        enable_watcher_ = arg;
-    }
-
-    /**
-     * @brief accessor for enable_watcher flag
-     * @return whether condition watcher is enabled
-     * @note this is experimental feature and will be dropped soon
-     */
-    [[nodiscard]] bool enable_watcher() const noexcept {
-        return enable_watcher_;
     }
 
     [[nodiscard]] std::size_t watcher_interval() const noexcept {
@@ -226,11 +189,9 @@ public:
             "stealing_enabled:" << cfg.stealing_enabled() << " " <<
             "use_preferred_worker_for_current_thread:" << cfg.use_preferred_worker_for_current_thread() << " " <<
             "ratio_check_local_first:" << cfg.ratio_check_local_first() << " " <<
-            "frequency_promoting_delayed:" << cfg.frequency_promoting_delayed() << " " <<
             "stealing_wait:" << cfg.stealing_wait() << " " <<
             "task_polling_wait:" << cfg.task_polling_wait() << " " <<
             "busy_worker:" << cfg.busy_worker() << " " <<
-            "enable_watcher:" << cfg.enable_watcher() << " " <<
             "watcher_interval:" << cfg.watcher_interval() << " " <<
             "worker_try_count:" << cfg.worker_try_count() << " " <<
             "worker_suspend_timeout:" << cfg.worker_suspend_timeout() << " " <<
@@ -246,11 +207,9 @@ private:
     bool stealing_enabled_ = true;
     bool use_preferred_worker_for_current_thread_ = false;
     rational ratio_check_local_first_{1, 10};
-    rational frequency_promoting_delayed_{1, 1000};
     std::size_t stealing_wait_ = 1;
     std::size_t task_polling_wait_ = 0;
-    bool busy_worker_ = true;
-    bool enable_watcher_ = false;
+    bool busy_worker_ = false;
     std::size_t watcher_interval_ = 1000;
     std::size_t worker_try_count_ = 1000;
     std::size_t worker_suspend_timeout_ = 1000000;

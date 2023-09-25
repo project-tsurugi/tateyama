@@ -82,7 +82,6 @@ public:
      * @brief create new object
      * @param queues reference to the queues
      * @param sticky_task_queues reference to the sticky task queues
-     * @param delayed_task_queues reference to the delayed task queues
      * @param initial_tasks reference initial tasks (ones submitted before starting scheduler)
      * @param stat worker stat information
      * @param cfg the scheduler configuration information
@@ -91,7 +90,6 @@ public:
     worker(
         std::vector<basic_queue<task>>& queues,
         std::vector<basic_queue<task>>& sticky_task_queues,
-        std::vector<basic_queue<task>>& delayed_task_queues,
         std::vector<std::vector<task>>& initial_tasks,
         worker_stat& stat,
         task_scheduler_cfg const& cfg,
@@ -100,7 +98,6 @@ public:
         cfg_(std::addressof(cfg)),
         queues_(std::addressof(queues)),
         sticky_task_queues_(std::addressof(sticky_task_queues)),
-        delayed_task_queues_(std::addressof(delayed_task_queues)),
         initial_tasks_(std::addressof(initial_tasks)),
         stat_(std::addressof(stat)),
         initializer_(std::move(initializer))
@@ -118,14 +115,8 @@ public:
         (*sticky_task_queues_)[index].reconstruct();
         auto& q = (*queues_)[index];
         auto& sq = (*sticky_task_queues_)[index];
-        auto& dtq = (*delayed_task_queues_)[index];
         auto& s = (*initial_tasks_)[index];
         for(auto&& t : s) {
-            if(t.delayed()) {
-                // t can be sticky && delayed
-                dtq.push(std::move(t));
-                continue;
-            }
             if(t.sticky()) {
                 sq.push(std::move(t));
                 continue;
@@ -217,7 +208,6 @@ private:
     task_scheduler_cfg const* cfg_{};
     std::vector<basic_queue<task>>* queues_{};
     std::vector<basic_queue<task>>* sticky_task_queues_{};
-    std::vector<basic_queue<task>>* delayed_task_queues_{};
     std::vector<std::vector<task>>* initial_tasks_{};
     worker_stat* stat_{};
     initializer_type initializer_{};
@@ -284,9 +274,6 @@ private:
         basic_queue<task>& q,
         basic_queue<task>& sq
     ) {
-        if(! cfg_->enable_watcher()) {
-            promote_delayed_task_if_needed(ctx, q, sq);
-        }
         // using counter, check sticky sometimes for fairness
         auto& cnt = ctx.count_check_local_first();
         cnt += cfg_->ratio_check_local_first();
@@ -305,28 +292,6 @@ private:
             }
         }
         return false;
-    }
-
-
-    void promote_delayed_task_if_needed(
-        context& ctx,
-        basic_queue<task>& q,
-        basic_queue<task>& sq
-    ) {
-        auto& cnt = ctx.count_promoting_delayed();
-        cnt += cfg_->frequency_promoting_delayed();
-        if(cnt >= 1) {
-            --cnt;
-            auto& dtq = (*delayed_task_queues_)[ctx.index()];
-            task dt{};
-            if(dtq.try_pop(dt)) {
-                if(dt.sticky()) {
-                    sq.push(std::move(dt));
-                } else {
-                    q.push(std::move(dt));
-                }
-            }
-        }
     }
 };
 

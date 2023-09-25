@@ -187,12 +187,6 @@ public:
             s.emplace_back(std::move(t));
             return;
         }
-        if(t.delayed()) {
-            // possibly including sticky && delayed
-            auto& q = delayed_task_queues_[index];
-            q.push(std::move(t));
-            return;
-        }
         if(t.sticky()) {
             auto& q = sticky_task_queues_[index];
             q.push(std::move(t));
@@ -217,14 +211,14 @@ public:
         for(auto&& t : threads_) {
             t.wait_initialization();
         }
-        if(cfg_.enable_watcher() && watcher_thread_) {
+        if(watcher_thread_) {
             watcher_thread_->wait_initialization();
         }
 
         for(auto&& t : threads_) {
             t.activate();
         }
-        if(cfg_.enable_watcher() && watcher_thread_) {
+        if(watcher_thread_) {
             watcher_thread_->activate();
         }
         started_ = true;
@@ -242,11 +236,9 @@ public:
         for(auto&& q : sticky_task_queues_) {
             q.deactivate();
         }
-        if(cfg_.enable_watcher()) {
-            conditional_queue_.deactivate();
-            if(watcher_thread_) {
-                ensure_stopping_thread(*watcher_thread_);
-            }
+        conditional_queue_.deactivate();
+        if(watcher_thread_) {
+            ensure_stopping_thread(*watcher_thread_);
         }
 
         for(auto&& t : threads_) {
@@ -337,8 +329,6 @@ public:
             print_queue_diagnostic(queues_[i], os);
             os << "      sticky:" << std::endl;
             print_queue_diagnostic(sticky_task_queues_[i], os);
-            os << "      delayed:" << std::endl;
-            print_queue_diagnostic(delayed_task_queues_[i], os);
         }
     }
 
@@ -375,7 +365,6 @@ private:
     std::size_t size_{};
     std::vector<queue> queues_{};
     std::vector<queue> sticky_task_queues_{};
-    std::vector<queue> delayed_task_queues_{};
     std::vector<worker> workers_{};  // stored for testing
     std::vector<impl::thread_control> threads_{};
     std::vector<impl::worker_stat> worker_stats_{};
@@ -394,7 +383,6 @@ private:
         auto sz = cfg_.thread_count();
         queues_.resize(sz);
         sticky_task_queues_.resize(sz);
-        delayed_task_queues_.resize(sz);
         worker_stats_.resize(sz);
         initial_tasks_.resize(sz);
         contexts_.reserve(sz);
@@ -403,23 +391,21 @@ private:
         for(std::size_t i = 0; i < sz; ++i) {
             auto& ctx = contexts_.emplace_back(i);
             auto& worker = workers_.emplace_back(
-                queues_, sticky_task_queues_, delayed_task_queues_, initial_tasks_, worker_stats_[i], cfg_, [this](std::size_t index) {
+                queues_, sticky_task_queues_, initial_tasks_, worker_stats_[i], cfg_, [this](std::size_t index) {
                         this->initialize_preferred_worker_for_current_thread(index);
                 });
             if (! empty_thread_) {
                 threads_.emplace_back(i, std::addressof(cfg_), worker, ctx);
             }
         }
-        if(cfg_.enable_watcher()) {
-            conditional_worker_ = conditional_worker{conditional_queue_, cfg_};
-            if (! empty_thread_) {
-                watcher_thread_ = std::make_unique<impl::thread_control>(
-                    impl::thread_control::undefined_thread_id,
-                    std::addressof(cfg_),
-                    conditional_worker_,
-                    conditional_worker_context_
-                );
-            }
+        conditional_worker_ = conditional_worker{conditional_queue_, cfg_};
+        if (! empty_thread_) {
+            watcher_thread_ = std::make_unique<impl::thread_control>(
+                impl::thread_control::undefined_thread_id,
+                std::addressof(cfg_),
+                conditional_worker_,
+                conditional_worker_context_
+            );
         }
     }
 

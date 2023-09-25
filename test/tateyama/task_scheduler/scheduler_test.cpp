@@ -50,9 +50,6 @@ public:
     [[nodiscard]] bool sticky() {
         return false;
     }
-    [[nodiscard]] bool delayed() {
-        return false;
-    }
     std::function<void(context&)> body_{};
 };
 
@@ -81,9 +78,6 @@ public:
         return body_(ctx);
     }
     [[nodiscard]] bool sticky() {
-        return false;
-    }
-    [[nodiscard]] bool delayed() {
         return false;
     }
     std::function<void(context&)> body_{};
@@ -121,26 +115,6 @@ public:
         return body_(ctx);
     }
     [[nodiscard]] bool sticky() {
-        return true;
-    }
-    [[nodiscard]] bool delayed() {
-        return false;
-    }
-    std::function<void(context&)> body_{};
-};
-
-class test_task_delayed {
-public:
-    test_task_delayed() = default;
-
-    explicit test_task_delayed(std::function<void(context&)> body) : body_(std::move(body)) {}
-    void operator()(context& ctx) {
-        return body_(ctx);
-    }
-    [[nodiscard]] bool sticky() {
-        return false;
-    }
-    [[nodiscard]] bool delayed() {
         return true;
     }
     std::function<void(context&)> body_{};
@@ -225,48 +199,12 @@ TEST_F(scheduler_test, sticky_task_stealing) {
     EXPECT_TRUE(executed11);
 }
 
-TEST_F(scheduler_test, delayed_tasks_only) {
-    // verify delayed tasks are processed after failing to find STQ/LTX
-    using task = tateyama::task_scheduler::basic_task<test_task, test_task_sticky, test_task_delayed>;
+TEST_F(scheduler_test, sticky_tasks) {
+    // verify sticky task and local task are processed in expected order
+    using task = tateyama::task_scheduler::basic_task<test_task, test_task_sticky>;
     task_scheduler_cfg cfg{};
     cfg.thread_count(1);
     cfg.ratio_check_local_first({1, 2}); // sticky task and local queue task are processed alternately
-    cfg.frequency_promoting_delayed({1, 3}); // checking 3 times, one delayed task is promoted
-    cfg.stealing_wait(0);
-    scheduler<task> sched{cfg, true};
-
-    auto& w0 = sched.workers()[0];
-    auto& lq0 = sched.queues()[0];
-    auto& sq0 = sched.sticky_task_queues()[0];
-    bool executed00 = false;
-    bool executed01 = false;
-    sched.schedule_at(task{test_task_delayed{[&](context& t) {
-        executed00 = true;
-    }}}, 0);
-    sched.schedule_at(task{test_task_delayed{[&](context& t) {
-        executed01 = true;
-    }}}, 0);
-    context ctx{};
-    w0.init(thread_initialization_info{0}, ctx);
-
-    context ctx0{0};
-    EXPECT_TRUE(w0.process_next(ctx0, lq0, sq0));
-    EXPECT_TRUE(w0.process_next(ctx0, lq0, sq0));
-    EXPECT_TRUE(w0.process_next(ctx0, lq0, sq0)); // when checking 3-times, delayed task is promoted
-    EXPECT_TRUE(executed00);
-    EXPECT_TRUE(w0.process_next(ctx0, lq0, sq0));
-    EXPECT_TRUE(w0.process_next(ctx0, lq0, sq0));
-    EXPECT_TRUE(w0.process_next(ctx0, lq0, sq0)); // another delayed task is promoted
-    EXPECT_TRUE(executed01);
-}
-
-TEST_F(scheduler_test, sticky_tasks_delayed_tasks) {
-    // verify sticky task, local task and delayed tasks are processed in expected order
-    using task = tateyama::task_scheduler::basic_task<test_task, test_task_sticky, test_task_delayed>;
-    task_scheduler_cfg cfg{};
-    cfg.thread_count(1);
-    cfg.ratio_check_local_first({1, 2}); // sticky task and local queue task are processed alternately
-    cfg.frequency_promoting_delayed({1, 6}); // when task is checked 6 times, one delayed task is promoted to local
     cfg.stealing_wait(0);
     scheduler<task> sched{cfg, true};
 
@@ -279,8 +217,6 @@ TEST_F(scheduler_test, sticky_tasks_delayed_tasks) {
     bool executed03 = false;
     bool executed04 = false;
     bool executed05 = false;
-    bool executed06 = false;
-    bool executed07 = false;
     sched.schedule_at(task{test_task{[&](context& t) {
         executed01 = true;
     }}}, 0);
@@ -299,12 +235,6 @@ TEST_F(scheduler_test, sticky_tasks_delayed_tasks) {
     sched.schedule_at(task{test_task_sticky{[&](context& t) {
         executed04 = true;
     }}}, 0);
-    sched.schedule_at(task{test_task_delayed{[&](context& t) {
-        executed06 = true;
-    }}}, 0);
-    sched.schedule_at(task{test_task_delayed{[&](context& t) {
-        executed07 = true;
-    }}}, 0);
     context ctx{};
     w0.init(thread_initialization_info{0}, ctx);
 
@@ -319,119 +249,9 @@ TEST_F(scheduler_test, sticky_tasks_delayed_tasks) {
     EXPECT_TRUE(executed03);
     w0.process_next(ctx0, lq0, sq0);
     EXPECT_TRUE(executed04);
-    w0.process_next(ctx0, lq0, sq0); // delayed task is promoted, but it's not executed instantly
+    w0.process_next(ctx0, lq0, sq0);
     EXPECT_TRUE(executed05);
     w0.process_next(ctx0, lq0, sq0);
-    EXPECT_TRUE(executed06);
-
-    w0.process_next(ctx0, lq0, sq0);
-    EXPECT_FALSE(executed07);
-    w0.process_next(ctx0, lq0, sq0);
-    EXPECT_FALSE(executed07);
-    w0.process_next(ctx0, lq0, sq0);
-    EXPECT_FALSE(executed07);
-    w0.process_next(ctx0, lq0, sq0);
-    EXPECT_FALSE(executed07);
-    w0.process_next(ctx0, lq0, sq0); // 6 times checked on task, so another delayed task is promoted
-    EXPECT_TRUE(executed07);
-}
-
-class test_task_sticky_delayed {
-public:
-    test_task_sticky_delayed() = default;
-
-    explicit test_task_sticky_delayed(std::function<void(context&)> body) : body_(std::move(body)) {}
-    void operator()(context& ctx) {
-        return body_(ctx);
-    }
-    [[nodiscard]] bool sticky() {
-        return true;
-    }
-    [[nodiscard]] bool delayed() {
-        return true;
-    }
-    std::function<void(context&)> body_{};
-};
-
-TEST_F(scheduler_test, task_sticky_and_delayed) {
-    // verify sticky task, local task and delayed tasks are processed in expected order
-    using task = tateyama::task_scheduler::basic_task<test_task, test_task_sticky, test_task_delayed, test_task_sticky_delayed>;
-    task_scheduler_cfg cfg{};
-    cfg.thread_count(1);
-    cfg.ratio_check_local_first({1, 2}); // sticky task and local queue task are processed alternately
-    cfg.frequency_promoting_delayed({1, 2}); // when task is checked 3 times, one delayed task is promoted
-    scheduler<task> sched{cfg, true};
-
-    auto& w0 = sched.workers()[0];
-    auto& lq0 = sched.queues()[0];
-    auto& sq0 = sched.sticky_task_queues()[0];
-    bool executed00 = false;
-    bool executed01 = false;
-    bool executed02 = false;
-    bool executed03 = false;
-    sched.schedule_at(task{test_task_sticky_delayed{[&](context& t) {
-        executed03 = true;
-    }}}, 0);
-    sched.schedule_at(task{test_task{[&](context& t) {
-        executed01 = true;
-    }}}, 0);
-    sched.schedule_at(task{test_task_sticky{[&](context& t) {
-        executed00 = true;
-    }}}, 0);
-    sched.schedule_at(task{test_task_sticky{[&](context& t) {
-        executed02 = true;
-    }}}, 0);
-    context ctx{};
-    w0.init(thread_initialization_info{0}, ctx);
-
-    EXPECT_EQ(2, sq0.size());
-    context ctx0{0};
-    EXPECT_TRUE(w0.process_next(ctx0, lq0, sq0));
-    EXPECT_TRUE(executed00);
-    EXPECT_EQ(1, sq0.size());
-    EXPECT_TRUE(w0.process_next(ctx0, lq0, sq0));  // sticky delayed task is promoted to sticky, but existing sticky is executed first
-    EXPECT_TRUE(executed01);
-    EXPECT_EQ(2, sq0.size());
-    EXPECT_TRUE(w0.process_next(ctx0, lq0, sq0));
-    EXPECT_TRUE(executed02);
-    EXPECT_EQ(1, sq0.size());
-    EXPECT_TRUE(w0.process_next(ctx0, lq0, sq0));
-    EXPECT_TRUE(executed03);
-    EXPECT_EQ(0, sq0.size());
-}
-TEST_F(scheduler_test, task_sticky_and_delayed_only) {
-    // verify sticky task, local task and delayed tasks are processed in expected order
-    using task = tateyama::task_scheduler::basic_task<test_task, test_task_sticky, test_task_delayed, test_task_sticky_delayed>;
-    task_scheduler_cfg cfg{};
-    cfg.thread_count(1);
-    cfg.ratio_check_local_first({1, 2}); // sticky task and local queue task are processed alternately
-    cfg.frequency_promoting_delayed({1, 2}); // when task is checked 3 times, one delayed task is promoted
-    cfg.stealing_wait(0);
-    scheduler<task> sched{cfg, true};
-
-    auto& w0 = sched.workers()[0];
-    auto& lq0 = sched.queues()[0];
-    auto& sq0 = sched.sticky_task_queues()[0];
-    bool executed00 = false;
-    bool executed01 = false;
-    sched.schedule_at(task{test_task_sticky_delayed{[&](context& t) {
-        executed00 = true;
-    }}}, 0);
-    sched.schedule_at(task{test_task_sticky_delayed{[&](context& t) {
-        executed01 = true;
-    }}}, 0);
-    context ctx{};
-    w0.init(thread_initialization_info{0}, ctx);
-
-    context ctx0{0};
-    EXPECT_TRUE(w0.process_next(ctx0, lq0, sq0)); // by existence check, 01 comes first (i.e. not FIFO)
-    EXPECT_FALSE(executed01);
-    EXPECT_TRUE(w0.process_next(ctx0, lq0, sq0));  // sticky delayed task is promoted and executed
-    EXPECT_TRUE(executed01);
-    EXPECT_TRUE(w0.process_next(ctx0, lq0, sq0));
-    EXPECT_FALSE(executed00);
-    EXPECT_TRUE(w0.process_next(ctx0, lq0, sq0));  // sticky delayed task is promoted and executed
-    EXPECT_TRUE(executed00);
 }
 
 }
