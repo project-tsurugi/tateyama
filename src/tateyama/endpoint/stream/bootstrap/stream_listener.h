@@ -31,7 +31,8 @@
 #include <tateyama/framework/routing_service.h>
 #include <tateyama/api/configuration.h>
 
-#include <tateyama/endpoint/stream/stream_response.h>
+#include "tateyama/endpoint/stream/stream_response.h"
+#include "tateyama/endpoint/common/logging.h"
 #include "stream_worker.h"
 
 namespace tateyama::server {
@@ -91,6 +92,14 @@ public:
 
         // worker objects
         workers_.resize(threads);
+
+        // output configuration to be used
+        LOG(INFO) << tateyama::endpoint::common::stream_endpoint_config_prefix
+                  << "port: " << port_opt.value() << ", "
+                  << "port number to listen for TCP/IP connections.";
+        LOG(INFO) << tateyama::endpoint::common::stream_endpoint_config_prefix
+                  << "threads: " << threads_opt.value() << ", "
+                  << "the number of maximum sesstions.";
     }
     ~stream_listener() {
         connection_socket_->close();

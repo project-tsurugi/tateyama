@@ -30,6 +30,7 @@
 #include <tateyama/framework/routing_service.h>
 #include <tateyama/api/configuration.h>
 
+#include "tateyama/endpoint/common/logging.h"
 #include "worker.h"
 
 namespace tateyama::server {
@@ -86,6 +87,20 @@ public:
 
         // set maximum thread size to status objects
         status_->set_maximum_sessions(threads);
+
+        // output configuration to be used
+        LOG(INFO) << tateyama::endpoint::common::ipc_endpoint_config_prefix
+                  << "database_name: " << database_name_opt.value() << ", "
+                  << "database name.";
+        LOG(INFO) << tateyama::endpoint::common::ipc_endpoint_config_prefix
+                  << "threads: " << threads_opt.value() << ", "
+                  << "the number of maximum sesstions.";
+        LOG(INFO) << tateyama::endpoint::common::ipc_endpoint_config_prefix
+                  << "datachannel_buffer_size: " << datachannel_buffer_size_opt.value() << ", "
+                  << "datachannel_buffer_size in KB.";
+        LOG(INFO) << tateyama::endpoint::common::ipc_endpoint_config_prefix
+                  << "max_datachannel_buffers: " << max_datachannel_buffers_opt.value() << ", "
+                  << "the number of maximum datachannel buffers.";
     }
 
     void operator()() {
