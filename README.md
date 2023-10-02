@@ -63,11 +63,6 @@ cmake --build . --target install
 
 ### run tests
 
-(optional) If you run test with ASAN, you need to provide LD_LIBRARY_PATH before running the test driver. (see also "Use of Address Sanitizer (ASAN)" section)
-```
-export LD_LIBRARY_PATH=<installation directory>/lib
-```
-
 Execute the test as below:
 ```sh
 ctest -V
