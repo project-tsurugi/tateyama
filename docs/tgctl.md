@@ -25,7 +25,7 @@ tgctlの各サブコマンドについて、実行結果とexit codeの関係を
 ### start
 * tsurugidbプロセスの起動に成功したことを確認できた -> 0
 * 起動操作を行ってからtimeout時間が経過しても起動成功を確認できなかった -> non 0
-* 他のtsurugidbプロセスが実行されていたため、起動操作を行わなかった -> non 0
+* 他のtsurugidbプロセスが実行されていたため、起動操作を行わなかった -> 0
   
 ### shutdown, kill 
 * コマンド実行後、tsurugidbプロセスが動作していないことを確認できた -> 0
@@ -41,7 +41,7 @@ tgctlの各サブコマンドについて、実行結果とexit codeの関係を
 * 指示された操作が失敗した -> non 0
 
 
-## まとめ（全体像）
+## tgctl [start|shutdown|kill] の 全体像
 tgctlコマンドの正常時における挙動をまとめる。ここで、「正常時」とは、tsurugidbプロセスの動作状態をtimeout時間以内で確認できる状態とする。
 
 ### tgsql start
