@@ -4,8 +4,6 @@
 
 * CMake `>= 3.16`
 * C++ Compiler `>= C++17`
-* access to installed dependent modules: 
-  * takatori (for takatori::util functionalities)
 * and see *Dockerfile* section
 
 ```sh
@@ -26,6 +24,26 @@ optional packages:
 * `doxygen`
 * `graphviz`
 * `clang-tidy-14`
+
+### Install modules
+
+#### tsurugidb modules
+
+This requires below [tsurugidb](https://github.com/project-tsurugi/tsurugidb) modules to be installed.
+
+* [takatori](https://github.com/project-tsurugi/takatori)  (for takatori::util functionalities)
+* [sharksfin](https://github.com/project-tsurugi/sharksfin) 
+
+#### moodycamel::ConcurrentQueue
+
+```sh
+mkdir -p build-third_party/concurrentqueue
+cd build-third_party/concurrentqueue
+cmake -G Ninja -DCMAKE_INSTALL_PREFIX=[/path/to/install-prefix] ../../third_party/concurrentqueue
+cmake --build . --target install
+```
+
+see https://github.com/cameron314/concurrentqueue
 
 ## How to build
 
