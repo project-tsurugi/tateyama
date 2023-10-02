@@ -62,7 +62,6 @@ find_package(Boost
         )
 find_package(TBB REQUIRED)
 find_package(Protobuf REQUIRED)
-find_package(msgpack REQUIRED)
 find_package(mpdecpp REQUIRED)
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
