@@ -1,9 +1,6 @@
 name: Tateyama-Install-Dependencies
 
 inputs:
-  token:
-    description: token for checkout private repo
-    required: true
   checkout:
     description: Skip checkout if false
     default: true
@@ -22,7 +19,6 @@ runs:
         repository: project-tsurugi/takatori
         path: ${{ inputs.path }}/takatori
         ref: master
-        token: ${{ inputs.token }}
 
     - name: Checkout_Limestone
       uses: actions/checkout@v3
@@ -31,7 +27,6 @@ runs:
         repository: project-tsurugi/limestone
         path: ${{ inputs.path }}/limestone
         ref: master
-        token: ${{ inputs.token }}
 
     - name: Checkout_Yakushima
       uses: actions/checkout@v3
@@ -40,7 +35,6 @@ runs:
         repository: project-tsurugi/yakushima
         path: ${{ inputs.path }}/yakushima
         ref: master
-        token: ${{ inputs.token }}
 
     - name: Checkout_Shirakami
       uses: actions/checkout@v3
@@ -49,7 +43,6 @@ runs:
         repository: project-tsurugi/shirakami
         path: ${{ inputs.path }}/shirakami
         ref: master
-        token: ${{ inputs.token }}
 
     - name: Checkout_Sharksfin
       uses: actions/checkout@v3
@@ -58,7 +51,6 @@ runs:
         repository: project-tsurugi/sharksfin
         path: ${{ inputs.path }}/sharksfin
         ref: master
-        token: ${{ inputs.token }}
 
     - name: Install_Takatori
       run: |
