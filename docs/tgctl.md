@@ -46,7 +46,7 @@ tgctlの各サブコマンドについて、実行結果とexit codeの関係を
 ## tgctl [start|shutdown|kill] の 全体像
 tgctlコマンドの正常時における挙動をまとめる。ここで、「正常時」とは、tsurugidbプロセスの動作状態をtimeout時間以内で確認できる状態とする。
 
-### tgsql start
+### tgctl start
 | 実行前の<br>tsurugidb状態 | 実行後の<br>tsurugidb状態 | console message | exit code |
 | ---- | ---- | ---- | ---- |
 | 動作していない | 動作している | successfully launched tsurugidb | 0 |
