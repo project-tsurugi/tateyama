@@ -80,20 +80,10 @@ void ipc_response::code(tateyama::api::server::response_code code) {
 
 tateyama::status ipc_response::acquire_channel(std::string_view name, std::shared_ptr<tateyama::api::server::data_channel>& ch) {
     try {
-        data_channel_ = std::make_shared<ipc_data_channel>(server_wire_->create_resultset_wires(name), *this);
+        data_channel_ = std::make_shared<ipc_data_channel>(server_wire_->create_resultset_wires(name));
     } catch (std::runtime_error &ex) {
-        LOG_LP(ERROR) << ex.what();
+        LOG_LP(INFO) << "Running out of shared memory for result set transfers. Probably due to too many result sets being opened";
 
-        ::tateyama::proto::diagnostics::Record record{};
-        record.set_code(::tateyama::proto::diagnostics::Code::RESOURCE_LIMIT_REACHED);
-        record.set_message("error in acquire_channel");
-        std::string s{};
-        if(record.SerializeToString(&s)) {
-            server_diagnostics(s);
-        } else {
-            LOG_LP(ERROR) << "error formatting diagnostics message";
-            server_diagnostics("");
-        }
         ch = nullptr;
         return tateyama::status::unknown;
     }
@@ -140,18 +130,8 @@ tateyama::status ipc_data_channel::acquire(std::shared_ptr<tateyama::api::server
         }
         throw std::runtime_error("error in create ipc_writer");
     } catch (std::runtime_error &ex) {
-        LOG_LP(ERROR) << ex.what();
+        LOG_LP(INFO) << "Running out of shared memory for result set transfers. Probably due to too many result sets being opened";
 
-        ::tateyama::proto::diagnostics::Record record{};
-        record.set_code(::tateyama::proto::diagnostics::Code::RESOURCE_LIMIT_REACHED);
-        record.set_message("error in acquire_channel");
-        std::string s{};
-        if(record.SerializeToString(&s)) {
-            response_.server_diagnostics(s);
-        } else {
-            LOG_LP(ERROR) << "error formatting diagnostics message";
-            response_.server_diagnostics("");
-        }
         wrt = nullptr;
         return tateyama::status::unknown;
     }
