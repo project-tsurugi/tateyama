@@ -80,7 +80,7 @@ void ipc_response::code(tateyama::api::server::response_code code) {
 
 tateyama::status ipc_response::acquire_channel(std::string_view name, std::shared_ptr<tateyama::api::server::data_channel>& ch) {
     try {
-        data_channel_ = std::make_shared<ipc_data_channel>(server_wire_->create_resultset_wires(name), *this);
+        data_channel_ = std::make_shared<ipc_data_channel>(server_wire_->create_resultset_wires(name));
     } catch (std::runtime_error &ex) {
         LOG_LP(INFO) << "Running out of shared memory for result set transfers. Probably due to too many result sets being opened";
 

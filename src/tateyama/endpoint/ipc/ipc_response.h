@@ -57,8 +57,8 @@ private:
  */
 class ipc_data_channel : public tateyama::api::server::data_channel {
 public:
-    explicit ipc_data_channel(server_wire_container::unq_p_resultset_wires_conteiner data_channel, ipc_response& response)
-        : data_channel_(std::move(data_channel)), response_(response) {
+    explicit ipc_data_channel(server_wire_container::unq_p_resultset_wires_conteiner data_channel)
+        : data_channel_(std::move(data_channel)) {
     }
 
     tateyama::status acquire(std::shared_ptr<tateyama::api::server::writer>& wrt) override;
@@ -69,7 +69,6 @@ public:
 
 private:
     server_wire_container::unq_p_resultset_wires_conteiner data_channel_;
-    ipc_response& response_;
 
     std::set<std::shared_ptr<ipc_writer>, tateyama::endpoint::common::pointer_comp<ipc_writer>> data_writers_{};
     std::mutex mutex_{};
