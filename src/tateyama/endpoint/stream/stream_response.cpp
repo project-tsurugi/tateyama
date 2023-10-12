@@ -86,7 +86,7 @@ void stream_response::code(tateyama::api::server::response_code code) {
 tateyama::status stream_response::acquire_channel(std::string_view name, std::shared_ptr<tateyama::api::server::data_channel>& ch) {
     try {
         auto slot = session_socket_->look_for_slot();
-        data_channel_ = std::make_unique<stream_data_channel>(*session_socket_, slot, *this);
+        data_channel_ = std::make_unique<stream_data_channel>(*session_socket_, slot);
         VLOG_LP(log_trace) << static_cast<const void*>(session_socket_.get()) << " data_channel_ = " << static_cast<const void*>(data_channel_.get());  //NOLINT
 
         if (ch = data_channel_; ch != nullptr) {
@@ -95,18 +95,8 @@ tateyama::status stream_response::acquire_channel(std::string_view name, std::sh
         }
         throw std::runtime_error("error in create stream_data_channel");
     } catch (std::exception &ex) {
-        LOG_LP(ERROR) << ex.what();
-
-        ::tateyama::proto::diagnostics::Record record{};
-        record.set_code(::tateyama::proto::diagnostics::Code::RESOURCE_LIMIT_REACHED);
-        record.set_message("error in acquire_channel");
-        std::string s{};
-        if(record.SerializeToString(&s)) {
-            server_diagnostics(s);
-        } else {
-            LOG_LP(ERROR) << "error formatting diagnostics message";
-            server_diagnostics("");
-        }
+        LOG_LP(INFO) << "too many result sets being opened";
+        ch = nullptr;
     }
     return tateyama::status::unknown;
 }
@@ -146,18 +136,8 @@ tateyama::status stream_data_channel::acquire(std::shared_ptr<tateyama::api::ser
         }
         throw std::runtime_error("error in create stream_writer");
     } catch (std::exception &ex) {
-        LOG_LP(ERROR) << ex.what();
-
-        ::tateyama::proto::diagnostics::Record record{};
-        record.set_code(::tateyama::proto::diagnostics::Code::RESOURCE_LIMIT_REACHED);
-        record.set_message("error in acquire_channel");
-        std::string s{};
-        if(record.SerializeToString(&s)) {
-            response_.server_diagnostics(s);
-        } else {
-            LOG_LP(ERROR) << "error formatting diagnostics message";
-            response_.server_diagnostics("");
-        }
+        LOG_LP(INFO) << "too many result sets being opened";
+        wrt = nullptr;
     }
     return tateyama::status::unknown;
 }
