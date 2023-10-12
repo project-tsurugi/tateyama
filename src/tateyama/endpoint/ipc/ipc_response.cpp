@@ -84,16 +84,6 @@ tateyama::status ipc_response::acquire_channel(std::string_view name, std::share
     } catch (std::runtime_error &ex) {
         LOG_LP(INFO) << "Running out of shared memory for result set transfers. Probably due to too many result sets being opened";
 
-        ::tateyama::proto::diagnostics::Record record{};
-        record.set_code(::tateyama::proto::diagnostics::Code::RESOURCE_LIMIT_REACHED);
-        record.set_message("error in acquire_channel");
-        std::string s{};
-        if(record.SerializeToString(&s)) {
-            server_diagnostics(s);
-        } else {
-            LOG_LP(ERROR) << "error formatting diagnostics message";
-            server_diagnostics("");
-        }
         ch = nullptr;
         return tateyama::status::unknown;
     }
@@ -142,16 +132,6 @@ tateyama::status ipc_data_channel::acquire(std::shared_ptr<tateyama::api::server
     } catch (std::runtime_error &ex) {
         LOG_LP(INFO) << "Running out of shared memory for result set transfers. Probably due to too many result sets being opened";
 
-        ::tateyama::proto::diagnostics::Record record{};
-        record.set_code(::tateyama::proto::diagnostics::Code::RESOURCE_LIMIT_REACHED);
-        record.set_message("error in acquire_channel");
-        std::string s{};
-        if(record.SerializeToString(&s)) {
-            response_.server_diagnostics(s);
-        } else {
-            LOG_LP(ERROR) << "error formatting diagnostics message";
-            response_.server_diagnostics("");
-        }
         wrt = nullptr;
         return tateyama::status::unknown;
     }
