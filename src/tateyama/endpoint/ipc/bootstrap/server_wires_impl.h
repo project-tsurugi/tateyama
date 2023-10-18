@@ -234,7 +234,6 @@ public:
             try {
                 shm_resultset_wires_ = managed_shm_ptr_->construct<shm_resultset_wires>(rsw_name_.c_str())(managed_shm_ptr_, count, datachannel_buffer_size_);
             } catch(const boost::interprocess::interprocess_exception& ex) {
-                LOG_LP(ERROR) << ex.what() << " on resultset_wires_container_impl::resultset_wires_container_impl()";
                 throw std::runtime_error(ex.what());
             } catch (std::runtime_error &ex) {
                 LOG_LP(ERROR) << "running out of boost managed shared memory";
@@ -274,7 +273,6 @@ public:
                 return std::unique_ptr<resultset_wire_container_impl, resultset_wire_deleter_type>{
                     new resultset_wire_container_impl{shm_resultset_wires_->acquire(), *this, datachannel_buffer_size_}, resultset_wire_deleter_impl};
             } catch(const boost::interprocess::interprocess_exception& ex) {
-                LOG_LP(ERROR) << ex.what() << " on resultset_wires_container_impl::acquire()";
                 throw std::runtime_error(ex.what());
             } catch (std::runtime_error &ex) {
                 LOG_LP(ERROR) << "running out of boost managed shared memory";
