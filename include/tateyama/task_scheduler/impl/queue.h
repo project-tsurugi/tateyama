@@ -29,13 +29,15 @@ template <class T>
 class cache_align basic_queue {
 
 public:
+    using task = T;
+
 #ifdef MC_QUEUE
-    using queue_type = mc_queue<T>;
+    using queue_type = mc_queue<task>;
 #else
   #ifdef STD_QUEUE
-    using queue_type = std_queue<T>;
+    using queue_type = std_queue<task>;
   #else
-    using queue_type = tbb_queue<T>;
+    using queue_type = tbb_queue<task>;
   #endif
 #endif
 
@@ -44,15 +46,15 @@ public:
      */
     basic_queue() = default;
 
-    void push(T const& t) {
+    void push(task const& t) {
         origin_.push(t);
     }
 
-    void push(T&& t) {
+    void push(task&& t) {
         origin_.push(std::move(t));
     }
 
-    bool try_pop(T& t) {
+    bool try_pop(task& t) {
         return origin_.try_pop(t);
     }
 

@@ -30,20 +30,22 @@ namespace tateyama::task_scheduler::impl {
 template <class T>
 class cache_align tbb_queue {
 public:
+    using task = T;
+
     /**
      * @brief construct empty instance
      */
     tbb_queue() = default;
 
-    void push(T const& t) {
+    void push(task const& t) {
         origin_.push(t);
     }
 
-    void push(T&& t) {
+    void push(task&& t) {
         origin_.push(std::move(t));
     }
 
-    bool try_pop(T& t) {
+    bool try_pop(task& t) {
         return origin_.try_pop(t);
     }
 
@@ -61,10 +63,10 @@ public:
 
     void reconstruct() {
         origin_.~concurrent_queue();
-        new (&origin_)tbb::concurrent_queue<T>();
+        new (&origin_)tbb::concurrent_queue<task>();
     }
 private:
-    tbb::concurrent_queue<T> origin_{};
+    tbb::concurrent_queue<task> origin_{};
 
 };
 

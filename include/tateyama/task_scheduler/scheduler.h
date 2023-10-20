@@ -330,6 +330,12 @@ public:
             os << "      sticky:" << std::endl;
             print_queue_diagnostic(sticky_task_queues_[i], os);
         }
+        // TODO fix indent for conditional
+        os << "conditional_worker:" << std::endl;
+        os << "  thread: " << std::endl;
+        watcher_thread_->print_diagnostic(os);
+        os << "  queue:" << std::endl;
+        print_queue_diagnostic(conditional_queue_, os);
     }
 
     std::size_t next_worker() {
@@ -418,14 +424,15 @@ private:
     /**
      * @brief print queue diagnostics
      */
-    void print_queue_diagnostic(queue& q, std::ostream& os) {
+    template<class Queue>
+    void print_queue_diagnostic(Queue& q, std::ostream& os) {
         os << "        task_count: " << q.size() << std::endl;
         if(q.empty()) {
             return;
         }
         os << "        tasks:" << std::endl;
-        queue backup{};
-        task t{};
+        Queue backup{};
+        typename Queue::task t{};
         while(q.try_pop(t)) {
             print_task_diagnostic(t, os);
             backup.push(std::move(t));

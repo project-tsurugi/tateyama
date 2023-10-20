@@ -31,20 +31,21 @@ namespace tateyama::task_scheduler::impl {
 template <class T>
 class cache_align mc_queue {
 public:
+    using task = T;
     /**
      * @brief construct empty instance
      */
     mc_queue() = default;
 
-    void push(T const& t) {
+    void push(task const& t) {
         origin_.enqueue(t);
     }
 
-    void push(T&& t) {
+    void push(task&& t) {
         origin_.enqueue(std::move(t));
     }
 
-    bool try_pop(T& t) {
+    bool try_pop(task& t) {
         return origin_.try_dequeue(t);
     }
 
@@ -57,17 +58,17 @@ public:
     }
 
     void clear() {
-        T value;
+        task value;
         while( !empty() ) {
             try_pop(value);
         }
     }
     void reconstruct() {
         origin_.~ConcurrentQueue();
-        new (&origin_)moodycamel::ConcurrentQueue<T>();
+        new (&origin_)moodycamel::ConcurrentQueue<task>();
     }
 private:
-    moodycamel::ConcurrentQueue<T> origin_{};
+    moodycamel::ConcurrentQueue<task> origin_{};
 
 };
 
