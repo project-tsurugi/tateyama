@@ -32,9 +32,6 @@ public:
         [[nodiscard]] bool sticky() {
             return false;
         }
-        [[nodiscard]] bool delayed() {
-            return false;
-        }
     };
 };
 

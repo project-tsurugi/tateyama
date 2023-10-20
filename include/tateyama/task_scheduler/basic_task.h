@@ -82,14 +82,6 @@ public:
         return ret;
     }
 
-    [[nodiscard]] bool delayed() {
-        bool ret{};
-        std::visit([&](auto&& arg){
-            ret = arg.delayed();
-        }, entity_);
-        return ret;
-    }
-
     //temporarily keep this public for testing // FIXME
     std::variant<Impls...> entity_{};  //NOLINT
 };
