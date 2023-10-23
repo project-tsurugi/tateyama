@@ -32,6 +32,9 @@
 #include <boost/interprocess/containers/vector.hpp>
 #include <boost/thread/thread_time.hpp>
 
+#include <glog/logging.h>
+#include <tateyama/logging.h>
+
 namespace tateyama::common::wire {
 
 /**
@@ -933,6 +936,9 @@ public:
         [[nodiscard]] std::size_t pop() {
             return queue_.at(index(poped_.fetch_add(1)));
         }
+        [[nodiscard]] std::size_t size() {
+            return pushed_.load() - poped_.load();
+        }
         void notify() {
             condition_.notify_one();
         }
@@ -1021,6 +1027,7 @@ public:
     std::size_t request() {
         auto rid = q_free_.try_pop();
         q_requested_.push(rid);
+//VLOG(30) << "/:tateyama:connection_queue request() free:" << q_free_.size() << " requested:" << q_requested_.size() << " rid:" << rid;
         return rid;
     }
     std::size_t wait(std::size_t rid, std::int64_t timeout = 0) {
@@ -1041,10 +1048,12 @@ public:
         std::size_t sid = q_requested_.pop();
         auto& request = v_requested_.at(sid);
         request.accept(session_id);
+VLOG(30) << "/:tateyama:connection_queue accept() requested:" << q_requested_.size() << " sid:" << sid << " session_id:" << session_id;
         return sid;
     }
     void disconnect(std::size_t rid) {
         q_free_.push(rid);
+VLOG(30) << "/:tateyama:connection_queue disconnect() free:" << q_free_.size() << " rid:" << rid;
     }
 
     // for terminate
