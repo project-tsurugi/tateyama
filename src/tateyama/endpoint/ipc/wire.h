@@ -595,6 +595,9 @@ public:
         }
 
         void write(char* base, const char* from, std::size_t length) {
+            if (length > room()) {
+                wait_to_resultset_write(length);
+            }
             write_in_buffer(base, buffer_address(base, pushed_.load()), from, length);
             pushed_.fetch_add(length);
         }
