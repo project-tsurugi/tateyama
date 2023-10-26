@@ -133,7 +133,7 @@ public:
                 VLOG_LP(log_trace) << "create session wire: " << session_name << " at index " << index;
                 status_->add_shm_entry(session_id, index);
                 auto& worker = workers_.at(index);
-                worker = std::make_unique<server::Worker>(*router_, session_id, std::move(wire),
+                worker = std::make_shared<server::Worker>(*router_, session_id, std::move(wire),
                                                               [&connection_queue, index](){ connection_queue.disconnect(index); });
                 worker->task_ = std::packaged_task<void()>([&]{worker->run();});
                 worker->future_ = worker->task_.get_future();
@@ -154,12 +154,26 @@ public:
         sync.wait();
     }
 
+    void print_diagnostic(std::ostream& os) {
+        os << "/:tateyama:ipc_endpoint print diagnostics start" << std::endl;
+        bool cont{};
+        for (auto && e : workers_) {
+            if (std::shared_ptr<Worker> worker = e; worker) {
+                if (!worker->terminated_) {
+                    os << (cont ? "live sessions " : ", ") << worker->session_id_ << std::endl;
+                }
+            }
+        }
+        os << "session_id accepted = " << container_->session_id_accepted() <<", pending requests = " << container_->pending_requests() << std::endl;
+        os << "/:tateyama:ipc_endpoint print diagnostics end" << std::endl;
+    }
+
 private:
     const std::shared_ptr<api::configuration::whole> cfg_{};
     const std::shared_ptr<framework::routing_service> router_{};
     const std::shared_ptr<status_info::resource::bridge> status_{};
     std::unique_ptr<tateyama::common::wire::connection_container> container_{};
-    std::vector<std::unique_ptr<Worker>> workers_{};
+    std::vector<std::shared_ptr<Worker>> workers_{};
     std::string database_name_;
     std::string proc_mutex_file_;
     std::size_t datachannel_buffer_size_{};

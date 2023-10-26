@@ -605,10 +605,19 @@ public:
         return *connection_queue_;
     }
 
+    // for diagnostic
+    [[nodiscard]] std::size_t pending_requests() const {
+        return connection_queue_->pending_requests();
+    }
+    [[nodiscard]] std::size_t session_id_accepted() const {
+        return connection_queue_->session_id_accepted();
+    }
+
 private:
     std::string name_;
     std::unique_ptr<boost::interprocess::managed_shared_memory> managed_shared_memory_{};
     connection_queue* connection_queue_;
+
 };
 
 };  // namespace tateyama::common::wire

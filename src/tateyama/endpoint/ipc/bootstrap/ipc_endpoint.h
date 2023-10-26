@@ -18,6 +18,7 @@
 #include <tateyama/framework/environment.h>
 #include <tateyama/framework/endpoint.h>
 #include <tateyama/status/resource/bridge.h>
+#include <tateyama/diagnostic/resource/diagnostic_resource.h>
 #include "ipc_listener.h"
 
 namespace tateyama::framework {
@@ -64,16 +65,20 @@ public:
     /**
      * @brief start the component (the state will be `activated`)
      */
-    bool start(environment&) override {
+    bool start(environment& env) override {
         listener_thread_ = std::thread(std::ref(*listener_));
         listener_->arrive_and_wait();
+        auto diagnostic_resource = env.resource_repository().find<tateyama::diagnostic::resource::diagnostic_resource>();
+        diagnostic_resource->add_print_callback("tateyama_ipc_endpoint", [this](std::ostream& os) {
+            listener_->print_diagnostic(os);
+        });
         return true;
     }
 
     /**
      * @brief shutdown the component (the state will be `deactivated`)
      */
-    bool shutdown(environment&) override {
+    bool shutdown(environment& env) override {
         // For clean up, shutdown can be called multiple times with/without setup()/start().
         if(listener_thread_.joinable()) {
             if(listener_) {
@@ -82,6 +87,8 @@ public:
             listener_thread_.join();
         }
         listener_.reset();
+        auto diagnostic_resource = env.resource_repository().find<tateyama::diagnostic::resource::diagnostic_resource>();
+        diagnostic_resource->remove_print_callback("tateyama_ipc_endpoint");
         return true;
     }
 

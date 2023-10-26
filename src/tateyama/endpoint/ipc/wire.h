@@ -939,6 +939,11 @@ public:
         void notify() {
             condition_.notify_one();
         }
+
+        // for diagnostic
+        [[nodiscard]] std::size_t size() const {
+            return pushed_.load() - poped_.load();
+        }
     private:
         boost::interprocess::vector<std::size_t, long_allocator> queue_;
         std::size_t capacity_;
@@ -1059,6 +1064,14 @@ public:
     }
     bool is_terminated() noexcept { return terminate_; }
     void confirm_terminated() { s_terminated_.post(); }
+
+    // for diagnostic
+    [[nodiscard]] std::size_t pending_requests() const {
+        return q_requested_.size();
+    }
+    [[nodiscard]] std::size_t session_id_accepted() const {
+        return session_id_;
+    }
 
 private:
     index_queue q_free_;

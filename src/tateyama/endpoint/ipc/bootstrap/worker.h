@@ -61,6 +61,7 @@ class Worker {
     tateyama::common::wire::server_wire_container_impl::wire_container_impl* request_wire_container_;
     std::size_t session_id_;
     std::function<void(void)> clean_up_;
+    bool terminated_{};
 
     // for future
     std::packaged_task<void()> task_;
