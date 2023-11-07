@@ -1,0 +1,129 @@
+/*
+ * Copyright 2018-2023 Project Tsurugi.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+#include <takatori/util/exception.h>
+#include <tateyama/debug/service.h>
+#include <tateyama/proto/debug/request.pb.h>
+#include <tateyama/proto/debug/response.pb.h>
+
+using takatori::util::throw_exception;
+
+namespace tateyama::debug {
+
+using tateyama::api::server::request;
+using tateyama::api::server::response;
+namespace framework = tateyama::framework;
+
+constexpr static std::string_view log_location_prefix = "/:tateyama:debug:logging ";
+
+framework::component::id_type service::id() const noexcept {
+    return tag;
+}
+
+bool service::setup(framework::environment&) {
+    return true;
+}
+
+bool service::start(framework::environment&) {
+    return true;
+}
+
+bool service::shutdown(framework::environment&) {
+    return true;
+}
+
+service::~service() {
+    VLOG(log_info) << "/:tateyama:lifecycle:component:<dtor> " << component_label;
+}
+
+static void reply(tateyama::api::server::response_code code, std::string_view body,
+                  std::shared_ptr<tateyama::api::server::response> &res) {
+    res->code(code);
+    res->body(body);
+}
+
+static void reply(google::protobuf::Message &message, tateyama::api::server::response_code code,
+                  std::shared_ptr<tateyama::api::server::response> &res) {
+    std::string s { };
+    if (!message.SerializeToString(&s)) {
+        throw_exception(std::logic_error{"SerializeToOstream failed"});
+    }
+    reply(code, s, res);
+}
+
+static void reply(tateyama::proto::debug::response::Logging &proto_res,
+                  std::shared_ptr<tateyama::api::server::response> &res) {
+    reply(proto_res, tateyama::api::server::response_code::success, res);
+}
+
+static void success_logging(std::shared_ptr<tateyama::api::server::response> &res) {
+    tateyama::proto::debug::response::Logging logging { };
+    tateyama::proto::debug::response::Void v { };
+    logging.set_allocated_success(&v);
+    reply(logging, res);
+    logging.release_success();
+}
+
+static std::int32_t convert(tateyama::proto::debug::request::Logging_Level proto_level) {
+    switch (proto_level) {
+        case tateyama::proto::debug::request::Logging_Level::Logging_Level_INFO:
+            return log_info;
+        case tateyama::proto::debug::request::Logging_Level::Logging_Level_WARN:
+            return log_warning;
+        case tateyama::proto::debug::request::Logging_Level::Logging_Level_ERROR:
+            return log_error;
+        case tateyama::proto::debug::request::Logging_Level::Logging_Level_LOGGING_LEVEL_NOT_SPECIFIED:
+            return log_debug;
+        default:
+            return log_debug;
+    }
+}
+
+static void command_logging(tateyama::proto::debug::request::Request &proto_req,
+                          std::shared_ptr<response> &res) {
+    const auto &logging = proto_req.logging();
+    const auto proto_level = logging.level();
+    std::int32_t level{convert(proto_level)};
+    const auto &message = logging.message();
+    VLOG(level) << log_location_prefix << message;
+    success_logging(res);
+}
+
+bool service::operator()(std::shared_ptr<request> req, std::shared_ptr<response> res) {
+    tateyama::proto::debug::request::Request proto_req { };
+    res->session_id(req->session_id());
+    auto s = req->payload();
+    if (!proto_req.ParseFromArray(s.data(), static_cast<int>(s.size()))) {
+        reply(tateyama::api::server::response_code::io_error,
+              "parse error with request body", res);
+        return true;
+    }
+    switch (proto_req.command_case()) {
+        case tateyama::proto::debug::request::Request::kLogging:
+            command_logging(proto_req, res);
+            break;
+        default:
+            reply(tateyama::api::server::response_code::io_error,
+                  "unknown command_case", res);
+            break;
+    }
+    return true;
+}
+
+std::string_view service::label() const noexcept {
+    return component_label;
+}
+
+} // namespace tateyama::debug
