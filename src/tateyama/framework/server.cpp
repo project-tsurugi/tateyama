@@ -153,7 +153,6 @@ void add_core_components(server& svr) {
     svr.add_resource(std::make_shared<status_info::resource::bridge>());
     svr.add_resource(std::make_shared<framework::transactional_kvs_resource>());
     svr.add_resource(std::make_shared<datastore::resource::bridge>());
-    svr.add_resource(std::make_shared<datastore::resource::bridge>());
 
     svr.add_service(std::make_shared<framework::routing_service>());
     svr.add_service(std::make_shared<datastore::service::bridge>());
