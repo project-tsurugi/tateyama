@@ -47,6 +47,7 @@ void Worker::run()
     VLOG_LP(log_trace) << "destroy session wire: session_id = " << std::to_string(session_id_);
     VLOG(log_debug_timing_event) << "/:tateyama:timing:session:finished "
         << session_id_;
+    terminated_ = true;
 }
 
 }  // tateyama::server
