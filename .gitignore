@@ -9,7 +9,9 @@
 .DS_Store
 
 # VSCode
-/.vscode
+/.vscode/*
+!/.vscode/samples
+
 
 # CLion
 cmake-build-*
@@ -31,3 +33,10 @@ GPATH
 GRTAGS
 GTAGS
 HTML/
+
+#gdb
+.gdb_history
+.gdb_init
+
+# WSL related files
+*:Zone.Identifier
