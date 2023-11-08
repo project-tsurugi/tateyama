@@ -13,6 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+#include <glog/logging.h>
+
 #include <takatori/util/exception.h>
 #include <tateyama/debug/service.h>
 #include <tateyama/proto/debug/request.pb.h>
@@ -76,28 +79,24 @@ static void success_logging(std::shared_ptr<tateyama::api::server::response> &re
     logging.release_success();
 }
 
-static std::int32_t convert(tateyama::proto::debug::request::Logging_Level proto_level) {
-    switch (proto_level) {
-        case tateyama::proto::debug::request::Logging_Level::Logging_Level_INFO:
-            return log_info;
-        case tateyama::proto::debug::request::Logging_Level::Logging_Level_WARN:
-            return log_warning;
-        case tateyama::proto::debug::request::Logging_Level::Logging_Level_ERROR:
-            return log_error;
-        case tateyama::proto::debug::request::Logging_Level::Logging_Level_LOGGING_LEVEL_NOT_SPECIFIED:
-            return log_debug;
-        default:
-            return log_debug;
-    }
-}
-
 static void command_logging(tateyama::proto::debug::request::Request &proto_req,
                           std::shared_ptr<response> &res) {
     const auto &logging = proto_req.logging();
-    const auto proto_level = logging.level();
-    std::int32_t level{convert(proto_level)};
     const auto &message = logging.message();
-    VLOG(level) << log_location_prefix << message;
+    switch (logging.level()) {
+        case tateyama::proto::debug::request::Logging_Level::Logging_Level_NOT_SPECIFIED:
+        case tateyama::proto::debug::request::Logging_Level::Logging_Level_INFO:
+            LOG(INFO) << log_location_prefix << message;
+            break;
+        case tateyama::proto::debug::request::Logging_Level::Logging_Level_WARN:
+            LOG(WARNING) << log_location_prefix << message;
+            break;
+        case tateyama::proto::debug::request::Logging_Level::Logging_Level_ERROR:
+            LOG(ERROR) << log_location_prefix << message;
+            break;
+        default:
+            throw_exception(std::logic_error{"unknown Logging_Level value"});
+    }
     success_logging(res);
 }
 
@@ -108,7 +107,7 @@ bool service::operator()(std::shared_ptr<request> req, std::shared_ptr<response>
     if (!proto_req.ParseFromArray(s.data(), static_cast<int>(s.size()))) {
         reply(tateyama::api::server::response_code::io_error,
               "parse error with request body", res);
-        return true;
+        return false;
     }
     switch (proto_req.command_case()) {
         case tateyama::proto::debug::request::Request::kLogging:
