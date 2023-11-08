@@ -32,6 +32,7 @@
 #include <tateyama/endpoint/stream/bootstrap/stream_endpoint.h>
 #include <tateyama/datastore/service/bridge.h>
 #include <tateyama/datastore/resource/bridge.h>
+#include <tateyama/debug/service.h>
 #include <tateyama/status/resource/bridge.h>
 #include <tateyama/diagnostic/resource/diagnostic_resource.h>
 #include <tateyama/utils/boolalpha.h>
@@ -155,6 +156,7 @@ void add_core_components(server& svr) {
 
     svr.add_service(std::make_shared<framework::routing_service>());
     svr.add_service(std::make_shared<datastore::service::bridge>());
+    svr.add_service(std::make_shared<debug::service>());
 
     svr.add_endpoint(std::make_shared<framework::ipc_endpoint>());
     svr.add_endpoint(std::make_shared<framework::stream_endpoint>());
