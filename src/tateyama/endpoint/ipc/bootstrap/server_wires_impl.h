@@ -125,7 +125,7 @@ public:
             VLOG_LP(log_trace) << "creates a resultset_wire with a size of " << datachannel_buffer_size_ << " bytes";
         }
         ~resultset_wire_container_impl() override {
-            if (thread_active_) {
+            if (thread_invoked_) {
                 if(writer_thread_.joinable()) {
                     writer_thread_.join();
                 }
@@ -147,16 +147,18 @@ public:
                 if (queue_.empty() && released_) {
                     VLOG_LP(log_trace) << "exit writer annex mode because the end of the records";
                     write_complete();
-                    return;
+                    break;
                 }
                 auto annex = std::move(queue_.front());
                 queue_.pop();
                 lock.unlock();
                 if (auto rv = annex->transfer(shm_resultset_wire_, released_); !rv) {
                     VLOG_LP(log_trace) << "exit writer annex mode because the result set is closed by the client";
-                    return;
+                    break;
                 }
             }
+            std::atomic_thread_fence(std::memory_order_acq_rel);
+            thread_active_ = false;
         }
         void write(char const* data, std::size_t length) override {
             current_record_size += length;
@@ -173,9 +175,11 @@ public:
                 add_deffered_count();
                 queue_.emplace(std::make_unique<annex>(datachannel_buffer_size_));
                 current_annex_ = queue_.back().get();
-                if (!thread_active_) {
-                    writer_thread_ = std::thread(std::ref(*this));
+                if (!thread_invoked_) {
                     thread_active_ = true;
+                    writer_thread_ = std::thread(std::ref(*this));
+                    std::atomic_thread_fence(std::memory_order_acq_rel);
+                    thread_invoked_ = true;
                 }
             }
             if (!current_annex_->is_room(length)) {
@@ -198,6 +202,7 @@ public:
             current_annex_->flush();
         }
         void release(unq_p_resultset_wire_conteiner resultset_wire) override;
+        bool is_disposable() override { return !thread_active_; }
 
     private:
         shm_resultset_wire* shm_resultset_wire_;
@@ -207,7 +212,8 @@ public:
         annex* current_annex_{};
         std::thread writer_thread_{};
         bool annex_mode_{};
-        bool thread_active_{};
+        std::atomic_bool thread_invoked_{};
+        std::atomic_bool thread_active_{};
         bool released_{};
 
         std::mutex mtx_queue_{};
@@ -287,6 +293,14 @@ public:
         }
         bool is_closed() override {
             return shm_resultset_wires_->is_closed();
+        }
+        bool is_disposable() override {
+            for (auto&& e : deffered_delete_) {
+                if (!e->is_disposable()) {
+                    return false;
+                }
+            }
+            return true;
         }
 
         void add_deffered_count() {
@@ -378,7 +392,7 @@ public:
 
                 auto it = resultset_wires_set_.begin();
                 while (it != resultset_wires_set_.end()) {
-                    if ((*it)->is_closed()) {
+                    if ((*it)->is_closed() && (*it)->is_disposable()) {
                         resultset_wires_set_.erase(it++);
                     } else {
                         it++;
@@ -556,7 +570,7 @@ inline void server_wire_container_impl::resultset_wire_container_impl::add_deffe
     resultset_wires_container_impl_.add_deffered_count();
 }
 inline void server_wire_container_impl::resultset_wire_container_impl::release(unq_p_resultset_wire_conteiner resultset_wire_conteiner) {
-    if (thread_active_) {
+    if (thread_invoked_) {
         released_ = true;
         cnd_queue_.notify_one();
         if (current_annex_) {
