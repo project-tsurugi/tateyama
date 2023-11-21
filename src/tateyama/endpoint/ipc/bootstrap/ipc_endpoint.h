@@ -53,12 +53,17 @@ public:
      * @brief setup the component (the state will be `ready`)
      */
     bool setup(environment& env) override {
-        // create listener object
-        listener_ = std::make_unique<tateyama::server::ipc_listener>(
-            env.configuration(),
-            env.service_repository().find<framework::routing_service>(),
-            env.resource_repository().find<status_info::resource::bridge>()
-        );
+        try {
+            // create listener object
+            listener_ = std::make_unique<tateyama::server::ipc_listener>(
+                env.configuration(),
+                env.service_repository().find<framework::routing_service>(),
+                env.resource_repository().find<status_info::resource::bridge>()
+            );
+        } catch (std::runtime_error &ex) {
+            LOG_LP(ERROR) << ex.what();
+            return false;
+        }
         return true;
     }
 

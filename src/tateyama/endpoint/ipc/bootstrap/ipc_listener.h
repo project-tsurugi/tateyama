@@ -45,36 +45,34 @@ public:
     {
         auto endpoint_config = cfg->get_section("ipc_endpoint");
         if (endpoint_config == nullptr) {
-            LOG_LP(ERROR) << "cannot find ipc_endpoint section in the configuration";
-            exit(1);
+            throw std::runtime_error("cannot find ipc_endpoint section in the configuration");
         }
 
         auto database_name_opt = endpoint_config->get<std::string>("database_name");
         if (!database_name_opt) {
-            LOG_LP(ERROR) << "cannot find database_name at the section in the configuration";
-            exit(1);
+            throw std::runtime_error("cannot find database_name at the section in the configuration");
         }
         database_name_ = database_name_opt.value();
+        if (database_name_.empty()) {
+            throw std::runtime_error("database_name in ipc_endpoint section should not be empty");
+        }
 
         auto threads_opt = endpoint_config->get<std::size_t>("threads");
         if (!threads_opt) {
-            LOG_LP(ERROR) << "cannot find thread_pool_size at the section in the configuration";
-            exit(1);
+            throw std::runtime_error("cannot find thread_pool_size at the section in the configuration");
         }
         auto threads = threads_opt.value();
 
         auto datachannel_buffer_size_opt = endpoint_config->get<std::size_t>("datachannel_buffer_size");
         if (!datachannel_buffer_size_opt) {
-            LOG_LP(ERROR) << "cannot find datachannel_buffer_size at the section in the configuration";
-            exit(1);
+            throw std::runtime_error("cannot find datachannel_buffer_size at the section in the configuration");
         }
         datachannel_buffer_size_ = datachannel_buffer_size_opt.value() * 1024;  // in KB
         VLOG_LP(log_debug) << "datachannel_buffer_size = " << datachannel_buffer_size_ << " bytes";
 
         auto max_datachannel_buffers_opt = endpoint_config->get<std::size_t>("max_datachannel_buffers");
         if (!max_datachannel_buffers_opt) {
-            LOG_LP(ERROR) << "cannot find max_datachannel_buffers at the section in the configuration";
-            exit(1);
+            throw std::runtime_error("cannot find max_datachannel_buffers at the section in the configuration");
         }
         max_datachannel_buffers_ = max_datachannel_buffers_opt.value();
         VLOG_LP(log_debug) << "max_datachannel_buffers = " << max_datachannel_buffers_;
