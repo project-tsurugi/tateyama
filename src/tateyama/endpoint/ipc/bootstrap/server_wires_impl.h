@@ -600,7 +600,7 @@ public:
             connection_queue_ = managed_shared_memory_->construct<connection_queue>(connection_queue::name)(n, managed_shared_memory_->get_segment_manager());
         }
         catch(const boost::interprocess::interprocess_exception& ex) {
-            std::abort();  // FIXME
+            throw std::runtime_error(ex.what());
         }
     }
 
