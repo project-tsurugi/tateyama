@@ -94,6 +94,7 @@ public:
     void code(tateyama::api::server::response_code code) override;
     tateyama::status body(std::string_view body) override;
     tateyama::status body_head(std::string_view body_head) override;
+    void error(proto::diagnostics::Record const& record) override;
     tateyama::status acquire_channel(std::string_view name, std::shared_ptr<tateyama::api::server::data_channel>& ch) override;
     tateyama::status release_channel(tateyama::api::server::data_channel& ch) override;
     tateyama::status close_session() override;

@@ -73,6 +73,11 @@ public:
         return body_;
     }
 
+    void error(proto::diagnostics::Record const& record) override {
+        // TODO implement
+        (void) record;
+    }
+
     /**
      * @see tateyama::server::response::acquire_channel()
      */

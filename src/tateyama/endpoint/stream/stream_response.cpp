@@ -63,6 +63,10 @@ tateyama::status stream_response::body_head(std::string_view body_head) {
     return tateyama::status::ok;
 }
 
+void stream_response::error(proto::diagnostics::Record const&) {
+    //TODO implement
+}
+
 void stream_response::server_diagnostics(std::string_view diagnostic_record) {
     VLOG_LP(log_trace) << static_cast<const void*>(session_socket_.get());  //NOLINT
 

@@ -58,6 +58,10 @@ tateyama::status ipc_response::body_head(std::string_view body_head) {
     return tateyama::status::ok;
 }
 
+void ipc_response::error(proto::diagnostics::Record const&) {
+    //TODO implement
+}
+
 void ipc_response::server_diagnostics(std::string_view diagnostic_record) {
     VLOG_LP(log_trace) << static_cast<const void*>(server_wire_.get());  //NOLINT
 
