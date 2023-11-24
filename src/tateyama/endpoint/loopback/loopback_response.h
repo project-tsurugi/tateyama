@@ -74,8 +74,8 @@ public:
     }
 
     void error(proto::diagnostics::Record const& record) override {
-        // TODO implement
         (void) record;
+        throw std::runtime_error("tateyama::endpoint::loopback::loopback_response::error() is unimplemented");
     }
 
     /**
