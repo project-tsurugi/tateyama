@@ -73,6 +73,11 @@ public:
         return body_;
     }
 
+    void error(proto::diagnostics::Record const& record) override {
+        (void) record;
+        throw std::runtime_error("tateyama::endpoint::loopback::loopback_response::error() is unimplemented");
+    }
+
     /**
      * @see tateyama::server::response::acquire_channel()
      */

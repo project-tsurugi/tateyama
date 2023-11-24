@@ -15,6 +15,8 @@
  */
 #pragma once
 
+#include <tateyama/proto/diagnostics.pb.h>
+
 #include "data_channel.h"
 #include "response_code.h"
 
@@ -58,6 +60,15 @@ public:
      * @attention this function is not thread-safe and should be called from single thread at a time.
      */
     virtual void code(response_code code) = 0;
+
+    /**
+     * @brief report error with diagnostics information
+     * @param record the diagnostic record to report
+     * @details report an error with diagnostics information for client. When this function is called, no more
+     * body_head() or body() is expected to be called.
+     * @attention this function is not thread-safe and should be called from single thread at a time.
+     */
+    virtual void error(proto::diagnostics::Record const& record) = 0;
 
     /**
      * @brief setter of the response body head

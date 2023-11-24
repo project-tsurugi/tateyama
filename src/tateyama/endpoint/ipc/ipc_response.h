@@ -18,6 +18,7 @@
 #include <set>
 #include <string_view>
 #include <mutex>
+#include <atomic>
 
 #include <tateyama/api/server/response.h>
 #include <tateyama/api/server/response_code.h>
@@ -94,6 +95,7 @@ public:
     void code(tateyama::api::server::response_code code) override;
     tateyama::status body(std::string_view body) override;
     tateyama::status body_head(std::string_view body_head) override;
+    void error(proto::diagnostics::Record const& record) override;
     tateyama::status acquire_channel(std::string_view name, std::shared_ptr<tateyama::api::server::data_channel>& ch) override;
     tateyama::status release_channel(tateyama::api::server::data_channel& ch) override;
     tateyama::status close_session() override;
@@ -113,6 +115,8 @@ private:
     std::shared_ptr<ipc_data_channel> data_channel_{};
 
     std::size_t session_id_{};
+
+    std::atomic_flag completed_{};
 
     void server_diagnostics(std::string_view diagnostic_record);
 };
