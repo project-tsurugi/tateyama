@@ -29,18 +29,23 @@ namespace tateyama::common::wire {
 
 // class server_wire
 tateyama::status ipc_response::body(std::string_view body) {
-    VLOG_LP(log_trace) << static_cast<const void*>(server_wire_.get()) << " length = " << body.length();  //NOLINT
+    if (!completed_.test_and_set()) {
+        VLOG_LP(log_trace) << static_cast<const void*>(server_wire_.get()) << " length = " << body.length();  //NOLINT
 
-    std::stringstream ss{};
-    endpoint::common::header_content arg{};
-    arg.session_id_ = session_id_;
-    if(auto res = endpoint::common::append_response_header(ss, body, arg); ! res) {
-        LOG_LP(ERROR) << "error formatting response message";
-        return status::unknown;
+        std::stringstream ss{};
+        endpoint::common::header_content arg{};
+        arg.session_id_ = session_id_;
+        if(auto res = endpoint::common::append_response_header(ss, body, arg); ! res) {
+            LOG_LP(ERROR) << "error formatting response message";
+            return status::unknown;
+        }
+        auto s = ss.str();
+        server_wire_->get_response_wire().write(s.data(), response_header(index_, s.length(), RESPONSE_BODY));
+        return tateyama::status::ok;
+    } else {
+        LOG_LP(ERROR) << "response is already completed";
+        return status::unknown;        
     }
-    auto s = ss.str();
-    server_wire_->get_response_wire().write(s.data(), response_header(index_, s.length(), RESPONSE_BODY));
-    return tateyama::status::ok;
 }
 
 tateyama::status ipc_response::body_head(std::string_view body_head) {
@@ -59,14 +64,18 @@ tateyama::status ipc_response::body_head(std::string_view body_head) {
 }
 
 void ipc_response::error(proto::diagnostics::Record const& record) {
-    VLOG_LP(log_trace) << static_cast<const void*>(server_wire_.get());  //NOLINT
+    if (!completed_.test_and_set()) {
+        VLOG_LP(log_trace) << static_cast<const void*>(server_wire_.get());  //NOLINT
 
-    std::string s{};
-    if(record.SerializeToString(&s)) {
-        server_diagnostics(s);
+        std::string s{};
+        if(record.SerializeToString(&s)) {
+            server_diagnostics(s);
+        } else {
+            LOG_LP(ERROR) << "error formatting diagnostics message";
+            server_diagnostics("");
+        }
     } else {
-        LOG_LP(ERROR) << "error formatting diagnostics message";
-        server_diagnostics("");
+        LOG_LP(ERROR) << "response is already completed";
     }
 }
 

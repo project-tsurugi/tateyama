@@ -19,6 +19,7 @@
 #include <string_view>
 #include <mutex>
 #include <condition_variable>
+#include <atomic>
 
 #include <tateyama/api/server/response.h>
 #include <tateyama/api/server/response_code.h>
@@ -103,6 +104,8 @@ private:
     std::shared_ptr<stream_data_channel> data_channel_{};
 
     std::size_t session_id_{};
+
+    std::atomic_flag completed_{};
 
     void server_diagnostics(std::string_view diagnostic_record);
 };
