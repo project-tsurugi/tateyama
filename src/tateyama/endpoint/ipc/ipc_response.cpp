@@ -42,10 +42,9 @@ tateyama::status ipc_response::body(std::string_view body) {
         auto s = ss.str();
         server_wire_->get_response_wire().write(s.data(), response_header(index_, s.length(), RESPONSE_BODY));
         return tateyama::status::ok;
-    } else {
-        LOG_LP(ERROR) << "response is already completed";
-        return status::unknown;        
     }
+    LOG_LP(ERROR) << "response is already completed";
+    return status::unknown;        
 }
 
 tateyama::status ipc_response::body_head(std::string_view body_head) {
