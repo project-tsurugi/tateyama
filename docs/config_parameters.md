@@ -61,7 +61,7 @@ parameter=value
 |watcher_interval| 整数 | タスクスケジューラの条件確認スレッドが一時停止してから次に再開するまでの間隔(us)。デフォルトは1000|開発用のため将来的に削除/変更される可能性あり|
 |worker_try_count| 整数 | タスクスケジューラのワーカーがサスペンド前にタスクキューを確認する回数。busy_worker=falseの場合のみ有効。デフォルトは1000|開発用のため将来的に削除/変更される可能性あり|
 |worker_suspend_timeout| 整数 | タスクスケジューラのワーカーがサスペンドしてから復帰するまでの時間(us)。busy_worker=falseの場合のみ有効。デフォルトは1000000|開発用のため将来的に削除/変更される可能性あり|
-|commit_response| 文字列 | commit待ち合わせの既定値。次のいずれかから選択 (ACCEPTED, AVAILABLE, STORED, PROPAGATED)。デフォルトはPROPAGATED|クライアントからコミット時に明示的に指定することで、トランザクションごとに上記設定を上書き可能|
+|commit_response| 文字列 | commit待ち合わせの既定値。次のいずれかから選択 (ACCEPTED, AVAILABLE, STORED, PROPAGATED)。デフォルトはSTORED|クライアントからコミット時に明示的に指定することで、トランザクションごとに上記設定を上書き可能|
 |dev_update_skips_deletion| ブール(true/false) | UPDATE文の更新対象列が主キーや索引列でない場合はレコードの削除を可能な限りスキップする。デフォルトはfalse|開発用のため将来的に削除される可能性あり|
 |dev_profile_commits| ブール(true/false) | コミット処理の性能計測のためのプロファイリング情報を出力するか。デフォルトはfalse|開発用のため将来的に削除される可能性あり|
 
