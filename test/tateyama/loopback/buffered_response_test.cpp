@@ -31,7 +31,6 @@ TEST_F(buffered_response_test, empty) {
     buffered_response response { };
 
     EXPECT_EQ(response.session_id(), 0);
-    EXPECT_EQ(response.code(), tateyama::api::server::response_code::success);
     EXPECT_EQ(response.body_head().length(), 0);
     EXPECT_EQ(response.body().length(), 0);
     EXPECT_FALSE(response.has_channel(""));
@@ -48,7 +47,6 @@ TEST_F(buffered_response_test, empty) {
 
 TEST_F(buffered_response_test, multi_channel) {
     const std::size_t session_id = 123;
-    const tateyama::api::server::response_code code = tateyama::api::server::response_code::success;
     const std::string body_head { "body_head" };
     const std::string body { "body message" };
     const std::vector<std::string> names = { "channelA", "channelB" };
@@ -56,9 +54,8 @@ TEST_F(buffered_response_test, multi_channel) {
             "this is a pen" } }, { names[1], { "good night", "it's fine today" } } };
     {
         auto test_data { test_data_org };
-        buffered_response response { session_id, code, body_head, body, std::move(test_data) };
+        buffered_response response { session_id, body_head, body, std::move(test_data) };
         EXPECT_EQ(response.session_id(), session_id);
-        EXPECT_EQ(response.code(), code);
         EXPECT_EQ(response.body_head(), body_head);
         EXPECT_EQ(response.body(), body);
         EXPECT_FALSE(response.has_channel(""));
@@ -75,27 +72,24 @@ TEST_F(buffered_response_test, multi_channel) {
     {
         // empty body_head
         auto test_data { test_data_org };
-        buffered_response response { session_id, code, "", body, std::move(test_data) };
+        buffered_response response { session_id, "", body, std::move(test_data) };
         EXPECT_EQ(response.session_id(), session_id);
-        EXPECT_EQ(response.code(), code);
         EXPECT_EQ(response.body_head().length(), 0);
         EXPECT_EQ(response.body(), body);
     }
     {
         // empty body
         auto test_data { test_data_org };
-        buffered_response response { session_id, code, body_head, "", std::move(test_data) };
+        buffered_response response { session_id, body_head, "", std::move(test_data) };
         EXPECT_EQ(response.session_id(), session_id);
-        EXPECT_EQ(response.code(), code);
         EXPECT_EQ(response.body_head(), body_head);
         EXPECT_EQ(response.body().length(), 0);
     }
     {
         // empty body head and body
         auto test_data { test_data_org };
-        buffered_response response { session_id, code, "", "", std::move(test_data) };
+        buffered_response response { session_id, "", "", std::move(test_data) };
         EXPECT_EQ(response.session_id(), session_id);
-        EXPECT_EQ(response.code(), code);
         EXPECT_EQ(response.body_head().length(), 0);
         EXPECT_EQ(response.body().length(), 0);
     }

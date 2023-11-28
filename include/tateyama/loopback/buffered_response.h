@@ -36,12 +36,11 @@ public:
     /**
      * @brief create response object
      * @param session_id session identifier of the response
-     * @param code response_code of the response
      * @param body_head body head of the response
      * @param body body of the response
      * @param data_map all data written to all channels (key: channel name, value: written data)
      */
-    buffered_response(std::size_t session_id, tateyama::api::server::response_code code, std::string_view body_head,
+    buffered_response(std::size_t session_id, std::string_view body_head,
             std::string_view body, std::map<std::string, std::vector<std::string>, std::less<>> &&data_map);
 
     /**
@@ -49,12 +48,6 @@ public:
      * @return session identifier of this response
      */
     [[nodiscard]] std::size_t session_id() const noexcept;
-
-    /**
-     * @brief accessor to the tateyama response code
-     * @return code of this response
-     */
-    [[nodiscard]] tateyama::api::server::response_code code() const noexcept;
 
     /**
      * @brief accessor to the response body head
@@ -87,7 +80,6 @@ public:
 
 private:
     std::size_t session_id_ { };
-    tateyama::api::server::response_code code_ { };
     std::string body_head_ { };
     std::string body_ { };
     std::map<std::string, std::vector<std::string>, std::less<>> data_map_ { };

@@ -39,17 +39,6 @@ public:
     }
 
     /**
-     * @see tateyama::server::response::code()
-     */
-    void code(tateyama::api::server::response_code code) override {
-        code_ = code;
-    }
-
-    [[nodiscard]] tateyama::api::server::response_code code() const noexcept {
-        return code_;
-    }
-
-    /**
      * @see tateyama::server::response::body_head()
      */
     tateyama::status body_head(std::string_view body_head) override {
@@ -112,7 +101,6 @@ public:
 
 private:
     std::size_t session_id_ { };
-    tateyama::api::server::response_code code_ { };
     std::string body_head_ { };
     std::string body_ { };
 

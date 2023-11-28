@@ -58,7 +58,6 @@ public:
             EXPECT_EQ(request_test_message_, payload);
             res->session_id(req->session_id());
             res->body(response_test_message_);
-            res->code(tateyama::api::server::response_code::success);
             return 0;
         }
     };

@@ -21,7 +21,6 @@
 #include <atomic>
 
 #include <tateyama/api/server/response.h>
-#include <tateyama/api/server/response_code.h>
 
 #include "tateyama/endpoint/common/pointer_comp.h"
 #include "server_wires.h"
@@ -92,7 +91,6 @@ public:
 
     ipc_response() = delete;
 
-    void code(tateyama::api::server::response_code code) override;
     tateyama::status body(std::string_view body) override;
     tateyama::status body_head(std::string_view body_head) override;
     void error(proto::diagnostics::Record const& record) override;
@@ -109,7 +107,6 @@ private:
     std::size_t index_;
     tateyama::common::wire::garbage_collector* garbage_collector_;
 
-    tateyama::api::server::response_code response_code_{tateyama::api::server::response_code::unknown};
     std::string message_{};
 
     std::shared_ptr<ipc_data_channel> data_channel_{};

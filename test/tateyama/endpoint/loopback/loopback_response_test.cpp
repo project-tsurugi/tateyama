@@ -27,7 +27,6 @@ class loopback_response_test: public loopback_test_base {
 TEST_F(loopback_response_test, empty) {
     tateyama::endpoint::loopback::loopback_response response { };
     EXPECT_EQ(response.session_id(), 0);
-    EXPECT_EQ(response.code(), tateyama::api::server::response_code::success);
     EXPECT_EQ(response.body_head().length(), 0);
     EXPECT_EQ(response.body().length(), 0);
 }
@@ -38,15 +37,6 @@ TEST_F(loopback_response_test, set_get) {
     const std::size_t session_id = 123;
     response.session_id(session_id);
     EXPECT_EQ(response.session_id(), session_id);
-    //
-    tateyama::api::server::response_code codes[] = { tateyama::api::server::response_code::success,
-            tateyama::api::server::response_code::application_error, tateyama::api::server::response_code::io_error,
-            tateyama::api::server::response_code::unknown };
-    for (const auto code : codes) {
-        response.code(code);
-        EXPECT_EQ(response.code(), code);
-    }
-    response.code(tateyama::api::server::response_code::success);
     //
     EXPECT_EQ(response.body_head().length(), 0);
     EXPECT_EQ(response.body_head(""), tateyama::status::ok);
@@ -66,7 +56,6 @@ TEST_F(loopback_response_test, set_get) {
     EXPECT_EQ(response.close_session(), tateyama::status::ok);
     //
     EXPECT_EQ(response.session_id(), session_id);
-    EXPECT_EQ(response.code(), tateyama::api::server::response_code::success);
     EXPECT_EQ(response.body(), body);
     EXPECT_EQ(response.body_head(), body_head);
 }
@@ -80,7 +69,6 @@ TEST_F(loopback_response_test, single) {
     //
     tateyama::endpoint::loopback::loopback_response response { };
     response.session_id(session_id);
-    response.code(tateyama::api::server::response_code::success);
     EXPECT_EQ(response.body_head(body_head), tateyama::status::ok);
     //
     std::shared_ptr<tateyama::api::server::data_channel> channel;
@@ -100,7 +88,6 @@ TEST_F(loopback_response_test, single) {
     EXPECT_EQ(response.body(body), tateyama::status::ok);
     //
     EXPECT_EQ(response.session_id(), session_id);
-    EXPECT_EQ(response.code(), tateyama::api::server::response_code::success);
     EXPECT_EQ(response.body_head(), body_head);
     EXPECT_EQ(response.body(), body);
     //

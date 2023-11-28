@@ -18,7 +18,6 @@
 #include <tateyama/proto/diagnostics.pb.h>
 
 #include "data_channel.h"
-#include "response_code.h"
 
 namespace tateyama::api::server {
 
@@ -51,15 +50,6 @@ public:
      * @attention this function is not thread-safe and should be called from single thread at a time.
      */
     virtual void session_id(std::size_t id) = 0;
-
-    /**
-     * @brief setter of the tateyama response status
-     * @param st the status code of the response
-     * @details This is the status code on the tateyama layer. If application error occurs, the details are stored in
-     * the body.
-     * @attention this function is not thread-safe and should be called from single thread at a time.
-     */
-    virtual void code(response_code code) = 0;
 
     /**
      * @brief report error with diagnostics information

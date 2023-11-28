@@ -95,12 +95,6 @@ void stream_response::server_diagnostics(std::string_view diagnostic_record) {
     session_socket_->send(index_, s, true);
 }
 
-void stream_response::code(tateyama::api::server::response_code code) {
-    VLOG_LP(log_trace) << static_cast<const void*>(session_socket_.get());  //NOLINT
-
-    response_code_ = code;
-}
-
 tateyama::status stream_response::acquire_channel(std::string_view name, std::shared_ptr<tateyama::api::server::data_channel>& ch) {
     try {
         auto slot = session_socket_->look_for_slot();

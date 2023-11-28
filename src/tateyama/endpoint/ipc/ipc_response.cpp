@@ -90,12 +90,6 @@ void ipc_response::server_diagnostics(std::string_view diagnostic_record) {
     server_wire_->get_response_wire().write(s.data(), response_header(index_, s.length(), RESPONSE_BODY));
 }
 
-void ipc_response::code(tateyama::api::server::response_code code) {
-    VLOG_LP(log_trace) << static_cast<const void*>(server_wire_.get());  //NOLINT
-
-    response_code_ = code;
-}
-
 tateyama::status ipc_response::acquire_channel(std::string_view name, std::shared_ptr<tateyama::api::server::data_channel>& ch) {
     try {
         data_channel_ = std::make_shared<ipc_data_channel>(server_wire_->create_resultset_wires(name));
