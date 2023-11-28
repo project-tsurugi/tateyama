@@ -73,7 +73,6 @@ public:
             w->commit();
 
             res->body(response_test_message_);
-            res->code(tateyama::api::server::response_code::success);
             EXPECT_EQ(dc->release(*w), tateyama::status::ok);
             EXPECT_EQ(res->release_channel(*dc), tateyama::status::ok);
 
@@ -176,7 +175,6 @@ TEST_F(result_set_test, large) {
     }
 
     res->body(response_test_message_);
-    res->code(tateyama::api::server::response_code::success);
     EXPECT_EQ(dc->release(*w), tateyama::status::ok);
     EXPECT_EQ(res->release_channel(*dc), tateyama::status::ok);
 

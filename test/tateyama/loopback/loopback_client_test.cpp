@@ -76,7 +76,6 @@ public:
     bool operator ()(std::shared_ptr<tateyama::api::server::request> req,
             std::shared_ptr<tateyama::api::server::response> res) override {
         res->session_id(req->session_id());
-        res->code(tateyama::api::server::response_code::success);
         EXPECT_EQ(res->body_head(body_head), tateyama::status::ok);
         //
         for (int ch = 0; ch < nchannel_; ch++) {
@@ -124,7 +123,6 @@ TEST_F(loopback_client_test, single) {
     //
     const auto response = loopback.request(session_id, service_id, request);
     EXPECT_EQ(response.session_id(), session_id);
-    EXPECT_EQ(response.code(), tateyama::api::server::response_code::success);
     EXPECT_EQ(response.body_head(), data_channel_service::body_head);
     EXPECT_EQ(response.body(), request);
     //
@@ -166,7 +164,6 @@ TEST_F(loopback_client_test, multi_request) {
     for (int r = 0; r < nrequest; r++) {
         const auto response = loopback.request(session_id, service_id, request);
         EXPECT_EQ(response.session_id(), session_id);
-        EXPECT_EQ(response.code(), tateyama::api::server::response_code::success);
         EXPECT_EQ(response.body_head(), data_channel_service::body_head);
         EXPECT_EQ(response.body(), request);
         //

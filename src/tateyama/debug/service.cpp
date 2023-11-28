@@ -51,24 +51,14 @@ service::~service() {
     VLOG(log_info) << "/:tateyama:lifecycle:component:<dtor> " << component_label;
 }
 
-static void reply(tateyama::api::server::response_code code, std::string_view body,
+static void reply(std::string_view body,
                   std::shared_ptr<tateyama::api::server::response> &res) {
-    res->code(code);
     res->body(body);
-}
-
-static void reply(google::protobuf::Message &message, tateyama::api::server::response_code code,
-                  std::shared_ptr<tateyama::api::server::response> &res) {
-    std::string s { };
-    if (!message.SerializeToString(&s)) {
-        throw_exception(std::logic_error{"SerializeToOstream failed"});
-    }
-    reply(code, s, res);
 }
 
 static void reply(tateyama::proto::debug::response::Logging &proto_res,
                   std::shared_ptr<tateyama::api::server::response> &res) {
-    reply(proto_res, tateyama::api::server::response_code::success, res);
+    reply(proto_res, res);
 }
 
 static void success_logging(std::shared_ptr<tateyama::api::server::response> &res) {
@@ -105,8 +95,7 @@ bool service::operator()(std::shared_ptr<request> req, std::shared_ptr<response>
     res->session_id(req->session_id());
     auto s = req->payload();
     if (!proto_req.ParseFromArray(s.data(), static_cast<int>(s.size()))) {
-        reply(tateyama::api::server::response_code::io_error,
-              "parse error with request body", res);
+        reply("parse error with request body", res);
         return false;
     }
     switch (proto_req.command_case()) {
@@ -114,8 +103,7 @@ bool service::operator()(std::shared_ptr<request> req, std::shared_ptr<response>
             command_logging(proto_req, res);
             break;
         default:
-            reply(tateyama::api::server::response_code::io_error,
-                  "unknown command_case", res);
+            reply("unknown command_case", res);
             break;
     }
     return true;
