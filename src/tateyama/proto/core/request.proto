@@ -3,15 +3,19 @@ syntax = "proto3";
 package tateyama.proto.core.request;
 
 option java_multiple_files = false;
-option java_package = "com.tsurugidb.tateyama.proto";
+option java_package = "com.tsurugidb.core.proto";
 option java_outer_classname = "CoreRequest";
 
 // the request message to tateyama core service.
 message Request {
-    // the request message version.
-    uint64 message_version = 1;
+    // service message version (major)
+    uint64 service_message_version_major = 1;
 
-    reserved 2 to 10;
+    // service message version (minor)
+    uint64 service_message_version_minor = 2;
+
+    // reserved for system use
+    reserved 3 to 10;
 
     // the request command.
     oneof command {

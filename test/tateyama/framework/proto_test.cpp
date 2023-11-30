@@ -38,10 +38,12 @@ using namespace std::string_view_literals;
 
 TEST_F(proto_test, basic) {
     proto::framework::request::Header reqhdr{};
-    reqhdr.set_message_version(1);
+    reqhdr.set_service_message_version_major(1);
+    reqhdr.set_service_message_version_minor(0);
     reqhdr.set_service_id(10);
     reqhdr.set_session_id(100);
-    EXPECT_EQ(1, reqhdr.message_version());
+    EXPECT_EQ(1, reqhdr.service_message_version_major());
+    EXPECT_EQ(0, reqhdr.service_message_version_minor());
     EXPECT_EQ(10, reqhdr.service_id());
     EXPECT_EQ(100, reqhdr.session_id());
 
