@@ -21,6 +21,8 @@
 #include <string>
 #include <queue>
 #include <thread>
+#include <sstream>
+#include <string_view>
 
 #include <glog/logging.h>
 #include <tateyama/logging.h>
@@ -600,7 +602,11 @@ public:
             connection_queue_ = managed_shared_memory_->construct<connection_queue>(connection_queue::name)(n, managed_shared_memory_->get_segment_manager());
         }
         catch(const boost::interprocess::interprocess_exception& ex) {
-            throw std::runtime_error(ex.what());
+            using namespace std::literals::string_view_literals;
+
+            std::stringstream ss{};
+            ss << "cannot create a database connection outlet named "sv << name << " due to shared memory error."sv;
+            throw std::runtime_error(ss.str());
         }
     }
 
