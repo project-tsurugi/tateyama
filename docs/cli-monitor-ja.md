@@ -8,6 +8,7 @@
 
 * 外部ツールが利用する CLI サブコマンドに、 `--monitor /path/to/output.log` オプションを追加
   * `--monitor` は非公開オプション
+  * 出力される情報を「モニタリング情報 (monitoring information)」とよぶ
   * 出力先はローカルファイルを想定するが、NASなどに保存してもよいかもしれない
   * 上記ファイルには外部ツールに通知されるべき情報が、machine readable な形式で出力される
 * 対象は以下のコマンド
@@ -71,6 +72,7 @@
 |:-:|:--|
 | `kind` | `finish` |
 | `status` | `success`, `failure` |
+| `reason` | 原因コード (任意) |
 | `message` | メッセージ (任意) |
 | `code` | コード (任意) |
 | `arguments` | コードに対する引数列 (配列型, 任意) |
