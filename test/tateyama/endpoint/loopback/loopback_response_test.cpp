@@ -53,8 +53,6 @@ TEST_F(loopback_response_test, set_get) {
     EXPECT_EQ(response.body(), body);
     EXPECT_EQ(response.body_head(), body_head);
     //
-    EXPECT_EQ(response.close_session(), tateyama::status::ok);
-    //
     EXPECT_EQ(response.session_id(), session_id);
     EXPECT_EQ(response.body(), body);
     EXPECT_EQ(response.body_head(), body_head);
@@ -201,8 +199,6 @@ TEST_F(loopback_response_test, empty_channel_name) {
     for (int i = 0; i < result.size(); i++) {
         EXPECT_EQ(result[i], test_data[i]);
     }
-    //
-    EXPECT_EQ(response.close_session(), tateyama::status::ok);
 }
 
 inline void dummy_message(int i, int j, std::string &s) {

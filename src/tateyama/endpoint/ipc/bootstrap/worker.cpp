@@ -37,7 +37,6 @@ void Worker::run()
                      static_cast<std::shared_ptr<tateyama::api::server::response>>(std::move(response)));
             request->dispose();
             request = nullptr;
-            if (wire_->is_session_closed()) { break; }
         } catch (std::runtime_error &e) {
             LOG_LP(ERROR) << e.what();
             break;

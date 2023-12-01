@@ -126,13 +126,6 @@ tateyama::status stream_response::release_channel(tateyama::api::server::data_ch
 }
 
 
-// deprecated
-tateyama::status stream_response::close_session() {
-    VLOG_LP(log_trace) << static_cast<const void*>(session_socket_.get());  //NOLINT
-
-    return tateyama::status::ok;
-}
-
 // class stream_data_channel
 tateyama::status stream_data_channel::acquire(std::shared_ptr<tateyama::api::server::writer>& wrt) {
     try {
