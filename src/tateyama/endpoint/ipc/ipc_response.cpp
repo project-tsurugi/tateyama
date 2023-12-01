@@ -121,13 +121,6 @@ tateyama::status ipc_response::release_channel(tateyama::api::server::data_chann
     return tateyama::status::unknown;
 }
 
-tateyama::status ipc_response::close_session() {
-    VLOG_LP(log_trace) << static_cast<const void*>(server_wire_.get());  //NOLINT
-
-    server_wire_->close_session();
-    return tateyama::status::ok;
-}
-
 // class ipc_data_channel
 tateyama::status ipc_data_channel::acquire(std::shared_ptr<tateyama::api::server::writer>& wrt) {
     try {

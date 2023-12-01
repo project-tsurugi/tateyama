@@ -78,13 +78,6 @@ public:
      */
     tateyama::status release_channel(tateyama::api::server::data_channel &ch) override;
 
-    /**
-     * @see tateyama::server::response::close_session()
-     */
-    tateyama::status close_session() override {
-        return tateyama::status::ok;
-    }
-
     // just for unit test
     [[nodiscard]] std::map<std::string, std::vector<std::string>, std::less<>> const& all_committed_data() const noexcept {
         return committed_data_map_;

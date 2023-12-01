@@ -96,7 +96,6 @@ public:
     void error(proto::diagnostics::Record const& record) override;
     tateyama::status acquire_channel(std::string_view name, std::shared_ptr<tateyama::api::server::data_channel>& ch) override;
     tateyama::status release_channel(tateyama::api::server::data_channel& ch) override;
-    tateyama::status close_session() override;
 
     void session_id(std::size_t id) override {
         session_id_ = id;

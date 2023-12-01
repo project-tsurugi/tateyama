@@ -106,7 +106,6 @@ public:
     virtual unq_p_resultset_wires_conteiner create_resultset_wires(std::string_view) = 0;
     virtual unq_p_resultset_wires_conteiner create_resultset_wires(std::string_view, std::size_t count) = 0;
     virtual garbage_collector* get_garbage_collector() = 0;
-    virtual void close_session() = 0;
 };
 inline server_wire_container::~server_wire_container() = default;
 inline server_wire_container::wire_container::~wire_container() = default;

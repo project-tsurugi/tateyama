@@ -546,9 +546,6 @@ public:
     garbage_collector* get_garbage_collector() override {
         return garbage_collector_impl_.get();
     }
-    void close_session() override { session_closed_ = true; }
-
-    [[nodiscard]] bool is_session_closed() const { return session_closed_; }
 
     // for client
     std::unique_ptr<resultset_wires_container_impl> create_resultset_wires_for_client(std::string_view name) {
@@ -562,7 +559,6 @@ private:
     response_wire_container_impl response_wire_{};
     status_provider* status_provider_{};
     std::unique_ptr<garbage_collector_impl> garbage_collector_impl_;
-    bool session_closed_{false};
     std::mutex mtx_shm_{};
 
     std::size_t datachannel_buffer_size_;
