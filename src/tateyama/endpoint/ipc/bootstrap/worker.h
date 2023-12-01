@@ -18,10 +18,13 @@
 #include <future>
 #include <thread>
 #include <functional>
+#include <atomic>
+#include <set>
+#include <mutex>
 
 #include <tateyama/status.h>
 #include <tateyama/api/server/request.h>
-#include <tateyama/api/server/response.h>
+#include <tateyama/endpoint/ipc/ipc_response.h>
 #include <tateyama/framework/routing_service.h>
 #include <tateyama/status/resource/bridge.h>
 
@@ -51,6 +54,7 @@ class Worker {
     Worker& operator = (Worker&&) = delete;
 
     void run();
+    void terminate();
 
     friend class ipc_listener;
     friend class ipc_provider;
@@ -61,6 +65,10 @@ class Worker {
     tateyama::common::wire::server_wire_container_impl::wire_container_impl* request_wire_container_;
     std::size_t session_id_;
     std::function<void(void)> clean_up_;
+
+    std::set<tateyama::common::wire::ipc_response*> incomplete_responses_{};
+    std::mutex mtx_response_set_{};
+    std::atomic_bool terminate_requested_{};
     bool terminated_{};
 
     // for future

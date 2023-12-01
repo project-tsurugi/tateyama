@@ -435,8 +435,9 @@ public:
         }
         std::size_t read_point() override { return wire_->read_point(); }
         void dispose() override { wire_->dispose(); }
+        void terminate() { wire_->terminate(); }
 
-        // for client
+        // for mainly client, except for terminate request from server
         void write(const char* from, const std::size_t len, message_header::index_type index) {
             wire_->write(bip_buffer_, from, message_header(index, len));
         }
@@ -545,6 +546,10 @@ public:
     }
     garbage_collector* get_garbage_collector() override {
         return garbage_collector_impl_.get();
+    }
+
+    void terminate() {
+        request_wire_.terminate();
     }
 
     // for client
