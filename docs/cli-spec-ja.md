@@ -214,8 +214,8 @@ tgctl backup estimate [--conf </path/to/conf>]
 ### restore サブコマンド
 
 ```sh
-tgctl restore backup </path/to/backup> [--conf </path/to/conf>] [--keep-backup|--no-keep-backup] [--label <text>] [-f|--force] [--use-file-list </path/to/file-list>]
-tgctl restore tag <tag-name> [--conf </path/to/conf>] [--label <text>] [-f|--force]
+tgctl restore backup </path/to/backup> [--conf </path/to/conf>] [--keep-backup|--no-keep-backup] [--label <text>] [--force] [--use-file-list </path/to/file-list>]
+tgctl restore tag <tag-name> [--conf </path/to/conf>] [--label <text>] [--force]
 ```
 
 * overview
@@ -224,7 +224,7 @@ tgctl restore tag <tag-name> [--conf </path/to/conf>] [--label <text>] [-f|--for
   * options
     * `--conf` - 設定ファイルのパス、未指定の場合は既定の設定パスを利用
     * `--label` - この操作のラベルを指定する
-    * `-f,--force` - 確認のプロンプトを表示させずに実行する
+    * `--force` - 確認のプロンプトを表示させずに実行する
   * note
     * 同一の設定ファイルを参照する、完全に終了しているデータベースを対象にとる
     * 対象のデータベースが完全に終了していない場合、このコマンドは失敗する
@@ -278,7 +278,7 @@ tgctl restore tag <tag-name> [--conf </path/to/conf>] [--label <text>] [-f|--for
 tgctl tag list [--conf </path/to/conf>] [-v|--verbose]
 tgctl tag show <tag-name> [--conf </path/to/conf>]
 tgctl tag add <tag-name> [--comment <message>] [--conf </path/to/conf>]
-tgctl tag remove <tag-name> [-f|--force] [--conf </path/to/conf>]
+tgctl tag remove <tag-name> [--force] [--conf </path/to/conf>]
 ```
 
 * overview
@@ -354,10 +354,10 @@ tgctl tag remove <tag-name> [-f|--force] [--conf </path/to/conf>]
       * 対象のタグの登録を解除する
     * options
       * `<tag-name>` - 対象のタグ名
-      * `-f,--force` - 確認プロンプトなしで処理を続行する
+      * `--force` - 確認プロンプトなしで処理を続行する
     * note
       * 対象のタグ名の登録が存在しない場合、このコマンドは何も行わない
-      * `tgctl tag list | grep '...' | xargs tgctl tag remove -f` が通る
+      * `tgctl tag list | grep '...' | xargs tgctl tag remove --force` が通る
     * impl memo
       * if service is present
         * send `tag_remove` to "backup_service"
@@ -541,7 +541,7 @@ connection-options:
 
 ```sh
 tgctl data dump <table-name> </path/to/dump-target> [--fresh|--safe] [--overwrite] [-v|--verbose]
-tgctl data load <table-name> </path/to/load-source>.. [--insert|--skip|--replace|--truncate] [--transaction|--no-transaction] [-f|--force] [-v|--verbose] <connection-options>
+tgctl data load <table-name> </path/to/load-source>.. [--insert|--skip|--replace|--truncate] [--transaction|--no-transaction] [--force] [-v|--verbose] <connection-options>
 
 connection-options:
   --conf </path/to/conf> |
@@ -594,7 +594,7 @@ connection-options:
       * `--truncate` - 全ての行を削除してからロードする
       * `--transaction` (default) - 単一のトランザクション内で実行する
       * `--no-transaction` - 複数のトランザクションに分割して実行する
-      * `-f,--force` - プロンプトなしで実行する
+      * `--force` - プロンプトなしで実行する
     * note
       * 実行中にエラーが発生した場合、 `--transaction` が指定されていれば全ての処理を巻き戻し、 `--no-transaction` が指定されていれば一部の処理が適用済みになる
         * `--insert` などの冪等でない処理を行う際には十分な注意が必要
