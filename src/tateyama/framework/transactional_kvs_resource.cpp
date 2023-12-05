@@ -16,6 +16,7 @@
 #include <tateyama/framework/transactional_kvs_resource.h>
 
 #include <filesystem>
+#include <exception>
 #include <glog/logging.h>
 
 #include <tateyama/framework/environment.h>
@@ -69,12 +70,17 @@ bool transactional_kvs_resource::setup(environment& env) {
     if(! extract_config(env, options)) {
         return false;
     }
-    if(auto res = sharksfin::database_open(options, std::addressof(database_handle_)); res != sharksfin::StatusCode::OK) {
+    try {
+        if(auto res = sharksfin::database_open(options, std::addressof(database_handle_)); res != sharksfin::StatusCode::OK) {
+            LOG(ERROR) << "opening database failed";
+            return false;
+        }
+        db_opened_ = true;
+        return true;
+    } catch (std::runtime_error &ex) {
         LOG(ERROR) << "opening database failed";
         return false;
     }
-    db_opened_ = true;
-    return true;
 }
 
 bool transactional_kvs_resource::start(environment&) {
