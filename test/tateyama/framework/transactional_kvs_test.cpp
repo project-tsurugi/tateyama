@@ -87,4 +87,20 @@ TEST_F(transactional_kvs_test, relative_path_empty_string) {
     ASSERT_TRUE(kvs.start(env));
     ASSERT_TRUE(kvs.shutdown(env));
 }
+
+TEST_F(transactional_kvs_test, DISABLED_error_detection) {
+    // rise error from datastore
+    std::stringstream ss{
+        "[datastore]\n"
+        "log_location=/does_not_exist\n",  // to arise error
+    };
+    auto cfg = std::make_shared<tateyama::api::configuration::whole>(ss, tateyama::test::default_configuration_for_tests);
+    cfg->base_path(path());
+    framework::environment env{boot_mode::database_server, cfg};
+    transactional_kvs_resource kvs{};
+    // we can only check following calls are successful
+    // manually verify with GLOG_v=50 env. var. and shirakami::init receives empty string as log_directory_path
+
+    ASSERT_FALSE(kvs.setup(env));
+}
 }
