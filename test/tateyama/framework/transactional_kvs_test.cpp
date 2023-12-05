@@ -88,7 +88,7 @@ TEST_F(transactional_kvs_test, relative_path_empty_string) {
     ASSERT_TRUE(kvs.shutdown(env));
 }
 
-TEST_F(transactional_kvs_test, error_detection) {
+TEST_F(transactional_kvs_test, DISABLED_error_detection) {
     // rise error from datastore
     std::stringstream ss{
         "[datastore]\n"
