@@ -73,6 +73,7 @@
 | `kind` | `finish` |
 | `status` | `success`, `failure` |
 | `reason` | 原因コード (任意) |
+| `cause` | 原因情報 (配列型, 任意) |
 | `message` | メッセージ (任意) |
 | `code` | コード (任意) |
 | `arguments` | コードに対する引数列 (配列型, 任意) |
