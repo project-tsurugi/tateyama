@@ -29,7 +29,7 @@ namespace tateyama::common::stream {
 class stream_request;
 
 // class stream_response
-stream_response::stream_response(std::shared_ptr<tateyama::common::stream::stream_socket> stream, unsigned char index)
+stream_response::stream_response(std::shared_ptr<tateyama::common::stream::stream_socket> stream, std::uint16_t index)
     : session_socket_(std::move(stream)), index_(index) {
 }
 
