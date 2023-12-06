@@ -79,7 +79,7 @@ class stream_response : public tateyama::api::server::response {
     friend stream_data_channel;
 
 public:
-    stream_response(std::shared_ptr<tateyama::common::stream::stream_socket> stream, unsigned char index);
+    stream_response(std::shared_ptr<tateyama::common::stream::stream_socket> stream, std::uint16_t index);
     stream_response() = delete;
 
     tateyama::status body(std::string_view body) override;
@@ -93,7 +93,7 @@ public:
     }
 private:
     std::shared_ptr<tateyama::common::stream::stream_socket> session_socket_;
-    unsigned char index_;
+    std::uint16_t index_;
 
     std::string message_{};
 
