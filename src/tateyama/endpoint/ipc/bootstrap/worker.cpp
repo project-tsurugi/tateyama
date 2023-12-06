@@ -25,6 +25,17 @@ namespace tateyama::server {
 
 void Worker::run()
 {
+    {
+        auto hdr = request_wire_container_->peep(true);
+        if (hdr.get_length() == 0 && hdr.get_idx() == tateyama::common::wire::message_header::not_use) { return; }
+        tateyama::common::wire::ipc_request request_obj{*wire_, hdr};
+        tateyama::common::wire::ipc_response response_obj{wire_, hdr.get_idx()};
+
+        if (! handshake(static_cast<tateyama::api::server::request*>(&request_obj), static_cast<tateyama::api::server::response*>(&response_obj))) {
+            return;
+        }
+    }
+
     VLOG(log_debug_timing_event) << "/:tateyama:timing:session:started "
         << session_id_;
     while(true) {
@@ -34,6 +45,7 @@ void Worker::run()
                 VLOG_LP(log_trace) << "received terminate request: session_id = " << std::to_string(session_id_);
                 break;
             }
+
             auto request = std::make_shared<tateyama::common::wire::ipc_request>(*wire_, h);
             auto response = std::make_shared<tateyama::common::wire::ipc_response>(wire_, h.get_idx());
             service_(static_cast<std::shared_ptr<tateyama::api::server::request>>(request),

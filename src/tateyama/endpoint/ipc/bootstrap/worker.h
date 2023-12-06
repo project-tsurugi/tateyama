@@ -20,18 +20,14 @@
 #include <functional>
 #include <atomic>
 
-#include <tateyama/status.h>
-#include <tateyama/api/server/request.h>
-#include <tateyama/endpoint/ipc/ipc_response.h>
-#include <tateyama/framework/routing_service.h>
-#include <tateyama/status/resource/bridge.h>
+#include <tateyama/endpoint/common/worker_common.h>
 
 #include "server_wires_impl.h"
 
 namespace tateyama::server {
 class ipc_provider;
 
-class Worker {
+class Worker : public tateyama::endpoint::comon::worker_common {
  public:
     Worker(tateyama::framework::routing_service& service, std::size_t session_id, std::shared_ptr<tateyama::common::wire::server_wire_container_impl> wire, std::function<void(void)> clean_up)
         : service_(service), wire_(std::move(wire)),

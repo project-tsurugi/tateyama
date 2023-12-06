@@ -24,6 +24,21 @@ void stream_worker::run()
 {
     std::string session_name = std::to_string(session_id_);
     if (session_stream_->wait_hello(session_name)) {
+        {
+            std::uint16_t slot{};
+            std::string payload{};
+            if (!session_stream_->await(slot, payload)) {
+                session_stream_->close();
+                return;
+            }
+            tateyama::common::stream::stream_request request_obj{*session_stream_, payload};
+            tateyama::common::stream::stream_response response_obj{session_stream_, slot};
+
+            if (! handshake(static_cast<tateyama::api::server::request*>(&request_obj), static_cast<tateyama::api::server::response *>(&response_obj))) {
+                return;
+            }
+        }
+
         VLOG(log_debug_timing_event) << "/:tateyama:timing:session:started "
             << session_id_;
         while(true) {
