@@ -19,8 +19,6 @@
 #include <thread>
 #include <functional>
 #include <atomic>
-#include <set>
-#include <mutex>
 
 #include <tateyama/status.h>
 #include <tateyama/api/server/request.h>
@@ -66,8 +64,6 @@ class Worker {
     std::size_t session_id_;
     std::function<void(void)> clean_up_;
 
-    std::set<tateyama::common::wire::ipc_response*> incomplete_responses_{};
-    std::mutex mtx_response_set_{};
     std::atomic_bool terminate_requested_{};
     bool terminated_{};
 

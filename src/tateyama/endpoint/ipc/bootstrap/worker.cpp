@@ -36,12 +36,7 @@ void Worker::run()
             }
             if (h.get_length() == 0 && h.get_idx() == tateyama::common::wire::message_header::not_use) { break; }
             auto request = std::make_shared<tateyama::common::wire::ipc_request>(*wire_, h);
-            auto response = std::make_shared<tateyama::common::wire::ipc_response>(wire_, h.get_idx(), [this](tateyama::common::wire::ipc_response* entry){ std::lock_guard<std::mutex> lock(mtx_response_set_); incomplete_responses_.erase(entry); });
-
-            {
-                std::lock_guard<std::mutex> lock(mtx_response_set_);
-                incomplete_responses_.emplace(response.get());
-            }
+            auto response = std::make_shared<tateyama::common::wire::ipc_response>(wire_, h.get_idx(), [](tateyama::common::wire::ipc_response*){ /* for future use */ });
             service_(static_cast<std::shared_ptr<tateyama::api::server::request>>(request),
                      static_cast<std::shared_ptr<tateyama::api::server::response>>(std::move(response)));
             request->dispose();
@@ -67,13 +62,6 @@ void Worker::terminate() {
     tateyama::proto::diagnostics::Record rec{};
     rec.set_code(tateyama::proto::diagnostics::Code::ILLEGAL_STATE);
     rec.set_message("tsurugidb is shutting down now");
-
-    {
-        std::lock_guard<std::mutex> lock(mtx_response_set_);
-        for (auto&& e : incomplete_responses_) {
-            e->error(rec);
-        }
-    }
 }
 
 }  // tateyama::server
