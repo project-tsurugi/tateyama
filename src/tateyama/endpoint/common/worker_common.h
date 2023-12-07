@@ -21,16 +21,24 @@
 #include <tateyama/framework/routing_service.h>
 #include <tateyama/status/resource/bridge.h>
 
-namespace tateyama::endpoint::comon {
+#include "tateyama/endpoint/common/session_info_impl.h"
+
+namespace tateyama::endpoint::common {
 
 class worker_common {
 public:
-    worker_common() = default;
+    worker_common(std::size_t id, std::string_view conn_type, std::string_view conn_info)
+        : session_info_(id, conn_type, conn_info) {
+    }
+    worker_common(std::size_t id, std::string_view conn_type) : worker_common(id, conn_type, "") {
+    }
 
 protected:
+    session_info_impl session_info_;
+
     bool handshake(tateyama::api::server::request*, tateyama::api::server::response*) {
         return true;
     }
 };
 
-}  // tateyama::endpoint::comon
+}  // tateyama::endpoint::common

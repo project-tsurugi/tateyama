@@ -40,10 +40,12 @@ namespace tateyama::server {
  */
 class ipc_listener {
 public:
-    explicit ipc_listener(const std::shared_ptr<api::configuration::whole>& cfg, std::shared_ptr<framework::routing_service> router, std::shared_ptr<status_info::resource::bridge> status) :
-        cfg_(cfg), router_(std::move(router)), status_(std::move(status))
-    {
-        auto endpoint_config = cfg->get_section("ipc_endpoint");
+    explicit ipc_listener(tateyama::framework::environment& env)
+        : cfg_(env.configuration()),
+          router_(env.service_repository().find<framework::routing_service>()),
+          status_(env.resource_repository().find<status_info::resource::bridge>()) {
+
+        auto endpoint_config = cfg_->get_section("ipc_endpoint");
         if (endpoint_config == nullptr) {
             throw std::runtime_error("cannot find ipc_endpoint section in the configuration");
         }
@@ -104,7 +106,6 @@ public:
     void operator()() {
         auto& connection_queue = container_->get_connection_queue();
         proc_mutex_file_ = status_->mutex_file();
-        status_->set_database_name(database_name_);
         arrive_and_wait();
 
         while(true) {
@@ -133,7 +134,8 @@ public:
                 status_->add_shm_entry(session_id, index);
                 auto& worker = workers_.at(index);
                 worker = std::make_shared<server::Worker>(*router_, session_id, std::move(wire),
-                                                              [&connection_queue, index](){ connection_queue.disconnect(index); });
+                                                          [&connection_queue, index](){ connection_queue.disconnect(index); },
+                                                          status_->get_database_info());
                 worker->task_ = std::packaged_task<void()>([&]{worker->run();});
                 worker->future_ = worker->task_.get_future();
                 worker->thread_ = std::thread(std::move(worker->task_));

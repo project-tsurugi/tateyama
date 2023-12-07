@@ -53,10 +53,7 @@ public:
     bool setup(environment& env) override {
         try {
             // create listener object
-            listener_ = std::make_unique<tateyama::server::stream_listener>(
-                env.configuration(),
-                env.service_repository().find<framework::routing_service>()
-            );
+            listener_ = std::make_unique<tateyama::server::stream_listener>(env);
             return true;
         } catch (std::exception &ex) {
             LOG_LP(ERROR) << ex.what();

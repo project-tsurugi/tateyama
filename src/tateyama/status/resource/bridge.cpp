@@ -28,7 +28,16 @@ component::id_type bridge::id() const noexcept {
 }
 
 bool bridge::setup(environment& env) {
-    set_digest(env.configuration()->get_canonical_path().string());
+    auto conf = env.configuration();
+    set_digest(conf->get_canonical_path().string());
+
+    auto database_name_opt = conf->get_section("ipc_endpoint")->get<std::string>("database_name");
+    if (!database_name_opt) {
+        LOG(ERROR) << "cannot find database_name at the section in the configuration";
+        return false;
+    }
+    auto name = database_name_opt.value();
+    database_info_.name(name);
 
     std::string status_file_name{file_prefix};
     status_file_name += digest_;
@@ -39,6 +48,7 @@ bool bridge::setup(environment& env) {
         segment_ = std::make_unique<boost::interprocess::managed_shared_memory>(boost::interprocess::create_only, status_file_name.c_str(), shm_size);
         resource_status_memory_ = std::make_unique<resource_status_memory>(*segment_);
         resource_status_memory_->set_pid();
+        resource_status_memory_->set_database_name(name);
         return true;
     } catch(const boost::interprocess::interprocess_exception& ex) {
         return false;
@@ -84,12 +94,6 @@ std::string_view bridge::mutex_file() {
 void bridge::set_maximum_sessions(std::size_t n) {
     if (resource_status_memory_) {
         return resource_status_memory_->set_maximum_sessions(n);
-    }
-}
-
-void bridge::set_database_name(std::string_view name) {
-    if (resource_status_memory_) {
-        resource_status_memory_->set_database_name(name);
     }
 }
 

@@ -20,20 +20,27 @@
 #include <functional>
 #include <atomic>
 
-#include <tateyama/endpoint/common/worker_common.h>
+#include "tateyama/endpoint/common/worker_common.h"
 
 #include "server_wires_impl.h"
 
 namespace tateyama::server {
 class ipc_provider;
 
-class Worker : public tateyama::endpoint::comon::worker_common {
+class Worker : public tateyama::endpoint::common::worker_common {
  public:
-    Worker(tateyama::framework::routing_service& service, std::size_t session_id, std::shared_ptr<tateyama::common::wire::server_wire_container_impl> wire, std::function<void(void)> clean_up)
-        : service_(service), wire_(std::move(wire)),
+    Worker(tateyama::framework::routing_service& service,
+           std::size_t session_id,
+           std::shared_ptr<tateyama::common::wire::server_wire_container_impl> wire,
+           std::function<void(void)> clean_up,
+           const tateyama::api::server::database_info& database_info)
+        : worker_common(session_id, "ipc"),
+          service_(service),
+          wire_(std::move(wire)),
           request_wire_container_(dynamic_cast<tateyama::common::wire::server_wire_container_impl::wire_container_impl*>(wire_->get_request_wire())),
           session_id_(session_id),
-          clean_up_(std::move(clean_up)) {
+          clean_up_(std::move(clean_up)),
+          database_info_(database_info) {
     }
     ~Worker() {
         if(thread_.joinable()) thread_.join();
@@ -59,6 +66,7 @@ class Worker : public tateyama::endpoint::comon::worker_common {
     tateyama::common::wire::server_wire_container_impl::wire_container_impl* request_wire_container_;
     std::size_t session_id_;
     std::function<void(void)> clean_up_;
+    const tateyama::api::server::database_info& database_info_;
 
     bool terminated_{};
 

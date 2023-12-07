@@ -23,6 +23,8 @@
 
 #include "server_wires.h"
 #include "tateyama/endpoint/common/endpoint_proto_utils.h"
+#include "tateyama/status/resource/database_info_impl.h"
+#include "tateyama/endpoint/common/session_info_impl.h"
 #include "tateyama/logging_helper.h"
 
 namespace tateyama::common::wire {
@@ -34,8 +36,8 @@ class ipc_request : public tateyama::api::server::request {
     constexpr static std::size_t SPO_SIZE = 256;
 
 public:
-    ipc_request(server_wire_container& server_wire, message_header& header)
-        : server_wire_(server_wire), length_(header.get_length()) {
+    ipc_request(server_wire_container& server_wire, message_header& header, const tateyama::api::server::database_info& database_info, const tateyama::api::server::session_info& session_info)
+        : server_wire_(server_wire), length_(header.get_length()), database_info_(database_info), session_info_(session_info) {
         std::string_view message{};
         auto *request_wire = server_wire_.get_request_wire();
 
@@ -64,9 +66,16 @@ public:
     void dispose();
     [[nodiscard]] std::size_t session_id() const override;
     [[nodiscard]] std::size_t service_id() const override;
+
+    tateyama::api::server::database_info const& database_info() const noexcept override;
+    tateyama::api::server::session_info const& session_info() const noexcept override;
+
 private:
     server_wire_container& server_wire_;
     const std::size_t length_;
+    const tateyama::api::server::database_info& database_info_;
+    const tateyama::api::server::session_info& session_info_;
+
     std::size_t session_id_{};
     std::size_t service_id_{};
     std::string_view payload_{};

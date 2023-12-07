@@ -18,17 +18,23 @@
 #include <future>
 #include <thread>
 
-#include <tateyama/endpoint/common/worker_common.h>
-
-#include <tateyama/endpoint/stream/stream.h>
+#include "tateyama/endpoint/common/worker_common.h"
+#include "tateyama/endpoint/stream/stream.h"
 
 namespace tateyama::server {
 class stream_provider;
 
-class stream_worker : public tateyama::endpoint::comon::worker_common {
+class stream_worker : public tateyama::endpoint::common::worker_common {
  public:
-    stream_worker(tateyama::framework::routing_service& service, std::size_t session_id, std::shared_ptr<tateyama::common::stream::stream_socket> stream)
-        : service_(service), session_stream_(std::move(stream)), session_id_(session_id) {
+    stream_worker(tateyama::framework::routing_service& service,
+                  std::size_t session_id,
+                  std::shared_ptr<tateyama::common::stream::stream_socket> stream,
+                  const tateyama::api::server::database_info& database_info)
+        : worker_common(session_id, "tcp/ip", stream->connection_info()),
+          service_(service),
+          session_stream_(std::move(stream)),
+          session_id_(session_id),
+          database_info_(database_info) {
     }
     ~stream_worker() {
         if(thread_.joinable()) thread_.join();
@@ -50,6 +56,7 @@ class stream_worker : public tateyama::endpoint::comon::worker_common {
     tateyama::framework::routing_service& service_;
     std::shared_ptr<tateyama::common::stream::stream_socket> session_stream_;
     std::size_t session_id_;
+    const tateyama::api::server::database_info& database_info_;
 
     // for future
     std::packaged_task<void()> task_;

@@ -28,6 +28,8 @@
 #include <tateyama/framework/resource.h>
 #include <tateyama/framework/environment.h>
 
+#include <tateyama/status/resource/database_info_impl.h>
+
 namespace tateyama::status_info::resource {
 
 /**
@@ -122,11 +124,6 @@ public:
     void set_maximum_sessions(std::size_t n);
 
     /**
-     * @brief set database name of ipc sessions
-     */
-    void set_database_name(std::string_view name);
-
-    /**
      * @brief add session to ipc sessions
      */
     void add_shm_entry(std::size_t session_id, std::size_t index);
@@ -135,6 +132,14 @@ public:
      * @see `tateyama::framework::component::label()`
      */
     [[nodiscard]] std::string_view label() const noexcept override;
+
+    /**
+     * @brief returns a reference to the database_info
+     */
+    const tateyama::api::server::database_info& get_database_info() const noexcept {
+        return database_info_;
+    }
+
 private:
     bool deactivated_{false};
 
@@ -142,6 +147,7 @@ private:
     std::unique_ptr<boost::interprocess::managed_shared_memory> segment_;
     std::unique_ptr<resource_status_memory> resource_status_memory_{};
     std::string digest_{};
+    database_info_impl database_info_{};
 
     void set_digest(const std::string& path_string);
 };
