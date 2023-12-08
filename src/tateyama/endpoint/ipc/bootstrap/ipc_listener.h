@@ -114,6 +114,7 @@ public:
                     VLOG_LP(log_trace) << "receive terminate request";
                     for (auto& worker : workers_) {
                         if (worker) {
+                            worker->terminate();
                             if (auto rv = worker->future_.wait_for(std::chrono::seconds(0)); rv != std::future_status::ready) {
                                 VLOG_LP(log_trace) << "exit: remaining thread " << worker->session_id_;
                             }

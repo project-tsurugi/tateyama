@@ -19,6 +19,7 @@
 
 #include <tateyama/endpoint/ipc/ipc_request.h>
 #include <tateyama/endpoint/ipc/ipc_response.h>
+#include <tateyama/proto/diagnostics.pb.h>
 
 namespace tateyama::server {
 
@@ -29,10 +30,12 @@ void Worker::run()
     while(true) {
         try {
             auto h = request_wire_container_->peep(true);
-            if (h.get_length() == 0 && h.get_idx() == tateyama::common::wire::message_header::not_use) { break; }
+            if (h.get_length() == 0 && h.get_idx() == tateyama::common::wire::message_header::termination_request) {
+                VLOG_LP(log_trace) << "received terminate request: session_id = " << std::to_string(session_id_);
+                break;
+            }
             auto request = std::make_shared<tateyama::common::wire::ipc_request>(*wire_, h);
             auto response = std::make_shared<tateyama::common::wire::ipc_response>(wire_, h.get_idx());
-
             service_(static_cast<std::shared_ptr<tateyama::api::server::request>>(request),
                      static_cast<std::shared_ptr<tateyama::api::server::response>>(std::move(response)));
             request->dispose();
@@ -47,6 +50,11 @@ void Worker::run()
     VLOG(log_debug_timing_event) << "/:tateyama:timing:session:finished "
         << session_id_;
     terminated_ = true;
+}
+
+void Worker::terminate() {
+    VLOG_LP(log_trace) << "send terminate request: session_id = " << std::to_string(session_id_);
+    wire_->terminate();
 }
 
 }  // tateyama::server

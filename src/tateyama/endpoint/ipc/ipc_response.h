@@ -19,6 +19,7 @@
 #include <string_view>
 #include <mutex>
 #include <atomic>
+#include <functional>
 
 #include <tateyama/api/server/response.h>
 
@@ -88,7 +89,6 @@ public:
         // do dump here
         garbage_collector_->dump();
     }
-
     ipc_response() = delete;
 
     tateyama::status body(std::string_view body) override;
