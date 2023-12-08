@@ -37,12 +37,10 @@ tateyama::status ipc_response::body(std::string_view body) {
         arg.session_id_ = session_id_;
         if(auto res = endpoint::common::append_response_header(ss, body, arg); ! res) {
             LOG_LP(ERROR) << "error formatting response message";
-            clean_up_(this);
             return status::unknown;
         }
         auto s = ss.str();
         server_wire_->get_response_wire().write(s.data(), response_header(index_, s.length(), RESPONSE_BODY));
-        clean_up_(this);
         return tateyama::status::ok;
     }
     LOG_LP(ERROR) << "response is already completed";
@@ -75,7 +73,6 @@ void ipc_response::error(proto::diagnostics::Record const& record) {
             LOG_LP(ERROR) << "error formatting diagnostics message";
             server_diagnostics("");
         }
-        clean_up_(this);
     } else {
         LOG_LP(ERROR) << "response is already completed";
     }

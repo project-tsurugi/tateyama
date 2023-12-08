@@ -30,13 +30,12 @@ void Worker::run()
     while(true) {
         try {
             auto h = request_wire_container_->peep(true);
-            if (terminate_requested_.load()) {
+            if (h.get_length() == 0 && h.get_idx() == tateyama::common::wire::message_header::termination_request) {
                 VLOG_LP(log_trace) << "received terminate request: session_id = " << std::to_string(session_id_);
                 break;
             }
-            if (h.get_length() == 0 && h.get_idx() == tateyama::common::wire::message_header::not_use) { break; }
             auto request = std::make_shared<tateyama::common::wire::ipc_request>(*wire_, h);
-            auto response = std::make_shared<tateyama::common::wire::ipc_response>(wire_, h.get_idx(), [](tateyama::common::wire::ipc_response*){ /* for future use */ });
+            auto response = std::make_shared<tateyama::common::wire::ipc_response>(wire_, h.get_idx());
             service_(static_cast<std::shared_ptr<tateyama::api::server::request>>(request),
                      static_cast<std::shared_ptr<tateyama::api::server::response>>(std::move(response)));
             request->dispose();
@@ -55,13 +54,7 @@ void Worker::run()
 
 void Worker::terminate() {
     VLOG_LP(log_trace) << "send terminate request: session_id = " << std::to_string(session_id_);
-    terminate_requested_.store(true);
     wire_->terminate();
-
-    // terminate requests that has not been responded yet.
-    tateyama::proto::diagnostics::Record rec{};
-    rec.set_code(tateyama::proto::diagnostics::Code::ILLEGAL_STATE);
-    rec.set_message("tsurugidb is shutting down now");
 }
 
 }  // tateyama::server

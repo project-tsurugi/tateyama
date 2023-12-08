@@ -64,7 +64,6 @@ class Worker {
     std::size_t session_id_;
     std::function<void(void)> clean_up_;
 
-    std::atomic_bool terminate_requested_{};
     bool terminated_{};
 
     // for future

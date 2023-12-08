@@ -42,7 +42,7 @@ class message_header {
 public:
     using length_type = std::uint32_t;
     using index_type = std::uint16_t;
-    static constexpr index_type not_use = 0xffff;
+    static constexpr index_type termination_request = 0xffff;
 
     static constexpr std::size_t size = sizeof(length_type) + sizeof(index_type);
 
@@ -380,41 +380,48 @@ public:
      */
     message_header peep(const char* base, bool wait_flag = false) {
         while (true) {
-            if(stored() >= message_header::size || shutdown_requested_.load()) {
+            if(stored() >= message_header::size || termination_requested_.load()) {
                 break;
             }
             if (wait_flag) {
                 boost::interprocess::scoped_lock lock(m_mutex_);
                 wait_for_read_ = true;
                 std::atomic_thread_fence(std::memory_order_acq_rel);
-                c_empty_.wait(lock, [this](){ return (stored() >= message_header::size) || shutdown_requested_.load(); });
+                c_empty_.wait(lock, [this](){ return (stored() >= message_header::size) || termination_requested_.load(); });
                 wait_for_read_ = false;
             } else {
                 if (stored() < message_header::size) { return {}; }
             }
         }
-        if (!shutdown_requested_.load()) {
+        if (!termination_requested_.load()) {
             copy_header(base);
         } else {
-            header_received_ = message_header(message_header::not_use, 0);
+            header_received_ = message_header(message_header::termination_request, 0);
         }
         return header_received_;
     }
 
     /**
-     * @brief wake up the worker thread waiting for request arrival, supposed to be used in server shutdown.
+     * @brief wake up the worker thread waiting for request arrival, supposed to be used in server termination.
      */
     void terminate() {
-        shutdown_requested_.store(true);
+        termination_requested_.store(true);
         std::atomic_thread_fence(std::memory_order_acq_rel);
         if (wait_for_read_) {
             boost::interprocess::scoped_lock lock(m_mutex_);
             c_empty_.notify_one();
         }
     }
+    /**
+     * @brief check if an termination request has been made
+     * @retrun true if terminate request has been made
+     */
+    [[nodiscard]] bool terminate_requested() {
+        return termination_requested_.load();
+    }
 
 private:
-    std::atomic_bool shutdown_requested_{};
+    std::atomic_bool termination_requested_{};
 };
 
 

@@ -436,6 +436,7 @@ public:
         std::size_t read_point() override { return wire_->read_point(); }
         void dispose() override { wire_->dispose(); }
         void terminate() { wire_->terminate(); }
+        [[nodiscard]] bool terminate_requested() const { return wire_->terminate_requested(); }
 
         // for mainly client, except for terminate request from server
         void write(const char* from, const std::size_t len, message_header::index_type index) {
@@ -550,6 +551,9 @@ public:
 
     void terminate() {
         request_wire_.terminate();
+    }
+    [[nodiscard]] bool terminate_requested() const {
+        return request_wire_.terminate_requested();
     }
 
     // for client
