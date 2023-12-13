@@ -43,8 +43,8 @@ public:
     [[nodiscard]] std::size_t session_id() const override;
     [[nodiscard]] std::size_t service_id() const override;
 
-    tateyama::api::server::database_info const& database_info() const noexcept override;
-    tateyama::api::server::session_info const& session_info() const noexcept override;
+    [[nodiscard]] tateyama::api::server::database_info const& database_info() const noexcept override;
+    [[nodiscard]] tateyama::api::server::session_info const& session_info() const noexcept override;
 
 private:
     stream_socket& session_socket_;

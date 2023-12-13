@@ -136,7 +136,7 @@ public:
     /**
      * @brief returns a reference to the database_info
      */
-    const tateyama::api::server::database_info& get_database_info() const noexcept {
+    [[nodiscard]] const tateyama::api::server::database_info& database_info() const noexcept {
         return database_info_;
     }
 

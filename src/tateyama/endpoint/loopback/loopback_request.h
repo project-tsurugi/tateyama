@@ -63,11 +63,11 @@ public:
         return payload_;
     }
 
-    tateyama::api::server::database_info const& database_info() const noexcept override {
+    [[nodiscard]] tateyama::api::server::database_info const& database_info() const noexcept override {
         return database_info_;
     }
 
-    tateyama::api::server::session_info const& session_info() const noexcept override {
+    [[nodiscard]] tateyama::api::server::session_info const& session_info() const noexcept override {
         return session_info_;
     }
 

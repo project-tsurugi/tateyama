@@ -135,7 +135,7 @@ public:
                 auto& worker = workers_.at(index);
                 worker = std::make_shared<server::Worker>(*router_, session_id, std::move(wire),
                                                           [&connection_queue, index](){ connection_queue.disconnect(index); },
-                                                          status_->get_database_info());
+                                                          status_->database_info());
                 worker->task_ = std::packaged_task<void()>([&]{worker->run();});
                 worker->future_ = worker->task_.get_future();
                 worker->thread_ = std::thread(std::move(worker->task_));

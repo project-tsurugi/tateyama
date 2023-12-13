@@ -30,19 +30,19 @@ public:
     session_info_impl() : session_info_impl(0, "test_purpose", "test_purpose") {
     }
 
-    id_type id() const noexcept { return id_; }
+    [[nodiscard]] id_type id() const noexcept override { return id_; }
 
-    std::string_view label() const noexcept{ return label_; }
+    [[nodiscard]] std::string_view label() const noexcept override { return label_; }
 
-    std::string_view application_name() const noexcept{ return application_name_; }
+    [[nodiscard]] std::string_view application_name() const noexcept override { return application_name_; }
 
-    std::string_view user_name() const noexcept{ return user_name_; }
+    [[nodiscard]] std::string_view user_name() const noexcept override { return user_name_; }
 
-    time_type start_at() const noexcept{ return start_at_; }
+    [[nodiscard]] time_type start_at() const noexcept override { return start_at_; }
 
-    std::string_view connection_type_name() const noexcept{ return connection_type_name_; }
+    [[nodiscard]] std::string_view connection_type_name() const noexcept override { return connection_type_name_; }
 
-    std::string_view connection_information() const noexcept{ return connection_information_; }
+    [[nodiscard]] std::string_view connection_information() const noexcept override { return connection_information_; }
 
 private:
     // server internal info.

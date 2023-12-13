@@ -34,7 +34,7 @@ public:
     }
 
 protected:
-    session_info_impl session_info_;
+    session_info_impl session_info_;  // NOLINT
 
     bool handshake(tateyama::api::server::request*, tateyama::api::server::response*) {
         return true;

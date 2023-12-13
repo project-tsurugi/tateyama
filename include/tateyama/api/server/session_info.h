@@ -35,12 +35,27 @@ public:
     using time_type = std::chrono::time_point<std::chrono::system_clock>;
 
     /**
+     * @brief create empty object
+     */
+    session_info() = default;
+
+    /**
+     * @brief destruct the object
+     */
+    virtual ~session_info() = default;
+
+    session_info(session_info const& other) = default;
+    session_info& operator=(session_info const& other) = default;
+    session_info(session_info&& other) noexcept = default;
+    session_info& operator=(session_info&& other) noexcept = default;
+
+    /**
      * @brief returns the current numeric session ID.
      * @returns the current numeric session ID
      * @note when you denote session IDs, it MUST start with `:` (colon), and trim leading zeros.
      *    For example, `1234` must be `:1234`.
      */
-    virtual id_type id() const noexcept = 0;
+    [[nodiscard]] virtual id_type id() const noexcept = 0;
 
     /**
      * @brief returns the current session label.
@@ -49,27 +64,27 @@ public:
      * @note session labels MUST NOT start with `:` (colon).
      * @note session labels may not unique to other sessions.
      */
-    virtual std::string_view label() const noexcept = 0;
+    [[nodiscard]] virtual std::string_view label() const noexcept = 0;
 
     /**
      * @brief returns the application name which started this session.
      * @returns the application name
      * @returns empty if the application name is not sure
      */
-    virtual std::string_view application_name() const noexcept = 0;
+    [[nodiscard]] virtual std::string_view application_name() const noexcept = 0;
 
     /**
      * @brief return the authenticated user name of this session.
      * @returns the user name
      * @returns empty if the authenticated user is not sure
      */
-    virtual std::string_view user_name() const noexcept = 0;
+    [[nodiscard]] virtual std::string_view user_name() const noexcept = 0;
 
     /**
      * @brief returns the time point when the current session was started.
      * @returns the session started time
      */
-    virtual time_type start_at() const noexcept = 0;
+    [[nodiscard]] virtual time_type start_at() const noexcept = 0;
 
     /**
      * @brief returns the connection type name (e.g. `ipc`).
@@ -77,7 +92,7 @@ public:
      * @note This name is defined for each endpoint to which the session connects to,
      *    and may equal to such the endpoint name.
      */
-    virtual std::string_view connection_type_name() const noexcept = 0;
+    [[nodiscard]] virtual std::string_view connection_type_name() const noexcept = 0;
 
     /**
      * @brief returns the connection information information.
@@ -86,7 +101,7 @@ public:
      *    For example, IP address and port number is listed for the TCP endpoint.
      * @returns the connection information
      */
-    virtual std::string_view connection_information() const noexcept = 0;
+    [[nodiscard]] virtual std::string_view connection_information() const noexcept = 0;
 };
 
 }

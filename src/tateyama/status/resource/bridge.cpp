@@ -28,7 +28,7 @@ component::id_type bridge::id() const noexcept {
 }
 
 bool bridge::setup(environment& env) {
-    auto conf = env.configuration();
+    const auto& conf = env.configuration();
     set_digest(conf->get_canonical_path().string());
 
     auto database_name_opt = conf->get_section("ipc_endpoint")->get<std::string>("database_name");

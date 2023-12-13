@@ -150,7 +150,7 @@ public:
                 }
                 auto& worker = workers_.at(index);
                 try {
-                    worker = std::make_unique<stream_worker>(*router_, session_id, std::move(stream), status_->get_database_info());
+                    worker = std::make_unique<stream_worker>(*router_, session_id, std::move(stream), status_->database_info());
                 } catch (std::exception& ex) {
                     LOG_LP(ERROR) << ex.what();
                     continue;

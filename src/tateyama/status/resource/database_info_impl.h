@@ -33,11 +33,11 @@ public:
 
     database_info_impl() : database_info_impl("name_has_not_been_given") {}
     
-    process_id_type process_id() const noexcept { return process_id_; }
+    [[nodiscard]] process_id_type process_id() const noexcept override { return process_id_; }
 
-    std::string_view name() const noexcept { return name_; }
+    [[nodiscard]] std::string_view name() const noexcept override { return name_; }
 
-    time_type start_at() const noexcept { return start_at_; }
+    [[nodiscard]] time_type start_at() const noexcept override { return start_at_; }
 
 private:
     process_id_type process_id_{::getpid()};

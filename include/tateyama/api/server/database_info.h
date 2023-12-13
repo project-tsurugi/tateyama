@@ -25,6 +25,21 @@ namespace tateyama::api::server {
 class database_info {
 public:
     /**
+     * @brief create empty object
+     */
+    database_info() = default;
+
+    /**
+     * @brief destruct the object
+     */
+    virtual ~database_info() = default;
+
+    database_info(database_info const& other) = default;
+    database_info& operator=(database_info const& other) = default;
+    database_info(database_info&& other) noexcept = default;
+    database_info& operator=(database_info&& other) noexcept = default;
+
+    /**
      * @brief the process ID type.
      */
     using process_id_type = pid_t;
@@ -38,19 +53,19 @@ public:
      * @brief returns the process ID of the current database process.
      * @return the database process ID
      */
-    virtual process_id_type process_id() const noexcept = 0;
+    [[nodiscard]] virtual process_id_type process_id() const noexcept = 0;
 
     /**
      * @brief the current database name.
      * @return the database name
      */
-    virtual std::string_view name() const noexcept = 0;
+    [[nodiscard]] virtual std::string_view name() const noexcept = 0;
 
     /**
      * @brief returns the time point when the current database process was started.
      * @returns the database started time
      */
-    virtual time_type start_at() const noexcept = 0;
+    [[nodiscard]] virtual time_type start_at() const noexcept = 0;
 };
 
 }
