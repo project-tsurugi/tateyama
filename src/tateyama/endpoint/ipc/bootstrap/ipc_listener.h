@@ -83,7 +83,7 @@ public:
         // worker objects
         workers_.resize(threads);
 
-        // set maximum thread size to status objects
+        // set maximum thread size to status object
         status_->set_maximum_sessions(threads);
 
         // output configuration to be used
@@ -104,6 +104,7 @@ public:
     void operator()() {
         auto& connection_queue = container_->get_connection_queue();
         proc_mutex_file_ = status_->mutex_file();
+        // set database_name to shared memory for status info
         status_->set_database_name(database_name_);
         arrive_and_wait();
 

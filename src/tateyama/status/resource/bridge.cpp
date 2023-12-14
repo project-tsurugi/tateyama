@@ -30,6 +30,13 @@ component::id_type bridge::id() const noexcept {
 bool bridge::setup(environment& env) {
     set_digest(env.configuration()->get_canonical_path().string());
 
+    auto database_name_opt = env.configuration()->get_section("ipc_endpoint")->get<std::string>("database_name");
+    if (!database_name_opt) {
+        LOG(ERROR) << "cannot find database_name at the section in the configuration";
+        return false;
+    }
+    database_info_.name(database_name_opt.value());
+
     std::string status_file_name{file_prefix};
     status_file_name += digest_;
     status_file_name += ".stat";
