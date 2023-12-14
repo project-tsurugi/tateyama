@@ -29,6 +29,7 @@
 
 #include <tateyama/logging.h>
 #include <tateyama/framework/routing_service.h>
+#include <tateyama/status/resource/bridge.h>
 #include <tateyama/api/configuration.h>
 
 #include "tateyama/endpoint/stream/stream_response.h"
@@ -65,9 +66,10 @@ public:
         bool done{};
     };
 
-    explicit stream_listener(const std::shared_ptr<api::configuration::whole>& cfg, std::shared_ptr<framework::routing_service> router) :
+    explicit stream_listener(const std::shared_ptr<api::configuration::whole>& cfg, std::shared_ptr<framework::routing_service> router, std::shared_ptr<status_info::resource::bridge> status_info) :
         cfg_(cfg),
-        router_(std::move(router))
+        router_(std::move(router)),
+        status_info_(std::move(status_info))
     {
         auto endpoint_config = cfg->get_section("stream_endpoint");
         if (endpoint_config == nullptr) {
@@ -149,7 +151,7 @@ public:
                 }
                 auto& worker = workers_.at(index);
                 try {
-                    worker = std::make_unique<stream_worker>(*router_, session_id, std::move(stream));
+                    worker = std::make_unique<stream_worker>(*router_, session_id, std::move(stream), status_info_->database_info());
                 } catch (std::exception& ex) {
                     LOG_LP(ERROR) << ex.what();
                     continue;
@@ -175,6 +177,7 @@ public:
 private:
     std::shared_ptr<api::configuration::whole> cfg_{};
     std::shared_ptr<framework::routing_service> router_{};
+    std::shared_ptr<status_info::resource::bridge> status_info_{};
     std::unique_ptr<tateyama::common::stream::connection_socket> connection_socket_{};
     std::vector<std::unique_ptr<stream_worker>> workers_{};
     std::vector<std::unique_ptr<undertaker>> undertakers_{};

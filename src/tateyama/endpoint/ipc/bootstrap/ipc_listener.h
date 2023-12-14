@@ -28,6 +28,7 @@
 
 #include <tateyama/logging.h>
 #include <tateyama/framework/routing_service.h>
+#include <tateyama/status/resource/bridge.h>
 #include <tateyama/api/configuration.h>
 
 #include "tateyama/endpoint/common/logging.h"
@@ -40,8 +41,8 @@ namespace tateyama::server {
  */
 class ipc_listener {
 public:
-    explicit ipc_listener(const std::shared_ptr<api::configuration::whole>& cfg, std::shared_ptr<framework::routing_service> router, std::shared_ptr<status_info::resource::bridge> status) :
-        cfg_(cfg), router_(std::move(router)), status_(std::move(status))
+    explicit ipc_listener(const std::shared_ptr<api::configuration::whole>& cfg, std::shared_ptr<framework::routing_service> router, std::shared_ptr<status_info::resource::bridge> status_info) :
+        cfg_(cfg), router_(std::move(router)), status_info_(std::move(status_info))
     {
         auto endpoint_config = cfg->get_section("ipc_endpoint");
         if (endpoint_config == nullptr) {
@@ -84,7 +85,7 @@ public:
         workers_.resize(threads);
 
         // set maximum thread size to status object
-        status_->set_maximum_sessions(threads);
+        status_info_->set_maximum_sessions(threads);
 
         // output configuration to be used
         LOG(INFO) << tateyama::endpoint::common::ipc_endpoint_config_prefix
@@ -103,9 +104,9 @@ public:
 
     void operator()() {
         auto& connection_queue = container_->get_connection_queue();
-        proc_mutex_file_ = status_->mutex_file();
+        proc_mutex_file_ = status_info_->mutex_file();
         // set database_name to shared memory for status info
-        status_->set_database_name(database_name_);
+        status_info_->set_database_name(database_name_);
         arrive_and_wait();
 
         while(true) {
@@ -131,10 +132,11 @@ public:
                 auto wire = std::make_shared<tateyama::common::wire::server_wire_container_impl>(session_name, proc_mutex_file_, datachannel_buffer_size_, max_datachannel_buffers_);
                 std::size_t index = connection_queue.accept(session_id);
                 VLOG_LP(log_trace) << "create session wire: " << session_name << " at index " << index;
-                status_->add_shm_entry(session_id, index);
+                status_info_->add_shm_entry(session_id, index);
                 auto& worker = workers_.at(index);
                 worker = std::make_shared<server::Worker>(*router_, session_id, std::move(wire),
-                                                              [&connection_queue, index](){ connection_queue.disconnect(index); });
+                                                          [&connection_queue, index](){ connection_queue.disconnect(index); },
+                                                          status_info_->database_info());
                 worker->task_ = std::packaged_task<void()>([&]{worker->run();});
                 worker->future_ = worker->task_.get_future();
                 worker->thread_ = std::thread(std::move(worker->task_));
@@ -171,7 +173,7 @@ public:
 private:
     const std::shared_ptr<api::configuration::whole> cfg_{};
     const std::shared_ptr<framework::routing_service> router_{};
-    const std::shared_ptr<status_info::resource::bridge> status_{};
+    const std::shared_ptr<status_info::resource::bridge> status_info_{};
     std::unique_ptr<tateyama::common::wire::connection_container> container_{};
     std::vector<std::shared_ptr<Worker>> workers_{};
     std::string database_name_;

@@ -17,6 +17,7 @@
 
 #include <tateyama/framework/endpoint.h>
 #include <tateyama/framework/environment.h>
+#include <tateyama/status/resource/bridge.h>
 #include "stream_listener.h"
 
 namespace tateyama::framework {
@@ -55,7 +56,8 @@ public:
             // create listener object
             listener_ = std::make_unique<tateyama::server::stream_listener>(
                 env.configuration(),
-                env.service_repository().find<framework::routing_service>()
+                env.service_repository().find<framework::routing_service>(),
+                env.resource_repository().find<status_info::resource::bridge>()
             );
             return true;
         } catch (std::exception &ex) {
