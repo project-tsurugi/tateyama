@@ -15,9 +15,6 @@
  */
 #pragma once
 
-#include <future>
-#include <thread>
-#include <functional>
 #include <atomic>
 
 #include "tateyama/endpoint/common/worker_common.h"
@@ -56,8 +53,9 @@ class Worker : public tateyama::endpoint::common::worker_common {
 
     void run();
     void terminate();
+    [[nodiscard]] std::size_t session_id() const noexcept { return session_id_; }
+    [[nodiscard]] bool terminated() const noexcept { return terminated_; }
 
-    friend class ipc_listener;
     friend class ipc_provider;
 
  private:
@@ -69,11 +67,6 @@ class Worker : public tateyama::endpoint::common::worker_common {
     const tateyama::api::server::database_info& database_info_;
 
     bool terminated_{};
-
-    // for future
-    std::packaged_task<void()> task_;
-    std::future<void> future_;
-    std::thread thread_{};
 };
 
 }  // tateyama::server

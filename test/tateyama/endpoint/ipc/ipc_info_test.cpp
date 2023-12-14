@@ -23,12 +23,10 @@ namespace tateyama::server {
 class ipc_listener_for_test {
 public:
     static void run(tateyama::server::Worker& worker) {
-        worker.task_ = std::packaged_task<void()>([&]{worker.run();});
-        worker.future_ = worker.task_.get_future();
-        worker.thread_ = std::thread(std::move(worker.task_));
+        worker.invoke([&]{worker.run();});
     }
     static void wait(tateyama::server::Worker& worker) {
-        worker.future_.wait_for(std::chrono::seconds(0));
+        worker.wait_for();
     }
 
 };

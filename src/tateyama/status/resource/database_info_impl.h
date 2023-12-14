@@ -32,7 +32,7 @@ public:
     explicit database_info_impl(std::string_view name) : name_(name) {}
 
     database_info_impl() : database_info_impl("name_has_not_been_given") {}
-    
+
     [[nodiscard]] process_id_type process_id() const noexcept override { return process_id_; }
 
     [[nodiscard]] std::string_view name() const noexcept override { return name_; }

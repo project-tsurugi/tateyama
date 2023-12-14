@@ -78,16 +78,16 @@ stream_client::receive()
 {
     std::uint8_t  data[4];  // NOLINT
 
-    recv(sockfd_, &type_, 1, 0);    
+    recv(sockfd_, &type_, 1, 0);
 
-    recv(sockfd_, data, 2, 0);    
+    recv(sockfd_, data, 2, 0);  
     slot_ = data[0] | (data[1] << 8);
-        
+
     if (type_ ==  RESPONSE_RESULT_SET_PAYLOAD) {
-        ::recv(sockfd_, &writer_, 1, 0);    
+        ::recv(sockfd_, &writer_, 1, 0);
     }
 
-    ::recv(sockfd_, data, 4, 0);    
+    ::recv(sockfd_, data, 4, 0);
     std::size_t length = data[0] | (data[1] << 8) | (data[2] << 16) | (data[3] << 24);
 
     if (length > 0) {

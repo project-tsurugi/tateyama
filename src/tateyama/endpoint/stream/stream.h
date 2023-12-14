@@ -79,14 +79,11 @@ class stream_socket
     };
 
 public:
-    explicit stream_socket(int socket, struct sockaddr_in& address) noexcept : socket_(socket) {
+    explicit stream_socket(int socket, std::string_view info) noexcept : socket_(socket), connection_info_(info) {
         const int enable = 1;
         if (setsockopt(socket, SOL_TCP, TCP_NODELAY, &enable, sizeof(enable)) < 0) {
             LOG_LP(ERROR) << "setsockopt() fail";
         }
-        std::stringstream ss{};
-        ss << inet_ntoa(address.sin_addr) << ":" << address.sin_port;
-        connection_info_ = ss.str();
     }
 
     ~stream_socket() {
@@ -421,7 +418,9 @@ public:
             struct sockaddr_in address{};
             unsigned int len = sizeof(address);
             int ts = ::accept(socket_, (struct sockaddr *)&address, &len);  // NOLINT
-            return std::make_shared<stream_socket>(ts, address);
+            std::stringstream ss{};
+            ss << inet_ntoa(address.sin_addr) << ":" << address.sin_port;
+            return std::make_shared<stream_socket>(ts, ss.str());
         }
         if (FD_ISSET(pair_[0], &fds)) {  //  NOLINT
             char trash{};

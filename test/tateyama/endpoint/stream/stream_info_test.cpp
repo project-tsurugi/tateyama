@@ -27,7 +27,7 @@ static constexpr std::string_view request_test_message = "abcdefgh";
 static constexpr std::string_view response_test_message = "opqrstuvwxyz";
 
 namespace tateyama::server {
-class info_service : public tateyama::framework::routing_service {
+class info_service_for_test : public tateyama::framework::routing_service {
 public:
     bool setup(tateyama::framework::environment&) { return true; }
     bool start(tateyama::framework::environment&) { return true; }
@@ -52,18 +52,16 @@ private:
 
 class stream_listener_for_test {
 public:
-    stream_listener_for_test(info_service& service) : service_(service) {
+    stream_listener_for_test(info_service_for_test& service) : service_(service) {
     }
     void operator()() {
         while (true) {
             std::shared_ptr<tateyama::common::stream::stream_socket> stream{};
             stream = connection_socket_.accept();
-            
+
             if (stream != nullptr) {
                 worker_ = std::make_unique<tateyama::server::stream_worker>(service_, my_session_id_, std::move(stream), database_info_);
-                worker_->task_ = std::packaged_task<void()>([&]{worker_->run();});
-                worker_->future_ = worker_->task_.get_future();
-                worker_->thread_ = std::thread(std::move(worker_->task_));
+                worker_->invoke([&]{worker_->run();});
             } else {  // connect via pipe (request_terminate)
                 break;
             }
@@ -74,11 +72,11 @@ public:
     }
 
     void wait_worker_termination() {
-        worker_->future_.wait_for(std::chrono::seconds(0));
+        worker_->wait_for();
     }
 
 private:
-    tateyama::server::info_service& service_;
+    tateyama::server::info_service_for_test& service_;
     tateyama::common::stream::connection_socket connection_socket_{tateyama::api::endpoint::stream::stream_client::PORT_FOR_TEST};
     std::unique_ptr<tateyama::server::stream_worker> worker_{};
     tateyama::status_info::resource::database_info_impl database_info_{"stream_info_test"};
@@ -98,7 +96,7 @@ class stream_info_test : public ::testing::Test {
     }
 
 public:
-    tateyama::server::info_service service_{};
+    tateyama::server::info_service_for_test service_{};
     tateyama::server::stream_listener_for_test listener_{service_};
     std::thread thread_{};
 };

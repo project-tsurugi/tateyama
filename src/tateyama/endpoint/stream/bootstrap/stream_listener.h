@@ -134,7 +134,7 @@ public:
                         found = true;
                         break;
                     }
-                    if (auto rv = worker->future_.wait_for(std::chrono::seconds(0)); rv == std::future_status::ready) {
+                    if (auto rv = worker->wait_for(); rv == std::future_status::ready) {
                         found = true;
                         break;
                     }
@@ -155,9 +155,7 @@ public:
                     LOG_LP(ERROR) << ex.what();
                     continue;
                 }
-                worker->task_ = std::packaged_task<void()>([&]{worker->run();});
-                worker->future_ = worker->task_.get_future();
-                worker->thread_ = std::thread(std::move(worker->task_));
+                worker->invoke([&]{worker->run();});
                 session_id++;
             } else {  // connect via pipe (request_terminate)
                 break;

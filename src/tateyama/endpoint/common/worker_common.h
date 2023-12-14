@@ -15,6 +15,10 @@
  */
 #pragma once
 
+#include <future>
+#include <thread>
+#include <functional>
+
 #include <tateyama/status.h>
 #include <tateyama/api/server/request.h>
 #include <tateyama/api/server/response.h>
@@ -32,9 +36,22 @@ public:
     }
     worker_common(std::size_t id, std::string_view conn_type) : worker_common(id, conn_type, "") {
     }
+    void invoke(std::function<void(void)> func) {
+        task_ = std::packaged_task<void()>(std::move(func));
+        future_ = task_.get_future();
+        thread_ = std::thread(std::move(task_));
+    }
+    auto wait_for() {
+        return future_.wait_for(std::chrono::seconds(0));
+    }
 
 protected:
     session_info_impl session_info_;  // NOLINT
+
+    // for future
+    std::packaged_task<void()> task_; // NOLINT
+    std::future<void> future_;        // NOLINT
+    std::thread thread_{};            // NOLINT
 
     bool handshake(tateyama::api::server::request*, tateyama::api::server::response*) {
         return true;
