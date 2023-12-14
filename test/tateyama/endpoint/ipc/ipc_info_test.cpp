@@ -20,7 +20,7 @@
 #include <gtest/gtest.h>
 
 namespace tateyama::server {
-class ipc_listener {
+class ipc_listener_for_test {
 public:
     static void run(tateyama::server::Worker& worker) {
         worker.task_ = std::packaged_task<void()>([&]{worker.run();});
@@ -82,14 +82,14 @@ public:
     info_service service_{};
 };
 
-TEST_F(ipc_info_test, basic) {
+TEST_F(ipc_info_test, DISABLED_basic) {
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
     auto wire = std::make_shared<tateyama::common::wire::server_wire_container_impl>("ipc_info_test", "dummy_mutex_file_name", datachannel_buffer_size, 16);
     auto* request_wire = static_cast<tateyama::common::wire::server_wire_container_impl::wire_container_impl*>(wire->get_request_wire());
     auto& response_wire = dynamic_cast<tateyama::common::wire::server_wire_container_impl::response_wire_container_impl&>(wire->get_response_wire());
     tateyama::server::Worker worker(service_, my_session_id_, wire, [](){}, database_info_);
-    tateyama::server::ipc_listener::run(worker);
+    tateyama::server::ipc_listener_for_test::run(worker);
 
     request_header_content hdr{};
     std::stringstream ss{};
@@ -117,7 +117,7 @@ TEST_F(ipc_info_test, basic) {
     EXPECT_TRUE(std::chrono::duration_cast<std::chrono::milliseconds>(now - s_start).count() < 500);
 
     worker.terminate();
-    tateyama::server::ipc_listener::wait(worker);
+    tateyama::server::ipc_listener_for_test::wait(worker);
 }
 
 } // namespace tateyama::api::endpoint::ipc

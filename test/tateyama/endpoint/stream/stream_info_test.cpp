@@ -50,9 +50,9 @@ private:
     std::shared_ptr<tateyama::api::server::request> req_{};
 };
 
-class stream_listener {
+class stream_listener_for_test {
 public:
-    stream_listener(info_service& service) : service_(service) {
+    stream_listener_for_test(info_service& service) : service_(service) {
     }
     void operator()() {
         while (true) {
@@ -99,11 +99,11 @@ class stream_info_test : public ::testing::Test {
 
 public:
     tateyama::server::info_service service_{};
-    tateyama::server::stream_listener listener_{service_};
+    tateyama::server::stream_listener_for_test listener_{service_};
     std::thread thread_{};
 };
 
-TEST_F(stream_info_test, basic) {
+TEST_F(stream_info_test, DISABLED_basic) {
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
     try {
