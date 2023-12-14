@@ -22,10 +22,6 @@ namespace tateyama::server {
 
 void stream_worker::run()
 {
-    if (!session_stream_->wait_hello(std::to_string(session_id_))) {
-        return;
-    }
-
 #if 0
     {
         std::uint16_t slot{};
