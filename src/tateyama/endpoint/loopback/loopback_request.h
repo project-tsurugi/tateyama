@@ -21,6 +21,9 @@
 
 #include <tateyama/api/server/request.h>
 
+#include "tateyama/status/resource/database_info_impl.h"
+#include "tateyama/endpoint//common/session_info_impl.h"
+
 namespace tateyama::endpoint::loopback {
 
 /**
@@ -60,10 +63,21 @@ public:
         return payload_;
     }
 
+    [[nodiscard]] tateyama::api::server::database_info const& database_info() const noexcept override {
+        return database_info_;
+    }
+
+    [[nodiscard]] tateyama::api::server::session_info const& session_info() const noexcept override {
+        return session_info_;
+    }
+
 private:
     const std::size_t session_id_;
     const std::size_t service_id_;
     const std::string payload_;
+
+    const tateyama::status_info::resource::database_info_impl database_info_{};
+    const tateyama::endpoint::common::session_info_impl session_info_{};
 };
 
 } // namespace tateyama::endpoint::loopback

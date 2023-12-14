@@ -27,8 +27,8 @@
 #include <glog/logging.h>
 #include <tateyama/logging.h>
 
-#include <tateyama/endpoint/ipc/wire.h>
-#include <tateyama/endpoint/ipc/server_wires.h>
+#include "tateyama/endpoint/ipc/wire.h"
+#include "tateyama/endpoint/ipc/server_wires.h"
 
 namespace tateyama::common::wire {
 

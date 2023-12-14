@@ -19,6 +19,7 @@
 #include <tateyama/framework/endpoint.h>
 #include <tateyama/status/resource/bridge.h>
 #include <tateyama/diagnostic/resource/diagnostic_resource.h>
+
 #include "ipc_listener.h"
 
 namespace tateyama::framework {
@@ -55,16 +56,12 @@ public:
     bool setup(environment& env) override {
         try {
             // create listener object
-            listener_ = std::make_unique<tateyama::server::ipc_listener>(
-                env.configuration(),
-                env.service_repository().find<framework::routing_service>(),
-                env.resource_repository().find<status_info::resource::bridge>()
-            );
+            listener_ = std::make_unique<tateyama::server::ipc_listener>(env);
+            return true;
         } catch (std::runtime_error &ex) {
             LOG_LP(ERROR) << ex.what();
             return false;
         }
-        return true;
     }
 
     /**

@@ -65,11 +65,12 @@ public:
         bool done{};
     };
 
-    explicit stream_listener(const std::shared_ptr<api::configuration::whole>& cfg, std::shared_ptr<framework::routing_service> router) :
-        cfg_(cfg),
-        router_(std::move(router))
-    {
-        auto endpoint_config = cfg->get_section("stream_endpoint");
+    explicit stream_listener(tateyama::framework::environment& env)
+        : cfg_(env.configuration()),
+          router_(env.service_repository().find<framework::routing_service>()),
+          status_(env.resource_repository().find<status_info::resource::bridge>()) {
+
+        auto endpoint_config = cfg_->get_section("stream_endpoint");
         if (endpoint_config == nullptr) {
             LOG_LP(ERROR) << "cannot find stream_endpoint section in the configuration";
             exit(1);
@@ -133,7 +134,7 @@ public:
                         found = true;
                         break;
                     }
-                    if (auto rv = worker->future_.wait_for(std::chrono::seconds(0)); rv == std::future_status::ready) {
+                    if (auto rv = worker->wait_for(); rv == std::future_status::ready) {
                         found = true;
                         break;
                     }
@@ -149,14 +150,12 @@ public:
                 }
                 auto& worker = workers_.at(index);
                 try {
-                    worker = std::make_unique<stream_worker>(*router_, session_id, std::move(stream));
+                    worker = std::make_unique<stream_worker>(*router_, session_id, std::move(stream), status_->database_info());
                 } catch (std::exception& ex) {
                     LOG_LP(ERROR) << ex.what();
                     continue;
                 }
-                worker->task_ = std::packaged_task<void()>([&]{worker->run();});
-                worker->future_ = worker->task_.get_future();
-                worker->thread_ = std::thread(std::move(worker->task_));
+                worker->invoke([&]{worker->run();});
                 session_id++;
             } else {  // connect via pipe (request_terminate)
                 break;
@@ -173,8 +172,9 @@ public:
     }
 
 private:
-    std::shared_ptr<api::configuration::whole> cfg_{};
-    std::shared_ptr<framework::routing_service> router_{};
+    const std::shared_ptr<api::configuration::whole> cfg_{};
+    const std::shared_ptr<framework::routing_service> router_{};
+    const std::shared_ptr<status_info::resource::bridge> status_{};
     std::unique_ptr<tateyama::common::stream::connection_socket> connection_socket_{};
     std::vector<std::unique_ptr<stream_worker>> workers_{};
     std::vector<std::unique_ptr<undertaker>> undertakers_{};

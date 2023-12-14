@@ -53,6 +53,9 @@ enum class state : std::int64_t {
     deactivated = 4,
 };
 
+/**
+ * @brief status of tsurugidb, placed on boost shared memory
+ */
 class resource_status_memory {
   public:
     static constexpr std::string_view area_name = "status_info";

@@ -29,6 +29,7 @@
 #include <condition_variable>
 #include <atomic>
 #include <queue>
+#include <arpa/inet.h>
 
 #include <glog/logging.h>
 
@@ -78,7 +79,7 @@ class stream_socket
     };
 
 public:
-    explicit stream_socket(int socket) noexcept : socket_(socket) {
+    explicit stream_socket(int socket, std::string_view info) noexcept : socket_(socket), connection_info_(info) {
         const int enable = 1;
         if (setsockopt(socket, SOL_TCP, TCP_NODELAY, &enable, sizeof(enable)) < 0) {
             LOG_LP(ERROR) << "setsockopt() fail";
@@ -113,7 +114,9 @@ public:
             close();
             return false;
         }
-        slot_size_ = slot;
+        if (slot_size_ < slot) {
+            slot_size_ = slot;
+        }
         in_use_.resize(slot_size_);
         for (unsigned int i = 0; i < slot_size_; i++) {
             in_use_.at(i) = false;
@@ -187,8 +190,13 @@ public:
         decline_ = true;
     }
 
+    [[nodiscard]] std::string_view connection_info() const {
+        return connection_info_;
+    }
+
 private:
     int socket_;
+
     bool session_closed_{false};
     bool socket_closed_{false};
     bool decline_{false};
@@ -197,6 +205,7 @@ private:
     std::atomic_uint slot_using_{};
     std::queue<recv_entry> queue_{};
     std::size_t slot_size_{SLOT_SIZE};
+    std::string connection_info_{};
 
     bool await(unsigned char& info, std::uint16_t& slot, std::string& payload) {
         DVLOG_LP(log_trace) << "-- enter waiting REQUEST --";  //NOLINT
@@ -409,7 +418,9 @@ public:
             struct sockaddr_in address{};
             unsigned int len = sizeof(address);
             int ts = ::accept(socket_, (struct sockaddr *)&address, &len);  // NOLINT
-            return std::make_shared<stream_socket>(ts);
+            std::stringstream ss{};
+            ss << inet_ntoa(address.sin_addr) << ":" << address.sin_port;
+            return std::make_shared<stream_socket>(ts, ss.str());
         }
         if (FD_ISSET(pair_[0], &fds)) {  //  NOLINT
             char trash{};

@@ -15,34 +15,46 @@
  */
 #include "stream_worker.h"
 
-#include <tateyama/endpoint/stream/stream_request.h>
-#include <tateyama/endpoint/stream/stream_response.h>
+#include "tateyama/endpoint/stream/stream_request.h"
+#include "tateyama/endpoint/stream/stream_response.h"
 
 namespace tateyama::server {
 
 void stream_worker::run()
 {
-    std::string session_name = std::to_string(session_id_);
-    if (session_stream_->wait_hello(session_name)) {
-        VLOG(log_debug_timing_event) << "/:tateyama:timing:session:started "
-            << session_id_;
-        while(true) {
-            std::uint16_t slot{};
-            std::string payload{};
-            if (!session_stream_->await(slot, payload)) {
-                session_stream_->close();
-                break;
-            }
-
-            auto request = std::make_shared<tateyama::common::stream::stream_request>(*session_stream_, payload);
-            auto response = std::make_shared<tateyama::common::stream::stream_response>(session_stream_, slot);
-            service_(static_cast<std::shared_ptr<tateyama::api::server::request>>(request),
-                     static_cast<std::shared_ptr<tateyama::api::server::response>>(std::move(response)));
-            request = nullptr;
+#if 0
+    {
+        std::uint16_t slot{};
+        std::string payload{};
+        if (!session_stream_->await(slot, payload)) {
+            session_stream_->close();
+            return;
         }
-        VLOG(log_debug_timing_event) << "/:tateyama:timing:session:finished "
-            << session_id_;
+        tateyama::common::stream::stream_request request_obj{*session_stream_, payload, database_info_, session_info_};
+        tateyama::common::stream::stream_response response_obj{session_stream_, slot};
+
+        if (! handshake(static_cast<tateyama::api::server::request*>(&request_obj), static_cast<tateyama::api::server::response *>(&response_obj))) {
+            return;
+        }
     }
+#endif
+
+    VLOG(log_debug_timing_event) << "/:tateyama:timing:session:started " << session_id_;
+    while(true) {
+        std::uint16_t slot{};
+        std::string payload{};
+        if (!session_stream_->await(slot, payload)) {
+            session_stream_->close();
+            break;
+        }
+
+        auto request = std::make_shared<tateyama::common::stream::stream_request>(*session_stream_, payload, database_info_, session_info_);
+        auto response = std::make_shared<tateyama::common::stream::stream_response>(session_stream_, slot);
+        service_(static_cast<std::shared_ptr<tateyama::api::server::request>>(request),
+                 static_cast<std::shared_ptr<tateyama::api::server::response>>(std::move(response)));
+        request = nullptr;
+    }
+    VLOG(log_debug_timing_event) << "/:tateyama:timing:session:finished " << session_id_;
 }
 
 }  // tateyama::server
