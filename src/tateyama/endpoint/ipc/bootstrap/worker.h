@@ -20,23 +20,23 @@
 #include <functional>
 #include <atomic>
 
-#include <tateyama/status.h>
-#include <tateyama/api/server/request.h>
-#include <tateyama/endpoint/ipc/ipc_response.h>
-#include <tateyama/framework/routing_service.h>
-#include <tateyama/status/resource/bridge.h>
+#include "tateyama/endpoint/common/worker_common.h"
 
 #include "server_wires_impl.h"
 #include "tateyama/status/resource/database_info_impl.h"  // FIXME
-#include "tateyama/endpoint//common/session_info_impl.h"  // FIXME
 
 namespace tateyama::server {
 class ipc_provider;
 
-class Worker {
+class Worker : public tateyama::endpoint::common::worker_common {
  public:
-    Worker(tateyama::framework::routing_service& service, std::size_t session_id, std::shared_ptr<tateyama::common::wire::server_wire_container_impl> wire, std::function<void(void)> clean_up)
-        : service_(service), wire_(std::move(wire)),
+    Worker(tateyama::framework::routing_service& service,
+           std::size_t session_id,
+           std::shared_ptr<tateyama::common::wire::server_wire_container_impl> wire,
+           std::function<void(void)> clean_up)
+        : worker_common(session_id, "ipc"),
+          service_(service),
+          wire_(std::move(wire)),
           request_wire_container_(dynamic_cast<tateyama::common::wire::server_wire_container_impl::wire_container_impl*>(wire_->get_request_wire())),
           session_id_(session_id),
           clean_up_(std::move(clean_up)) {
@@ -75,7 +75,6 @@ class Worker {
 
     // for step by step check
     const tateyama::status_info::resource::database_info_impl database_info_{};
-    const tateyama::endpoint::common::session_info_impl session_info_{};
 };
 
 }  // tateyama::server

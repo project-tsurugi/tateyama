@@ -18,22 +18,23 @@
 #include <future>
 #include <thread>
 
-#include <tateyama/status.h>
-#include <tateyama/api/server/request.h>
-#include <tateyama/api/server/response.h>
-#include <tateyama/framework/routing_service.h>
+#include "tateyama/endpoint/common/worker_common.h"
 
 #include <tateyama/endpoint/stream/stream.h>
 #include "tateyama/status/resource/database_info_impl.h"  // FIXME
-#include "tateyama/endpoint//common/session_info_impl.h"  // FIXME
 
 namespace tateyama::server {
 class stream_provider;
 
-class stream_worker {
+class stream_worker : public tateyama::endpoint::common::worker_common {
  public:
-    stream_worker(tateyama::framework::routing_service& service, std::size_t session_id, std::shared_ptr<tateyama::common::stream::stream_socket> stream)
-        : service_(service), session_stream_(std::move(stream)), session_id_(session_id) {
+    stream_worker(tateyama::framework::routing_service& service,
+                  std::size_t session_id,
+                  std::shared_ptr<tateyama::common::stream::stream_socket> stream)
+        : worker_common(session_id, "tcp/ip", stream->connection_info()),
+          service_(service),
+          session_stream_(std::move(stream)),
+          session_id_(session_id) {
     }
     ~stream_worker() {
         if(thread_.joinable()) thread_.join();
@@ -63,7 +64,6 @@ class stream_worker {
 
     // for step by step check
     const tateyama::status_info::resource::database_info_impl database_info_{};
-    const tateyama::endpoint::common::session_info_impl session_info_{};
 };
 
 }  // tateyama::server
