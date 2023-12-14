@@ -17,7 +17,8 @@
 #include <iomanip>
 #include <sstream>
 
-#include "tateyama/status/resource/bridge.h"
+#include <tateyama/status/resource/bridge.h>
+#include "database_info_impl.h"
 
 namespace tateyama::status_info::resource {
 
@@ -37,7 +38,9 @@ bool bridge::setup(environment& env) {
         return false;
     }
     auto name = database_name_opt.value();
-    database_info_.name(name);
+    auto dbinfo = std::make_unique<database_info_impl>();
+    dbinfo->name(name);
+    database_info_ = std::move(dbinfo);
 
     std::string status_file_name{file_prefix};
     status_file_name += digest_;

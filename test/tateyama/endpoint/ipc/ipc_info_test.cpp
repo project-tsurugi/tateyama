@@ -16,6 +16,7 @@
 
 #include "tateyama/endpoint/ipc/bootstrap/worker.h"
 #include "tateyama/endpoint/header_utils.h"
+#include "tateyama/status/resource/database_info_impl.h"
 
 #include <gtest/gtest.h>
 

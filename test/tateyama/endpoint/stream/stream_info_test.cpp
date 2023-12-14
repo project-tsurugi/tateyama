@@ -17,6 +17,7 @@
 
 #include "tateyama/endpoint/stream/bootstrap/stream_worker.h"
 #include "tateyama/endpoint/header_utils.h"
+#include "tateyama/status/resource/database_info_impl.h"
 
 #include "stream_client.h"
 
