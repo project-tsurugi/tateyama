@@ -62,9 +62,9 @@ public:
             
             if (stream != nullptr) {
                 worker_ = std::make_unique<tateyama::server::stream_worker>(service_, my_session_id_, std::move(stream), database_info_);
-                worker_->task_ = std::packaged_task<void()>([&]{worker_->run();});
-                worker_->future_ = worker_->task_.get_future();
-                worker_->thread_ = std::thread(std::move(worker_->task_));
+                worker_->task() = std::packaged_task<void()>([&]{worker_->run();});
+                worker_->future() = worker_->task().get_future();
+                worker_->thread() = std::thread(std::move(worker_->task()));
             } else {  // connect via pipe (request_terminate)
                 break;
             }
@@ -75,7 +75,7 @@ public:
     }
 
     void wait_worker_termination() {
-        worker_->future_.wait_for(std::chrono::seconds(0));
+        worker_->future().wait_for(std::chrono::seconds(0));
     }
 
 private:

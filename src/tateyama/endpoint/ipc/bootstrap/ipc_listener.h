@@ -117,8 +117,8 @@ public:
                     for (auto& worker : workers_) {
                         if (worker) {
                             worker->terminate();
-                            if (auto rv = worker->future_.wait_for(std::chrono::seconds(0)); rv != std::future_status::ready) {
-                                VLOG_LP(log_trace) << "exit: remaining thread " << worker->session_id_;
+                            if (auto rv = worker->future().wait_for(std::chrono::seconds(0)); rv != std::future_status::ready) {
+                                VLOG_LP(log_trace) << "exit: remaining thread " << worker->session_id();
                             }
                         }
                     }
@@ -137,9 +137,9 @@ public:
                 worker = std::make_shared<server::Worker>(*router_, session_id, std::move(wire),
                                                           [&connection_queue, index](){ connection_queue.disconnect(index); },
                                                           status_info_->database_info());
-                worker->task_ = std::packaged_task<void()>([&]{worker->run();});
-                worker->future_ = worker->task_.get_future();
-                worker->thread_ = std::thread(std::move(worker->task_));
+                worker->task() = std::packaged_task<void()>([&]{worker->run();});
+                worker->future() = worker->task().get_future();
+                worker->thread() = std::thread(std::move(worker->task()));
             } catch (std::exception& ex) {
                 LOG_LP(ERROR) << ex.what();
                 workers_.clear();
@@ -161,8 +161,8 @@ public:
         bool cont{};
         for (auto && e : workers_) {
             if (std::shared_ptr<Worker> worker = e; worker) {
-                if (!worker->terminated_) {
-                    os << (cont ? "live sessions " : ", ") << worker->session_id_ << std::endl;
+                if (!worker->terminated()) {
+                    os << (cont ? "live sessions " : ", ") << worker->session_id() << std::endl;
                 }
             }
         }

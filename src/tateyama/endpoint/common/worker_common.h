@@ -31,9 +31,17 @@ public:
     }
     worker_common(std::size_t id, std::string_view conn_type) : worker_common(id, conn_type, "") {
     }
+    [[nodiscard]] std::packaged_task<void()>& task() { return task_; }
+    [[nodiscard]] std::future<void>& future() { return future_; }
+    [[nodiscard]] std::thread& thread() { return thread_; }
 
 protected:
     session_info_impl session_info_;  // NOLINT
+
+    // for future
+    std::packaged_task<void()> task_; // NOLINT
+    std::future<void> future_;        // NOLINT
+    std::thread thread_{};            // NOLINT
 
     bool handshake(tateyama::api::server::request*, tateyama::api::server::response*) {
         return true;

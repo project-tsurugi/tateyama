@@ -20,16 +20,16 @@
 
 #include <gtest/gtest.h>
 
-namespace tateyama::server {
-class ipc_listener_for_test {
+namespace tateyama::server::test {
+class ipc_listener {
 public:
     static void run(tateyama::server::Worker& worker) {
-        worker.task_ = std::packaged_task<void()>([&]{worker.run();});
-        worker.future_ = worker.task_.get_future();
-        worker.thread_ = std::thread(std::move(worker.task_));
+        worker.task() = std::packaged_task<void()>([&]{worker.run();});
+        worker.future() = worker.task().get_future();
+        worker.thread() = std::thread(std::move(worker.task()));
     }
     static void wait(tateyama::server::Worker& worker) {
-        worker.future_.wait_for(std::chrono::seconds(0));
+        worker.future().wait_for(std::chrono::seconds(0));
     }
 
 };
@@ -90,7 +90,7 @@ TEST_F(ipc_info_test, basic) {
     auto* request_wire = static_cast<tateyama::common::wire::server_wire_container_impl::wire_container_impl*>(wire->get_request_wire());
     auto& response_wire = dynamic_cast<tateyama::common::wire::server_wire_container_impl::response_wire_container_impl&>(wire->get_response_wire());
     tateyama::server::Worker worker(service_, my_session_id_, wire, [](){}, database_info_);
-    tateyama::server::ipc_listener_for_test::run(worker);
+    tateyama::server::test::ipc_listener::run(worker);
 
     request_header_content hdr{};
     std::stringstream ss{};
@@ -118,7 +118,7 @@ TEST_F(ipc_info_test, basic) {
     EXPECT_TRUE(std::chrono::duration_cast<std::chrono::milliseconds>(now - s_start).count() < 500);
 
     worker.terminate();
-    tateyama::server::ipc_listener_for_test::wait(worker);
+    tateyama::server::test::ipc_listener::wait(worker);
 }
 
 } // namespace tateyama::api::endpoint::ipc

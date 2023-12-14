@@ -50,7 +50,6 @@ class stream_worker : public tateyama::endpoint::common::worker_common {
     stream_worker& operator = (stream_worker&&) = delete;
 
     void run();
-    friend class stream_listener;
     friend class stream_provider;
 
  private:
@@ -58,11 +57,6 @@ class stream_worker : public tateyama::endpoint::common::worker_common {
     std::shared_ptr<tateyama::common::stream::stream_socket> session_stream_;
     std::size_t session_id_;
     const tateyama::api::server::database_info& database_info_;
-
-    // for future
-    std::packaged_task<void()> task_;
-    std::future<void> future_;
-    std::thread thread_{};
 };
 
 }  // tateyama::server
