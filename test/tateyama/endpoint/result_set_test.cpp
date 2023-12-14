@@ -23,6 +23,8 @@
 #include "tateyama/endpoint/ipc/ipc_response.h"
 
 #include <tateyama/endpoint/ipc/bootstrap/server_wires_impl.h>
+#include <tateyama/status/resource/database_info_impl.h>
+#include <tateyama/endpoint/common/session_info_impl.h>
 #include "header_utils.h"
 
 #include <gtest/gtest.h>
@@ -53,6 +55,9 @@ public:
     static constexpr std::string_view r_ = "row_data_test";  // length = 13
 
     std::shared_ptr<tateyama::common::wire::server_wire_container_impl> wire_;
+
+    tateyama::status_info::resource::database_info_impl dmy_dbinfo_{};
+    tateyama::endpoint::common::session_info_impl dmy_ssinfo_{};
 
     class test_service {
     public:
@@ -95,7 +100,7 @@ TEST_F(result_set_test, normal) {
     EXPECT_EQ(index_, h.get_idx());
     EXPECT_EQ(request_wire->payload(), request_message);
 
-    auto request = std::make_shared<tateyama::common::wire::ipc_request>(*wire_, h);
+    auto request = std::make_shared<tateyama::common::wire::ipc_request>(*wire_, h, dmy_dbinfo_, dmy_ssinfo_);
     auto response = std::make_shared<tateyama::common::wire::ipc_response>(wire_, h.get_idx());
 
     test_service sv;
@@ -152,7 +157,7 @@ TEST_F(result_set_test, large) {
     EXPECT_EQ(index_, h.get_idx());
     EXPECT_EQ(request_wire->payload(), request_message);
 
-    auto request = std::make_shared<tateyama::common::wire::ipc_request>(*wire_, h);
+    auto request = std::make_shared<tateyama::common::wire::ipc_request>(*wire_, h, dmy_dbinfo_, dmy_ssinfo_);
     auto response = std::make_shared<tateyama::common::wire::ipc_response>(wire_, h.get_idx());
 
 

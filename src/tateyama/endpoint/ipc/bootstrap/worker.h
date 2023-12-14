@@ -27,6 +27,8 @@
 #include <tateyama/status/resource/bridge.h>
 
 #include "server_wires_impl.h"
+#include "tateyama/status/resource/database_info_impl.h"  // FIXME
+#include "tateyama/endpoint//common/session_info_impl.h"  // FIXME
 
 namespace tateyama::server {
 class ipc_provider;
@@ -70,6 +72,10 @@ class Worker {
     std::packaged_task<void()> task_;
     std::future<void> future_;
     std::thread thread_{};
+
+    // for step by step check
+    const tateyama::status_info::resource::database_info_impl database_info_{};
+    const tateyama::endpoint::common::session_info_impl session_info_{};
 };
 
 }  // tateyama::server

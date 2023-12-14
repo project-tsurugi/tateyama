@@ -34,7 +34,7 @@ void Worker::run()
                 VLOG_LP(log_trace) << "received terminate request: session_id = " << std::to_string(session_id_);
                 break;
             }
-            auto request = std::make_shared<tateyama::common::wire::ipc_request>(*wire_, h);
+            auto request = std::make_shared<tateyama::common::wire::ipc_request>(*wire_, h, database_info_, session_info_);
             auto response = std::make_shared<tateyama::common::wire::ipc_response>(wire_, h.get_idx());
             service_(static_cast<std::shared_ptr<tateyama::api::server::request>>(request),
                      static_cast<std::shared_ptr<tateyama::api::server::response>>(std::move(response)));

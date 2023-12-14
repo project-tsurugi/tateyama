@@ -18,6 +18,9 @@
 #include <string_view>
 #include <memory>
 
+#include "database_info.h"
+#include "session_info.h"
+
 namespace tateyama::api::server {
 
 /**
@@ -56,6 +59,17 @@ public:
      */
     [[nodiscard]] virtual std::string_view payload() const = 0;  //NOLINT(modernize-use-nodiscard)
 
+    /**
+     * @brief returns the current database information.
+     * @returns the current database information
+     */
+    [[nodiscard]] virtual tateyama::api::server::database_info const& database_info() const noexcept = 0;
+
+    /**
+     * @brief returns the current session information.
+     * @returns the current session information
+     */
+    [[nodiscard]] virtual tateyama::api::server::session_info const& session_info() const noexcept = 0;
 };
 
 }

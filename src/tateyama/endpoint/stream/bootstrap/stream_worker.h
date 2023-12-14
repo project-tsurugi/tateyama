@@ -24,6 +24,8 @@
 #include <tateyama/framework/routing_service.h>
 
 #include <tateyama/endpoint/stream/stream.h>
+#include "tateyama/status/resource/database_info_impl.h"  // FIXME
+#include "tateyama/endpoint//common/session_info_impl.h"  // FIXME
 
 namespace tateyama::server {
 class stream_provider;
@@ -58,6 +60,10 @@ class stream_worker {
     std::packaged_task<void()> task_;
     std::future<void> future_;
     std::thread thread_{};
+
+    // for step by step check
+    const tateyama::status_info::resource::database_info_impl database_info_{};
+    const tateyama::endpoint::common::session_info_impl session_info_{};
 };
 
 }  // tateyama::server

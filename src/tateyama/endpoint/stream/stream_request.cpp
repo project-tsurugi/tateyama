@@ -34,4 +34,13 @@ std::size_t stream_request::session_id() const {
 std::size_t stream_request::service_id() const {
     return service_id_;
 }
+
+tateyama::api::server::database_info const& stream_request::database_info() const noexcept {
+    return database_info_;
+}
+
+tateyama::api::server::session_info const& stream_request::session_info() const noexcept {
+    return session_info_;
+}
+
 }  // tateyama::common::stream
