@@ -89,7 +89,7 @@ public:
     }
 
 private:
-    tateyama::api::endpoint::ipc::elapse elapse_;
+    tateyama::endpoint::ipc::elapse elapse_;
     rusage_diff r_server_;
     rusage_diff r_clients_;
     std::map<info_type, double> results_ { };

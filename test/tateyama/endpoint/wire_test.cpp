@@ -23,14 +23,14 @@
 
 #include <gtest/gtest.h>
 
-namespace tateyama::api::endpoint::ipc {
+namespace tateyama::endpoint::ipc {
 
 class wire_test : public ::testing::Test {
     static constexpr std::size_t datachannel_buffer_size = 64 * 1024;
 
     virtual void SetUp() {
         rv_ = system("if [ -f /dev/shm/tateyama-wire_test ]; then rm -f /dev/shm/tateyama-wire_test; fi ");
-        wire_ = std::make_unique<tateyama::common::wire::server_wire_container_impl>("tateyama-wire_test", "dummy_mutex_file_name", datachannel_buffer_size, 16);
+        wire_ = std::make_unique<bootstrap::server_wire_container_impl>("tateyama-wire_test", "dummy_mutex_file_name", datachannel_buffer_size, 16);
     }
     virtual void TearDown() {
         rv_ = system("if [ -f /dev/shm/tateyama-wire_test ]; then rm -f /dev/shm/tateyama-wire_test*; fi ");
@@ -40,13 +40,13 @@ class wire_test : public ::testing::Test {
 
 public:
     std::string request_test_message_{};
-    std::unique_ptr<tateyama::common::wire::server_wire_container_impl> wire_;
+    std::unique_ptr<bootstrap::server_wire_container_impl> wire_;
 };
 
 TEST_F(wire_test, payload_loop) {
     static constexpr std::size_t string_length = 3827;
 
-    auto* request_wire = static_cast<tateyama::common::wire::server_wire_container_impl::wire_container_impl*>(wire_->get_request_wire());
+    auto* request_wire = static_cast<bootstrap::server_wire_container_impl::wire_container_impl*>(wire_->get_request_wire());
 
     request_test_message_.resize(string_length);
     char *p = request_test_message_.data();
@@ -74,7 +74,7 @@ TEST_F(wire_test, payload_loop) {
 TEST_F(wire_test, read_loop) {
     static constexpr std::size_t string_length = 3827;
 
-    auto* request_wire = static_cast<tateyama::common::wire::server_wire_container_impl::wire_container_impl*>(wire_->get_request_wire());
+    auto* request_wire = static_cast<bootstrap::server_wire_container_impl::wire_container_impl*>(wire_->get_request_wire());
 
     request_test_message_.resize(string_length);
     char *p = request_test_message_.data();
@@ -102,7 +102,7 @@ TEST_F(wire_test, read_loop) {
 TEST_F(wire_test, large_messege) {
     static constexpr std::size_t string_length = 131090;
 
-    auto* request_wire = static_cast<tateyama::common::wire::server_wire_container_impl::wire_container_impl*>(wire_->get_request_wire());
+    auto* request_wire = static_cast<bootstrap::server_wire_container_impl::wire_container_impl*>(wire_->get_request_wire());
 
     request_test_message_.resize(string_length);
     char *p = request_test_message_.data();

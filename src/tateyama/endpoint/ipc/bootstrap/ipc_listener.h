@@ -33,7 +33,7 @@
 #include "tateyama/endpoint/common/logging.h"
 #include "worker.h"
 
-namespace tateyama::server {
+namespace tateyama::endpoint::ipc::bootstrap {
 
 /**
  * @brief ipc listener
@@ -80,7 +80,7 @@ public:
         VLOG_LP(log_debug) << "max_datachannel_buffers = " << max_datachannel_buffers_;
 
         // connection channel
-        container_ = std::make_unique<tateyama::common::wire::connection_container>(database_name_, threads);
+        container_ = std::make_unique<connection_container>(database_name_, threads);
 
         // worker objects
         workers_.resize(threads);
@@ -128,12 +128,12 @@ public:
                 std::string session_name = database_name_;
                 session_name += "-";
                 session_name += std::to_string(session_id);
-                auto wire = std::make_shared<tateyama::common::wire::server_wire_container_impl>(session_name, proc_mutex_file_, datachannel_buffer_size_, max_datachannel_buffers_);
+                auto wire = std::make_shared<server_wire_container_impl>(session_name, proc_mutex_file_, datachannel_buffer_size_, max_datachannel_buffers_);
                 std::size_t index = connection_queue.accept(session_id);
                 VLOG_LP(log_trace) << "create session wire: " << session_name << " at index " << index;
                 status_->add_shm_entry(session_id, index);
                 auto& worker = workers_.at(index);
-                worker = std::make_shared<server::Worker>(*router_, session_id, std::move(wire),
+                worker = std::make_shared<Worker>(*router_, session_id, std::move(wire),
                                                           [&connection_queue, index](){ connection_queue.disconnect(index); },
                                                           status_->database_info());
                 worker->invoke([&]{worker->run();});
@@ -171,7 +171,7 @@ private:
     const std::shared_ptr<api::configuration::whole> cfg_{};
     const std::shared_ptr<framework::routing_service> router_{};
     const std::shared_ptr<status_info::resource::bridge> status_{};
-    std::unique_ptr<tateyama::common::wire::connection_container> container_{};
+    std::unique_ptr<connection_container> container_{};
     std::vector<std::shared_ptr<Worker>> workers_{};
     std::string database_name_;
     std::string proc_mutex_file_;

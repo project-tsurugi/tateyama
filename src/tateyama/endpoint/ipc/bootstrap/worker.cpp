@@ -24,25 +24,22 @@
 #include "tateyama/endpoint/ipc/ipc_request.h"
 #include "tateyama/endpoint/ipc/ipc_response.h"
 
-namespace tateyama::server {
+namespace tateyama::endpoint::ipc::bootstrap {
 
 void Worker::run()
 {
-#if 0
     {
         auto hdr = request_wire_container_->peep(true);
         if (hdr.get_length() == 0 && hdr.get_idx() == tateyama::common::wire::message_header::termination_request) { return; }
-        tateyama::common::wire::ipc_request request_obj{*wire_, hdr, database_info_, session_info_};
-        tateyama::common::wire::ipc_response response_obj{wire_, hdr.get_idx()};
+        ipc_request request_obj{*wire_, hdr, database_info_, session_info_};
+        ipc_response response_obj{wire_, hdr.get_idx()};
 
         if (! handshake(static_cast<tateyama::api::server::request*>(&request_obj), static_cast<tateyama::api::server::response*>(&response_obj))) {
             return;
         }
     }
-#endif
 
-    VLOG(log_debug_timing_event) << "/:tateyama:timing:session:started "
-        << session_id_;
+    VLOG(log_debug_timing_event) << "/:tateyama:timing:session:started " << session_id_;
 #ifdef ALTIMETER
     tateyama::endpoint::altimeter::session_start(database_info_, session_info_);
 #endif
@@ -54,8 +51,8 @@ void Worker::run()
                 break;
             }
 
-            auto request = std::make_shared<tateyama::common::wire::ipc_request>(*wire_, h, database_info_, session_info_);
-            auto response = std::make_shared<tateyama::common::wire::ipc_response>(wire_, h.get_idx());
+            auto request = std::make_shared<ipc_request>(*wire_, h, database_info_, session_info_);
+            auto response = std::make_shared<ipc_response>(wire_, h.get_idx());
             service_(static_cast<std::shared_ptr<tateyama::api::server::request>>(request),
                      static_cast<std::shared_ptr<tateyama::api::server::response>>(std::move(response)));
             request->dispose();
@@ -67,11 +64,15 @@ void Worker::run()
     }
     clean_up_();
     VLOG_LP(log_trace) << "destroy session wire: session_id = " << std::to_string(session_id_);
+<<<<<<< HEAD
 #ifdef ALTIMETER
     tateyama::endpoint::altimeter::session_end(database_info_, session_info_);
 #endif
     VLOG(log_debug_timing_event) << "/:tateyama:timing:session:finished "
         << session_id_;
+=======
+    VLOG(log_debug_timing_event) << "/:tateyama:timing:session:finished " << session_id_;
+>>>>>>> 7f4fa0c (implement handshake protocol in ipc endpoint)
     terminated_ = true;
 }
 
@@ -80,4 +81,4 @@ void Worker::terminate() {
     wire_->terminate();
 }
 
-}  // tateyama::server
+}

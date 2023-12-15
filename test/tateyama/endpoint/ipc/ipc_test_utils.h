@@ -30,6 +30,8 @@
 
 #include <tateyama/proto/datastore/request.pb.h>
 #include <tateyama/proto/datastore/response.pb.h>
+#include <tateyama/proto/endpoint/request.pb.h>
+#include <tateyama/proto/endpoint/response.pb.h>
 
 #include <tateyama/endpoint/header_utils.h>
 #include <tateyama/utils/test_utils.h>
@@ -38,7 +40,7 @@
 #include <tateyama/endpoint/ipc/ipc_request.h>
 #include <tateyama/endpoint/ipc/ipc_response.h>
 
-namespace tateyama::api::endpoint::ipc {
+namespace tateyama::endpoint::ipc {
 
 void get_ipc_database_name(std::shared_ptr<tateyama::api::configuration::whole> const &cfg,
         std::string &ipc_database_name);
@@ -130,7 +132,7 @@ public:
     }
 
     virtual bool operator ()(std::shared_ptr<tateyama::api::server::request> req,
-            std::shared_ptr<tateyama::api::server::response> res) = 0;
+                             std::shared_ptr<tateyama::api::server::response> res) = 0;
 
     [[nodiscard]] std::string_view label() const noexcept override {
         return "server_service_base";
@@ -177,5 +179,5 @@ public:
     }
 };
 
-} // namespace tateyama::api::endpoint::ipc
+} // namespace tateyama::endpoint::ipc
 

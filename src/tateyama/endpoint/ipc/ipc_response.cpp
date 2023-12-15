@@ -24,8 +24,7 @@
 #include "ipc_response.h"
 #include "tateyama/endpoint/common/endpoint_proto_utils.h"
 
-namespace tateyama::common::wire {
-
+namespace tateyama::endpoint::ipc {
 
 // class server_wire
 tateyama::status ipc_response::body(std::string_view body) {
@@ -40,7 +39,7 @@ tateyama::status ipc_response::body(std::string_view body) {
             return status::unknown;
         }
         auto s = ss.str();
-        server_wire_->get_response_wire().write(s.data(), response_header(index_, s.length(), RESPONSE_BODY));
+        server_wire_->get_response_wire().write(s.data(), tateyama::common::wire::response_header(index_, s.length(), RESPONSE_BODY));
         return tateyama::status::ok;
     }
     LOG_LP(ERROR) << "response is already completed";
@@ -58,7 +57,7 @@ tateyama::status ipc_response::body_head(std::string_view body_head) {
         return status::unknown;
     }
     auto s = ss.str();
-    server_wire_->get_response_wire().write(s.data(), response_header(index_, s.length(), RESPONSE_BODYHEAD));
+    server_wire_->get_response_wire().write(s.data(), tateyama::common::wire::response_header(index_, s.length(), RESPONSE_BODYHEAD));
     return tateyama::status::ok;
 }
 
@@ -87,7 +86,7 @@ void ipc_response::server_diagnostics(std::string_view diagnostic_record) {
         return;
     }
     auto s = ss.str();
-    server_wire_->get_response_wire().write(s.data(), response_header(index_, s.length(), RESPONSE_BODY));
+    server_wire_->get_response_wire().write(s.data(), tateyama::common::wire::response_header(index_, s.length(), RESPONSE_BODY));
 }
 
 tateyama::status ipc_response::acquire_channel(std::string_view name, std::shared_ptr<tateyama::api::server::data_channel>& ch) {
@@ -179,4 +178,4 @@ void ipc_writer::release() {
     resultset_wire_->release(std::move(resultset_wire_));
 }
 
-}  // tateyama::common::wire
+}

@@ -15,9 +15,13 @@
  */
 #pragma once
 
+#include <sstream>
+
 #include <tateyama/api/server/session_info.h>
 
 namespace tateyama::endpoint::common {
+
+class worker_common;
 
 /**
  * @brief session_info_impl
@@ -32,7 +36,7 @@ public:
 
     [[nodiscard]] id_type id() const noexcept override { return id_; }
 
-    [[nodiscard]] std::string_view label() const noexcept override { return label_; }
+    [[nodiscard]] std::string_view label() const noexcept override { return connection_label_; }
 
     [[nodiscard]] std::string_view application_name() const noexcept override { return application_name_; }
 
@@ -55,11 +59,39 @@ private:
     std::string connection_information_;
 
     // provided by the client
-    std::string label_{};
+    std::string connection_label_{};
 
     std::string application_name_{};
 
     std::string user_name_{};
+
+    void label(std::string_view str) {
+        connection_label_ = str;
+    }
+    void application_name(std::string_view name) {
+        application_name_ = name;
+    }
+    void user_name(std::string_view name) {
+        user_name_ = name;
+    }
+    void connection_information(std::string_view info) {
+        connection_information_ = info;
+    }
+
+    friend class worker_common;
 };
+
+inline std::ostream& operator<<(std::ostream& out, const session_info_impl& info) {
+    std::stringstream ss;
+    ss << "session_info["
+        << static_cast<std::size_t>(info.id()) << ","
+        << info.connection_type_name() << ", "
+        << info.connection_information() << ": "
+        << info.label() << ","
+        << info.application_name() << ","
+        << info.user_name()
+        << "]";
+    return out << ss.str();
+}
 
 }

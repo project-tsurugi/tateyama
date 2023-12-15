@@ -21,16 +21,10 @@
 #include "tateyama/endpoint/stream/stream_request.h"
 #include "tateyama/endpoint/stream/stream_response.h"
 
-namespace tateyama::server {
+namespace tateyama::endpoint::stream::bootstrap {
 
-void stream_worker::run()
+void stream_worker::run(const std::function<void(void)>& clean_up)
 {
-    std::string session_name = std::to_string(session_id_);
-    if (!session_stream_->wait_hello(session_name)) {
-        return;
-    }
-
-#if 0
     {
         std::uint16_t slot{};
         std::string payload{};
@@ -38,14 +32,21 @@ void stream_worker::run()
             session_stream_->close();
             return;
         }
-        tateyama::common::stream::stream_request request_obj{*session_stream_, payload, database_info_, session_info_};
-        tateyama::common::stream::stream_response response_obj{session_stream_, slot};
+
+        stream_request request_obj{*session_stream_, payload, database_info_, session_info_};
+        stream_response response_obj{session_stream_, slot};
+
+        if (decline_) {
+            notify_of_session_limit(&response_obj);
+            clean_up();
+            return;
+        }
 
         if (! handshake(static_cast<tateyama::api::server::request*>(&request_obj), static_cast<tateyama::api::server::response *>(&response_obj))) {
             return;
         }
+        session_stream_->change_slot_size(max_result_sets_);
     }
-#endif
 
     VLOG(log_debug_timing_event) << "/:tateyama:timing:session:started " << session_id_;
 #ifdef ALTIMETER
@@ -59,8 +60,8 @@ void stream_worker::run()
             break;
         }
 
-        auto request = std::make_shared<tateyama::common::stream::stream_request>(*session_stream_, payload, database_info_, session_info_);
-        auto response = std::make_shared<tateyama::common::stream::stream_response>(session_stream_, slot);
+        auto request = std::make_shared<stream_request>(*session_stream_, payload, database_info_, session_info_);
+        auto response = std::make_shared<stream_response>(session_stream_, slot);
         service_(static_cast<std::shared_ptr<tateyama::api::server::request>>(request),
                  static_cast<std::shared_ptr<tateyama::api::server::response>>(std::move(response)));
         request = nullptr;
@@ -71,4 +72,4 @@ void stream_worker::run()
     VLOG(log_debug_timing_event) << "/:tateyama:timing:session:finished " << session_id_;
 }
 
-}  // tateyama::server
+}

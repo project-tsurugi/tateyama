@@ -24,12 +24,12 @@
 #include "stream_response.h"
 #include "tateyama/endpoint/common/endpoint_proto_utils.h"
 
-namespace tateyama::common::stream {
+namespace tateyama::endpoint::stream {
 
 class stream_request;
 
 // class stream_response
-stream_response::stream_response(std::shared_ptr<tateyama::common::stream::stream_socket> stream, std::uint16_t index)
+stream_response::stream_response(std::shared_ptr<stream_socket> stream, std::uint16_t index)
     : session_socket_(std::move(stream)), index_(index) {
 }
 
@@ -105,7 +105,7 @@ tateyama::status stream_response::acquire_channel(std::string_view name, std::sh
             session_socket_->send_result_set_hello(slot, name);
             return tateyama::status::ok;
         }
-        throw std::runtime_error("error in create stream_data_channel");
+        return tateyama::status::unknown;
     } catch (std::exception &ex) {
         LOG_LP(INFO) << "too many result sets being opened";
         ch = nullptr;
@@ -174,4 +174,4 @@ tateyama::status stream_writer::commit() {
     return tateyama::status::ok;
 }
 
-}  // tateyama::common::stream
+}

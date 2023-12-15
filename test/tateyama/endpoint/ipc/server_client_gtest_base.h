@@ -17,7 +17,7 @@
 #include <gtest/gtest.h>
 #include "server_client_base.h"
 
-namespace tateyama::api::endpoint::ipc {
+namespace tateyama::endpoint::ipc {
 
 class server_client_gtest_base: public server_client_base {
 public:
@@ -40,4 +40,4 @@ protected:
 
 };
 
-} // namespace tateyama::api::endpoint::ipc
+} // namespace tateyama::endpoint::ipc

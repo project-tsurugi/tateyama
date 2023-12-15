@@ -27,7 +27,7 @@
 #include "tateyama/endpoint/common/session_info_impl.h"
 #include "tateyama/logging_helper.h"
 
-namespace tateyama::common::wire {
+namespace tateyama::endpoint::ipc {
 
 /**
  * @brief request object for ipc_endpoint
@@ -36,7 +36,7 @@ class ipc_request : public tateyama::api::server::request {
     constexpr static std::size_t SPO_SIZE = 256;
 
 public:
-    ipc_request(server_wire_container& server_wire, message_header& header, const tateyama::api::server::database_info& database_info, const tateyama::api::server::session_info& session_info)
+    ipc_request(server_wire_container& server_wire, tateyama::common::wire::message_header& header, const tateyama::api::server::database_info& database_info, const tateyama::api::server::session_info& session_info)
         : server_wire_(server_wire), length_(header.get_length()), database_info_(database_info), session_info_(session_info) {
         std::string_view message{};
         auto *request_wire = server_wire_.get_request_wire();
@@ -83,4 +83,4 @@ private:
     std::string long_payload_{};
 };
 
-}  // tateyama::common::wire
+}
