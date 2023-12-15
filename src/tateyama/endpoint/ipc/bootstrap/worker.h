@@ -35,7 +35,6 @@ class Worker : public tateyama::endpoint::common::worker_common {
           service_(service),
           wire_(std::move(wire)),
           request_wire_container_(dynamic_cast<tateyama::common::wire::server_wire_container_impl::wire_container_impl*>(wire_->get_request_wire())),
-          session_id_(session_id),
           clean_up_(std::move(clean_up)),
           database_info_(database_info) {
     }
@@ -62,7 +61,6 @@ class Worker : public tateyama::endpoint::common::worker_common {
     tateyama::framework::routing_service& service_;
     std::shared_ptr<tateyama::common::wire::server_wire_container_impl> wire_;
     tateyama::common::wire::server_wire_container_impl::wire_container_impl* request_wire_container_;
-    std::size_t session_id_;
     std::function<void(void)> clean_up_;
     const tateyama::api::server::database_info& database_info_;
 

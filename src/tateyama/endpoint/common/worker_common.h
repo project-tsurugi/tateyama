@@ -23,7 +23,11 @@
 #include <tateyama/api/server/request.h>
 #include <tateyama/api/server/response.h>
 #include <tateyama/framework/routing_service.h>
+#include <tateyama/framework/component_ids.h>
 #include <tateyama/status/resource/bridge.h>
+
+#include <tateyama/proto/endpoint/request.pb.h>
+#include <tateyama/proto/endpoint/response.pb.h>
 
 #include "tateyama/endpoint/common/session_info_impl.h"
 
@@ -31,8 +35,8 @@ namespace tateyama::endpoint::common {
 
 class worker_common {
 public:
-    worker_common(std::size_t id, std::string_view conn_type, std::string_view conn_info)
-        : session_info_(id, conn_type, conn_info) {
+    worker_common(std::size_t session_id, std::string_view conn_type, std::string_view conn_info)
+        : session_id_(session_id), session_info_(session_id, conn_type, conn_info) {
     }
     worker_common(std::size_t id, std::string_view conn_type) : worker_common(id, conn_type, "") {
     }
@@ -46,6 +50,7 @@ public:
     }
 
 protected:
+    const std::size_t session_id_;    // NOLINT
     session_info_impl session_info_;  // NOLINT
 
     // for future
@@ -53,7 +58,33 @@ protected:
     std::future<void> future_;        // NOLINT
     std::thread thread_{};            // NOLINT
 
-    bool handshake(tateyama::api::server::request*, tateyama::api::server::response*) {
+    bool handshake(tateyama::api::server::request* req, tateyama::api::server::response* res) {
+        if (req->service_id() != tateyama::framework::service_id_endpoint_broker) {
+            LOG(ERROR) << "request has invalid service id";
+            return false;
+        }
+        auto data = req->payload();
+        tateyama::proto::endpoint::request::Request rq{};
+        if(! rq.ParseFromArray(data.data(), static_cast<int>(data.size()))) {
+            VLOG(log_error) << "request parse error";
+            return false;
+        }
+        if(rq.command_case() != tateyama::proto::endpoint::request::Request::kHandshake) {
+            LOG(ERROR) << "bad request (handshake in endpoint): " << rq.command_case();
+            return false;
+        }
+        auto ci = rq.handshake().client_infomation();
+        session_info_.label(ci.connection_label());
+        session_info_.application_name(ci.application_name());
+        session_info_.user_name(ci.connection_information());
+        std::cout << session_info_ << std::endl;
+
+        tateyama::proto::endpoint::response::Handshake rp{};
+        rp.mutable_success();
+        res->session_id(session_id_);
+        auto body = rp.SerializeAsString();
+        res->body(body);
+        rp.clear_success();
         return true;
     }
 };

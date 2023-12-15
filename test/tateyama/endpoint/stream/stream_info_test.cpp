@@ -27,7 +27,8 @@ static constexpr std::size_t my_session_id_ = 123;
 static constexpr std::string_view request_test_message = "abcdefgh";
 static constexpr std::string_view response_test_message = "opqrstuvwxyz";
 
-namespace tateyama::server {
+namespace tateyama::endpoint::stream {
+
 class info_service_for_test : public tateyama::framework::routing_service {
 public:
     bool setup(tateyama::framework::environment&) { return true; }
@@ -57,11 +58,11 @@ public:
     }
     void operator()() {
         while (true) {
-            std::shared_ptr<tateyama::common::stream::stream_socket> stream{};
+            std::shared_ptr<stream_socket> stream{};
             stream = connection_socket_.accept();
 
             if (stream != nullptr) {
-                worker_ = std::make_unique<tateyama::server::stream_worker>(service_, my_session_id_, std::move(stream), database_info_);
+                worker_ = std::make_unique<tateyama::endpoint::stream::bootstrap::stream_worker>(service_, my_session_id_, std::move(stream), database_info_);
                 worker_->invoke([&]{worker_->run();});
             } else {  // connect via pipe (request_terminate)
                 break;
@@ -77,12 +78,12 @@ public:
     }
 
 private:
-    tateyama::server::info_service_for_test& service_;
-    tateyama::common::stream::connection_socket connection_socket_{tateyama::api::endpoint::stream::stream_client::PORT_FOR_TEST};
-    std::unique_ptr<tateyama::server::stream_worker> worker_{};
+    info_service_for_test& service_;
+    connection_socket connection_socket_{tateyama::api::endpoint::stream::stream_client::PORT_FOR_TEST};
+    std::unique_ptr<tateyama::endpoint::stream::bootstrap::stream_worker> worker_{};
     tateyama::status_info::resource::database_info_impl database_info_{"stream_info_test"};
 };
-}  // namespace tateyama::server
+}
 
 
 namespace tateyama::api::endpoint::stream {
@@ -97,8 +98,8 @@ class stream_info_test : public ::testing::Test {
     }
 
 public:
-    tateyama::server::info_service_for_test service_{};
-    tateyama::server::stream_listener_for_test listener_{service_};
+    tateyama::endpoint::stream::info_service_for_test service_{};
+    tateyama::endpoint::stream::stream_listener_for_test listener_{service_};
     std::thread thread_{};
 };
 
@@ -138,4 +139,4 @@ TEST_F(stream_info_test, DISABLED_basic) {
     }
 }
 
-} // namespace tateyama::api::endpoint::stream
+}

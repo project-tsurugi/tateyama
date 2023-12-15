@@ -36,22 +36,21 @@
 #include <tateyama/logging.h>
 #include "tateyama/logging_helper.h"
 
-namespace tateyama::common::stream {
+namespace tateyama::endpoint::stream {
 
 class connection_socket;
 class stream_data_channel;
 
 class stream_socket
 {
-    static constexpr unsigned char REQUEST_SESSION_HELLO = 1;
+    // 1 is nolonger used
     static constexpr unsigned char REQUEST_SESSION_PAYLOAD = 2;
     static constexpr unsigned char REQUEST_RESULT_SET_BYE_OK = 3;
     static constexpr unsigned char REQUEST_SESSION_BYE = 4;
 
     static constexpr unsigned char RESPONSE_SESSION_PAYLOAD = 1;
     static constexpr unsigned char RESPONSE_RESULT_SET_PAYLOAD = 2;
-    static constexpr unsigned char RESPONSE_SESSION_HELLO_OK = 3;
-    static constexpr unsigned char RESPONSE_SESSION_HELLO_NG = 4;
+    // 3, 4 are nolonger used
     static constexpr unsigned char RESPONSE_RESULT_SET_HELLO = 5;
     static constexpr unsigned char RESPONSE_RESULT_SET_BYE = 6;
     static constexpr unsigned char RESPONSE_SESSION_BODYHEAD = 7;
@@ -84,6 +83,7 @@ public:
         if (setsockopt(socket, SOL_TCP, TCP_NODELAY, &enable, sizeof(enable)) < 0) {
             LOG_LP(ERROR) << "setsockopt() fail";
         }
+        in_use_.resize(slot_size_);
     }
 
     ~stream_socket() {
@@ -95,45 +95,11 @@ public:
     stream_socket(stream_socket&& other) noexcept = delete;
     stream_socket& operator=(stream_socket&& other) noexcept = delete;
 
-    [[nodiscard]] bool wait_hello(std::string_view session_name) {
-        unsigned char info{};
-        std::uint16_t slot{};
-        std::string dummy;
-
-        if (!await(info, slot, dummy)) {
-            close();
-            return false;
-        }
-        if (info != REQUEST_SESSION_HELLO) {
-            close();
-            return false;
-        }
-        if (decline_) {
-            DVLOG_LP(log_trace) << "<-- RESPONSE_SESSION_HELLO_NG";  //NOLINT
-            send_response(RESPONSE_SESSION_HELLO_NG, 0, "");
-            close();
-            return false;
-        }
-        if (slot_size_ < slot) {
-            slot_size_ = slot;
-        }
-        in_use_.resize(slot_size_);
-        for (unsigned int i = 0; i < slot_size_; i++) {
-            in_use_.at(i) = false;
-        }
-        send(session_name);
-        return true;
-    }
-
     [[nodiscard]] bool await(std::uint16_t& slot, std::string& payload) {
         unsigned char info{};
         return await(info, slot, payload);
     }
 
-    void send(std::string_view payload) {  // for RESPONSE_SESSION_HELLO_OK
-        DVLOG_LP(log_trace) << "<-- RESPONSE_SESSION_HELLO_OK ";  //NOLINT
-        send_response(RESPONSE_SESSION_HELLO_OK, 0, payload);
-    }
     void send(std::uint16_t slot, std::string_view payload, bool body) {  // for RESPONSE_SESSION_PAYLOAD
         if (body) {
             DVLOG_LP(log_trace) << "<-- RESPONSE_SESSION_PAYLOAD " << static_cast<std::uint32_t>(slot);  //NOLINT
@@ -176,6 +142,7 @@ public:
     }
 
     unsigned int look_for_slot() {
+        std::unique_lock<std::mutex> lock(slot_mutex_);
         for (unsigned int i = 0; i < slot_size_; i++) {  // FIXME more efficient
             if (!in_use_.at(i)) {
                 in_use_.at(i) = true;
@@ -184,6 +151,14 @@ public:
             }
         }
         throw std::runtime_error("running out the slots for result set");  //NOLINT
+    }
+
+    void change_slot_size(std::size_t index) {
+        std::unique_lock<std::mutex> lock(slot_mutex_);
+        if ((index + 1) > slot_size_) {
+            slot_size_ = index + 1;
+            in_use_.resize(slot_size_);
+        }
     }
 
     void decline() {
@@ -201,11 +176,12 @@ private:
     bool socket_closed_{false};
     bool decline_{false};
     std::vector<bool> in_use_{};
-    std::mutex mutex_{};
     std::atomic_uint slot_using_{};
     std::queue<recv_entry> queue_{};
     std::size_t slot_size_{SLOT_SIZE};
     std::string connection_info_{};
+    std::mutex mutex_{};
+    std::mutex slot_mutex_{};
 
     bool await(unsigned char& info, std::uint16_t& slot, std::string& payload) {
         DVLOG_LP(log_trace) << "-- enter waiting REQUEST --";  //NOLINT
@@ -266,13 +242,6 @@ private:
                 DVLOG_LP(log_trace) << "socket is closed by the client abnormally";  //NOLINT
                 return false;
             }
-            case REQUEST_SESSION_HELLO:
-                DVLOG_LP(log_trace) << "--> REQUEST_SESSION_HELLO ";  //NOLINT
-                if (recv(payload)) {
-                    return true;  // supposed to return to stream_socket()
-                }
-                DVLOG_LP(log_trace) << "socket is closed by the client abnormally";  //NOLINT
-                return false;
             case REQUEST_SESSION_BYE:
                 DVLOG_LP(log_trace) << "--> REQUEST_SESSION_BYE ";  //NOLINT
                 if (recv(payload)) {
@@ -447,4 +416,4 @@ private:
     int pair_[2]{};  // NOLINT
 };
 
-};  // namespace tateyama::common::stream
+}
