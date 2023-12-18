@@ -23,17 +23,17 @@
 namespace tateyama::server {
 class ipc_listener_for_test {
 public:
-    static void run(tateyama::server::Worker& worker) {
+    static void run(tateyama::endpoint::ipc::bootstrap::Worker& worker) {
         worker.invoke([&]{worker.run();});
     }
-    static void wait(tateyama::server::Worker& worker) {
+    static void wait(tateyama::endpoint::ipc::bootstrap::Worker& worker) {
         worker.wait_for();
     }
 
 };
 }  // namespace tateyama::server
 
-namespace tateyama::api::endpoint::ipc {
+namespace tateyama::endpoint::ipc {
 
 static constexpr std::size_t my_session_id_ = 123;
 
@@ -84,10 +84,10 @@ public:
 TEST_F(ipc_info_test, DISABLED_basic) {
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-    auto wire = std::make_shared<tateyama::common::wire::server_wire_container_impl>("ipc_info_test", "dummy_mutex_file_name", datachannel_buffer_size, 16);
-    auto* request_wire = static_cast<tateyama::common::wire::server_wire_container_impl::wire_container_impl*>(wire->get_request_wire());
-    auto& response_wire = dynamic_cast<tateyama::common::wire::server_wire_container_impl::response_wire_container_impl&>(wire->get_response_wire());
-    tateyama::server::Worker worker(service_, my_session_id_, wire, [](){}, database_info_);
+    auto wire = std::make_shared<bootstrap::server_wire_container_impl>("ipc_info_test", "dummy_mutex_file_name", datachannel_buffer_size, 16);
+    auto* request_wire = static_cast<bootstrap::server_wire_container_impl::wire_container_impl*>(wire->get_request_wire());
+    auto& response_wire = dynamic_cast<bootstrap::server_wire_container_impl::response_wire_container_impl&>(wire->get_response_wire());
+    tateyama::endpoint::ipc::bootstrap::Worker worker(service_, my_session_id_, wire, [](){}, database_info_);
     tateyama::server::ipc_listener_for_test::run(worker);
 
     request_header_content hdr{};
@@ -119,4 +119,4 @@ TEST_F(ipc_info_test, DISABLED_basic) {
     tateyama::server::ipc_listener_for_test::wait(worker);
 }
 
-} // namespace tateyama::api::endpoint::ipc
+} // namespace tateyama::endpoint::ipc

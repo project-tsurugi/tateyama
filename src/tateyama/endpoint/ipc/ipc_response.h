@@ -27,11 +27,11 @@
 #include "server_wires.h"
 #include "ipc_request.h"
 
-namespace tateyama::common::wire {
+namespace tateyama::endpoint::ipc {
 
-constexpr static response_header::msg_type RESPONSE_BODY = 1;
-constexpr static response_header::msg_type RESPONSE_BODYHEAD = 2;
-constexpr static response_header::msg_type RESPONSE_CODE = 3;
+constexpr static tateyama::common::wire::response_header::msg_type RESPONSE_BODY = 1;
+constexpr static tateyama::common::wire::response_header::msg_type RESPONSE_BODYHEAD = 2;
+constexpr static tateyama::common::wire::response_header::msg_type RESPONSE_CODE = 3;
 
 class ipc_data_channel;
 class ipc_response;
@@ -104,7 +104,7 @@ public:
 private:
     std::shared_ptr<server_wire_container> server_wire_;
     std::size_t index_;
-    tateyama::common::wire::garbage_collector* garbage_collector_;
+    garbage_collector* garbage_collector_;
 
     std::string message_{};
 

@@ -18,7 +18,7 @@
 
 #include "ipc_test_utils.h"
 
-namespace tateyama::api::endpoint::ipc {
+namespace tateyama::endpoint::ipc {
 
 class ipc_test_env: public test::test_utils {
 public:
@@ -46,4 +46,4 @@ protected:
     int ipc_max_session_ { };
 };
 
-} // namespace tateyama::api::endpoint::ipc
+} // namespace tateyama::endpoint::ipc

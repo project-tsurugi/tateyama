@@ -16,7 +16,7 @@
 #include "ipc_gtest_base.h"
 #include <numeric>
 
-namespace tateyama::api::endpoint::ipc {
+namespace tateyama::endpoint::ipc {
 
 class echo_service: public server_service_base {
 public:
@@ -110,4 +110,4 @@ TEST_F(ipc_echo_test, test_power2_mixture) {
     }
 }
 
-} // namespace tateyama::api::endpoint::ipc
+} // namespace tateyama::endpoint::ipc

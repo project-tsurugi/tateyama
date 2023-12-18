@@ -20,15 +20,8 @@
 
 namespace tateyama::endpoint::stream::bootstrap {
 
-void stream_worker::run(std::function<void(void)> clean_up)
+void stream_worker::run(const std::function<void(void)>& clean_up)
 {
-    std::string session_name = std::to_string(session_id_);
-
-    if (decline_) {
-        clean_up();
-        return;
-    }
-
     {
         std::uint16_t slot{};
         std::string payload{};
@@ -39,10 +32,17 @@ void stream_worker::run(std::function<void(void)> clean_up)
 
         stream_request request_obj{*session_stream_, payload, database_info_, session_info_};
         stream_response response_obj{session_stream_, slot};
+
+        if (decline_) {
+            notify_of_session_limit(&response_obj);
+            clean_up();
+            return;
+        }
+
         if (! handshake(static_cast<tateyama::api::server::request*>(&request_obj), static_cast<tateyama::api::server::response *>(&response_obj))) {
             return;
         }
-        session_stream_->change_slot_size(slot);
+        session_stream_->change_slot_size(max_result_sets_);
     }
 
     VLOG(log_debug_timing_event) << "/:tateyama:timing:session:started " << session_id_;

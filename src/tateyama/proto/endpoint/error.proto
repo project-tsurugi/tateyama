@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package tateyama.proto.endpoint.error;
+
+option java_package = "com.tsurugidb.endpoint.proto";
+option java_outer_classname = "EndpointError";
+
+/*
+ * Definition of error information for Response.
+ */
+
+// the error code for endpoint execution
+enum Code {
+    // code not specified
+    CODE_UNSPECIFIED = 0;
+
+    // ENDPOINT-01000 generic error in ENDPOINT service
+    ENDPOINT_SESSION_LIMIT_EXCEPTION = 1;
+
+    // ENDPOINT-02000 generic error in ENDPOINT execution
+    ENDPOINT_AUTHENTICATION_EXCEPTION = 2;
+
+}

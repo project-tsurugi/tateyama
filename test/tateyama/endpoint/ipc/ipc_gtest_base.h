@@ -19,7 +19,7 @@
 #include "ipc_client.h"
 #include "server_client_gtest_base.h"
 
-namespace tateyama::api::endpoint::ipc {
+namespace tateyama::endpoint::ipc {
 
 class ipc_gtest_base: public ::testing::Test, public ipc_test_env {
     void SetUp() override {
@@ -31,4 +31,4 @@ class ipc_gtest_base: public ::testing::Test, public ipc_test_env {
     }
 };
 
-} // namespace tateyama::api::endpoint::ipc
+} // namespace tateyama::endpoint::ipc

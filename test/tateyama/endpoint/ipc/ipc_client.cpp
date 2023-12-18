@@ -15,9 +15,10 @@
  */
 #include "ipc_client.h"
 
-namespace tateyama::api::endpoint::ipc {
+namespace tateyama::endpoint::ipc {
 
-ipc_client::ipc_client(std::shared_ptr<tateyama::api::configuration::whole> const &cfg) {
+ipc_client::ipc_client(std::shared_ptr<tateyama::api::configuration::whole> const &cfg, tateyama::proto::endpoint::request::Request& req)
+    : endpoint_request_(req) {
     get_ipc_database_name(cfg, database_name_);
     container_ = std::make_unique < tsubakuro::common::wire::connection_container > (database_name_);
     id_ = container_->get_connection_queue().request();
@@ -27,6 +28,11 @@ ipc_client::ipc_client(std::shared_ptr<tateyama::api::configuration::whole> cons
     swc_ = std::make_unique < tsubakuro::common::wire::session_wire_container > (session_name_);
     request_wire_ = &swc_->get_request_wire();
     response_wire_ = &swc_->get_response_wire();
+
+    tateyama::proto::endpoint::request::Handshake hs_cmd{};
+    default_endpoint_request_.set_allocated_handshake(&hs_cmd);
+    handshake();
+    default_endpoint_request_.release_handshake();
 }
 
 static constexpr tsubakuro::common::wire::message_header::index_type ipc_test_index = 1234;
@@ -98,4 +104,10 @@ void ipc_client::dispose_resultset_wires(resultset_wires_container *rwc) {
     swc_->dispose_resultset_wire(rwc);
 }
 
-} // namespace tateyama::api::endpoint::ipc
+void ipc_client::handshake() {
+    send(tateyama::framework::service_id_endpoint_broker, endpoint_request_.SerializeAsString());
+    std::string res{};
+    receive(res);
+}
+
+} // namespace tateyama::endpoint::ipc

@@ -25,7 +25,7 @@
 
 #include "server_client_base.h"
 
-namespace tateyama::api::endpoint::ipc {
+namespace tateyama::endpoint::ipc {
 
 /*
  *  see https://github.com/google/googletest/issues/1153 for using fork() in GTEST
@@ -153,4 +153,4 @@ void server_client_base::wait_server_startup_end() {
     fd_ = 0;
 }
 
-} // namespace tateyama::api::endpoint::ipc
+} // namespace tateyama::endpoint::ipc

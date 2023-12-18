@@ -74,6 +74,9 @@ private:
     void user_name(std::string_view name) {
         user_name_ = name;
     }
+    void connection_information(std::string_view info) {
+        connection_information_ = info;
+    }
 
     friend class worker_common;
 };
@@ -82,8 +85,8 @@ inline std::ostream& operator<<(std::ostream& out, const session_info_impl& info
     std::stringstream ss;
     ss << "session_info["
         << static_cast<std::size_t>(info.id()) << ","
-        << info.connection_type_name() << ","
-        << info.connection_information() << ","
+        << info.connection_type_name() << ", "
+        << info.connection_information() << ": "
         << info.label() << ","
         << info.application_name() << ","
         << info.user_name()

@@ -31,14 +31,14 @@
 
 #include <gtest/gtest.h>
 
-namespace tateyama::api::endpoint::ipc {
+namespace tateyama::endpoint::ipc {
 
 class result_set_limit_test : public ::testing::Test {
     virtual void SetUp() {
 
         rv_ = system("if [ -f /dev/shm/tateyama-result_set_limit_test ]; then rm -f /dev/shm/tateyama-result_set_limit_test; fi ");
 
-        wire_ = std::make_shared<tateyama::common::wire::server_wire_container_impl>("tateyama-result_set_limit_test", "dummy_mutex_file_name", datachannel_buffer_size, writers);
+        wire_ = std::make_shared<bootstrap::server_wire_container_impl>("tateyama-result_set_limit_test", "dummy_mutex_file_name", datachannel_buffer_size, writers);
         buffer.resize(value_size);
     }
     virtual void TearDown() {
@@ -58,7 +58,7 @@ public:
     static constexpr tateyama::common::wire::message_header::index_type index_ = 1;
     std::string buffer{};
 
-    std::shared_ptr<tateyama::common::wire::server_wire_container_impl> wire_;
+    std::shared_ptr<bootstrap::server_wire_container_impl> wire_;
 
     tateyama::status_info::resource::database_info_impl dmy_dbinfo_{};
     tateyama::endpoint::common::session_info_impl dmy_ssinfo_{};
@@ -76,7 +76,7 @@ public:
 };
 
 TEST_F(result_set_limit_test, within_datachannel_buffer_size) {
-    auto* request_wire = static_cast<tateyama::common::wire::server_wire_container_impl::wire_container_impl*>(wire_->get_request_wire());
+    auto* request_wire = static_cast<bootstrap::server_wire_container_impl::wire_container_impl*>(wire_->get_request_wire());
 
     request_header_content hdr{};
     std::stringstream ss{};
@@ -89,8 +89,8 @@ TEST_F(result_set_limit_test, within_datachannel_buffer_size) {
     EXPECT_EQ(index_, h.get_idx());
     EXPECT_EQ(request_wire->payload(), request_message);
 
-    auto request = std::make_shared<tateyama::common::wire::ipc_request>(*wire_, h, dmy_dbinfo_, dmy_ssinfo_);
-    auto response = std::make_shared<tateyama::common::wire::ipc_response>(wire_, h.get_idx());
+    auto request = std::make_shared<ipc_request>(*wire_, h, dmy_dbinfo_, dmy_ssinfo_);
+    auto response = std::make_shared<ipc_response>(wire_, h.get_idx());
 
     std::shared_ptr<tateyama::api::server::data_channel> dc;
     EXPECT_EQ(response->acquire_channel(resultset_wire_name_, dc), tateyama::status::ok);
@@ -104,7 +104,7 @@ TEST_F(result_set_limit_test, within_datachannel_buffer_size) {
 }
 
 TEST_F(result_set_limit_test, exceed_datachannel_buffer_size) {
-    auto* request_wire = static_cast<tateyama::common::wire::server_wire_container_impl::wire_container_impl*>(wire_->get_request_wire());
+    auto* request_wire = static_cast<bootstrap::server_wire_container_impl::wire_container_impl*>(wire_->get_request_wire());
 
     request_header_content hdr{};
     std::stringstream ss{};
@@ -117,8 +117,8 @@ TEST_F(result_set_limit_test, exceed_datachannel_buffer_size) {
     EXPECT_EQ(index_, h.get_idx());
     EXPECT_EQ(request_wire->payload(), request_message);
 
-    auto request = std::make_shared<tateyama::common::wire::ipc_request>(*wire_, h, dmy_dbinfo_, dmy_ssinfo_);
-    auto response = std::make_shared<tateyama::common::wire::ipc_response>(wire_, h.get_idx());
+    auto request = std::make_shared<ipc_request>(*wire_, h, dmy_dbinfo_, dmy_ssinfo_);
+    auto response = std::make_shared<ipc_response>(wire_, h.get_idx());
 
     std::shared_ptr<tateyama::api::server::data_channel> dc;
     EXPECT_EQ(response->acquire_channel(resultset_wire_name_, dc), tateyama::status::ok);
@@ -133,7 +133,7 @@ TEST_F(result_set_limit_test, exceed_datachannel_buffer_size) {
 }
 
 TEST_F(result_set_limit_test, within_writers) {
-    auto* request_wire = static_cast<tateyama::common::wire::server_wire_container_impl::wire_container_impl*>(wire_->get_request_wire());
+    auto* request_wire = static_cast<bootstrap::server_wire_container_impl::wire_container_impl*>(wire_->get_request_wire());
 
     request_header_content hdr{};
     std::stringstream ss{};
@@ -146,8 +146,8 @@ TEST_F(result_set_limit_test, within_writers) {
     EXPECT_EQ(index_, h.get_idx());
     EXPECT_EQ(request_wire->payload(), request_message);
 
-    auto request = std::make_shared<tateyama::common::wire::ipc_request>(*wire_, h, dmy_dbinfo_, dmy_ssinfo_);
-    auto response = std::make_shared<tateyama::common::wire::ipc_response>(wire_, h.get_idx());
+    auto request = std::make_shared<ipc_request>(*wire_, h, dmy_dbinfo_, dmy_ssinfo_);
+    auto response = std::make_shared<ipc_response>(wire_, h.get_idx());
 
     std::array<std::shared_ptr<tateyama::api::server::data_channel>, writers+1> dcs{};
     std::array<std::shared_ptr<tateyama::api::server::writer>, writers+1> ws{};

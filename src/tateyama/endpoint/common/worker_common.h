@@ -25,6 +25,7 @@
 #include <tateyama/framework/routing_service.h>
 #include <tateyama/framework/component_ids.h>
 #include <tateyama/status/resource/bridge.h>
+#include "tateyama/logging_helper.h"
 
 #include <tateyama/proto/endpoint/request.pb.h>
 #include <tateyama/proto/endpoint/response.pb.h>
@@ -35,10 +36,29 @@ namespace tateyama::endpoint::common {
 
 class worker_common {
 public:
-    worker_common(std::size_t session_id, std::string_view conn_type, std::string_view conn_info)
-        : session_id_(session_id), session_info_(session_id, conn_type, conn_info) {
+    enum class connection_type : std::uint32_t {
+    /**
+     * @brief undefined type.
+     */
+    undefined = 0U,
+
+    /**
+     * @brief IPC connection.
+     */
+    ipc,
+
+    /**
+     * @brief stream (TCP/IP) connection.
+     */
+    stream,
+    };
+    
+    worker_common(connection_type con, std::size_t session_id, std::string_view conn_info)
+        : connection_type_(con),
+          session_id_(session_id),
+          session_info_(session_id, connection_label(con), conn_info) {
     }
-    worker_common(std::size_t id, std::string_view conn_type) : worker_common(id, conn_type, "") {
+    worker_common(connection_type con, std::size_t id) : worker_common(con, id, "") {
     }
     void invoke(std::function<void(void)> func) {
         task_ = std::packaged_task<void()>(std::move(func));
@@ -50,13 +70,16 @@ public:
     }
 
 protected:
-    const std::size_t session_id_;    // NOLINT
-    session_info_impl session_info_;  // NOLINT
-
+    const connection_type connection_type_; // NOLINT
+    const std::size_t session_id_;          // NOLINT
+    session_info_impl session_info_;        // NOLINT
+    std::string connection_info_{};         // NOLINT
+    std::size_t max_result_sets_{};         // NOLINT
+    
     // for future
-    std::packaged_task<void()> task_; // NOLINT
-    std::future<void> future_;        // NOLINT
-    std::thread thread_{};            // NOLINT
+    std::packaged_task<void()> task_;       // NOLINT
+    std::future<void> future_;              // NOLINT
+    std::thread thread_{};                  // NOLINT
 
     bool handshake(tateyama::api::server::request* req, tateyama::api::server::response* res) {
         if (req->service_id() != tateyama::framework::service_id_endpoint_broker) {
@@ -76,16 +99,42 @@ protected:
         auto ci = rq.handshake().client_infomation();
         session_info_.label(ci.connection_label());
         session_info_.application_name(ci.application_name());
-        session_info_.user_name(ci.connection_information());
-        std::cout << session_info_ << std::endl;
+        session_info_.user_name(ci.user_name());
+        if (connection_type_ == connection_type::ipc) {
+            session_info_.connection_information(ci.connection_information());
+        }
+        max_result_sets_ = ci.maximum_concurrent_result_sets();  // for Stream
+        
+        VLOG_LP(log_trace) << session_info_;  //NOLINT
 
         tateyama::proto::endpoint::response::Handshake rp{};
-        rp.mutable_success();
-        res->session_id(session_id_);
+        auto rs = rp.mutable_success();
+        rs->set_session_id(session_id_);
         auto body = rp.SerializeAsString();
         res->body(body);
         rp.clear_success();
         return true;
+    }
+
+    void notify_of_session_limit(tateyama::api::server::response* res) {
+        tateyama::proto::endpoint::response::Handshake rp{};
+        auto rs = rp.mutable_unknown_error();
+        rs->set_code(tateyama::proto::endpoint::error::Code::ENDPOINT_SESSION_LIMIT_EXCEPTION);
+        auto body = rp.SerializeAsString();
+        res->body(body);
+        rp.clear_success();
+    }
+
+private:
+    std::string_view connection_label(connection_type con) {
+        switch (con) {
+        case connection_type::ipc:
+            return "IPC";
+        case connection_type::stream:
+            return "TCP/IP";
+        default:
+            return "";
+        }
     }
 };
 

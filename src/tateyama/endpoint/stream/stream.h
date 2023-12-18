@@ -156,6 +156,7 @@ public:
     void change_slot_size(std::size_t index) {
         std::unique_lock<std::mutex> lock(slot_mutex_);
         if ((index + 1) > slot_size_) {
+            LOG_LP(INFO) << "enlarge srot to " << (index + 1);
             slot_size_ = index + 1;
             in_use_.resize(slot_size_);
         }
