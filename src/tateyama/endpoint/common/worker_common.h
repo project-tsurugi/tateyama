@@ -29,6 +29,7 @@
 
 #include <tateyama/proto/endpoint/request.pb.h>
 #include <tateyama/proto/endpoint/response.pb.h>
+#include <tateyama/proto/diagnostics.pb.h>
 
 #include "tateyama/endpoint/common/session_info_impl.h"
 
@@ -83,20 +84,27 @@ protected:
 
     bool handshake(tateyama::api::server::request* req, tateyama::api::server::response* res) {
         if (req->service_id() != tateyama::framework::service_id_endpoint_broker) {
-            LOG(ERROR) << "request has invalid service id";
+            std::string error_message{"request has invalid service id"};
+            LOG(ERROR) << error_message;
+            notify_client(res, tateyama::proto::diagnostics::Code::INVALID_REQUEST, error_message);
             return false;
         }
         auto data = req->payload();
         tateyama::proto::endpoint::request::Request rq{};
         if(! rq.ParseFromArray(data.data(), static_cast<int>(data.size()))) {
-            VLOG(log_error) << "request parse error";
+            std::string error_message{"request parse error"};
+            LOG(ERROR) << error_message;
+            notify_client(res, tateyama::proto::diagnostics::Code::INVALID_REQUEST, error_message);
             return false;
         }
         if(rq.command_case() != tateyama::proto::endpoint::request::Request::kHandshake) {
-            LOG(ERROR) << "bad request (handshake in endpoint): " << rq.command_case();
+            std::stringstream ss;
+            ss << "bad request (handshake in endpoint): " << rq.command_case();
+            LOG(ERROR) << ss.str();
+            notify_client(res, tateyama::proto::diagnostics::Code::INVALID_REQUEST, ss.str());
             return false;
         }
-        auto ci = rq.handshake().client_infomation();
+        auto ci = rq.handshake().client_information();
         session_info_.label(ci.connection_label());
         session_info_.application_name(ci.application_name());
         session_info_.user_name(ci.user_name());
@@ -116,13 +124,14 @@ protected:
         return true;
     }
 
-    void notify_of_session_limit(tateyama::api::server::response* res) {
-        tateyama::proto::endpoint::response::Handshake rp{};
-        auto rs = rp.mutable_unknown_error();
-        rs->set_code(tateyama::proto::endpoint::error::Code::ENDPOINT_SESSION_LIMIT_EXCEPTION);
-        auto body = rp.SerializeAsString();
-        res->body(body);
-        rp.clear_success();
+    void notify_client(tateyama::api::server::response* res,
+                       tateyama::proto::diagnostics::Code code,
+                       const std::string& message) {
+        tateyama::proto::diagnostics::Record record{};
+        record.set_code(code);
+        record.set_message(message);
+        res->error(record);
+        record.release_message();
     }
 
 private:

@@ -32,8 +32,11 @@ using resultset_wires_container = tsubakuro::common::wire::session_wire_containe
 
 class ipc_client {
 public:
-    ipc_client(std::shared_ptr<tateyama::api::configuration::whole> const &cfg, tateyama::proto::endpoint::request::Request& req);
-    explicit ipc_client(std::shared_ptr<tateyama::api::configuration::whole> const &cfg) : ipc_client(cfg, default_endpoint_request_) {
+    ipc_client(std::shared_ptr<tateyama::api::configuration::whole> const &cfg, tateyama::proto::endpoint::request::Handshake& hs);
+    explicit ipc_client(std::shared_ptr<tateyama::api::configuration::whole> const &cfg) : ipc_client(cfg, default_endpoint_handshake_) {
+    }
+    ipc_client(std::string_view database_name, std::size_t session_id, tateyama::proto::endpoint::request::Handshake& hs);
+    ipc_client(std::string_view database_name, std::size_t session_id) : ipc_client(database_name, session_id, default_endpoint_handshake_) {
     }
     void send(const std::size_t tag, const std::string &message);
     void receive(std::string &message);
@@ -58,7 +61,7 @@ public:
     static constexpr std::size_t resultset_record_maxlen = 64 * 1024 - tateyama::common::wire::length_header::size;
 
 private:
-    tateyama::proto::endpoint::request::Request& endpoint_request_;
+    tateyama::proto::endpoint::request::Handshake& endpoint_handshake_;
     std::string database_name_ { };
     std::unique_ptr<tsubakuro::common::wire::connection_container> container_ { };
     std::size_t id_ { };
@@ -67,7 +70,7 @@ private:
     std::unique_ptr<tsubakuro::common::wire::session_wire_container> swc_ { };
     tsubakuro::common::wire::session_wire_container::wire_container *request_wire_ { };
     tsubakuro::common::wire::session_wire_container::response_wire_container *response_wire_ { };
-    tateyama::proto::endpoint::request::Request default_endpoint_request_{};
+    tateyama::proto::endpoint::request::Handshake default_endpoint_handshake_{};
 
     void handshake();
 };

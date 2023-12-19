@@ -6,15 +6,15 @@ option java_multiple_files = false;
 option java_package = "com.tsurugidb.endpoint.proto";
 option java_outer_classname = "EndpointResponse";
 
-import "tateyama/proto/endpoint/error.proto";
+import "tateyama/proto/diagnostics.proto";
 
 // unknown error was occurred.
-message UnknownError {
+message Error {
     // the error message.
     string message = 1;
 
     // error code
-    error.Code code = 2;
+    diagnostics.Code code = 2;
 
     // supplemental text for debug purpose
     string supplemental_text = 4;
@@ -30,7 +30,7 @@ message Handshake {
         Success success = 11;
 
         // unknown error was occurred.
-        UnknownError unknown_error = 12;
+        Error error = 12;
     }
 
     // request is successfully completed.

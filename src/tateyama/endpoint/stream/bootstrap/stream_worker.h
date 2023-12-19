@@ -35,8 +35,7 @@ class stream_worker : public tateyama::endpoint::common::worker_common {
           service_(service),
           session_stream_(std::move(stream)),
           database_info_(database_info),
-          decline_(decline)
-        {
+          decline_(decline) {
     }
     stream_worker(tateyama::framework::routing_service& service,
                   std::size_t session_id,
@@ -64,6 +63,14 @@ class stream_worker : public tateyama::endpoint::common::worker_common {
     std::shared_ptr<stream_socket> session_stream_;
     const tateyama::api::server::database_info& database_info_;
     const bool decline_;
+
+    void notify_of_decline(tateyama::api::server::response* response) {
+        tateyama::proto::endpoint::response::Handshake rp{};
+        auto rs = rp.mutable_error();
+        rs->set_code(tateyama::proto::diagnostics::Code::RESOURCE_LIMIT_REACHED);
+        response->body(rp.SerializeAsString());
+        rp.clear_error();
+    }
 };
 
 }
