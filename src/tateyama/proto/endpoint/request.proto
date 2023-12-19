@@ -6,6 +6,8 @@ option java_multiple_files = false;
 option java_package = "com.tsurugidb.endpoint.proto";
 option java_outer_classname = "EndpointRequest";
 
+import "tateyama/proto/auth/request.proto";
+
 // the request message to endpoint pseudo service.
 message Request {
     // service message version (major)
@@ -28,10 +30,10 @@ message Request {
 // handshake operation.
 message Handshake {
     // the auth info.
-    AuthInfo auth_info = 1;
+    auth.request.AuthInfo auth_info = 1;
 
     // the client information.
-    ClientInformation client_infomation = 2;
+    ClientInformation client_information = 2;
 }
 
 // client information
@@ -54,6 +56,3 @@ message ClientInformation {
     // the maximum concurrent result sets
     uint64 maximum_concurrent_result_sets = 11;
 }
-
-// auto info.
-message AuthInfo {}

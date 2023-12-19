@@ -32,6 +32,8 @@ void Worker::run()
         ipc_response response_obj{wire_, hdr.get_idx()};
 
         if (! handshake(static_cast<tateyama::api::server::request*>(&request_obj), static_cast<tateyama::api::server::response*>(&response_obj))) {
+            clean_up_();
+            terminated_ = true;
             return;
         }
     }

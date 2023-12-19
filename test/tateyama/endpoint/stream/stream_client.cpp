@@ -20,7 +20,7 @@
 
 namespace tateyama::api::endpoint::stream {
 
-stream_client::stream_client()
+stream_client::stream_client(tateyama::proto::endpoint::request::Handshake& hs) : endpoint_handshake_(hs)
 {
     if ((sockfd_ = ::socket(PF_INET, SOCK_STREAM, 0)) < 0) {
         throw std::runtime_error("error in create socket");
@@ -38,8 +38,7 @@ stream_client::stream_client()
         throw std::runtime_error("connect error");
     }
 
-    send(REQUEST_SESSION_HELLO, 0, "");
-    receive();
+    handshake();
 }
 
 void
@@ -61,9 +60,11 @@ stream_client::send(const std::uint8_t type, const std::uint16_t slot, std::stri
     }
 }
 
-void stream_client::send(std::string_view message) {
+void stream_client::send(const std::size_t tag, std::string_view message) {
+    ::tateyama::proto::framework::request::Header hdr{};
+    hdr.set_service_id(tag);
     std::stringstream ss{};
-    if(auto res = tateyama::utils::SerializeDelimitedToOstream(header_, std::addressof(ss)); ! res) {
+    if(auto res = tateyama::utils::SerializeDelimitedToOstream(hdr, std::addressof(ss)); ! res) {
         throw std::runtime_error("header serialize error");
     }
     if(auto res = tateyama::utils::PutDelimitedBodyToOstream(message, std::addressof(ss)); ! res) {
@@ -73,8 +74,24 @@ void stream_client::send(std::string_view message) {
     send(REQUEST_SESSION_PAYLOAD, 1, request_message);
 }
 
+struct parse_response_result {
+    std::size_t session_id_ { };
+    std::string_view payload_ { };
+};
+
+static bool parse_response_header(std::string_view input, parse_response_result &result) {
+    result = { };
+    ::tateyama::proto::framework::response::Header hdr { };
+    google::protobuf::io::ArrayInputStream in { input.data(), static_cast<int>(input.size()) };
+    if (auto res = utils::ParseDelimitedFromZeroCopyStream(std::addressof(hdr), std::addressof(in), nullptr); !res) {
+        return false;
+    }
+    result.session_id_ = hdr.session_id();
+    return utils::GetDelimitedBodyFromZeroCopyStream(std::addressof(in), nullptr, result.payload_);
+}
+
 void
-stream_client::receive()
+stream_client::receive(std::string& message)
 {
     std::uint8_t  data[4];  // NOLINT
 
@@ -90,12 +107,29 @@ stream_client::receive()
     ::recv(sockfd_, data, 4, 0);
     std::size_t length = data[0] | (data[1] << 8) | (data[2] << 16) | (data[3] << 24);
 
+    std::string r_msg;
     if (length > 0) {
-        message_.resize(length);
-        ::recv(sockfd_, message_.data(), length, 0);
+        r_msg.resize(length);
+        ::recv(sockfd_, r_msg.data(), length, 0);
+
+        parse_response_result result;
+        if (parse_response_header(r_msg, result)) {
+            message = result.payload_;
+        }
     } else {
-        message_.clear();
+        r_msg.clear();
+        return;
     }
 }
+
+void stream_client::handshake() {
+    tateyama::proto::endpoint::request::Request endpoint_request{};
+    endpoint_request.set_allocated_handshake(&endpoint_handshake_);
+    send(tateyama::framework::service_id_endpoint_broker, endpoint_request.SerializeAsString());
+    endpoint_request.release_handshake();
+
+    receive(handshake_response_);
+}
+
 
 } // namespace tateyama::api::endpoint::stream

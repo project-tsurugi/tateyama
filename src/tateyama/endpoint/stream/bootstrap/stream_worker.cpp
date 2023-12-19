@@ -34,7 +34,12 @@ void stream_worker::run(const std::function<void(void)>& clean_up)
         stream_response response_obj{session_stream_, slot};
 
         if (decline_) {
-            notify_of_session_limit(&response_obj);
+            notify_of_decline(&response_obj);
+            if (!session_stream_->await(slot, payload)) {
+                session_stream_->close();
+            } else {
+                LOG_LP(INFO) << "illegal procedure (receive a request in spite of a decline case)";  // should not reach here
+            }
             clean_up();
             return;
         }

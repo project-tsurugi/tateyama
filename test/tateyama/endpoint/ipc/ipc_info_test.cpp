@@ -16,7 +16,9 @@
 
 #include "tateyama/endpoint/ipc/bootstrap/worker.h"
 #include "tateyama/endpoint/header_utils.h"
+#include <tateyama/proto/endpoint/request.pb.h>
 #include "tateyama/status/resource/database_info_impl.h"
+#include "ipc_client.h"
 
 #include <gtest/gtest.h>
 
@@ -29,18 +31,21 @@ public:
     static void wait(tateyama::endpoint::ipc::bootstrap::Worker& worker) {
         worker.wait_for();
     }
-
 };
 }  // namespace tateyama::server
 
 namespace tateyama::endpoint::ipc {
 
-static constexpr std::size_t my_session_id_ = 123;
+static constexpr std::size_t my_session_id = 123;
 
+static constexpr std::string_view database_name = "ipc_info_test";
+static constexpr std::string_view label = "label_fot_test";
+static constexpr std::string_view application_name = "application_name_fot_test";
+static constexpr std::string_view user_name = "user_name_fot_test";
 static constexpr std::size_t datachannel_buffer_size = 64 * 1024;
 static constexpr tateyama::common::wire::message_header::index_type index_ = 1;
 static constexpr std::string_view response_test_message = "opqrstuvwxyz";
-static constexpr std::string_view request_test_message_ = "abcdefgh";
+static constexpr std::string_view request_test_message = "abcdefgh";
 
 class info_service : public tateyama::framework::routing_service {
 public:
@@ -77,32 +82,42 @@ class ipc_info_test : public ::testing::Test {
     int rv_;
 
 public:
-    tateyama::status_info::resource::database_info_impl database_info_{"ipc_info_test"};
+    tateyama::status_info::resource::database_info_impl database_info_{database_name};
     info_service service_{};
 };
 
-TEST_F(ipc_info_test, DISABLED_basic) {
+TEST_F(ipc_info_test, basic) {
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-    auto wire = std::make_shared<bootstrap::server_wire_container_impl>("ipc_info_test", "dummy_mutex_file_name", datachannel_buffer_size, 16);
-    auto* request_wire = static_cast<bootstrap::server_wire_container_impl::wire_container_impl*>(wire->get_request_wire());
-    auto& response_wire = dynamic_cast<bootstrap::server_wire_container_impl::response_wire_container_impl&>(wire->get_response_wire());
-    tateyama::endpoint::ipc::bootstrap::Worker worker(service_, my_session_id_, wire, [](){}, database_info_);
+    // server part
+    std::string session_name{database_name};
+    session_name += "-";
+    session_name += std::to_string(my_session_id);
+    auto wire = std::make_shared<bootstrap::server_wire_container_impl>(session_name, "dummy_mutex_file_name", datachannel_buffer_size, 16);
+    tateyama::endpoint::ipc::bootstrap::Worker worker(service_, my_session_id, wire, [](){}, database_info_);
     tateyama::server::ipc_listener_for_test::run(worker);
 
-    request_header_content hdr{};
-    std::stringstream ss{};
-    append_request_header(ss, request_test_message_, hdr);
-    auto request_message = ss.str();
-    request_wire->write(request_message.data(), request_message.length(), index_);
-    response_wire.await();
+    // client part
+    tateyama::proto::endpoint::request::ClientInformation cci{};
+    cci.set_connection_label(std::string(label));
+    cci.set_application_name(std::string(application_name));
+    cci.set_user_name(std::string(user_name));
+    tateyama::proto::endpoint::request::Handshake hs{};
+    hs.set_allocated_client_information(&cci);
+    auto client = std::make_unique<ipc_client>(database_name, my_session_id, hs);
+    hs.release_client_information();
 
+    client->send(0, std::string(request_test_message));  // we do not care service_id nor request message here
+    std::string res{};
+    client->receive(res);
+    
+    // server part
     auto* request = service_.request();
     auto now = std::chrono::system_clock::now();
 
     // test for database_info
     auto& di = request->database_info();
-    EXPECT_EQ(di.name(), "ipc_info_test");
+    EXPECT_EQ(di.name(), database_name);
     auto d_start = di.start_at();
     auto diff = std::chrono::duration_cast<std::chrono::milliseconds>(now - d_start).count();
     EXPECT_TRUE(diff >= 500);
@@ -110,8 +125,11 @@ TEST_F(ipc_info_test, DISABLED_basic) {
 
     // test for session_info
     auto& si = request->session_info();
-    EXPECT_EQ(si.id(), my_session_id_);
-    EXPECT_EQ(si.connection_type_name(), "ipc");
+    EXPECT_EQ(si.label(), label);
+    EXPECT_EQ(si.application_name(), application_name);
+    EXPECT_EQ(si.user_name(), user_name);
+    EXPECT_EQ(si.id(), my_session_id);
+    EXPECT_EQ(si.connection_type_name(), "IPC");
     auto s_start = si.start_at();
     EXPECT_TRUE(std::chrono::duration_cast<std::chrono::milliseconds>(now - s_start).count() < 500);
 
