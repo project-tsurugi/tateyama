@@ -28,8 +28,12 @@ namespace tateyama::framework {
 bool extract_config(environment& env, sharksfin::DatabaseOptions& options) {
     try {
         if(auto ds = env.configuration()->get_section("datastore")) {
-            // if value is empty, it's not relative path so skip assigning location option
-            if(auto res = ds->get<std::filesystem::path>("log_location"); res && !res->empty()) {
+            if (auto res = ds->get<std::filesystem::path>("log_location"); res) {
+                if(res->empty()) {
+                    // if value is empty, it's not relative path and is invalid
+                    LOG(ERROR) << "datastore log_location configuration parameter is empty";
+                    return false;
+                }
                 // sharksfin db location name is different for historical reason
                 static constexpr std::string_view KEY_LOCATION{"location"};
                 options.attribute(KEY_LOCATION, res->string());

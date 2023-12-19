@@ -46,7 +46,13 @@ public:
 };
 
 TEST_F(transactional_kvs_test, basic) {
-    auto cfg = api::configuration::create_configuration("", tateyama::test::default_configuration_for_tests);
+    std::stringstream ss{};
+    ss << "[datastore]\n";
+    ss << "log_location=";
+    ss << path();
+    ss << "\n";
+    std::cerr << "ss : " << ss.str();
+    auto cfg = std::make_shared<tateyama::api::configuration::whole>(ss, tateyama::test::default_configuration_for_tests);
     framework::environment env{boot_mode::database_server, cfg};
     transactional_kvs_resource kvs{};
     ASSERT_TRUE(kvs.setup(env));
@@ -71,8 +77,8 @@ TEST_F(transactional_kvs_test, relative_path) {
     ASSERT_TRUE(kvs.shutdown(env));
 }
 
-TEST_F(transactional_kvs_test, relative_path_empty_string) {
-    // verify empty string is not handled as relative path
+TEST_F(transactional_kvs_test, empty_string) {
+    // verify error with empty string
     std::stringstream ss{
         "[datastore]\n"
         "log_location=\n",
@@ -81,11 +87,7 @@ TEST_F(transactional_kvs_test, relative_path_empty_string) {
     cfg->base_path(path());
     framework::environment env{boot_mode::database_server, cfg};
     transactional_kvs_resource kvs{};
-    // we can only check following calls are successful
-    // manually verify with GLOG_v=50 env. var. and shirakami::init receives empty string as log_directory_path
-    ASSERT_TRUE(kvs.setup(env));
-    ASSERT_TRUE(kvs.start(env));
-    ASSERT_TRUE(kvs.shutdown(env));
+    ASSERT_FALSE(kvs.setup(env));
 }
 
 TEST_F(transactional_kvs_test, DISABLED_error_detection) {
