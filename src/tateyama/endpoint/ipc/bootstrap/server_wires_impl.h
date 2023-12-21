@@ -596,7 +596,6 @@ class connection_container
 
 public:
     explicit connection_container(std::string_view name, std::size_t n) : name_(name) {
-        boost::interprocess::shared_memory_object::remove(name_.c_str());
         try {
             boost::interprocess::permissions  unrestricted_permissions;
             unrestricted_permissions.set_unrestricted();
@@ -610,7 +609,7 @@ public:
             using namespace std::literals::string_view_literals;
 
             std::stringstream ss{};
-            ss << "cannot create a database connection outlet named "sv << name << " due to shared memory error."sv;
+            ss << "cannot create a database connection outlet named "sv << name << ", probably another server is running using the same database name"sv;
             throw std::runtime_error(ss.str());
         }
     }
