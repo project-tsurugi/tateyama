@@ -68,7 +68,6 @@ static void reply_error(std::string_view error_message,
     logging.set_allocated_unknown_error(&error);
     reply(logging, res);
     logging.release_unknown_error();
-    error.release_message();
 }
 
 static void success_logging(std::shared_ptr<tateyama::api::server::response> &res) {
