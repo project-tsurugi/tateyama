@@ -14,15 +14,13 @@
  * limitations under the License.
  */
 #include <tateyama/framework/server.h>
+#include <tateyama/framework/routing_service.h>
 #include <tateyama/api/server/request.h>
 
 #include <tateyama/debug/service.h>
 #include <tateyama/loopback/loopback_client.h>
 #include <tateyama/proto/debug/request.pb.h>
 #include <tateyama/proto/debug/response.pb.h>
-
-#include "test_utils.h"
-#include "tateyama/framework/routing_service.h"
 
 #include <gtest/gtest.h>
 
@@ -39,8 +37,10 @@ public:
     const std::size_t session_id = 123;
     tateyama::framework::component::id_type service_id = tateyama::framework::service_id_debug;
 
-    std::string make_request(tateyama::proto::debug::request::Logging_Level level, std::string &message,
-                             uint64_t major, uint64_t minor) {
+    const static uint64_t default_major = 0;
+    const static uint64_t default_minor = 0;
+
+    std::string make_request(tateyama::proto::debug::request::Logging_Level level, std::string &message) {
         std::string s{};
         tateyama::proto::debug::request::Request proto_req{};
         tateyama::proto::debug::request::Logging logging{};
@@ -48,8 +48,8 @@ public:
         std::string m { message };
         logging.set_allocated_message(&m);
         proto_req.set_allocated_logging(&logging);
-        proto_req.set_service_message_version_major(major);
-        proto_req.set_service_message_version_minor(minor);
+        proto_req.set_service_message_version_major(default_major);
+        proto_req.set_service_message_version_minor(default_minor);
         EXPECT_TRUE(proto_req.SerializeToString(&s));
         logging.release_message();
         proto_req.release_logging();
@@ -57,9 +57,8 @@ public:
     }
 
     void logging_ok(tateyama::loopback::loopback_client &client,
-                    tateyama::proto::debug::request::Logging_Level level, std::string &message,
-                    uint64_t major = 0, uint64_t minor = 0) {
-        std::string s{make_request(level, message, major, minor)};
+                    tateyama::proto::debug::request::Logging_Level level, std::string &message) {
+        std::string s{make_request(level, message)};
         auto buf_res = client.request(session_id, service_id, s);
         auto body = buf_res.body();
         EXPECT_TRUE(body.size() > 0);
@@ -70,9 +69,8 @@ public:
     }
 
     void logging_broken_message(tateyama::loopback::loopback_client &client,
-                    tateyama::proto::debug::request::Logging_Level level, std::string &message,
-                    uint64_t major = 0, uint64_t minor = 0) {
-        std::string broken{make_request(level, message, major, minor) + "X"};
+                    tateyama::proto::debug::request::Logging_Level level, std::string &message) {
+        std::string broken{make_request(level, message) + "X"};
         auto buf_res = client.request(session_id, service_id, broken);
         auto body = buf_res.body();
         EXPECT_TRUE(body.size() > 0);
@@ -87,16 +85,13 @@ public:
     }
 
     void logging_empty_req(tateyama::loopback::loopback_client &client,
-                                tateyama::proto::debug::request::Logging_Level level, std::string &message,
-                                uint64_t major = 0, uint64_t minor = 0) {
-        std::string s{};
+                                tateyama::proto::debug::request::Logging_Level level, std::string &message) {
+        std::string empty{};
         {
             tateyama::proto::debug::request::Request proto_req{};
-            proto_req.set_service_message_version_major(major);
-            proto_req.set_service_message_version_minor(minor);
-            EXPECT_TRUE(proto_req.SerializeToString(&s));
+            EXPECT_TRUE(proto_req.SerializeToString(&empty));
         }
-        auto buf_res = client.request(session_id, service_id, s);
+        auto buf_res = client.request(session_id, service_id, empty);
         auto body = buf_res.body();
         EXPECT_TRUE(body.size() > 0);
         {
@@ -110,13 +105,9 @@ public:
     }
 };
 
-/*
- * /home/ohkubo/git/tateyama/build/test/tateyama-test "--gtest_filter=debug_service_test.*"
- */
 TEST_F(debug_service_test, simple) {
-    tateyama::framework::server sv {tateyama::framework::boot_mode::database_server,
-                                    default_configuration()};
-    //tateyama::framework::add_core_components(sv);
+    auto cfg = api::configuration::create_configuration();
+    tateyama::framework::server sv {tateyama::framework::boot_mode::database_server, cfg};
     sv.add_service(std::make_shared<tateyama::framework::routing_service>());
     sv.add_service(std::make_shared<tateyama::debug::service>());
     tateyama::loopback::loopback_client loopback;
@@ -141,6 +132,5 @@ TEST_F(debug_service_test, simple) {
     //
     EXPECT_TRUE(sv.shutdown());
 }
-
 
 }  // namespace tateyama::debug
