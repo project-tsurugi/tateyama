@@ -67,7 +67,7 @@ static void reply_error(std::string_view error_message,
     error.set_message(std::string(error_message));
     logging.set_allocated_unknown_error(&error);
     reply(logging, res);
-    logging.release_unknown_error();
+    (void)logging.release_unknown_error();
 }
 
 static void success_logging(std::shared_ptr<tateyama::api::server::response> &res) {
@@ -75,7 +75,7 @@ static void success_logging(std::shared_ptr<tateyama::api::server::response> &re
     tateyama::proto::debug::response::Void v { };
     logging.set_allocated_success(&v);
     reply(logging, res);
-    logging.release_success();
+    (void)logging.release_success();
 }
 
 static void command_logging(tateyama::proto::debug::request::Request &proto_req,
