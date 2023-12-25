@@ -17,6 +17,9 @@
 #include <iomanip>
 #include <sstream>
 
+#include <tateyama/logging.h>
+#include <glog/logging.h>
+
 #include <tateyama/status/resource/bridge.h>
 #include "database_info_impl.h"
 
@@ -54,6 +57,7 @@ bool bridge::setup(environment& env) {
         resource_status_memory_->set_database_name(name);
         return true;
     } catch(const boost::interprocess::interprocess_exception& ex) {
+        LOG(ERROR) << "could not create shared memory to inform tsurugidb status, review the shared memory settings.";
         return false;
     }
 }
