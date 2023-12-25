@@ -176,7 +176,7 @@ public:
             stream = std::ifstream{file_.c_str()};
             initialize(stream, default_property);
         } else {
-            VLOG(log_info) << "cannot find " << file_name << ", thus we use default property only.";
+            vlog_info << "cannot find " << file_name << ", thus we use default property only." << std::endl;
             std::stringstream empty_ss{};
             initialize(empty_ss, default_property);
         }
@@ -257,6 +257,16 @@ public:
         });
     }
 
+    /**
+     * @brief show VLOG(log_info) message that was output before InitGoogleLogging()
+     */
+    void show_vlog_info_message() {
+        if (vlog_info.tellp() != std::streampos(0)) {
+            VLOG(log_info) << vlog_info.str();
+            vlog_info.clear();
+        }
+    }
+
 private:
     boost::property_tree::ptree property_tree_;
     boost::property_tree::ptree default_tree_;
@@ -265,6 +275,7 @@ private:
     bool check_done_{};
     bool default_valid_{};
     std::optional<std::filesystem::path> base_path_{std::nullopt};
+    std::stringstream vlog_info{};
 
     std::unordered_map<std::string, std::unique_ptr<section>> map_;
 
@@ -317,7 +328,7 @@ private:
         try {
             boost::property_tree::read_ini(content, property_tree_);
         } catch (boost::property_tree::ini_parser_error &e) {
-            VLOG(log_info) << "error reading input, thus we use default property only. msg:" << e.what();
+            vlog_info << "error reading input, thus we use default property only. msg:" << e.what() << std::endl;
         }
         if (default_valid_) {
             BOOST_FOREACH(const boost::property_tree::ptree::value_type &v, default_tree_) {
@@ -328,7 +339,7 @@ private:
                         auto& pt = property_tree_.get_child(v.first);
                         map_.emplace(v.first, std::make_unique<section>(pt, dt, this, default_required));
                     } catch (boost::property_tree::ptree_error &e) {
-                        VLOG(log_info) << "cannot find " << v.first << " section in the input, thus we use default property only.";
+                        vlog_info << "cannot find " << v.first << " section in the input, thus we use default property only." << std::endl;
                         map_.emplace(v.first, std::make_unique<section>(dt, this, default_required));
                     }
                 } else {
