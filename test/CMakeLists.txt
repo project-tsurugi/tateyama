@@ -55,6 +55,7 @@ file(GLOB SRCS
         "tateyama/*.cpp"
         "tateyama/api/*.cpp"
         "tateyama/datastore/*.cpp"
+        "tateyama/debug/*.cpp"
         "tateyama/endpoint/*.cpp"
         "tateyama/endpoint/ipc/*.cpp"
         "tateyama/endpoint/loopback/*.cpp"
