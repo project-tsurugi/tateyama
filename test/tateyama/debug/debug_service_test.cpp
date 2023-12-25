@@ -27,18 +27,19 @@
 namespace tateyama::debug {
 
 class debug_service_test : public ::testing::Test {
+private:
+    const std::size_t session_id = 123;
+    tateyama::framework::component::id_type service_id = tateyama::framework::service_id_debug;
+
+    const static uint64_t default_major = 0;
+    const static uint64_t default_minor = 0;
+
 public:
     void SetUp() override {
     }
 
     void TearDown() override {
     }
-
-    const std::size_t session_id = 123;
-    tateyama::framework::component::id_type service_id = tateyama::framework::service_id_debug;
-
-    const static uint64_t default_major = 0;
-    const static uint64_t default_minor = 0;
 
     std::string make_request(tateyama::proto::debug::request::Logging_Level level, std::string &message) {
         std::string s{};
@@ -61,7 +62,7 @@ public:
         std::string s{make_request(level, message)};
         auto buf_res = client.request(session_id, service_id, s);
         auto body = buf_res.body();
-        EXPECT_TRUE(body.size() > 0);
+        EXPECT_TRUE(!body.empty());
         {
             tateyama::proto::debug::response::Void proto_res{};
             EXPECT_TRUE(proto_res.ParseFromArray(body.data(), body.size()));
@@ -73,19 +74,18 @@ public:
         std::string broken{make_request(level, message) + "X"};
         auto buf_res = client.request(session_id, service_id, broken);
         auto body = buf_res.body();
-        EXPECT_TRUE(body.size() > 0);
+        EXPECT_TRUE(!body.empty());
         {
             tateyama::proto::debug::response::Logging proto_res{};
             EXPECT_TRUE(proto_res.ParseFromArray(body.data(), body.size()));
             const auto &error = proto_res.unknown_error();
-            const auto &message = error.message();
-            EXPECT_TRUE(message.length() > 0);
-            std::cout << message << std::endl;
+            const auto &m = error.message();
+            EXPECT_TRUE(!m.empty());
+            std::cout << m << std::endl;
         }
     }
 
-    void logging_empty_req(tateyama::loopback::loopback_client &client,
-                                tateyama::proto::debug::request::Logging_Level level, std::string &message) {
+    void logging_empty_req(tateyama::loopback::loopback_client &client) const {
         std::string empty{};
         {
             tateyama::proto::debug::request::Request proto_req{};
@@ -93,14 +93,14 @@ public:
         }
         auto buf_res = client.request(session_id, service_id, empty);
         auto body = buf_res.body();
-        EXPECT_TRUE(body.size() > 0);
+        EXPECT_TRUE(!body.empty());
         {
             tateyama::proto::debug::response::Logging proto_res{};
             EXPECT_TRUE(proto_res.ParseFromArray(body.data(), body.size()));
             const auto &error = proto_res.unknown_error();
-            const auto &message = error.message();
-            EXPECT_TRUE(message.length() > 0);
-            std::cout << message << std::endl;
+            const auto &m = error.message();
+            EXPECT_TRUE(!m.empty());
+            std::cout << m << std::endl;
         }
     }
 };
@@ -128,7 +128,7 @@ TEST_F(debug_service_test, simple) {
     //
     const auto level = tateyama::proto::debug::request::Logging_Level::Logging_Level_INFO;
     logging_broken_message(loopback, level, message);
-    logging_empty_req(loopback, level, message);
+    logging_empty_req(loopback);
     //
     EXPECT_TRUE(sv.shutdown());
 }
