@@ -57,7 +57,11 @@ bool bridge::setup(environment& env) {
         resource_status_memory_->set_database_name(name);
         return true;
     } catch(const boost::interprocess::interprocess_exception& ex) {
-        LOG(ERROR) << "could not create shared memory to inform tsurugidb status, review the shared memory settings.";
+        std::stringstream ss{};
+        ss << "could not create shared memory to inform tsurugidb status (cause; '"
+           << ex.what()
+           << "'), review the shared memory settings.";
+        LOG(ERROR) << ss.str();
         return false;
     }
 }
