@@ -32,6 +32,7 @@
 
 #include <glog/logging.h>
 #include <tateyama/logging.h>
+#include <tateyama/logging_helper.h>
 
 namespace tateyama::api::configuration {
 
@@ -49,10 +50,10 @@ public:
             if (!value.empty()) {
                 try {
                     auto rv = boost::lexical_cast<T>(value);
-                    VLOG(log_trace) << "property " << name << " has found in tsurugi.ini and is " << rv;
+                    VLOG_LP(log_trace) << "property " << name << " has found in tsurugi.ini and is " << rv;
                     return rv;
                 } catch (boost::bad_lexical_cast &) {
-                    LOG(ERROR) << "value of " << name << " is '" << value << "', which can not be converted to the type specified";
+                    LOG_LP(ERROR) << "value of " << name << " is '" << value << "', which can not be converted to the type specified";
                     throw std::runtime_error("the parameter string can not be converted to the type specified");
                 }
             }
@@ -64,10 +65,10 @@ public:
                 if (!value.empty()) {
                     try {
                         auto rv = boost::lexical_cast<T>(value);
-                        VLOG(log_trace) << "property " << name << " has found in default and is " << rv;
+                        VLOG_LP(log_trace) << "property " << name << " has found in default and is " << rv;
                         return rv;
                     } catch (boost::bad_lexical_cast &) {
-                        VLOG(log_trace) << "value of " << name << " is '" << value << "', which can not be converted to the type specified";
+                        VLOG_LP(log_trace) << "value of " << name << " is '" << value << "', which can not be converted to the type specified";
                         throw std::runtime_error("the parameter string can not be converted to the type specified");
                     }
                 }
@@ -77,7 +78,7 @@ public:
 
         // To support hidden configuration parameter, comment out the error msg for now.
         // if (default_required_) {
-        //     LOG(ERROR) << "both tree did not have such property: " << name;
+        //     LOG_LP(ERROR) << "both tree did not have such property: " << name;
         // }
         return std::nullopt;
     }
@@ -85,7 +86,7 @@ public:
     // just to suppress clang clang-diagnostic-unused-private-field error
     inline void dummy_message_output(std::string_view name) const {  
         if (default_required_) {
-            LOG(ERROR) << "both tree did not have such property: " << name;
+            LOG_LP(ERROR) << "both tree did not have such property: " << name;
         }
     }
     
@@ -142,7 +143,7 @@ template<>
         }
 
         // To support hidden configuration parameter, comment out the error msg for now.
-        // LOG(ERROR) << "both tree did not have such property: " << name;
+        // LOG_LP(ERROR) << "both tree did not have such property: " << name;
         return std::nullopt;
 }
 
@@ -159,7 +160,7 @@ template<>
         if (iequals(str, "false") || iequals(str, "no") || str == "0") {
             return false;
         }
-        LOG(ERROR) << "value of " << name << " is '" << str << "', which is not boolean";
+        LOG_LP(ERROR) << "value of " << name << " is '" << str << "', which is not boolean";
         throw std::runtime_error("the parameter string can not be converted to bool");
     }
     return std::nullopt;
@@ -258,11 +259,11 @@ public:
     }
 
     /**
-     * @brief show VLOG(log_info) message that was output before InitGoogleLogging()
+     * @brief show VLOG_LP(log_info) message that was output before InitGoogleLogging()
      */
     void show_vlog_info_message() {
         if (vlog_info.tellp() != std::streampos(0)) {
-            VLOG(log_info) << vlog_info.str();
+            VLOG_LP(log_info) << vlog_info.str();
             vlog_info.clear();
         }
     }
@@ -296,7 +297,7 @@ private:
                         default_section.get<std::string>(p.first);
                     } catch (boost::property_tree::ptree_error &e) {
                         if (default_required) {
-                            LOG(ERROR) << "property '" << p.first << "' is not in the '" << section_name << "' section in the default configuration.";
+                            LOG_LP(ERROR) << "property '" << p.first << "' is not in the '" << section_name << "' section in the default configuration.";
 //                          rv = false;  //  FIXME  As a provisional measure, treat as not an error if the property is not in the default configuration.
                         }
                         continue;
@@ -304,7 +305,7 @@ private:
                 }
             } catch (boost::property_tree::ptree_error &e) {
                 if (default_required) {
-                    LOG(ERROR) << "section '" << section_name << "' is not in the default configuration.";
+                    LOG_LP(ERROR) << "section '" << section_name << "' is not in the default configuration.";
 //                  rv = false;  //  FIXME  As a provisional measure, treat as not an error if the property is not in the default configuration.
                 }
                 continue;
@@ -355,10 +356,10 @@ private:
     [[nodiscard]] section* get_section_internal(std::string_view n) const {
         auto name = std::string(n);
         if (auto it = map_.find(name); it != map_.end()) {
-            VLOG(log_trace) << "configuration of section " << name << " will be used.";
+            VLOG_LP(log_trace) << "configuration of section " << name << " will be used.";
             return it->second.get();
         }
-        LOG(ERROR) << "cannot find " << name << " section in the configuration.";
+        LOG_LP(ERROR) << "cannot find " << name << " section in the configuration.";
         return nullptr;
     }
 };
@@ -384,7 +385,7 @@ template<>
         if (bp) {
             return bp.value() / ep;
         }
-        LOG(ERROR) << "value of " << name << " is '" << str << "', which is relative path and the the base path is empty";
+        LOG_LP(ERROR) << "value of " << name << " is '" << str << "', which is relative path and the the base path is empty";
         throw std::runtime_error("the parameter string is relative path and the base path is empty");
     }
     return std::nullopt;
@@ -401,7 +402,7 @@ inline std::shared_ptr<whole> create_configuration(std::string_view file_name = 
     try {
         return std::make_shared<whole>(file_name, default_property);
     } catch (boost::property_tree::ptree_error &e) {
-        LOG(ERROR) << "cannot create configuration, file name is '" << file_name << "'.";
+        LOG_LP(ERROR) << "cannot create configuration, file name is '" << file_name << "'.";
         return nullptr;
     }
 }
