@@ -15,6 +15,7 @@
  */
 #pragma once
 
+#include <chrono>
 #include <sched.h>
 
 #include <tateyama/logging.h>
@@ -37,6 +38,8 @@ namespace tateyama::task_scheduler {
 template <class T, class S = tateyama::task_scheduler::basic_conditional_task>
 class cache_align scheduler {
 public:
+    // clock used for stats
+    using clock = std::chrono::steady_clock;
 
     /**
      * @brief task type scheduled by this
@@ -221,6 +224,7 @@ public:
         if(watcher_thread_) {
             watcher_thread_->activate();
         }
+        started_at_ = clock::now();
         started_ = true;
     }
 
@@ -346,8 +350,10 @@ public:
      * @brief print worker stats
      */
     void print_worker_stats(std::ostream& os) {
+        auto duration_us = std::chrono::duration_cast<std::chrono::microseconds>(clock::now() - started_at_).count();
         auto count = contexts_.size();
         os << "{";
+        os << "\"duration_us\":" << duration_us << ",";
         os << "\"worker_count\":" << count << ",";
         os << "\"workers\":[";
         for(std::size_t i=0; i < count; ++i) {
@@ -360,7 +366,8 @@ public:
             os << "\"count\":" << stat.count_ << ",";
             os << "\"sticky\":" << stat.sticky_ << ",";
             os << "\"steal\":" << stat.steal_ << ",";
-            os << "\"wakeup\":" << stat.wakeup_;
+            os << "\"wakeup_run\":" << stat.wakeup_run_ << ",";
+            os << "\"suspend\":" << stat.suspend_;
             os << "}";
         }
         os << "]";
@@ -384,6 +391,7 @@ private:
     std::unique_ptr<impl::thread_control> watcher_thread_{};
     impl::conditional_worker_context conditional_worker_context_{};
     conditional_worker conditional_worker_{}; // stored for testing
+    clock::time_point started_at_{};
 
     void prepare() {
         auto sz = cfg_.thread_count();
@@ -420,7 +428,7 @@ private:
         auto ret = index++;
         return ret % mod;
     }
-    
+
     /**
      * @brief print queue diagnostics
      */

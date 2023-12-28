@@ -58,7 +58,12 @@ struct cache_align worker_stat {
     /**
      * @brief the count of when worker gets up (from suspension) and executes at least one task
      */
-    std::size_t wakeup_{};
+    std::size_t wakeup_run_{};
+
+    /**
+     * @brief the count of worker suspends
+     */
+    std::size_t suspend_{};
 };
 
 /**
@@ -179,6 +184,7 @@ public:
             if(empty_work_count > cfg_->worker_try_count()) {
                 empty_work_count = 0;
                 ctx.busy_working(false);
+                ++stat_->suspend_;
                 ctx.thread()->suspend(std::chrono::microseconds{cfg_->worker_suspend_timeout()});
             }
         }
@@ -238,7 +244,7 @@ private:
 
     void execute_task(task& t, context& ctx) {
         if(! ctx.busy_working()) {
-            ++stat_->wakeup_;
+            ++stat_->wakeup_run_;
         }
         ctx.busy_working(true);
         try {
