@@ -280,17 +280,15 @@ private:
         basic_queue<task>& q,
         basic_queue<task>& sq
     ) {
-        // using counter, check sticky sometimes for fairness
-        auto& cnt = ctx.count_check_local_first();
-        cnt += cfg_->ratio_check_local_first();
-        if(cnt < 1) {
+        // sometimes check local queue first for fairness
+        auto& notify = ctx.local_first_notifer();
+        if(! notify.count_up()) {
             if(try_process(ctx, sq)) {
                 ++stat_->sticky_;
                 return true;
             }
             if(try_process(ctx, q)) return true;
         } else {
-            --cnt;
             if(try_process(ctx, q)) return true;
             if(try_process(ctx, sq)) {
                 ++stat_->sticky_;

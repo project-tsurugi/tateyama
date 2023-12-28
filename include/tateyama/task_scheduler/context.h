@@ -19,10 +19,10 @@
 #include <variant>
 #include <ios>
 #include <functional>
-#include <boost/rational.hpp>
 
 #include <glog/logging.h>
 #include <tateyama/utils/cache_align.h>
+#include <tateyama/task_scheduler/impl/periodic_notifier.h>
 
 namespace tateyama::task_scheduler::impl {
 class thread_control;
@@ -36,8 +36,6 @@ namespace tateyama::task_scheduler {
  */
 class cache_align context {
 public:
-    using rational = boost::rational<std::int64_t>;
-
     context() = default;
     ~context() = default;
     context(context const& other) = delete;
@@ -78,11 +76,11 @@ public:
     }
 
     /**
-     * @brief accessor to the count_check_local_first parameter
-     * @return counter used to accumulate ratio_check_local_first
+     * @brief accessor to the local_first_notifer parameter
+     * @return notifier used to get notification when to check local task queue first
      */
-    [[nodiscard]] rational& count_check_local_first() noexcept {
-        return count_check_local_first_;
+    [[nodiscard]] impl::periodic_notifier& local_first_notifer() noexcept {
+        return local_first_notifier_;
     }
 
     /**
@@ -136,7 +134,7 @@ public:
 private:
     std::size_t index_{};
     std::size_t last_steal_from_{};
-    rational count_check_local_first_{};
+    impl::periodic_notifier local_first_notifier_{};
     bool task_is_stolen_{};
     impl::thread_control* thread_{};
     bool busy_working_{};

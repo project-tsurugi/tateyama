@@ -268,6 +268,13 @@ public:
     }
 
     /**
+     * @brief accessor to the contexts for testing purpose
+     */
+    [[nodiscard]] std::vector<context>& contexts() noexcept {
+        return contexts_;
+    }
+
+    /**
      * @brief accessor to the local queue for testing purpose
      */
     [[nodiscard]] std::vector<queue>& queues() noexcept {
@@ -404,6 +411,10 @@ private:
         threads_.reserve(sz);
         for(std::size_t i = 0; i < sz; ++i) {
             auto& ctx = contexts_.emplace_back(i);
+            ctx.local_first_notifer().init(
+                static_cast<std::size_t>(cfg_.ratio_check_local_first().numerator()),
+                static_cast<std::size_t>(cfg_.ratio_check_local_first().denominator())
+            );
             auto& worker = workers_.emplace_back(
                 queues_, sticky_task_queues_, initial_tasks_, worker_stats_[i], cfg_, [this](std::size_t index) {
                         this->initialize_preferred_worker_for_current_thread(index);

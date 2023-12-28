@@ -147,17 +147,16 @@ TEST_F(scheduler_test, sticky_task_simple) {
     sched.schedule_at(task{test_task_sticky{[&](context& t) {
         executed02 = true;
     }}}, 0);
-    context ctx{};
+    auto& ctx = sched.contexts()[0];
     w0.init(thread_initialization_info{0}, ctx);
 
-    context ctx0{0};
-    w0.process_next(ctx0, lq0, sq0);
+    w0.process_next(ctx, lq0, sq0);
     EXPECT_TRUE(executed00);
-    w0.process_next(ctx0, lq0, sq0);
+    w0.process_next(ctx, lq0, sq0);
     EXPECT_TRUE(executed01);
-    w0.process_next(ctx0, lq0, sq0);
+    w0.process_next(ctx, lq0, sq0);
     EXPECT_TRUE(executed02);
-    w0.process_next(ctx0, lq0, sq0);
+    w0.process_next(ctx, lq0, sq0);
     EXPECT_TRUE(executed03);
 }
 
@@ -185,17 +184,15 @@ TEST_F(scheduler_test, sticky_task_stealing) {
     sched.schedule_at(task{test_task_sticky{[&](context& t) {
         executed10 = true;
     }}}, 1);
-    context ctx{};
+    auto& ctx = sched.contexts()[0];
     w0.init(thread_initialization_info{0}, ctx);
     w0.init(thread_initialization_info{1}, ctx);
 
-    context ctx0{0};
-    context ctx1{1};
-    w0.process_next(ctx0, lq0, sq0);
+    w0.process_next(ctx, lq0, sq0);
     EXPECT_TRUE(executed00);
-    w1.process_next(ctx1, lq1, sq1);
+    w1.process_next(ctx, lq1, sq1);
     EXPECT_TRUE(executed10);
-    w0.process_next(ctx0, lq0, sq0);
+    w0.process_next(ctx, lq0, sq0);
     EXPECT_TRUE(executed11);
 }
 
@@ -235,23 +232,22 @@ TEST_F(scheduler_test, sticky_tasks) {
     sched.schedule_at(task{test_task_sticky{[&](context& t) {
         executed04 = true;
     }}}, 0);
-    context ctx{};
+    auto& ctx = sched.contexts()[0];
     w0.init(thread_initialization_info{0}, ctx);
 
-    context ctx0{0};
-    w0.process_next(ctx0, lq0, sq0);
+    w0.process_next(ctx, lq0, sq0);
     EXPECT_TRUE(executed00);
-    w0.process_next(ctx0, lq0, sq0);
+    w0.process_next(ctx, lq0, sq0);
     EXPECT_TRUE(executed01);
-    w0.process_next(ctx0, lq0, sq0);
+    w0.process_next(ctx, lq0, sq0);
     EXPECT_TRUE(executed02);
-    w0.process_next(ctx0, lq0, sq0);
+    w0.process_next(ctx, lq0, sq0);
     EXPECT_TRUE(executed03);
-    w0.process_next(ctx0, lq0, sq0);
+    w0.process_next(ctx, lq0, sq0);
     EXPECT_TRUE(executed04);
-    w0.process_next(ctx0, lq0, sq0);
+    w0.process_next(ctx, lq0, sq0);
     EXPECT_TRUE(executed05);
-    w0.process_next(ctx0, lq0, sq0);
+    w0.process_next(ctx, lq0, sq0);
 }
 
 }
