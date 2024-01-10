@@ -51,6 +51,8 @@ enum class state : std::int64_t {
     activated = 2,
     deactivating = 3,
     deactivated = 4,
+    // error
+    boot_error = 10,
 };
 
 /**
