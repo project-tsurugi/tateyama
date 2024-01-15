@@ -6,8 +6,6 @@ option java_multiple_files = false;
 option java_package = "com.tsurugidb.endpoint.proto";
 option java_outer_classname = "EndpointRequest";
 
-import "tateyama/proto/auth/request.proto";
-
 // the request message to endpoint pseudo service.
 message Request {
     // service message version (major)
@@ -29,11 +27,14 @@ message Request {
 
 // handshake operation.
 message Handshake {
-    // the auth info.
-    auth.request.AuthInfo auth_info = 1;
-
     // the client information.
-    ClientInformation client_information = 2;
+    ClientInformation client_information = 1;
+
+    // reserved for system use
+    reserved 2 to 10;
+
+    // the wire information.
+    WireInformation wire_information = 11;
 }
 
 // client information
@@ -44,15 +45,31 @@ message ClientInformation {
     // the application name.
     string application_name = 2;
 
-    // the user name.
-    string user_name = 4;
+    // the credential.
+    Credential credential = 3;
+}
 
-    // the connection information
-    string connection_information = 5;
+// the credential
+message Credential {
+    // FIXME (T.B.D.)
+}
 
-    // reserved for future use
-    reserved 6 to 10;
+// wire information
+message WireInformation {
+    oneof wire_information {
+        IpcInformation ipc_information = 1;
+        StreamInformation stream_information = 2;
+    }
 
-    // the maximum concurrent result sets
-    uint64 maximum_concurrent_result_sets = 11;
+    // ipc information
+    message IpcInformation {
+        // the connection information
+        string connection_information = 1;
+    }
+
+    // stream information
+    message StreamInformation {
+        // the maximum concurrent result sets
+        uint64 maximum_concurrent_result_sets = 1;
+    }
 }

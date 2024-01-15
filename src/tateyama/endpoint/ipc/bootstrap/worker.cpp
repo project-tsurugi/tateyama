@@ -66,15 +66,10 @@ void Worker::run()
     }
     clean_up_();
     VLOG_LP(log_trace) << "destroy session wire: session_id = " << std::to_string(session_id_);
-<<<<<<< HEAD
 #ifdef ALTIMETER
     tateyama::endpoint::altimeter::session_end(database_info_, session_info_);
 #endif
-    VLOG(log_debug_timing_event) << "/:tateyama:timing:session:finished "
-        << session_id_;
-=======
     VLOG(log_debug_timing_event) << "/:tateyama:timing:session:finished " << session_id_;
->>>>>>> 7f4fa0c (implement handshake protocol in ipc endpoint)
     terminated_ = true;
 }
 

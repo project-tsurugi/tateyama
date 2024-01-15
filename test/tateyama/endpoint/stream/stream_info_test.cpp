@@ -25,7 +25,6 @@
 
 static constexpr std::string_view label = "label_fot_test";
 static constexpr std::string_view application_name = "application_name_fot_test";
-static constexpr std::string_view user_name = "user_name_fot_test";
 static constexpr std::size_t my_session_id_ = 123;
 static constexpr std::string_view request_test_message = "abcdefgh";
 static constexpr std::string_view response_test_message = "opqrstuvwxyz";
@@ -114,12 +113,14 @@ TEST_F(stream_info_test, basic) {
         tateyama::proto::endpoint::request::ClientInformation cci{};
         cci.set_connection_label(std::string(label));
         cci.set_application_name(std::string(application_name));
-        cci.set_user_name(std::string(user_name));
+        tateyama::proto::endpoint::request::Credential cred{};
+        // FIXME handle userName when a credential specification is fixed.
+        cci.set_allocated_credential(&cred);
         tateyama::proto::endpoint::request::Handshake hs{};
         hs.set_allocated_client_information(&cci);
-
         auto client = std::make_unique<stream_client>(hs);
         client->send(0, request_test_message);  // we do not care service_id nor request message here
+        cci.release_credential();
         hs.release_client_information();
         client->receive();
 
@@ -139,7 +140,6 @@ TEST_F(stream_info_test, basic) {
         auto& si = request->session_info();
         EXPECT_EQ(si.label(), label);
         EXPECT_EQ(si.application_name(), application_name);
-        EXPECT_EQ(si.user_name(), user_name);
         EXPECT_EQ(si.id(), my_session_id_);
         EXPECT_EQ(si.connection_type_name(), "TCP/IP");
         EXPECT_EQ(std::string(si.connection_information()).substr(0, 10), "127.0.0.1:");
