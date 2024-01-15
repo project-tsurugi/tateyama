@@ -74,7 +74,9 @@ protected:
     const connection_type connection_type_; // NOLINT
     const std::size_t session_id_;          // NOLINT
     session_info_impl session_info_;        // NOLINT
+    // for ipc endpoint only
     std::string connection_info_{};         // NOLINT
+    // for stream endpoint only
     std::size_t max_result_sets_{};         // NOLINT
     
     // for future
@@ -107,12 +109,37 @@ protected:
         auto ci = rq.handshake().client_information();
         session_info_.label(ci.connection_label());
         session_info_.application_name(ci.application_name());
-        session_info_.user_name(ci.user_name());
-        if (connection_type_ == connection_type::ipc) {
-            session_info_.connection_information(ci.connection_information());
+        // FIXME handle userName when a credential specification is fixed.
+
+        auto wi = rq.handshake().wire_information();
+        switch (connection_type_) {
+        case connection_type::ipc:
+            if(wi.wire_information_case() != tateyama::proto::endpoint::request::WireInformation::kIpcInformation) {
+                std::stringstream ss;
+                ss << "bad wire information (handshake in endpoint): " << wi.wire_information_case();
+                LOG(ERROR) << ss.str();
+                notify_client(res, tateyama::proto::diagnostics::Code::INVALID_REQUEST, ss.str());
+                return false;
+            }
+            session_info_.connection_information(wi.ipc_information().connection_information());
+            break;
+        case connection_type::stream:
+            if(wi.wire_information_case() != tateyama::proto::endpoint::request::WireInformation::kStreamInformation) {
+                std::stringstream ss;
+                ss << "bad wire information (handshake in endpoint): " << wi.wire_information_case();
+                LOG(ERROR) << ss.str();
+                notify_client(res, tateyama::proto::diagnostics::Code::INVALID_REQUEST, ss.str());
+                return false;
+            }
+            max_result_sets_ = wi.stream_information().maximum_concurrent_result_sets();  // for Stream
+            break;
+        default:  // shouldn't happen
+            std::stringstream ss;
+            ss << "illegal connection type: " << static_cast<std::uint32_t>(connection_type_);
+            LOG(ERROR) << ss.str();
+            notify_client(res, tateyama::proto::diagnostics::Code::INVALID_REQUEST, ss.str());
+            return false;
         }
-        max_result_sets_ = ci.maximum_concurrent_result_sets();  // for Stream
-        
         VLOG_LP(log_trace) << session_info_;  //NOLINT
 
         tateyama::proto::endpoint::response::Handshake rp{};

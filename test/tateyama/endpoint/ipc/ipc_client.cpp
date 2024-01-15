@@ -113,10 +113,14 @@ void ipc_client::dispose_resultset_wires(resultset_wires_container *rwc) {
 }
 
 void ipc_client::handshake() {
+    tateyama::proto::endpoint::request::WireInformation wire_information{};
+    wire_information.mutable_ipc_information();
+    endpoint_handshake_.set_allocated_wire_information(&wire_information);
     tateyama::proto::endpoint::request::Request endpoint_request{};
     endpoint_request.set_allocated_handshake(&endpoint_handshake_);
     send(tateyama::framework::service_id_endpoint_broker, endpoint_request.SerializeAsString());
     endpoint_request.release_handshake();
+    endpoint_handshake_.release_wire_information();
 
     std::string res{};
     receive(res);
