@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 #include <tateyama/task_scheduler/impl/periodic_notifier.h>
-
+#include <chrono>
+#include <string>
+#include <string_view>
 #include <gtest/gtest.h>
 
 namespace tateyama::task_scheduler::impl {
