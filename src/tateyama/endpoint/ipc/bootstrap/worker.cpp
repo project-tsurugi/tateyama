@@ -17,7 +17,10 @@
 
 #include "worker.h"
 
-#include <tateyama/proto/diagnostics.pb.h>
+// #include <tateyama/proto/diagnostics.pb.h>
+#ifdef ALTIMETER
+#include "tateyama/endpoint/altimeter/logger.h"
+#endif
 #include "tateyama/endpoint/ipc/ipc_request.h"
 #include "tateyama/endpoint/ipc/ipc_response.h"
 
@@ -40,6 +43,9 @@ void Worker::run()
 
     VLOG(log_debug_timing_event) << "/:tateyama:timing:session:started "
         << session_id_;
+#ifdef ALTIMETER
+    tateyama::endpoint::altimeter::session_start(database_info_, session_info_);
+#endif
     while(true) {
         try {
             auto h = request_wire_container_->peep(true);
@@ -61,6 +67,9 @@ void Worker::run()
     }
     clean_up_();
     VLOG_LP(log_trace) << "destroy session wire: session_id = " << std::to_string(session_id_);
+#ifdef ALTIMETER
+    tateyama::endpoint::altimeter::session_end(database_info_, session_info_);
+#endif
     VLOG(log_debug_timing_event) << "/:tateyama:timing:session:finished "
         << session_id_;
     terminated_ = true;

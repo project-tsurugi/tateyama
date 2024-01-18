@@ -120,6 +120,9 @@ class resource_status_memory {
         void set_database_name(std::string_view name) {
             database_name_ = name;
         }
+        [[nodiscard]] std::string_view get_database_name() const {
+            return database_name_;
+        }
         void add_shm_entry(std::size_t session_id, std::size_t index) {
             sessions_.at(index) = session_id;
         }
@@ -213,6 +216,9 @@ class resource_status_memory {
     }
     void set_database_name(std::string_view name) {
         resource_status_->set_database_name(name);
+    }
+    [[nodiscard]] std::string_view get_database_name() {
+        return resource_status_->get_database_name();
     }
     void add_shm_entry(std::size_t session_id, std::size_t index) {
         resource_status_->add_shm_entry(session_id, index);
