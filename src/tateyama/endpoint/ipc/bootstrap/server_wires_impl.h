@@ -596,6 +596,7 @@ class connection_container
 
 public:
     explicit connection_container(std::string_view name, std::size_t n) : name_(name) {
+        boost::interprocess::shared_memory_object::remove(name_.c_str());
         try {
             boost::interprocess::permissions  unrestricted_permissions;
             unrestricted_permissions.set_unrestricted();

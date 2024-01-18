@@ -102,6 +102,13 @@ if(MC_QUEUE)
     target_compile_definitions(${ENGINE} PUBLIC MC_QUEUE)
 endif()
 
+if (ENABLE_ALTIMETER)
+    target_link_libraries(${ENGINE}
+        PRIVATE altimeter
+    )
+    target_compile_definitions(${ENGINE} PUBLIC ALTIMETER)
+endif()
+
 # Boost.Thread doesn't seem to allow multiple versions to coexist.
 # This version definition should be shared with caller at least.
 target_compile_definitions(${ENGINE} PUBLIC BOOST_THREAD_VERSION=4)

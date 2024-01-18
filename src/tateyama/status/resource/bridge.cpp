@@ -95,11 +95,18 @@ void bridge::mutex_file(std::string_view file_name) {
     }
 }
 
-std::string_view bridge::mutex_file() {
+std::string_view bridge::mutex_file() const noexcept {
     if (resource_status_memory_) {
         return resource_status_memory_->mutex_file();
     }
     return {};
+}
+
+std::string_view bridge::database_name() const {
+    if (resource_status_memory_) {
+        return resource_status_memory_->get_database_name();
+    }
+    throw std::runtime_error("resource_status_memory is not ready.");
 }
 
 void bridge::set_maximum_sessions(std::size_t n) {

@@ -37,6 +37,7 @@ option(BUILD_SHARED_LIBS "build shared libraries instead of static" ON)
 option(ENABLE_CACHE_ALIGN "enable optional cache align requirement" OFF)
 option(MC_QUEUE "use moody-camel queue" OFF)
 option(TRACY_ENABLE "enable tracy profiler" OFF)
+option(ENABLE_ALTIMETER "enable altimeter logging" OFF)
 
 if(NOT DEFINED SHARKSFIN_IMPLEMENTATION)
     set(
@@ -63,6 +64,10 @@ find_package(Boost
 find_package(TBB REQUIRED)
 find_package(Protobuf REQUIRED)
 find_package(mpdecpp REQUIRED)
+if (ENABLE_ALTIMETER)
+    find_package(altimeter REQUIRED)
+    find_package(fmt REQUIRED)
+endif()
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 include(CompileOptions)

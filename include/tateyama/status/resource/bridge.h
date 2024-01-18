@@ -116,7 +116,7 @@ public:
     /**
      * @brief get proc_mutex file name
      */
-    std::string_view mutex_file();
+    [[nodiscard]] std::string_view mutex_file() const noexcept;
 
     /**
      * @brief remove session from ipc sessions
@@ -139,6 +139,11 @@ public:
     [[nodiscard]] const tateyama::api::server::database_info& database_info() const noexcept {
         return *database_info_;
     }
+
+    /**
+     * @brief returns the database name
+     */
+    [[nodiscard]] std::string_view database_name() const;
 
 private:
     bool deactivated_{false};

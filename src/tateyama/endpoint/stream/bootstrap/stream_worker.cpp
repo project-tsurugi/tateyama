@@ -15,6 +15,9 @@
  */
 #include "stream_worker.h"
 
+#ifdef ALTIMETER
+#include "tateyama/endpoint/altimeter/logger.h"
+#endif
 #include "tateyama/endpoint/stream/stream_request.h"
 #include "tateyama/endpoint/stream/stream_response.h"
 
@@ -45,6 +48,9 @@ void stream_worker::run()
 #endif
 
     VLOG(log_debug_timing_event) << "/:tateyama:timing:session:started " << session_id_;
+#ifdef ALTIMETER
+    tateyama::endpoint::altimeter::session_start(database_info_, session_info_);
+#endif
     while(true) {
         std::uint16_t slot{};
         std::string payload{};
@@ -59,6 +65,9 @@ void stream_worker::run()
                  static_cast<std::shared_ptr<tateyama::api::server::response>>(std::move(response)));
         request = nullptr;
     }
+#ifdef ALTIMETER
+    tateyama::endpoint::altimeter::session_end(database_info_, session_info_);
+#endif
     VLOG(log_debug_timing_event) << "/:tateyama:timing:session:finished " << session_id_;
 }
 
