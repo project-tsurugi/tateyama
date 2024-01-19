@@ -44,3 +44,8 @@ if(TRACY_ENABLE)
     set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -Wno-unused-parameter -Wno-maybe-uninitialized")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wno-unused-parameter -Wno-maybe-uninitialized")
 endif()
+
+if(ENABLE_ALTIMETER)
+    message("altimeter enabled")
+    add_definitions(-DENABLE_ALTIMETER)
+endif()
