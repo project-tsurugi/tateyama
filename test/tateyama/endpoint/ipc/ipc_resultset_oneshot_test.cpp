@@ -15,7 +15,7 @@
  */
 #include "ipc_gtest_base.h"
 
-namespace tateyama::api::endpoint::ipc {
+namespace tateyama::endpoint::ipc {
 
 static const std::string resultset_name { "resultset_1" }; // NOLINT
 
@@ -125,4 +125,4 @@ TEST_F(ipc_resultset_oneshot_test, DISABLED_test_record_max_plus_1) {
 }
 
 }
- // namespace tateyama::api::endpoint::ipc
+ // namespace tateyama::endpoint::ipc

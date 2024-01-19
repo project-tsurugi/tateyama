@@ -56,7 +56,7 @@ public:
     bool setup(environment& env) override {
         try {
             // create listener object
-            listener_ = std::make_unique<tateyama::server::ipc_listener>(env);
+            listener_ = std::make_unique<tateyama::endpoint::ipc::bootstrap::ipc_listener>(env);
             return true;
         } catch (std::runtime_error &ex) {
             LOG_LP(ERROR) << ex.what();
@@ -102,7 +102,7 @@ public:
     }
 
 private:
-    std::unique_ptr<tateyama::server::ipc_listener> listener_;
+    std::unique_ptr<tateyama::endpoint::ipc::bootstrap::ipc_listener> listener_;
     std::thread listener_thread_;
 };
 

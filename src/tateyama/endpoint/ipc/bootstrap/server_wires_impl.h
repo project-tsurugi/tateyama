@@ -30,7 +30,7 @@
 #include "tateyama/endpoint/ipc/wire.h"
 #include "tateyama/endpoint/ipc/server_wires.h"
 
-namespace tateyama::common::wire {
+namespace tateyama::endpoint::ipc::bootstrap {
 
 class server_wire_container_impl : public server_wire_container
 {
@@ -75,7 +75,7 @@ public:
             std::unique_lock<std::mutex> lock(mtx_chunks_);
             cnd_chunks_.notify_one();
         }
-        bool transfer(shm_resultset_wire* wire, bool& released) {
+        bool transfer(tateyama::common::wire::shm_resultset_wire* wire, bool& released) {
             while (!exhausted()) {
                 std::unique_lock<std::mutex> lock(mtx_chunks_);
                 if (chunks_.empty() && !no_room_ && !released) {
@@ -122,7 +122,7 @@ public:
     // resultset_wire_container
     class resultset_wire_container_impl : public resultset_wire_container {
     public:
-        resultset_wire_container_impl(shm_resultset_wire* resultset_wire, resultset_wires_container_impl& resultset_wires_container_impl, std::size_t datachannel_buffer_size)
+        resultset_wire_container_impl(tateyama::common::wire::shm_resultset_wire* resultset_wire, resultset_wires_container_impl& resultset_wires_container_impl, std::size_t datachannel_buffer_size)
             : shm_resultset_wire_(resultset_wire), resultset_wires_container_impl_(resultset_wires_container_impl), datachannel_buffer_size_(datachannel_buffer_size) {
             VLOG_LP(log_trace) << "creates a resultset_wire with a size of " << datachannel_buffer_size_ << " bytes";
         }
@@ -207,7 +207,7 @@ public:
         bool is_disposable() override { return !thread_active_; }
 
     private:
-        shm_resultset_wire* shm_resultset_wire_;
+        tateyama::common::wire::shm_resultset_wire* shm_resultset_wire_;
         resultset_wires_container_impl &resultset_wires_container_impl_;
 
         std::queue<std::unique_ptr<annex>> queue_{};
@@ -238,9 +238,9 @@ public:
         resultset_wires_container_impl(boost::interprocess::managed_shared_memory* managed_shm_ptr, std::string_view name, std::size_t count, std::mutex& mtx_shm, std::size_t datachannel_buffer_size)
             : managed_shm_ptr_(managed_shm_ptr), rsw_name_(name), server_(true), mtx_shm_(mtx_shm), datachannel_buffer_size_(datachannel_buffer_size) {
             std::lock_guard<std::mutex> lock(mtx_shm_);
-            managed_shm_ptr_->destroy<shm_resultset_wires>(rsw_name_.c_str());
+            managed_shm_ptr_->destroy<tateyama::common::wire::shm_resultset_wires>(rsw_name_.c_str());
             try {
-                shm_resultset_wires_ = managed_shm_ptr_->construct<shm_resultset_wires>(rsw_name_.c_str())(managed_shm_ptr_, count, datachannel_buffer_size_);
+                shm_resultset_wires_ = managed_shm_ptr_->construct<tateyama::common::wire::shm_resultset_wires>(rsw_name_.c_str())(managed_shm_ptr_, count, datachannel_buffer_size_);
             } catch(const boost::interprocess::interprocess_exception& ex) {
                 throw std::runtime_error(ex.what());
             } catch (std::runtime_error &ex) {
@@ -251,7 +251,7 @@ public:
         //  constructor for client
         resultset_wires_container_impl(boost::interprocess::managed_shared_memory* managed_shm_ptr, std::string_view name, std::mutex& mtx_shm)
             : managed_shm_ptr_(managed_shm_ptr), rsw_name_(name), server_(false), mtx_shm_(mtx_shm), datachannel_buffer_size_(0) {
-            shm_resultset_wires_ = managed_shm_ptr_->find<shm_resultset_wires>(rsw_name_.c_str()).first;
+            shm_resultset_wires_ = managed_shm_ptr_->find<tateyama::common::wire::shm_resultset_wires>(rsw_name_.c_str()).first;
             if (shm_resultset_wires_ == nullptr) {
                 throw std::runtime_error("cannot find the resultset wire");
             }
@@ -260,7 +260,7 @@ public:
             try {
                 if (server_) {
                     std::lock_guard<std::mutex> lock(mtx_shm_);
-                    managed_shm_ptr_->destroy<shm_resultset_wires>(rsw_name_.c_str());
+                    managed_shm_ptr_->destroy<tateyama::common::wire::shm_resultset_wires>(rsw_name_.c_str());
                 }
             } catch (std::exception& e) {
                 LOG_LP(WARNING) << e.what();
@@ -347,7 +347,7 @@ public:
     private:
         boost::interprocess::managed_shared_memory* managed_shm_ptr_;
         std::string rsw_name_;
-        shm_resultset_wires* shm_resultset_wires_{};
+        tateyama::common::wire::shm_resultset_wires* shm_resultset_wires_{};
         bool server_;
         std::mutex& mtx_shm_;
 
@@ -357,9 +357,9 @@ public:
 
         //   for client
         std::string_view wrap_around_{};
-        shm_resultset_wire* current_wire_{};
+        tateyama::common::wire::shm_resultset_wire* current_wire_{};
 
-        shm_resultset_wire* active_wire() {
+        tateyama::common::wire::shm_resultset_wire* active_wire() {
             return shm_resultset_wires_->active_wire();
         }
     };
@@ -420,11 +420,11 @@ public:
         wire_container_impl& operator = (wire_container_impl const&) = delete;
         wire_container_impl& operator = (wire_container_impl&&) = delete;
 
-        void initialize(unidirectional_message_wire* wire, char* bip_buffer) {
+        void initialize(tateyama::common::wire::unidirectional_message_wire* wire, char* bip_buffer) {
             wire_ = wire;
             bip_buffer_ = bip_buffer;
         }
-        message_header peep(bool wait = false) {
+        tateyama::common::wire::message_header peep(bool wait = false) {
             return wire_->peep(bip_buffer_, wait);
         }
         std::string_view payload() override {
@@ -439,12 +439,12 @@ public:
         [[nodiscard]] bool terminate_requested() const { return wire_->terminate_requested(); }
 
         // for mainly client, except for terminate request from server
-        void write(const char* from, const std::size_t len, message_header::index_type index) {
-            wire_->write(bip_buffer_, from, message_header(index, len));
+        void write(const char* from, const std::size_t len, tateyama::common::wire::message_header::index_type index) {
+            wire_->write(bip_buffer_, from, tateyama::common::wire::message_header(index, len));
         }
 
     private:
-        unidirectional_message_wire* wire_{};
+        tateyama::common::wire::unidirectional_message_wire* wire_{};
         char* bip_buffer_{};
     };
 
@@ -457,26 +457,26 @@ public:
         response_wire_container_impl& operator = (response_wire_container_impl const&) = delete;
         response_wire_container_impl& operator = (response_wire_container_impl&&) = delete;
 
-        void initialize(unidirectional_response_wire* wire, char* bip_buffer) {
+        void initialize(tateyama::common::wire::unidirectional_response_wire* wire, char* bip_buffer) {
             wire_ = wire;
             bip_buffer_ = bip_buffer;
         }
-        void write(const char* from, response_header header) override {
+        void write(const char* from, tateyama::common::wire::response_header header) override {
             std::lock_guard<std::mutex> lock(mtx_);
             wire_->write(bip_buffer_, from, header);
         }
 
         // for client
-        response_header await() {
+        tateyama::common::wire::response_header await() {
             return wire_->await(bip_buffer_);
         }
-        [[nodiscard]] response_header::length_type get_length() const {
+        [[nodiscard]] tateyama::common::wire::response_header::length_type get_length() const {
             return wire_->get_length();
         }
-        [[nodiscard]] response_header::index_type get_idx() const {
+        [[nodiscard]] tateyama::common::wire::response_header::index_type get_idx() const {
             return wire_->get_idx();
         }
-        [[nodiscard]] response_header::msg_type get_type() const {
+        [[nodiscard]] tateyama::common::wire::response_header::msg_type get_type() const {
             return wire_->get_type();
         }
         void read(char* to) {
@@ -487,7 +487,7 @@ public:
         }
 
     private:
-        unidirectional_response_wire* wire_{};
+        tateyama::common::wire::unidirectional_response_wire* wire_{};
         char* bip_buffer_{};
         std::mutex mtx_{};
     };
@@ -496,15 +496,15 @@ public:
         : name_(name), garbage_collector_impl_(std::make_unique<garbage_collector_impl>()), datachannel_buffer_size_(datachannel_buffer_size) {
         boost::interprocess::shared_memory_object::remove(name_.c_str());
         try {
-            boost::interprocess::permissions  unrestricted_permissions;
+            boost::interprocess::permissions unrestricted_permissions;
             unrestricted_permissions.set_unrestricted();
 
             std::size_t shm_size = (datachannel_buffer_size_ + data_channel_overhead) * max_datachannel_buffers + (request_buffer_size + response_buffer_size) + total_overhead;
             managed_shared_memory_ =
                 std::make_unique<boost::interprocess::managed_shared_memory>(boost::interprocess::create_only, name_.c_str(), shm_size, nullptr, unrestricted_permissions);
-            auto req_wire = managed_shared_memory_->construct<unidirectional_message_wire>(request_wire_name)(managed_shared_memory_.get(), request_buffer_size);
-            auto res_wire = managed_shared_memory_->construct<unidirectional_response_wire>(response_wire_name)(managed_shared_memory_.get(), response_buffer_size);
-            status_provider_ = managed_shared_memory_->construct<status_provider>(status_provider_name)(managed_shared_memory_.get(), mutex_file);
+            auto req_wire = managed_shared_memory_->construct<tateyama::common::wire::unidirectional_message_wire>(tateyama::common::wire::request_wire_name)(managed_shared_memory_.get(), request_buffer_size);
+            auto res_wire = managed_shared_memory_->construct<tateyama::common::wire::unidirectional_response_wire>(tateyama::common::wire::response_wire_name)(managed_shared_memory_.get(), response_buffer_size);
+            status_provider_ = managed_shared_memory_->construct<tateyama::common::wire::status_provider>(tateyama::common::wire::status_provider_name)(managed_shared_memory_.get(), mutex_file);
 
             request_wire_.initialize(req_wire, req_wire->get_bip_address(managed_shared_memory_.get()));
             response_wire_.initialize(res_wire, res_wire->get_bip_address(managed_shared_memory_.get()));
@@ -566,7 +566,7 @@ private:
     std::unique_ptr<boost::interprocess::managed_shared_memory> managed_shared_memory_{};
     wire_container_impl request_wire_{};
     response_wire_container_impl response_wire_{};
-    status_provider* status_provider_{};
+    tateyama::common::wire::status_provider* status_provider_{};
     std::unique_ptr<garbage_collector_impl> garbage_collector_impl_;
     std::mutex mtx_shm_{};
 
@@ -603,8 +603,8 @@ public:
 
             managed_shared_memory_ =
                 std::make_unique<boost::interprocess::managed_shared_memory>(boost::interprocess::create_only, name_.c_str(), request_queue_size, nullptr, unrestricted_permissions);
-            managed_shared_memory_->destroy<connection_queue>(connection_queue::name);
-            connection_queue_ = managed_shared_memory_->construct<connection_queue>(connection_queue::name)(n, managed_shared_memory_->get_segment_manager());
+            managed_shared_memory_->destroy<tateyama::common::wire::connection_queue>(tateyama::common::wire::connection_queue::name);
+            connection_queue_ = managed_shared_memory_->construct<tateyama::common::wire::connection_queue>(tateyama::common::wire::connection_queue::name)(n, managed_shared_memory_->get_segment_manager());
         }
         catch(const boost::interprocess::interprocess_exception& ex) {
             using namespace std::literals::string_view_literals;
@@ -626,7 +626,7 @@ public:
     ~connection_container() {
         boost::interprocess::shared_memory_object::remove(name_.c_str());
     }
-    connection_queue& get_connection_queue() {
+    tateyama::common::wire::connection_queue& get_connection_queue() {
         return *connection_queue_;
     }
 
@@ -641,7 +641,7 @@ public:
 private:
     std::string name_;
     std::unique_ptr<boost::interprocess::managed_shared_memory> managed_shared_memory_{};
-    connection_queue* connection_queue_;
+    tateyama::common::wire::connection_queue* connection_queue_;
 
 };
 

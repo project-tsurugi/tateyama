@@ -18,6 +18,6 @@
 #include "stream.h"
 #include "stream_response.h"
 
-namespace tateyama::common::stream {
+namespace tateyama::endpoint::stream {
 
 };

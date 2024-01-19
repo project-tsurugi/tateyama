@@ -15,9 +15,10 @@
  */
 #include "ipc_client.h"
 
-namespace tateyama::api::endpoint::ipc {
+namespace tateyama::endpoint::ipc {
 
-ipc_client::ipc_client(std::shared_ptr<tateyama::api::configuration::whole> const &cfg) {
+ipc_client::ipc_client(std::shared_ptr<tateyama::api::configuration::whole> const &cfg, tateyama::proto::endpoint::request::Handshake& hs)
+    : endpoint_handshake_(hs) {
     get_ipc_database_name(cfg, database_name_);
     container_ = std::make_unique < tsubakuro::common::wire::connection_container > (database_name_);
     id_ = container_->get_connection_queue().request();
@@ -27,6 +28,19 @@ ipc_client::ipc_client(std::shared_ptr<tateyama::api::configuration::whole> cons
     swc_ = std::make_unique < tsubakuro::common::wire::session_wire_container > (session_name_);
     request_wire_ = &swc_->get_request_wire();
     response_wire_ = &swc_->get_response_wire();
+
+    handshake();
+}
+
+ipc_client::ipc_client(std::string_view name, std::size_t session_id, tateyama::proto::endpoint::request::Handshake& hs)
+    : endpoint_handshake_(hs), database_name_(name), session_id_(session_id) {
+
+    session_name_ = database_name_ + "-" + std::to_string(session_id_);
+    swc_ = std::make_unique < tsubakuro::common::wire::session_wire_container > (session_name_);
+    request_wire_ = &swc_->get_request_wire();
+    response_wire_ = &swc_->get_response_wire();
+
+    handshake();
 }
 
 static constexpr tsubakuro::common::wire::message_header::index_type ipc_test_index = 1234;
@@ -98,4 +112,18 @@ void ipc_client::dispose_resultset_wires(resultset_wires_container *rwc) {
     swc_->dispose_resultset_wire(rwc);
 }
 
-} // namespace tateyama::api::endpoint::ipc
+void ipc_client::handshake() {
+    tateyama::proto::endpoint::request::WireInformation wire_information{};
+    wire_information.mutable_ipc_information();
+    endpoint_handshake_.set_allocated_wire_information(&wire_information);
+    tateyama::proto::endpoint::request::Request endpoint_request{};
+    endpoint_request.set_allocated_handshake(&endpoint_handshake_);
+    send(tateyama::framework::service_id_endpoint_broker, endpoint_request.SerializeAsString());
+    endpoint_request.release_handshake();
+    endpoint_handshake_.release_wire_information();
+
+    std::string res{};
+    receive(res);
+}
+
+} // namespace tateyama::endpoint::ipc

@@ -19,7 +19,7 @@
 
 #include "ipc_request.h"
 
-namespace tateyama::common::wire {
+namespace tateyama::endpoint::ipc {
 
 std::string_view
 ipc_request::payload() const {
@@ -48,4 +48,4 @@ tateyama::api::server::session_info const& ipc_request::session_info() const noe
     return session_info_;
 }
 
-}  // tateyama::common::wire
+}

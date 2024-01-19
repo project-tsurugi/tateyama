@@ -53,7 +53,7 @@ public:
     bool setup(environment& env) override {
         try {
             // create listener object
-            listener_ = std::make_unique<tateyama::server::stream_listener>(env);
+            listener_ = std::make_unique<tateyama::endpoint::stream::bootstrap::stream_listener>(env);
             return true;
         } catch (std::exception &ex) {
             LOG_LP(ERROR) << ex.what();
@@ -93,7 +93,7 @@ public:
     }
 
 private:
-    std::unique_ptr<tateyama::server::stream_listener> listener_;
+    std::unique_ptr<tateyama::endpoint::stream::bootstrap::stream_listener> listener_;
     std::thread listener_thread_;
 };
 

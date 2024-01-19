@@ -16,7 +16,7 @@
 #include "ipc_gtest_base.h"
 #include <numeric>
 
-namespace tateyama::api::endpoint::ipc {
+namespace tateyama::endpoint::ipc {
 
 class reqres_limit_service: public server_service_base {
 public:
@@ -182,4 +182,4 @@ TEST_F(ipc_reqres_limit_test, req_res_more_than_maxlen) {
     }
 }
 
-} // namespace tateyama::api::endpoint::ipc
+} // namespace tateyama::endpoint::ipc

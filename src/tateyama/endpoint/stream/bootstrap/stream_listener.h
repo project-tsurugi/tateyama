@@ -18,8 +18,11 @@
 #include <memory>
 #include <string>
 #include <exception>
-#include <iostream>
+#include <functional>
+#include <mutex>
 #include <chrono>
+#include <vector>
+#include <set>
 #include <csignal>
 
 #include <boost/thread/barrier.hpp>
@@ -33,9 +36,10 @@
 
 #include "tateyama/endpoint/stream/stream_response.h"
 #include "tateyama/endpoint/common/logging.h"
+#include "tateyama/endpoint/common/pointer_comp.h"
 #include "stream_worker.h"
 
-namespace tateyama::server {
+namespace tateyama::endpoint::stream::bootstrap {
 
 // should be in sync one in bootstrap
 struct stream_endpoint_context {
@@ -48,23 +52,6 @@ struct stream_endpoint_context {
  */
 class stream_listener {
 public:
-
-    // in case for session limit
-    class undertaker {
-    public:
-        explicit undertaker(std::shared_ptr<tateyama::common::stream::stream_socket> stream) : stream_(std::move(stream)) {}
-        void operator()() {
-            while (stream_->wait_hello(""));
-            done = true;
-        }
-        [[nodiscard]] bool is_done() const {
-            return done;
-        }
-    private:
-        std::shared_ptr<tateyama::common::stream::stream_socket> stream_;
-        bool done{};
-    };
-
     explicit stream_listener(tateyama::framework::environment& env)
         : cfg_(env.configuration()),
           router_(env.service_repository().find<framework::routing_service>()),
@@ -89,7 +76,7 @@ public:
         auto threads = threads_opt.value();
 
         // connection stream
-        connection_socket_ = std::make_unique<tateyama::common::stream::connection_socket>(port);
+        connection_socket_ = std::make_unique<connection_socket>(port);
 
         // worker objects
         workers_.resize(threads);
@@ -116,8 +103,7 @@ public:
 
         arrive_and_wait();
         while(true) {
-            undertakers_.erase(std::remove_if(std::begin(undertakers_), std::end(undertakers_), [](std::unique_ptr<undertaker>& ut){ return ut->is_done(); }), std::cend(undertakers_));
-            std::shared_ptr<tateyama::common::stream::stream_socket> stream{};
+            std::shared_ptr<stream_socket> stream{};
             try {
                 stream = connection_socket_->accept();
             } catch (std::exception& ex) {
@@ -140,17 +126,24 @@ public:
                     }
                 }
                 if (!found) {
-                    stream->decline();
-                    auto ut = std::make_unique<undertaker>(std::move(stream));
-                    auto t = std::thread(std::ref(*ut));
-                    t.detach();
-                    undertakers_.emplace_back(std::move(ut));
+                    auto worker_decline = std::make_unique<stream_worker>(*router_, session_id, std::move(stream), status_->database_info(), true);
+                    auto *worker_decline_ptr = worker_decline.get();
+                    worker_decline->invoke([&]{worker_decline->run([&](){
+                        std::unique_lock lock{mutex_};
+                        if (auto itr = undertakers_.find(worker_decline_ptr); itr != undertakers_.end()) {
+                            undertakers_.erase(itr);
+                        }
+                    });});
+                    {
+                        std::unique_lock lock{mutex_};
+                        undertakers_.emplace(std::move(worker_decline));
+                    }
                     LOG_LP(ERROR) << "the number of sessions exceeded the limit (" << workers_.size() << ")";
                     continue;
                 }
                 auto& worker = workers_.at(index);
                 try {
-                    worker = std::make_unique<stream_worker>(*router_, session_id, std::move(stream), status_->database_info());
+                    worker = std::make_unique<stream_worker>(*router_, session_id, std::move(stream), status_->database_info(), false);
                 } catch (std::exception& ex) {
                     LOG_LP(ERROR) << ex.what();
                     continue;
@@ -175,11 +168,12 @@ private:
     const std::shared_ptr<api::configuration::whole> cfg_{};
     const std::shared_ptr<framework::routing_service> router_{};
     const std::shared_ptr<status_info::resource::bridge> status_{};
-    std::unique_ptr<tateyama::common::stream::connection_socket> connection_socket_{};
+    std::unique_ptr<connection_socket> connection_socket_{};
     std::vector<std::unique_ptr<stream_worker>> workers_{};
-    std::vector<std::unique_ptr<undertaker>> undertakers_{};
+    std::set<std::unique_ptr<stream_worker>, tateyama::endpoint::common::pointer_comp<stream_worker>> undertakers_{};
+    std::mutex mutex_{};
 
     boost::barrier sync{2};
 };
 
-}  // tateyama::server
+}
