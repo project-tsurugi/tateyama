@@ -55,7 +55,7 @@ class stream_worker : public tateyama::endpoint::common::worker_common {
     stream_worker& operator = (stream_worker const&) = delete;
     stream_worker& operator = (stream_worker&&) = delete;
 
-    void run(const std::function<void(void)>& clean_up = [](){});
+    void run();
     friend class stream_provider;
 
  private:

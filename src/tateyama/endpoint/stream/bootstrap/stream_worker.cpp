@@ -23,7 +23,7 @@
 
 namespace tateyama::endpoint::stream::bootstrap {
 
-void stream_worker::run(const std::function<void(void)>& clean_up)
+void stream_worker::run()
 {
     {
         std::uint16_t slot{};
@@ -43,7 +43,6 @@ void stream_worker::run(const std::function<void(void)>& clean_up)
             } else {
                 LOG_LP(INFO) << "illegal procedure (receive a request in spite of a decline case)";  // should not reach here
             }
-            clean_up();
             return;
         }
 
