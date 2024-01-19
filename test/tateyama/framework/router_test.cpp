@@ -116,12 +116,17 @@ public:
         };
         status body_head(std::string_view body_head) override { return status::ok; }
         status body(std::string_view body) override { body_ = body; return status::ok; }
-        void error(proto::diagnostics::Record const& record) override {}
+        void error(proto::diagnostics::Record const& record) override {
+            error_invoked_ = true;
+            error_record_ = record;
+        }
         status acquire_channel(std::string_view name, std::shared_ptr<api::server::data_channel>& ch) override { return status::ok; }
         status release_channel(api::server::data_channel& ch) override { return status::ok; }
 
         std::size_t session_id_{};
         std::string body_{};
+        bool error_invoked_{};
+        proto::diagnostics::Record error_record_{};
     };
 
 };
@@ -187,6 +192,27 @@ TEST_F(router_test, update_expiration_time) {
     ::tateyama::proto::core::response::UpdateExpirationTime out{};
     ASSERT_TRUE(out.ParseFromArray(pl.data(), pl.size()));
     EXPECT_TRUE(out.has_success());
+    sv.shutdown();
+}
+
+TEST_F(router_test, invalid_service_id) {
+    auto cfg = api::configuration::create_configuration("", tateyama::test::default_configuration_for_tests);
+    set_dbpath(*cfg);
+    server sv{boot_mode::database_server, cfg};
+    add_core_components(sv);
+    sv.start();
+
+    auto router = sv.find_service<framework::routing_service>();
+    ASSERT_TRUE(router);
+    ASSERT_EQ(framework::routing_service::tag, router->id());
+
+    auto svrreq = std::make_shared<test_request>(10, 999, "");  // 999 is an invalid service id
+    auto svrres = std::make_shared<test_response>();
+
+    (*router)(svrreq, svrres);
+
+    ASSERT_TRUE(svrres->error_invoked_);
+    ASSERT_EQ(svrres->error_record_.code(), ::tateyama::proto::diagnostics::Code::SERVICE_UNAVAILABLE);
     sv.shutdown();
 }
 }

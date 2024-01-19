@@ -21,7 +21,7 @@
 #include "bench_result_summary.h"
 #include "main_args.h"
 
-using namespace tateyama::api::endpoint::ipc;
+using namespace tateyama::endpoint::ipc;
 
 class data_channel_write_service: public server_service_base {
 public:

@@ -18,6 +18,7 @@
 #include <functional>
 #include <memory>
 #include <type_traits>
+#include <sstream>
 
 #include <takatori/util/fail.h>
 
@@ -66,20 +67,20 @@ bool handle_update_expiration_time(
     auto data = req->payload();
     ns::Request rq{};
     if(! rq.ParseFromArray(data.data(), static_cast<int>(data.size()))) {
-        VLOG(log_error) << "request parse error";
+        VLOG_LP(log_error) << "request parse error";
         return false;
     }
     if(rq.command_case() != ns::Request::kUpdateExpirationTime) {
-        LOG(ERROR) << "bad request destination (routing service): " << rq.command_case();
+        LOG_LP(ERROR) << "bad request destination (routing service): " << rq.command_case();
         return false;
     }
     if(! rq.has_update_expiration_time()) {
-        LOG(ERROR) << "bad request content";
+        LOG_LP(ERROR) << "bad request content";
         return false;
     }
     // mock impl. for UpdateExpirationTime // TODO
     auto et = rq.update_expiration_time().expiration_time();
-    VLOG(log_debug) <<
+    VLOG_LP(log_debug) <<
         "UpdateExpirationTime received session_id:" << req->session_id() <<
         " expiration_time:" << et;
     tateyama::proto::core::response::UpdateExpirationTime rp{};
@@ -93,7 +94,7 @@ bool handle_update_expiration_time(
 
 bool routing_service::operator()(std::shared_ptr<request> req, std::shared_ptr<response> res) {
     if (services_ == nullptr) {
-        LOG(ERROR) << "routing service is not setup, or framework is running on standalone mode";
+        LOG_LP(ERROR) << "routing service is not setup, or framework is running on standalone mode";
         return false;
     }
     if (req->service_id() == tag) {
@@ -104,7 +105,15 @@ bool routing_service::operator()(std::shared_ptr<request> req, std::shared_ptr<r
         destination->operator()(std::move(req), std::move(res));
         return true;
     }
-    LOG(ERROR) << "request has invalid service id";
+
+    std::stringstream ss{};
+    ss << "request has invalid service id (" << req->service_id() << ")";
+    auto msg = ss.str();
+    ::tateyama::proto::diagnostics::Record record{};
+    record.set_code(::tateyama::proto::diagnostics::Code::SERVICE_UNAVAILABLE);
+    record.set_message(msg);
+    res->error(record);
+    LOG_LP(ERROR) << msg;
     return false;
 }
 
@@ -113,7 +122,7 @@ std::string_view routing_service::label() const noexcept {
 }
 
 routing_service::~routing_service() {
-    VLOG(log_info) << "/:tateyama:lifecycle:component:<dtor> " << component_label;
+    VLOG_LP(log_info) << "/:tateyama:lifecycle:component:<dtor> " << component_label;
 }
 
 }

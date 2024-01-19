@@ -20,7 +20,7 @@
 #include <sstream>
 #include <istream>
 
-namespace tateyama::api::endpoint::ipc {
+namespace tateyama::endpoint::ipc {
 
 void get_ipc_database_name(std::shared_ptr<tateyama::api::configuration::whole> const &cfg,
         std::string &ipc_database_name) {
@@ -195,4 +195,4 @@ void resultset_param::to_string(std::string &text) noexcept {
     }
 }
 
-} // namespace tateyama::api::endpoint::ipc
+} // namespace tateyama::endpoint::ipc

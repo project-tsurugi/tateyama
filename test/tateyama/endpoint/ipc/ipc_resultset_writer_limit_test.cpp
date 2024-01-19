@@ -16,7 +16,7 @@
 #include "ipc_gtest_base.h"
 #include <numeric>
 
-namespace tateyama::api::endpoint::ipc {
+namespace tateyama::endpoint::ipc {
 
 class resultset_writer_limit_service: public server_service_base {
 public:
@@ -253,4 +253,4 @@ TEST_F(ipc_resultset_writer_limit_test, DISABLED_max_plus_1_writer) {
     sc.start_server_client();
 }
 
-} // namespace tateyama::api::endpoint::ipc
+} // namespace tateyama::endpoint::ipc

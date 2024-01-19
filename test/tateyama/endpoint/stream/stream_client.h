@@ -26,22 +26,22 @@
 #include <netinet/in.h>
 #include <netdb.h>
 
+#include <tateyama/framework/component_ids.h>
 #include <tateyama/utils/protobuf_utils.h>
 #include <tateyama/proto/framework/request.pb.h>
 #include <tateyama/proto/framework/response.pb.h>
+#include <tateyama/proto/endpoint/request.pb.h>
+#include <tateyama/proto/endpoint/response.pb.h>
 
 namespace tateyama::api::endpoint::stream {
 
 class stream_client {
-    static constexpr std::uint8_t REQUEST_SESSION_HELLO = 1;
     static constexpr std::uint8_t REQUEST_SESSION_PAYLOAD = 2;
     static constexpr std::uint8_t REQUEST_RESULT_SET_BYE_OK = 3;
     static constexpr std::uint8_t REQUEST_SESSION_BYE = 4;
 
     static constexpr std::uint8_t RESPONSE_SESSION_PAYLOAD = 1;
     static constexpr std::uint8_t RESPONSE_RESULT_SET_PAYLOAD = 2;
-    static constexpr std::uint8_t RESPONSE_SESSION_HELLO_OK = 3;
-    static constexpr std::uint8_t RESPONSE_SESSION_HELLO_NG = 4;
     static constexpr std::uint8_t RESPONSE_RESULT_SET_HELLO = 5;
     static constexpr std::uint8_t RESPONSE_RESULT_SET_BYE = 6;
     static constexpr std::uint8_t RESPONSE_SESSION_BODYHEAD = 7;
@@ -49,26 +49,36 @@ class stream_client {
 public:
     static constexpr int PORT_FOR_TEST = 12349;
 
-    stream_client();
+    explicit stream_client(tateyama::proto::endpoint::request::Handshake& hs);
+    stream_client() : stream_client(default_endpoint_handshake_) {
+    }
     ~stream_client() {
         ::close(sockfd_);
     }
 
     void send(const std::uint8_t type, const std::uint16_t slot, std::string_view message);
-    void send(std::string_view message);
-    void receive();
+    void send(const std::size_t tag, std::string_view message);
+    void receive(std::string &message);
+    void receive() { receive(response_); }
     void close() {
         ::close(sockfd_);
     }
 
+    std::string& handshake_response() { return handshake_response_; }
+    std::string& response() { return response_; }
+
     std::uint8_t type_{};
     std::uint16_t slot_{};
     std::uint8_t writer_{};
-    std::string message_{};
 
 private:
-    int sockfd_;
-    ::tateyama::proto::framework::request::Header header_{};
+    tateyama::proto::endpoint::request::Handshake& endpoint_handshake_;
+    int sockfd_{};
+    tateyama::proto::endpoint::request::Handshake default_endpoint_handshake_{};
+    std::string handshake_response_{};
+    std::string response_{};
+
+    void handshake();
 };
 
 } // namespace tateyama::api::endpoint::stream

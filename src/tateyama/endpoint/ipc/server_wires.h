@@ -18,7 +18,7 @@
 #include "wire.h"
 #include "tateyama/logging_helper.h"
 
-namespace tateyama::common::wire {
+namespace tateyama::endpoint::ipc {
 
 class server_wire_container
 {
@@ -46,7 +46,7 @@ public:
         response_wire_container& operator = (response_wire_container const&) = default;
         response_wire_container& operator = (response_wire_container&&) = default;
 
-        virtual void write(const char*, response_header) = 0;
+        virtual void write(const char*, tateyama::common::wire::response_header) = 0;
     };
     class resultset_wire_container;
     using resultset_wire_deleter_type = void(*)(resultset_wire_container*);
@@ -115,7 +115,7 @@ inline server_wire_container::resultset_wires_container::~resultset_wires_contai
 inline server_wire_container::garbage_collector::~garbage_collector() = default;
 
 using resultset_wires = server_wire_container::resultset_wires_container;
-using resultset_wire = shm_resultset_wire;
+using resultset_wire = tateyama::common::wire::shm_resultset_wire;
 using garbage_collector = server_wire_container::garbage_collector;
 
-};  // namespace tateyama::common
+}

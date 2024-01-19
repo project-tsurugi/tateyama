@@ -15,7 +15,7 @@
  */
 #include "ipc_gtest_base.h"
 
-namespace tateyama::api::endpoint::ipc {
+namespace tateyama::endpoint::ipc {
 
 class session_limit_service: public server_service_base {
 public:
@@ -153,4 +153,4 @@ TEST_F(ipc_session_limit_test, max_plus_1_sessions) {
     sc.start_server_client();
 }
 
-} // namespace tateyama::api::endpoint::ipc
+} // namespace tateyama::endpoint::ipc

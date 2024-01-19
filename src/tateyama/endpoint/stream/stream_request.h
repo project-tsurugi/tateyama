@@ -22,7 +22,7 @@
 #include "stream.h"
 #include "tateyama/endpoint/common/endpoint_proto_utils.h"
 
-namespace tateyama::common::stream {
+namespace tateyama::endpoint::stream {
 
 /**
  * @brief request object for stream_endpoint
@@ -56,4 +56,4 @@ private:
     std::size_t service_id_{};
 };
 
-}  // tateyama::common::stream
+}

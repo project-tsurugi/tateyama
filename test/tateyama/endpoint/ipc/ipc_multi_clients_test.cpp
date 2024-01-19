@@ -16,7 +16,7 @@
 #include "ipc_gtest_base.h"
 #include <numeric>
 
-namespace tateyama::api::endpoint::ipc {
+namespace tateyama::endpoint::ipc {
 
 class multi_clients_service: public server_service_base {
 public:
@@ -119,4 +119,4 @@ TEST_F(ipc_multi_clients_test, DISABLED_test_fixed_size_only_big) {
     }
 }
 
-} // namespace tateyama::api::endpoint::ipc
+} // namespace tateyama::endpoint::ipc

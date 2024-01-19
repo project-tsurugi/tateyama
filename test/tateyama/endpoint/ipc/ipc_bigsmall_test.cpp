@@ -16,7 +16,7 @@
 #include "ipc_gtest_base.h"
 #include <numeric>
 
-namespace tateyama::api::endpoint::ipc {
+namespace tateyama::endpoint::ipc {
 
 class bigsmall_service: public server_service_base {
 public:
@@ -121,4 +121,4 @@ TEST_F(ipc_bigsmall_test, test2) {
     sc.start_server_client();
 }
 
-} // namespace tateyama::api::endpoint::ipc
+} // namespace tateyama::endpoint::ipc

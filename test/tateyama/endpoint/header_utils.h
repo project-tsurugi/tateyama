@@ -21,7 +21,7 @@
 
 // #include <gtest/gtest.h>
 
-namespace tateyama::api::endpoint {
+namespace tateyama::endpoint {
 
 struct request_header_content {
     std::size_t session_id_{};
@@ -41,4 +41,4 @@ inline bool append_request_header(std::stringstream& ss, std::string_view body, 
     return true;
 }
 
-}  // namespace tateyama::api::endpoint::ipc
+}  // namespace tateyama::endpoint::ipc

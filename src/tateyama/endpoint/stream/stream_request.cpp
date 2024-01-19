@@ -19,7 +19,7 @@
 
 #include "stream_request.h"
 
-namespace tateyama::common::stream {
+namespace tateyama::endpoint::stream {
 
 std::string_view
 stream_request::payload() const {
@@ -43,4 +43,4 @@ tateyama::api::server::session_info const& stream_request::session_info() const 
     return session_info_;
 }
 
-}  // tateyama::common::stream
+}

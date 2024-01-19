@@ -25,7 +25,7 @@ static inline void ASSERT_OK(tateyama::status status) {
     }
 }
 
-namespace tateyama::api::endpoint::ipc {
+namespace tateyama::endpoint::ipc {
 
 class server_client_bench_base: public server_client_base {
 public:
@@ -55,4 +55,4 @@ private:
     bench_result result_ { };
 };
 
-} // namespace tateyama::api::endpoint::ipc
+} // namespace tateyama::endpoint::ipc
