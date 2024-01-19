@@ -30,21 +30,29 @@ class stream_worker : public tateyama::endpoint::common::worker_common {
     stream_worker(tateyama::framework::routing_service& service,
                   std::size_t session_id,
                   std::shared_ptr<stream_socket> stream,
-                  const tateyama::api::server::database_info& database_info, bool decline)
+                  const tateyama::api::server::database_info& database_info,
+                  const std::function<void(stream_worker*)>& clean_up)
         : worker_common(connection_type::stream, session_id, stream->connection_info()),
           service_(service),
           session_stream_(std::move(stream)),
           database_info_(database_info),
-          decline_(decline) {
+          decline_(true),
+          clean_up_(std::move(clean_up)) {
     }
     stream_worker(tateyama::framework::routing_service& service,
                   std::size_t session_id,
                   std::shared_ptr<stream_socket> stream,
                   const tateyama::api::server::database_info& database_info)
-        : stream_worker(service, session_id, std::move(stream), database_info, false) {
+        : worker_common(connection_type::stream, session_id, stream->connection_info()),
+          service_(service),
+          session_stream_(std::move(stream)),
+          database_info_(database_info),
+          decline_(false),
+          clean_up_([](stream_worker*){}) {
     }
     ~stream_worker() {
         if(thread_.joinable()) thread_.join();
+        clean_up_(this);
     }
 
     /**
@@ -63,6 +71,7 @@ class stream_worker : public tateyama::endpoint::common::worker_common {
     std::shared_ptr<stream_socket> session_stream_;
     const tateyama::api::server::database_info& database_info_;
     const bool decline_;
+    const std::function<void(stream_worker*)> clean_up_;
 
     void notify_of_decline(tateyama::api::server::response* response) {
         tateyama::proto::endpoint::response::Handshake rp{};

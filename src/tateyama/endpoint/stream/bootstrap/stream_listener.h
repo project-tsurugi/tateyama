@@ -103,7 +103,6 @@ public:
 
         arrive_and_wait();
         while(true) {
-            undertakers_.erase(std::remove_if(std::begin(undertakers_), std::end(undertakers_), [](std::unique_ptr<stream_worker>& worker){ return worker->wait_for() == std::future_status::ready; }), std::cend(undertakers_));
             std::shared_ptr<stream_socket> stream{};
             try {
                 stream = connection_socket_->accept();
@@ -127,16 +126,30 @@ public:
                     }
                 }
                 if (!found) {
-                    auto worker_decline = std::make_unique<stream_worker>(*router_, session_id, std::move(stream), status_->database_info(), true);
+                    auto worker_decline = std::make_unique<stream_worker>(
+                        *router_,
+                        session_id,
+                        std::move(stream),
+                        status_->database_info(),
+                        [&](stream_worker* worker){
+                            std::unique_lock lock{mutex_};
+                            if (auto itr = undertakers_.find(worker); itr != undertakers_.end()) {
+                                undertakers_.erase(itr);
+                            }
+                        }
+                    );
                     auto *worker_decline_ptr = worker_decline.get();
-                    undertakers_.emplace_back(std::move(worker_decline));
+                    {
+                        std::unique_lock lock{mutex_};
+                        undertakers_.emplace(std::move(worker_decline));
+                    }
                     worker_decline_ptr->invoke([&]{worker_decline_ptr->run();});
                     LOG_LP(ERROR) << "the number of sessions exceeded the limit (" << workers_.size() << ")";
                     continue;
                 }
                 auto& worker = workers_.at(index);
                 try {
-                    worker = std::make_unique<stream_worker>(*router_, session_id, std::move(stream), status_->database_info(), false);
+                    worker = std::make_unique<stream_worker>(*router_, session_id, std::move(stream), status_->database_info());
                 } catch (std::exception& ex) {
                     LOG_LP(ERROR) << ex.what();
                     continue;
@@ -163,7 +176,7 @@ private:
     const std::shared_ptr<status_info::resource::bridge> status_{};
     std::unique_ptr<connection_socket> connection_socket_{};
     std::vector<std::unique_ptr<stream_worker>> workers_{};
-    std::vector<std::unique_ptr<stream_worker>> undertakers_{};
+    std::set<std::unique_ptr<stream_worker>, tateyama::endpoint::common::pointer_comp<stream_worker>> undertakers_{};
     std::mutex mutex_{};
 
     boost::barrier sync{2};
