@@ -128,9 +128,8 @@ public:
                 }
                 if (!found) {
                     auto worker_decline = std::make_unique<stream_worker>(*router_, session_id, std::move(stream), status_->database_info(), true);
-                    auto *worker_decline_ptr = worker_decline.get();
+                    worker_decline->invoke([&]{worker_decline->run();});
                     undertakers_.emplace_back(std::move(worker_decline));
-                    worker_decline_ptr->invoke([&]{worker_decline_ptr->run();});
                     LOG_LP(ERROR) << "the number of sessions exceeded the limit (" << workers_.size() << ")";
                     continue;
                 }
@@ -164,7 +163,6 @@ private:
     std::unique_ptr<connection_socket> connection_socket_{};
     std::vector<std::unique_ptr<stream_worker>> workers_{};
     std::vector<std::unique_ptr<stream_worker>> undertakers_{};
-    std::mutex mutex_{};
 
     boost::barrier sync{2};
 };

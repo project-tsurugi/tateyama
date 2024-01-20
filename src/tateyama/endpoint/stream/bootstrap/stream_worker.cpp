@@ -41,7 +41,7 @@ void stream_worker::run()
             if (!session_stream_->await(slot, payload)) {
                 session_stream_->close();
             } else {
-                LOG_LP(INFO) << "illegal procedure (receive a request in spite of a decline case)";  // should not reach here
+                LOG_LP(WARNING) << "illegal procedure (receive a request in spite of a decline case)";  // should not reach here
             }
             return;
         }

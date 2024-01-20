@@ -251,7 +251,8 @@ private:
                     } while (false);
                     DVLOG_LP(log_trace) << "<-- RESPONSE_SESSION_BYE_OK ";  //NOLINT
                     send_response(RESPONSE_SESSION_BYE_OK, 0, "", true);
-                    continue;
+                    close();
+                    return false;
                 }
                 DVLOG_LP(log_trace) << "socket is closed by the client abnormally";  //NOLINT
                 return false;
