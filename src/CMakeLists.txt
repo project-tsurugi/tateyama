@@ -106,7 +106,6 @@ if (ENABLE_ALTIMETER)
     target_link_libraries(${ENGINE}
         PRIVATE altimeter
     )
-    target_compile_definitions(${ENGINE} PUBLIC ALTIMETER)
 endif()
 
 # Boost.Thread doesn't seem to allow multiple versions to coexist.
