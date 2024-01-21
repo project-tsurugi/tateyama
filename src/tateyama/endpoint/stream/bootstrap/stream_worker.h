@@ -36,6 +36,9 @@ class stream_worker : public tateyama::endpoint::common::worker_common {
           session_stream_(std::move(stream)),
           database_info_(database_info),
           decline_(decline) {
+        if (!session_stream_->set_owner(static_cast<void*>(this))) {
+            throw std::runtime_error("the sesstion stream already has owner");
+        }
     }
     stream_worker(tateyama::framework::routing_service& service,
                   std::size_t session_id,

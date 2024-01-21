@@ -156,18 +156,21 @@ public:
     void change_slot_size(std::size_t index) {
         std::unique_lock<std::mutex> lock(slot_mutex_);
         if ((index + 1) > slot_size_) {
-            LOG_LP(INFO) << "enlarge srot to " << (index + 1);
+            DVLOG_LP(log_trace) << "enlarge srot to " << (index + 1);
             slot_size_ = index + 1;
             in_use_.resize(slot_size_);
         }
     }
 
-    void decline() {
-        decline_ = true;
-    }
-
     [[nodiscard]] std::string_view connection_info() const {
         return connection_info_;
+    }
+
+    bool set_owner(void* owner) {
+        return owner_.exchange(owner, std::memory_order_acquire) == nullptr;
+    }
+    bool test_and_set_using() {
+        return using_.test_and_set(std::memory_order_acquire);
     }
 
 private:
@@ -175,7 +178,6 @@ private:
 
     bool session_closed_{false};
     bool socket_closed_{false};
-    bool decline_{false};
     std::vector<bool> in_use_{};
     std::atomic_uint slot_using_{};
     std::queue<recv_entry> queue_{};
@@ -183,6 +185,8 @@ private:
     std::string connection_info_{};
     std::mutex mutex_{};
     std::mutex slot_mutex_{};
+    std::atomic<void*> owner_{nullptr};
+    std::atomic_flag using_{false};
 
     bool await(unsigned char& info, std::uint16_t& slot, std::string& payload) {
         DVLOG_LP(log_trace) << "-- enter waiting REQUEST --";  //NOLINT
