@@ -142,7 +142,6 @@ public:
                         undertakers_.emplace(std::move(worker_decline));
                         worker->invoke([&]{worker->run();});
                         LOG_LP(ERROR) << "the number of sessions exceeded the limit (" << workers_.size() << ")";
-                        LOG_LP(INFO) << "session created: " << static_cast<void*>(stream_ptr) << " : " << static_cast<void*>(worker);
                     } catch (std::runtime_error &ex) {
                         LOG_LP(ERROR) << ex.what();
                     }

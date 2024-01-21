@@ -30,7 +30,6 @@ void stream_worker::run()
         return;
     }
 
-    LOG_LP(INFO) << "session start: " << static_cast<void*>(session_stream_.get()) << " : " << static_cast<void*>(this);
     {
         std::uint16_t slot{};
         std::string payload{};
@@ -49,7 +48,6 @@ void stream_worker::run()
             } else {
                 LOG_LP(INFO) << "illegal procedure (receive a request in spite of a decline case)";  // should not reach here
             }
-            LOG_LP(INFO) << "session declined: " << static_cast<void*>(session_stream_.get()) << " : " << static_cast<void*>(this);
             return;
         }
 
@@ -81,7 +79,6 @@ void stream_worker::run()
     tateyama::endpoint::altimeter::session_end(database_info_, session_info_);
 #endif
     VLOG(log_debug_timing_event) << "/:tateyama:timing:session:finished " << session_id_;
-    LOG_LP(INFO) << "session end: " << static_cast<void*>(session_stream_.get()) << " : " << static_cast<void*>(this);
 }
 
 }
