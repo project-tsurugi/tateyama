@@ -23,6 +23,10 @@ buffered_response::buffered_response(std::size_t session_id,
         session_id_(session_id), body_head_(body_head), body_(body), data_map_(std::move(data_map)) {
 }
 
+buffered_response::buffered_response(std::size_t session_id, proto::diagnostics::Record error_rec) :
+    session_id_(session_id), error_rec_(std::move(error_rec)) {
+}
+
 std::size_t buffered_response::session_id() const noexcept {
     return session_id_;
 }
@@ -45,6 +49,10 @@ std::vector<std::string> const& buffered_response::channel(std::string_view name
         return it->second;
     }
     throw std::invalid_argument("invalid channel name: " + std::string { name });
+}
+
+proto::diagnostics::Record const& buffered_response::error() const noexcept {
+    return error_rec_;
 }
 
 } // namespace tateyama::loopback

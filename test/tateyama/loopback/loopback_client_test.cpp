@@ -188,6 +188,7 @@ TEST_F(loopback_client_test, multi_request) {
 TEST_F(loopback_client_test, unknown_service_id) {
     const std::size_t session_id = 123;
     const std::size_t service_id = data_channel_service::tag;
+    const std::size_t invalid_service_id = service_id + 1;
     const std::string request { "loopback_test" };
     //
     auto cfg = api::configuration::create_configuration("", tateyama::test::default_configuration_for_tests);
@@ -199,17 +200,12 @@ TEST_F(loopback_client_test, unknown_service_id) {
     sv.add_endpoint(loopback.endpoint());
     ASSERT_TRUE(sv.start());
     //
-    try {
-        const auto response = loopback.request(session_id, service_id + 1, request);
-        FAIL();
-        EXPECT_EQ(response.session_id(), 0);
-    } catch (std::invalid_argument &ex) {
-        std::cout << ex.what() << std::endl;
-        SUCCEED();
-    } catch (std::runtime_error &ex) {  // thrown from loopback_response::error()
-        std::cout << ex.what() << std::endl;
-        SUCCEED();
-    }
+    const auto response = loopback.request(session_id, invalid_service_id, request);
+    auto &error_rec = response.error();
+    EXPECT_EQ(tateyama::proto::diagnostics::Code::SERVICE_UNAVAILABLE, error_rec.code());
+    auto msg = error_rec.message();
+    EXPECT_GT(msg.length(), 0);
+    EXPECT_NE(msg.find(std::to_string(invalid_service_id)), std::string::npos);
     EXPECT_TRUE(sv.shutdown());
 }
 
