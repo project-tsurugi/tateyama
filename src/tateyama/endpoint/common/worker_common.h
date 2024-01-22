@@ -66,7 +66,7 @@ public:
         future_ = task_.get_future();
         thread_ = std::thread(std::move(task_));
     }
-    auto wait_for() {
+    [[nodiscard]] auto wait_for() const {
         return future_.wait_for(std::chrono::seconds(0));
     }
 

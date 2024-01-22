@@ -76,7 +76,7 @@ public:
     }
 
     void wait_worker_termination() {
-        worker_->wait_for();
+        while (worker_->wait_for() != std::future_status::ready);
     }
 
 private:
