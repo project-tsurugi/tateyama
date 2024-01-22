@@ -35,7 +35,6 @@ void Worker::run()
         ipc_response response_obj{wire_, hdr.get_idx()};
 
         if (! handshake(static_cast<tateyama::api::server::request*>(&request_obj), static_cast<tateyama::api::server::response*>(&response_obj))) {
-            clean_up_();
             terminated_ = true;
             return;
         }
@@ -64,7 +63,6 @@ void Worker::run()
             break;
         }
     }
-    clean_up_();
     VLOG_LP(log_trace) << "destroy session wire: session_id = " << std::to_string(session_id_);
 #ifdef ENABLE_ALTIMETER
     tateyama::endpoint::altimeter::session_end(database_info_, session_info_);

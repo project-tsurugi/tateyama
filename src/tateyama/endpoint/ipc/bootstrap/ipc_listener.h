@@ -133,10 +133,8 @@ public:
                 VLOG_LP(log_trace) << "create session wire: " << session_name << " at index " << index;
                 status_->add_shm_entry(session_id, index);
                 auto& worker = workers_.at(index);
-                worker = std::make_shared<Worker>(*router_, session_id, std::move(wire),
-                                                          [&connection_queue, index](){ connection_queue.disconnect(index); },
-                                                          status_->database_info());
-                worker->invoke([&]{worker->run();});
+                worker = std::make_shared<Worker>(*router_, session_id, std::move(wire), status_->database_info());
+                worker->invoke([&, index]{ worker->run(); connection_queue.disconnect(index); });
             } catch (std::exception& ex) {
                 LOG_LP(ERROR) << ex.what();
                 workers_.clear();
