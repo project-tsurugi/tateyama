@@ -71,8 +71,11 @@ void stream_worker::run()
 
         auto request = std::make_shared<stream_request>(*session_stream_, payload, database_info_, session_info_);
         auto response = std::make_shared<stream_response>(session_stream_, slot);
-        service_(static_cast<std::shared_ptr<tateyama::api::server::request>>(request),
-                 static_cast<std::shared_ptr<tateyama::api::server::response>>(std::move(response)));
+        if(!service_(static_cast<std::shared_ptr<tateyama::api::server::request>>(request),
+                     static_cast<std::shared_ptr<tateyama::api::server::response>>(std::move(response)))) {
+            LOG_LP(ERROR) << "terminate worker because service returns an error";
+            break;
+        }
         request = nullptr;
     }
 #ifdef ENABLE_ALTIMETER

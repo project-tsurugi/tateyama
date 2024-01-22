@@ -206,6 +206,9 @@ TEST_F(loopback_client_test, unknown_service_id) {
     } catch (std::invalid_argument &ex) {
         std::cout << ex.what() << std::endl;
         SUCCEED();
+    } catch (std::runtime_error &ex) {  // thrown from loopback_response::error()
+        std::cout << ex.what() << std::endl;
+        SUCCEED();
     }
     EXPECT_TRUE(sv.shutdown());
 }
