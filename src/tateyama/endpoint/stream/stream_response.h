@@ -40,14 +40,13 @@ class stream_writer : public tateyama::api::server::writer {
     friend stream_data_channel;
 
 public:
-    explicit stream_writer(stream_socket& socket, std::uint16_t slot, unsigned char writer_id)
-        : resultset_socket_(socket), slot_(slot), writer_id_(writer_id) {}
-
+    explicit stream_writer(std::shared_ptr<stream_socket> stream, std::uint16_t slot, unsigned char writer_id)
+        : stream_(std::move(stream)), slot_(slot), writer_id_(writer_id) {}
     tateyama::status write(char const* data, std::size_t length) override;
     tateyama::status commit() override;
 
 private:
-    stream_socket& resultset_socket_;
+    std::shared_ptr<stream_socket> stream_;
     std::uint16_t slot_;
     unsigned char writer_id_;
 };
@@ -58,14 +57,14 @@ private:
 class stream_data_channel : public tateyama::api::server::data_channel {
 public:
     stream_data_channel() = delete;
-    explicit stream_data_channel(stream_socket& session_socket, unsigned int slot)
-        : session_socket_(session_socket), slot_(slot) {}
+    explicit stream_data_channel(std::shared_ptr<stream_socket> stream, unsigned int slot)
+        : stream_(std::move(stream)), slot_(slot) {}
     tateyama::status acquire(std::shared_ptr<tateyama::api::server::writer>& wrt) override;
     tateyama::status release(tateyama::api::server::writer& wrt) override;
     [[nodiscard]] unsigned int get_slot() const { return slot_; }
 
 private:
-    stream_socket& session_socket_;
+    std::shared_ptr<stream_socket> stream_;
     std::set<std::shared_ptr<stream_writer>, tateyama::endpoint::common::pointer_comp<stream_writer>> data_writers_{};
     std::mutex mutex_{};
     unsigned int slot_;
@@ -92,7 +91,7 @@ public:
         session_id_ = id;
     }
 private:
-    std::shared_ptr<stream_socket> session_socket_;
+    std::shared_ptr<stream_socket> stream_;
     std::uint16_t index_;
 
     std::string message_{};
