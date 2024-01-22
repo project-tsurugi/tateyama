@@ -102,6 +102,10 @@ if(MC_QUEUE)
     target_compile_definitions(${ENGINE} PUBLIC MC_QUEUE)
 endif()
 
+if (ENABLE_DEBUG_SERVICE)
+    target_compile_definitions(${ENGINE} PRIVATE ENABLE_DEBUG_SERVICE)
+endif ()
+
 if (ENABLE_ALTIMETER)
     target_link_libraries(${ENGINE}
         PRIVATE altimeter

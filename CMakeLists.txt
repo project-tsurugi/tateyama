@@ -37,6 +37,7 @@ option(BUILD_SHARED_LIBS "build shared libraries instead of static" ON)
 option(ENABLE_CACHE_ALIGN "enable optional cache align requirement" OFF)
 option(MC_QUEUE "use moody-camel queue" OFF)
 option(TRACY_ENABLE "enable tracy profiler" OFF)
+option(ENABLE_DEBUG_SERVICE "treats debug service as a core component" ON)
 option(ENABLE_ALTIMETER "enable altimeter logging" OFF)
 
 if(NOT DEFINED SHARKSFIN_IMPLEMENTATION)
