@@ -125,6 +125,9 @@ TEST_F(loopback_client_test, single) {
     EXPECT_EQ(response.session_id(), session_id);
     EXPECT_EQ(response.body_head(), data_channel_service::body_head);
     EXPECT_EQ(response.body(), request);
+    auto &error_rec = response.error();
+    EXPECT_EQ(error_rec.code(), 0);
+    EXPECT_TRUE(error_rec.message().empty());
     //
     for (int ch = 0; ch < nchannel; ch++) {
         std::string name { std::move(data_channel_service::channel_name(ch)) };
@@ -166,6 +169,9 @@ TEST_F(loopback_client_test, multi_request) {
         EXPECT_EQ(response.session_id(), session_id);
         EXPECT_EQ(response.body_head(), data_channel_service::body_head);
         EXPECT_EQ(response.body(), request);
+        auto &error_rec = response.error();
+        EXPECT_EQ(error_rec.code(), 0);
+        EXPECT_TRUE(error_rec.message().empty());
         //
         for (int ch = 0; ch < nchannel; ch++) {
             std::string name { std::move(data_channel_service::channel_name(ch)) };
@@ -201,6 +207,9 @@ TEST_F(loopback_client_test, unknown_service_id) {
     ASSERT_TRUE(sv.start());
     //
     const auto response = loopback.request(session_id, invalid_service_id, request);
+    EXPECT_EQ(response.session_id(), session_id);
+    EXPECT_TRUE(response.body_head().empty());
+    EXPECT_TRUE(response.body().empty());
     auto &error_rec = response.error();
     EXPECT_EQ(tateyama::proto::diagnostics::Code::SERVICE_UNAVAILABLE, error_rec.code());
     auto msg = error_rec.message();
