@@ -48,7 +48,7 @@ public:
      * @param session_id session identifier of the response
      * @param error_rec error information record
      */
-    buffered_response(std::size_t session_id, proto::diagnostics::Record const& error_rec);
+    buffered_response(std::size_t session_id, proto::diagnostics::Record error_rec);
 
     /**
      * @brief accessor to the session identifier
