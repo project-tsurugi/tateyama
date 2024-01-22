@@ -30,7 +30,10 @@ void Worker::run()
 {
     {
         auto hdr = request_wire_container_->peep(true);
-        if (hdr.get_length() == 0 && hdr.get_idx() == tateyama::common::wire::message_header::termination_request) { return; }
+        if (hdr.get_length() == 0 && hdr.get_idx() == tateyama::common::wire::message_header::termination_request) {
+            terminated_ = true;
+            return;
+        }
         ipc_request request_obj{*wire_, hdr, database_info_, session_info_};
         ipc_response response_obj{wire_, hdr.get_idx()};
 
