@@ -65,7 +65,7 @@ available options:
 * `-DBUILD_BENCHMARK=ON` - build benchmark programs
 * `-DFORCE_INSTALL_RPATH=ON` - automatically configure `INSTALL_RPATH` for non-default library paths
 * `-DSHARKSFIN_IMPLEMENTATION=<implementation name>` - switch sharksfin implementation. Available options are `memory` and `shirakami` (default: `memory`)
-* `-DPERFORMANCE_TOOLS=ON` - enable performance tooling to measure engine performance
+* `-DENABLE_ALTIMETER=OFF` - enable altimeter logging
 * `-DMC_QUEUE=ON` - use moody camel queue instead of tbb queue to store tasks in tateyama task scheduler.
 * `-DENABLE_DEBUG_SERVICE=OFF` - turn off the `debug service`.
 * for debugging only
