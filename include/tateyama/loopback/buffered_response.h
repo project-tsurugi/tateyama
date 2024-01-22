@@ -44,6 +44,13 @@ public:
             std::string_view body, std::map<std::string, std::vector<std::string>, std::less<>> &&data_map);
 
     /**
+     * @brief create response object
+     * @param session_id session identifier of the response
+     * @param error_rec error information record
+     */
+    buffered_response(std::size_t session_id, proto::diagnostics::Record const& error_rec);
+
+    /**
      * @brief accessor to the session identifier
      * @return session identifier of this response
      */
@@ -78,11 +85,18 @@ public:
      */
     [[nodiscard]] std::vector<std::string> const& channel(std::string_view name) const;
 
+    /**
+     * @brief accessor to the error information
+     * @return error information object
+     */
+    [[nodiscard]] proto::diagnostics::Record const& error() const noexcept;
+
 private:
     std::size_t session_id_ { };
     std::string body_head_ { };
     std::string body_ { };
     std::map<std::string, std::vector<std::string>, std::less<>> data_map_ { };
+    proto::diagnostics::Record error_rec_ { };
 };
 
 } // namespace tateyama::loopback

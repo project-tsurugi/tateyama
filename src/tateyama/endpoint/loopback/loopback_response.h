@@ -62,9 +62,15 @@ public:
         return body_;
     }
 
+    /**
+     * @see tateyama::server::response::error()
+     */
     void error(proto::diagnostics::Record const& record) override {
-        (void) record;
-        throw std::runtime_error("tateyama::endpoint::loopback::loopback_response::error() is unimplemented");
+        error_rec_ = record;
+    }
+
+    [[nodiscard]] proto::diagnostics::Record const& error() const noexcept {
+        return error_rec_;
     }
 
     /**
@@ -96,6 +102,7 @@ private:
     std::size_t session_id_ { };
     std::string body_head_ { };
     std::string body_ { };
+    proto::diagnostics::Record error_rec_ { };
 
     std::mutex mtx_channel_map_ { };
     /*
