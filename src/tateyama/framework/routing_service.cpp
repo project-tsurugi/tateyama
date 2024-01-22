@@ -107,7 +107,8 @@ bool routing_service::operator()(std::shared_ptr<request> req, std::shared_ptr<r
     }
 
     std::stringstream ss{};
-    ss << "request has invalid service id (" << req->service_id() << ")";
+    ss << "unsupported service message: the destination service (ID=" << req->service_id() << ") is not registered." << std::endl <<
+        "see https://github.com/project-tsurugi/tsurugidb/blob/master/docs/upgrade-guide.md#service-not-registered";
     auto msg = ss.str();
     ::tateyama::proto::diagnostics::Record record{};
     record.set_code(::tateyama::proto::diagnostics::Code::SERVICE_UNAVAILABLE);

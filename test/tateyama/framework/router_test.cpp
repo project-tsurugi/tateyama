@@ -213,6 +213,7 @@ TEST_F(router_test, invalid_service_id) {
 
     ASSERT_TRUE(svrres->error_invoked_);
     ASSERT_EQ(svrres->error_record_.code(), ::tateyama::proto::diagnostics::Code::SERVICE_UNAVAILABLE);
+    ASSERT_EQ(svrres->error_record_.message().find("unsupported service message: the destination service (ID=999) is not registered."), 0);
     sv.shutdown();
 }
 }
