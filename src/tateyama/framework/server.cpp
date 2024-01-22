@@ -156,7 +156,9 @@ void add_core_components(server& svr) {
 
     svr.add_service(std::make_shared<framework::routing_service>());
     svr.add_service(std::make_shared<datastore::service::bridge>());
+#ifdef ENABLE_DEBUG_SERVICE
     svr.add_service(std::make_shared<debug::service>());
+#endif
 
     svr.add_endpoint(std::make_shared<framework::ipc_endpoint>());
     svr.add_endpoint(std::make_shared<framework::stream_endpoint>());
