@@ -29,7 +29,7 @@ public:
         worker.invoke([&]{worker.run();});
     }
     static void wait(tateyama::endpoint::ipc::bootstrap::Worker& worker) {
-        worker.wait_for();
+        while (worker.wait_for() != std::future_status::ready);
     }
 };
 }  // namespace tateyama::server

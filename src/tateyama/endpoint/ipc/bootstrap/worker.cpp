@@ -31,14 +31,12 @@ void Worker::run()
     {
         auto hdr = request_wire_container_->peep(true);
         if (hdr.get_length() == 0 && hdr.get_idx() == tateyama::common::wire::message_header::termination_request) {
-            terminated_ = true;
             return;
         }
         ipc_request request_obj{*wire_, hdr, database_info_, session_info_};
         ipc_response response_obj{wire_, hdr.get_idx()};
 
         if (! handshake(static_cast<tateyama::api::server::request*>(&request_obj), static_cast<tateyama::api::server::response*>(&response_obj))) {
-            terminated_ = true;
             return;
         }
     }
@@ -74,7 +72,6 @@ void Worker::run()
     tateyama::endpoint::altimeter::session_end(database_info_, session_info_);
 #endif
     VLOG(log_debug_timing_event) << "/:tateyama:timing:session:finished " << session_id_;
-    terminated_ = true;
 }
 
 void Worker::terminate() {

@@ -51,7 +51,9 @@ class Worker : public tateyama::endpoint::common::worker_common {
     void run();
     void terminate();
     [[nodiscard]] std::size_t session_id() const noexcept { return session_id_; }
-    [[nodiscard]] bool terminated() const noexcept { return terminated_; }
+    [[nodiscard]] bool terminated() const {
+        return wait_for() == std::future_status::ready;
+    }
 
     friend class ipc_provider;
 
@@ -60,8 +62,6 @@ class Worker : public tateyama::endpoint::common::worker_common {
     std::shared_ptr<server_wire_container_impl> wire_;
     server_wire_container_impl::wire_container_impl* request_wire_container_;
     const tateyama::api::server::database_info& database_info_;
-
-    bool terminated_{};
 };
 
 }
