@@ -114,7 +114,7 @@ bool routing_service::operator()(std::shared_ptr<request> req, std::shared_ptr<r
     record.set_code(::tateyama::proto::diagnostics::Code::SERVICE_UNAVAILABLE);
     record.set_message(msg);
     res->error(record);
-    LOG_LP(ERROR) << msg;
+    VLOG_LP(log_info) << msg;
     return false;
 }
 

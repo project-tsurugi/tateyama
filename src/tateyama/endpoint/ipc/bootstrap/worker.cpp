@@ -57,7 +57,7 @@ void Worker::run()
             auto response = std::make_shared<ipc_response>(wire_, h.get_idx());
             if (!service_(static_cast<std::shared_ptr<tateyama::api::server::request>>(request),
                           static_cast<std::shared_ptr<tateyama::api::server::response>>(std::move(response)))) {
-                LOG_LP(ERROR) << "terminate worker because service returns an error";
+                VLOG_LP(log_info) << "terminate worker because service returns an error";
                 break;
             }
             request->dispose();
