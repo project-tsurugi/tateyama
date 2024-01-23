@@ -139,22 +139,22 @@ public:
                         auto worker_decline = std::make_unique<stream_worker>(*router_, session_id, std::move(stream), status_->database_info(), true);
                         auto *worker = worker_decline.get();
                         undertakers_.emplace(std::move(worker_decline));
-                        worker->invoke([&]{worker->run();});
+                        worker->invoke([worker]{worker->run();});
                         LOG_LP(ERROR) << "the number of sessions exceeded the limit (" << workers_.size() << ")";
                     } catch (std::runtime_error &ex) {
                         LOG_LP(ERROR) << ex.what();
                     }
-                    continue;
+                } else {
+                    auto& worker_entry = workers_.at(index);
+                    try {
+                        worker_entry = std::make_unique<stream_worker>(*router_, session_id, std::move(stream), status_->database_info(), false);
+                        auto *worker = worker_entry.get();
+                        worker->invoke([worker]{worker->run();});
+                        session_id++;
+                    } catch (std::exception& ex) {
+                        LOG_LP(ERROR) << ex.what();
+                    }
                 }
-                auto& worker = workers_.at(index);
-                try {
-                    worker = std::make_unique<stream_worker>(*router_, session_id, std::move(stream), status_->database_info(), false);
-                } catch (std::exception& ex) {
-                    LOG_LP(ERROR) << ex.what();
-                    continue;
-                }
-                worker->invoke([&]{worker->run();});
-                session_id++;
             } else {  // connect via pipe (request_terminate)
                 break;
             }

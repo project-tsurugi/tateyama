@@ -132,9 +132,10 @@ public:
                 std::size_t index = connection_queue.accept(session_id);
                 VLOG_LP(log_trace) << "create session wire: " << session_name << " at index " << index;
                 status_->add_shm_entry(session_id, index);
-                auto& worker = workers_.at(index);
-                worker = std::make_shared<Worker>(*router_, session_id, std::move(wire), status_->database_info());
-                worker->invoke([&, index]{ worker->run(); connection_queue.disconnect(index); });
+                auto& worker_entry = workers_.at(index);
+                worker_entry = std::make_shared<Worker>(*router_, session_id, std::move(wire), status_->database_info());
+                auto* worker = worker_entry.get();
+                worker->invoke([worker, index, &connection_queue]{ worker->run(); connection_queue.disconnect(index); });
             } catch (std::exception& ex) {
                 LOG_LP(ERROR) << ex.what();
                 workers_.clear();
