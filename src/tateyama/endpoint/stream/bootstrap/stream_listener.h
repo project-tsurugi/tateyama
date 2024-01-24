@@ -87,7 +87,7 @@ public:
                   << "port number to listen for TCP/IP connections.";
         LOG(INFO) << tateyama::endpoint::common::stream_endpoint_config_prefix
                   << "threads: " << threads_opt.value() << ", "
-                  << "the number of maximum sesstions.";
+                  << "the number of maximum sessions.";
     }
     ~stream_listener() {
         connection_socket_->close();
