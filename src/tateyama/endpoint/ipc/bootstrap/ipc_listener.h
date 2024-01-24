@@ -94,7 +94,7 @@ public:
                   << "database name.";
         LOG(INFO) << tateyama::endpoint::common::ipc_endpoint_config_prefix
                   << "threads: " << threads_opt.value() << ", "
-                  << "the number of maximum sesstions.";
+                  << "the number of maximum sessions.";
         LOG(INFO) << tateyama::endpoint::common::ipc_endpoint_config_prefix
                   << "datachannel_buffer_size: " << datachannel_buffer_size_opt.value() << ", "
                   << "datachannel_buffer_size in KB.";
