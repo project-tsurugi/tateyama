@@ -51,6 +51,8 @@ struct stream_endpoint_context {
  * @details
  */
 class stream_listener {
+    static constexpr std::size_t socket_limit = 512;  // FIXME describe in tsurugi.ini as a parameter of stream_endpoint section
+
 public:
     explicit stream_listener(tateyama::framework::environment& env)
         : cfg_(env.configuration()),
@@ -102,6 +104,7 @@ public:
         std::size_t session_id = 0x1000000000000000LL;
 
         arrive_and_wait();
+        bool socket_overflow{};
         while(true) {
             for (auto it{undertakers_.begin()}, end{undertakers_.end()}; it != end; ) {
                 if ((*it)->wait_for() == std::future_status::ready) {
@@ -112,51 +115,66 @@ public:
                 }
             }
 
+            if (!stream_socket::is_socket_available(socket_limit)) {
+                LOG_LP(INFO) << stream_socket::open_sockets() << " sockets are being opened, waiting for a socket available";
+                socket_overflow = true;
+                continue;
+            }
+            if (socket_overflow) {
+                LOG_LP(INFO) << "found an available socket, resume listening";
+                socket_overflow = false;
+            }
             std::shared_ptr<stream_socket> stream{};
             try {
                 stream = connection_socket_->accept();
+                if (!stream) {
+                    if (connection_socket_->is_terminate_requested()) {
+                        break;
+                    }
+                    continue;
+                }
+            } catch (std::runtime_error& ex) {
+                LOG_LP(INFO) << ex.what();
+                continue;
             } catch (std::exception& ex) {
                 LOG_LP(ERROR) << ex.what();
                 continue;
             }
-            if (stream != nullptr) {
-                DVLOG_LP(log_trace) << "created session stream: " << session_id;
-                std::size_t index = 0;
-                bool found = false;
-                for (; index < workers_.size() ; index++) {
-                    auto& worker = workers_.at(index);
-                    if (!worker) {
-                        found = true;
-                        break;
-                    }
-                    if (auto rv = worker->wait_for(); rv == std::future_status::ready) {
-                        found = true;
-                        break;
-                    }
+
+            DVLOG_LP(log_trace) << "created session stream: " << session_id;
+            std::size_t index = 0;
+            bool found = false;
+            for (; index < workers_.size() ; index++) {
+                auto& worker = workers_.at(index);
+                if (!worker) {
+                    found = true;
+                    break;
                 }
-                if (!found) {
-                    try {
-                        auto worker_decline = std::make_unique<stream_worker>(*router_, session_id, std::move(stream), status_->database_info(), true);
-                        auto *worker = worker_decline.get();
-                        undertakers_.emplace(std::move(worker_decline));
-                        worker->invoke([worker]{worker->run();});
-                        LOG_LP(ERROR) << "the number of sessions exceeded the limit (" << workers_.size() << ")";
-                    } catch (std::runtime_error &ex) {
-                        LOG_LP(ERROR) << ex.what();
-                    }
-                } else {
-                    auto& worker_entry = workers_.at(index);
-                    try {
-                        worker_entry = std::make_unique<stream_worker>(*router_, session_id, std::move(stream), status_->database_info(), false);
-                        auto *worker = worker_entry.get();
-                        worker->invoke([worker]{worker->run();});
-                        session_id++;
-                    } catch (std::exception& ex) {
-                        LOG_LP(ERROR) << ex.what();
-                    }
+                if (auto rv = worker->wait_for(); rv == std::future_status::ready) {
+                    found = true;
+                    break;
                 }
-            } else {  // connect via pipe (request_terminate)
-                break;
+            }
+            if (!found) {
+                try {
+                    auto worker_decline = std::make_unique<stream_worker>(*router_, session_id, std::move(stream), status_->database_info(), true);
+                    auto* worker = worker_decline.get();
+                    undertakers_.emplace(std::move(worker_decline));
+                    worker->invoke([worker]{worker->run();});
+                    LOG_LP(INFO) << "the number of sessions exceeded the limit (" << workers_.size() << ")";
+                } catch (std::runtime_error &ex) {
+                    LOG_LP(ERROR) << ex.what();
+                }
+            } else {
+                auto& worker_entry = workers_.at(index);
+                try {
+                    worker_entry = std::make_unique<stream_worker>(*router_, session_id, std::move(stream), status_->database_info(), false);
+                    auto* worker = worker_entry.get();
+                    worker->invoke([worker]{worker->run();});
+                    session_id++;
+                } catch (std::exception& ex) {
+                    LOG_LP(ERROR) << ex.what();
+                }
             }
         }
     }

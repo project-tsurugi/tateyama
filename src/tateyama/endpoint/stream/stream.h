@@ -29,6 +29,7 @@
 #include <condition_variable>
 #include <atomic>
 #include <queue>
+#include <chrono>
 #include <arpa/inet.h>
 
 #include <glog/logging.h>
@@ -85,10 +86,13 @@ public:
             LOG_LP(ERROR) << "setsockopt() fail";
         }
         in_use_.resize(slot_size_);
+        num_open_.fetch_add(1);
     }
 
     ~stream_socket() {
         close();
+        num_open_.fetch_sub(1);
+        notify_of_close();
     }
 
     stream_socket(stream_socket const& other) = delete;
@@ -125,12 +129,12 @@ public:
             return;
         }
         unsigned char info = RESPONSE_RESULT_SET_PAYLOAD;
-        ::send(socket_, &info, 1, 0);
+        ::send(socket_, &info, 1, MSG_NOSIGNAL);
         char buffer[sizeof(std::uint16_t)];  // NOLINT
         buffer[0] = slot & 0xff;  // NOLINT
         buffer[1] = (slot / 0x100) & 0xff;  // NOLINT
-        ::send(socket_, &buffer[0], sizeof(std::uint16_t), MSG_MORE);
-        ::send(socket_, &writer, 1, MSG_MORE);
+        ::send(socket_, &buffer[0], sizeof(std::uint16_t), MSG_MORE | MSG_NOSIGNAL);
+        ::send(socket_, &writer, 1, MSG_MORE | MSG_NOSIGNAL);
         send_payload(payload);
     }
 
@@ -174,6 +178,14 @@ public:
         return using_.test_and_set(std::memory_order_acquire);
     }
 
+    static bool is_socket_available(std::size_t limit) {
+        std::unique_lock<std::mutex> lock(num_mutex_);
+        return num_condition_.wait_for(lock, std::chrono::seconds(5), [limit](){ return num_open_ < limit; });
+    }
+    [[nodiscard]] static std::size_t open_sockets() {
+        return num_open_.load();
+    }
+
 private:
     int socket_;
 
@@ -188,6 +200,9 @@ private:
     std::mutex slot_mutex_{};
     std::atomic<void*> owner_{nullptr};
     std::atomic_flag using_{false};
+    static std::atomic_uint64_t num_open_;          // NOLINT
+    static std::mutex num_mutex_;                   // NOLINT
+    static std::condition_variable num_condition_;  // NOLINT
 
     bool await(unsigned char& info, std::uint16_t& slot, std::string& payload) {
         DVLOG_LP(log_trace) << "-- enter waiting REQUEST --";  //NOLINT
@@ -316,10 +331,10 @@ private:
         if (session_closed_ && !force) {
             return;
         }
-        ::send(socket_, &info, 1, 0);
+        ::send(socket_, &info, 1, MSG_NOSIGNAL);
         buffer[0] = slot & 0xff;  // NOLINT
         buffer[1] = (slot / 0x100) & 0xff;  // NOLINT
-        ::send(socket_, &buffer[0], sizeof(std::uint16_t), MSG_MORE);
+        ::send(socket_, &buffer[0], sizeof(std::uint16_t), MSG_MORE | MSG_NOSIGNAL);
         send_payload(payload);
     }
     void send_payload(std::string_view payload) const {  // a support function, assumes caller hold lock
@@ -330,10 +345,10 @@ private:
         buffer[2] = (length / 0x10000) & 0xff;  // NOLINT
         buffer[3] = (length / 0x1000000) & 0xff;  // NOLINT
         if (length > 0) {
-            ::send(socket_, &buffer[0], sizeof(length), MSG_MORE);
-            ::send(socket_, payload.data(), length, 0);
+            ::send(socket_, &buffer[0], sizeof(length), MSG_MORE | MSG_NOSIGNAL);
+            ::send(socket_, payload.data(), length, MSG_NOSIGNAL);
         } else {
-            ::send(socket_, &buffer[0], sizeof(length), 0);
+            ::send(socket_, &buffer[0], sizeof(length), MSG_NOSIGNAL);
         }
     }
 
@@ -344,6 +359,11 @@ private:
         }
         in_use_.at(slot) = false;
         slot_using_--;
+    }
+
+    static void notify_of_close() {
+        std::unique_lock<std::mutex> lock(num_mutex_);
+        num_condition_.notify_one();
     }
 };
 
@@ -390,17 +410,24 @@ public:
     connection_socket& operator = (connection_socket&&) = delete;
 
     std::shared_ptr<stream_socket> accept([[maybe_unused]] bool wait = false) {
+        struct timeval tv{};
         fd_set fds;
         FD_ZERO(&fds);  // NOLINT
         FD_SET(socket_, &fds);  // NOLINT
         FD_SET(pair_[0], &fds);  // NOLINT
-        select(((pair_[0] > socket_) ? pair_[0] : socket_) + 1, &fds, nullptr, nullptr, nullptr);
-
+        tv.tv_sec = 1;  // 1(S)
+        tv.tv_usec = 0;
+        if (auto rv = select(((pair_[0] > socket_) ? pair_[0] : socket_) + 1, &fds, nullptr, nullptr, &tv); rv == 0) {
+            return nullptr;
+        }
         if (FD_ISSET(socket_, &fds)) {  // NOLINT
             // Accept a connection request
             struct sockaddr_in address{};
             unsigned int len = sizeof(address);
             int ts = ::accept(socket_, (struct sockaddr *)&address, &len);  // NOLINT
+            if (ts == -1) {
+                throw std::runtime_error("too many sockets are being opened");
+            }
             std::stringstream ss{};
             ss << inet_ntoa(address.sin_addr) << ":" << address.sin_port;
             return std::make_shared<stream_socket>(ts, ss.str());
@@ -410,6 +437,7 @@ public:
             if (read(pair_[0], &trash, sizeof(trash)) <= 0) {
                 throw std::runtime_error("pipe connection error");  //NOLINT
             }
+            terminate_requested_ = true;
             return nullptr;
         }
         throw std::runtime_error("select error");  //NOLINT
@@ -425,9 +453,14 @@ public:
         ::close(socket_);
     }
 
+    [[nodiscard]] bool is_terminate_requested() const {
+        return terminate_requested_;
+    }
+
 private:
     int socket_;
     int pair_[2]{};  // NOLINT
+    bool terminate_requested_{};
 };
 
 }

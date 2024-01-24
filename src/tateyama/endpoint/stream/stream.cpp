@@ -20,4 +20,8 @@
 
 namespace tateyama::endpoint::stream {
 
+std::atomic_uint64_t stream_socket::num_open_{0};         // NOLINT
+std::mutex stream_socket::num_mutex_{};                   // NOLINT
+std::condition_variable stream_socket::num_condition_{};  // NOLINT
+
 };
