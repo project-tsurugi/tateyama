@@ -39,6 +39,7 @@ static constexpr std::string_view pid = "pid";
 static constexpr std::string_view remote_host = "remote_host";
 static constexpr std::string_view application_name = "application_name";
 static constexpr std::string_view session_id = "session_id";
+static constexpr std::string_view session_label = "session_label";
 }
 
 // event log level list

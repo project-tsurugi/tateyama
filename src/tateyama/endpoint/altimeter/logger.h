@@ -50,6 +50,9 @@ static inline void session_start(const tateyama::api::server::database_info& dat
         if (auto application_name = session_info.application_name(); !application_name.empty()) {
             log_item.add(log_item::event::application_name, application_name);
         }
+        if (auto session_label = session_info.label(); !session_label.empty()) {
+            log_item.add(log_item::event::session_label, session_label);
+        }
         log_item.add(log_item::event::session_id, static_cast<std::int64_t>(session_info.id()));
         ::altimeter::logger::log(log_item);
     }
@@ -71,6 +74,9 @@ static inline void session_end(const tateyama::api::server::database_info& datab
         }
         if (auto application_name = session_info.application_name(); !application_name.empty()) {
             log_item.add(log_item::event::application_name, application_name);
+        }
+        if (auto session_label = session_info.label(); !session_label.empty()) {
+            log_item.add(log_item::event::session_label, session_label);
         }
         log_item.add(log_item::event::session_id, static_cast<std::int64_t>(session_info.id()));
         ::altimeter::logger::log(log_item);
