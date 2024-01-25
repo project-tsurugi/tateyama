@@ -52,6 +52,10 @@ void stream_worker::run()
         }
 
         if (! handshake(static_cast<tateyama::api::server::request*>(&request_obj), static_cast<tateyama::api::server::response *>(&response_obj))) {
+            if (session_stream_->await(slot, payload)) {
+                LOG_LP(INFO) << "illegal termination procedure for handshake error";  // should not reach here
+            }
+            session_stream_->close();
             return;
         }
         session_stream_->change_slot_size(max_result_sets_);

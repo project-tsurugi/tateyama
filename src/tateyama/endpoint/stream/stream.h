@@ -43,14 +43,15 @@ class stream_data_channel;
 
 class stream_socket
 {
-    // 1 is nolonger used
+    static constexpr unsigned char REQUEST_SESSION_HELLO = 1;      // for backward compatibility
     static constexpr unsigned char REQUEST_SESSION_PAYLOAD = 2;
     static constexpr unsigned char REQUEST_RESULT_SET_BYE_OK = 3;
     static constexpr unsigned char REQUEST_SESSION_BYE = 4;
 
     static constexpr unsigned char RESPONSE_SESSION_PAYLOAD = 1;
     static constexpr unsigned char RESPONSE_RESULT_SET_PAYLOAD = 2;
-    // 3, 4 are nolonger used
+    static constexpr unsigned char RESPONSE_SESSION_HELLO_OK = 3;  // for backward compatibility
+    // 4 is nolonger used
     static constexpr unsigned char RESPONSE_RESULT_SET_HELLO = 5;
     static constexpr unsigned char RESPONSE_RESULT_SET_BYE = 6;
     static constexpr unsigned char RESPONSE_SESSION_BODYHEAD = 7;
@@ -247,6 +248,14 @@ private:
                 DVLOG_LP(log_trace) << "socket is closed by the client abnormally";  //NOLINT
                 return false;
             }
+            case REQUEST_SESSION_HELLO:  // for backward compatibility
+                if (recv(payload)) {
+                    std::string session_name = std::to_string(-1);  // dummy as this session will be closed soon.
+                    send_response(RESPONSE_SESSION_HELLO_OK, 0, session_name);
+                } else {
+                    DVLOG_LP(log_trace) << "socket is closed by the client abnormally";  //NOLINT
+                }
+                continue;
             case REQUEST_SESSION_BYE:
                 DVLOG_LP(log_trace) << "--> REQUEST_SESSION_BYE ";  //NOLINT
                 if (recv(payload)) {
