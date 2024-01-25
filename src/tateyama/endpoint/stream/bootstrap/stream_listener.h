@@ -51,8 +51,6 @@ struct stream_endpoint_context {
  * @details
  */
 class stream_listener {
-    static constexpr std::size_t socket_limit = 512;  // FIXME describe in tsurugi.ini as a parameter of stream_endpoint section
-
 public:
     explicit stream_listener(tateyama::framework::environment& env)
         : cfg_(env.configuration()),
@@ -104,38 +102,23 @@ public:
         std::size_t session_id = 0x1000000000000000LL;
 
         arrive_and_wait();
-        bool socket_overflow{};
         while(true) {
-            for (auto it{undertakers_.begin()}, end{undertakers_.end()}; it != end; ) {
-                if ((*it)->wait_for() == std::future_status::ready) {
-                    it = undertakers_.erase(it);
-                }
-                else {
-                    ++it;
-                }
-            }
 
-            if (!stream_socket::is_socket_available(socket_limit)) {
-                LOG_LP(INFO) << stream_socket::open_sockets() << " sockets are being opened, waiting for a socket available";
-                socket_overflow = true;
-                continue;
-            }
-            if (socket_overflow) {
-                LOG_LP(INFO) << "found an available socket, resume listening";
-                socket_overflow = false;
-            }
             std::shared_ptr<stream_socket> stream{};
             try {
-                stream = connection_socket_->accept();
-                if (!stream) {
-                    if (connection_socket_->is_terminate_requested()) {
-                        break;
+                stream = connection_socket_->accept([this](){
+                    for (auto it{undertakers_.begin()}, end{undertakers_.end()}; it != end; ) {
+                        if ((*it)->wait_for() == std::future_status::ready) {
+                            it = undertakers_.erase(it);
+                        }
+                        else {
+                            ++it;
+                        }
                     }
-                    continue;
+                });
+                if (!stream) {
+                    break;  // received termination request
                 }
-            } catch (std::runtime_error& ex) {
-                LOG_LP(INFO) << ex.what();
-                continue;
             } catch (std::exception& ex) {
                 LOG_LP(ERROR) << ex.what();
                 continue;
