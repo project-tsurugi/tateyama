@@ -86,23 +86,25 @@ protected:
 
     bool handshake(tateyama::api::server::request* req, tateyama::api::server::response* res) {
         if (req->service_id() != tateyama::framework::service_id_endpoint_broker) {
-            std::string error_message{"request has invalid service id"};
-            LOG(ERROR) << error_message;
-            notify_client(res, tateyama::proto::diagnostics::Code::INVALID_REQUEST, error_message);
+            LOG(INFO) << "request received is not handshake";
+            std::stringstream ss;
+            ss << "handshake operation is required to establish sessions (service ID=" << req->service_id() << ")." << std::endl;
+            ss << "see https://github.com/project-tsurugi/tsurugidb/blob/master/docs/upgrade-guide.md#handshake-required";
+            notify_client(res, tateyama::proto::diagnostics::Code::ILLEGAL_STATE, ss.str());
             return false;
         }
         auto data = req->payload();
         tateyama::proto::endpoint::request::Request rq{};
         if(! rq.ParseFromArray(data.data(), static_cast<int>(data.size()))) {
             std::string error_message{"request parse error"};
-            LOG(ERROR) << error_message;
+            LOG(INFO) << error_message;
             notify_client(res, tateyama::proto::diagnostics::Code::INVALID_REQUEST, error_message);
             return false;
         }
         if(rq.command_case() != tateyama::proto::endpoint::request::Request::kHandshake) {
             std::stringstream ss;
             ss << "bad request (handshake in endpoint): " << rq.command_case();
-            LOG(ERROR) << ss.str();
+            LOG(INFO) << ss.str();
             notify_client(res, tateyama::proto::diagnostics::Code::INVALID_REQUEST, ss.str());
             return false;
         }
@@ -117,7 +119,7 @@ protected:
             if(wi.wire_information_case() != tateyama::proto::endpoint::request::WireInformation::kIpcInformation) {
                 std::stringstream ss;
                 ss << "bad wire information (handshake in endpoint): " << wi.wire_information_case();
-                LOG(ERROR) << ss.str();
+                LOG(INFO) << ss.str();
                 notify_client(res, tateyama::proto::diagnostics::Code::INVALID_REQUEST, ss.str());
                 return false;
             }
@@ -127,7 +129,7 @@ protected:
             if(wi.wire_information_case() != tateyama::proto::endpoint::request::WireInformation::kStreamInformation) {
                 std::stringstream ss;
                 ss << "bad wire information (handshake in endpoint): " << wi.wire_information_case();
-                LOG(ERROR) << ss.str();
+                LOG(INFO) << ss.str();
                 notify_client(res, tateyama::proto::diagnostics::Code::INVALID_REQUEST, ss.str());
                 return false;
             }
@@ -136,7 +138,7 @@ protected:
         default:  // shouldn't happen
             std::stringstream ss;
             ss << "illegal connection type: " << static_cast<std::uint32_t>(connection_type_);
-            LOG(ERROR) << ss.str();
+            LOG(INFO) << ss.str();
             notify_client(res, tateyama::proto::diagnostics::Code::INVALID_REQUEST, ss.str());
             return false;
         }
