@@ -69,8 +69,9 @@ class stream_worker : public tateyama::endpoint::common::worker_common {
 
     void notify_of_decline(tateyama::api::server::response* response) {
         tateyama::proto::endpoint::response::Handshake rp{};
-        auto rs = rp.mutable_error();
-        rs->set_code(tateyama::proto::diagnostics::Code::RESOURCE_LIMIT_REACHED);
+        auto re = rp.mutable_error();
+        re->set_message("requests for session connections exceeded the maximum number of sessions");
+        re->set_code(tateyama::proto::diagnostics::Code::RESOURCE_LIMIT_REACHED);
         response->body(rp.SerializeAsString());
         rp.clear_error();
     }

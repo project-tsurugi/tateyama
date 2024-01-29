@@ -20,6 +20,8 @@
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <unistd.h>
+#include <cstdlib>
+#include <sys/poll.h>
 #include <memory>
 #include <string_view>
 #include <stdexcept>
@@ -29,7 +31,10 @@
 #include <condition_variable>
 #include <atomic>
 #include <queue>
+#include <chrono>
+#include <functional>
 #include <arpa/inet.h>
+
 
 #include <glog/logging.h>
 
@@ -40,6 +45,7 @@ namespace tateyama::endpoint::stream {
 
 class connection_socket;
 class stream_data_channel;
+class connection_socket;
 
 class stream_socket
 {
@@ -79,17 +85,8 @@ class stream_socket
     };
 
 public:
-    explicit stream_socket(int socket, std::string_view info) noexcept : socket_(socket), connection_info_(info) {
-        const int enable = 1;
-        if (setsockopt(socket, SOL_TCP, TCP_NODELAY, &enable, sizeof(enable)) < 0) {
-            LOG_LP(ERROR) << "setsockopt() fail";
-        }
-        in_use_.resize(slot_size_);
-    }
-
-    ~stream_socket() {
-        close();
-    }
+    explicit stream_socket(int socket, std::string_view info, connection_socket* envelope);
+    ~stream_socket();
 
     stream_socket(stream_socket const& other) = delete;
     stream_socket& operator=(stream_socket const& other) = delete;
@@ -103,34 +100,34 @@ public:
 
     void send(std::uint16_t slot, std::string_view payload, bool body) {  // for RESPONSE_SESSION_PAYLOAD
         if (body) {
-            DVLOG_LP(log_trace) << "<-- RESPONSE_SESSION_PAYLOAD " << static_cast<std::uint32_t>(slot);  //NOLINT
+            DVLOG_LP(log_trace) << "<-- RESPONSE_SESSION_PAYLOAD " << static_cast<std::uint32_t>(slot);
             send_response(RESPONSE_SESSION_PAYLOAD, slot, payload);
         } else {
-            DVLOG_LP(log_trace) << "<-- RESPONSE_SESSION_BODYHEAD " << static_cast<std::uint32_t>(slot);  //NOLINT
+            DVLOG_LP(log_trace) << "<-- RESPONSE_SESSION_BODYHEAD " << static_cast<std::uint32_t>(slot);
             send_response(RESPONSE_SESSION_BODYHEAD, slot, payload);
         }
     }
     void send_result_set_hello(std::uint16_t slot, std::string_view name) {  // for RESPONSE_RESULT_SET_HELLO
-        DVLOG_LP(log_trace)  << "<-- RESPONSE_RESULT_SET_HELLO " << static_cast<std::uint32_t>(slot) << ", " << name;  //NOLINT
+        DVLOG_LP(log_trace)  << "<-- RESPONSE_RESULT_SET_HELLO " << static_cast<std::uint32_t>(slot) << ", " << name;
         send_response(RESPONSE_RESULT_SET_HELLO, slot, name);
     }
     void send_result_set_bye(std::uint16_t slot) {  // for RESPONSE_RESULT_SET_BYE
-        DVLOG_LP(log_trace) << "<-- RESPONSE_RESULT_SET_BYE " << static_cast<std::uint32_t>(slot);  //NOLINT
+        DVLOG_LP(log_trace) << "<-- RESPONSE_RESULT_SET_BYE " << static_cast<std::uint32_t>(slot);
         send_response(RESPONSE_RESULT_SET_BYE, slot, "");
     }
     void send(std::uint16_t slot, unsigned char writer, std::string_view payload) { // for RESPONSE_RESULT_SET_PAYLOAD
-        DVLOG_LP(log_trace) << (payload.length() > 0 ? "<-- RESPONSE_RESULT_SET_PAYLOAD " : "<-- RESPONSE_RESULT_SET_COMMIT ") << static_cast<std::uint32_t>(slot) << ", " << static_cast<std::uint32_t>(writer);  //NOLINT
+        DVLOG_LP(log_trace) << (payload.length() > 0 ? "<-- RESPONSE_RESULT_SET_PAYLOAD " : "<-- RESPONSE_RESULT_SET_COMMIT ") << static_cast<std::uint32_t>(slot) << ", " << static_cast<std::uint32_t>(writer);
         std::unique_lock<std::mutex> lock(mutex_);
         if (session_closed_) {
             return;
         }
         unsigned char info = RESPONSE_RESULT_SET_PAYLOAD;
-        ::send(socket_, &info, 1, 0);
+        ::send(socket_, &info, 1, MSG_NOSIGNAL);
         char buffer[sizeof(std::uint16_t)];  // NOLINT
         buffer[0] = slot & 0xff;  // NOLINT
         buffer[1] = (slot / 0x100) & 0xff;  // NOLINT
-        ::send(socket_, &buffer[0], sizeof(std::uint16_t), MSG_MORE);
-        ::send(socket_, &writer, 1, MSG_MORE);
+        ::send(socket_, &buffer[0], sizeof(std::uint16_t), MSG_MORE | MSG_NOSIGNAL);
+        ::send(socket_, &writer, 1, MSG_MORE | MSG_NOSIGNAL);
         send_payload(payload);
     }
 
@@ -151,7 +148,7 @@ public:
                 return i;
             }
         }
-        throw std::runtime_error("running out the slots for result set");  //NOLINT
+        throw std::runtime_error("running out the slots for result set");
     }
 
     void change_slot_size(std::size_t index) {
@@ -176,6 +173,9 @@ public:
 
 private:
     int socket_;
+    static constexpr std::size_t N_FDS = 1;
+    static constexpr int TIMEOUT_MS = 500;  // 500(mS)
+    struct pollfd fds_[N_FDS]{};  // NOLINT
 
     bool session_closed_{false};
     bool socket_closed_{false};
@@ -188,10 +188,14 @@ private:
     std::mutex slot_mutex_{};
     std::atomic<void*> owner_{nullptr};
     std::atomic_flag using_{false};
+    connection_socket* envelope_;
 
     bool await(unsigned char& info, std::uint16_t& slot, std::string& payload) {
-        DVLOG_LP(log_trace) << "-- enter waiting REQUEST --";  //NOLINT
+        DVLOG_LP(log_trace) << "-- enter waiting REQUEST --";
 
+        fds_[0].fd = socket_;     // NOLINT
+        fds_[0].events = POLLIN;  // NOLINT
+        fds_[0].revents = 0;      // NOLINT
         while (true) {
             if (!queue_.empty() && slot_using_ < slot_size_) {
                 auto entry = queue_.front();
@@ -202,32 +206,29 @@ private:
                 return true;
             }
 
-            struct timeval tv{};
-            fd_set fds;
-            FD_ZERO(&fds);  // NOLINT
-            FD_SET(socket_, &fds);  // NOLINT
-            tv.tv_sec = 0;
-            tv.tv_usec = 500000;  // 500(mS)
-            if (auto rv = select(socket_ + 1, &fds, nullptr, nullptr, &tv); rv == 0) {
-                continue;
+            if (auto rv = poll(fds_, N_FDS, TIMEOUT_MS); !(rv > 0)) {  // NOLINT
+                if (rv == 0) {
+                    continue;
+                }
+                throw std::runtime_error("error in poll");
             }
 
-            if (FD_ISSET(socket_, &fds)) {  // NOLINT
+            if (fds_[0].revents & POLLIN) {  // NOLINT
                 if (auto size_i = ::recv(socket_, &info, 1, 0); size_i == 0) {
-                    DVLOG_LP(log_trace) << "socket is closed by the client";  //NOLINT
+                    DVLOG_LP(log_trace) << "socket is closed by the client";
                     return false;
                 }
 
                 char buffer[sizeof(std::uint16_t)];  // NOLINT
                 if (!recv(&buffer[0], sizeof(std::uint16_t))) {
-                        DVLOG_LP(log_trace) << "socket is closed by the client abnormally";  //NOLINT
+                        DVLOG_LP(log_trace) << "socket is closed by the client abnormally";
                         return false;
                 }
                 slot = (strip(buffer[1]) << 8) | strip(buffer[0]);  // NOLINT
             }
             switch (info) {
             case REQUEST_SESSION_PAYLOAD:
-                DVLOG_LP(log_trace) << "--> REQUEST_SESSION_PAYLOAD " << static_cast<std::uint32_t>(slot);  //NOLINT
+                DVLOG_LP(log_trace) << "--> REQUEST_SESSION_PAYLOAD " << static_cast<std::uint32_t>(slot);
                 if (recv(payload)) {
                     if (slot_using_ < slot_size_) {
                         return true;
@@ -235,17 +236,17 @@ private:
                     queue_.push(recv_entry(info, slot, payload));
                     break;
                 }
-                DVLOG_LP(log_trace) << "socket is closed by the client abnormally";  //NOLINT
+                DVLOG_LP(log_trace) << "socket is closed by the client abnormally";
                 return false;
             case REQUEST_RESULT_SET_BYE_OK:
             {
-                DVLOG_LP(log_trace) << "--> REQUEST_RESULT_SET_BYE_OK " << static_cast<std::uint32_t>(slot);  //NOLINT
+                DVLOG_LP(log_trace) << "--> REQUEST_RESULT_SET_BYE_OK " << static_cast<std::uint32_t>(slot);
                 std::string dummy;
                 if (recv(dummy)) {
                     release_slot(slot);
                     break;
                 }
-                DVLOG_LP(log_trace) << "socket is closed by the client abnormally";  //NOLINT
+                DVLOG_LP(log_trace) << "socket is closed by the client abnormally";
                 return false;
             }
             case REQUEST_SESSION_HELLO:  // for backward compatibility
@@ -253,23 +254,23 @@ private:
                     std::string session_name = std::to_string(-1);  // dummy as this session will be closed soon.
                     send_response(RESPONSE_SESSION_HELLO_OK, 0, session_name);
                 } else {
-                    DVLOG_LP(log_trace) << "socket is closed by the client abnormally";  //NOLINT
+                    DVLOG_LP(log_trace) << "socket is closed by the client abnormally";
                 }
                 continue;
             case REQUEST_SESSION_BYE:
-                DVLOG_LP(log_trace) << "--> REQUEST_SESSION_BYE ";  //NOLINT
+                DVLOG_LP(log_trace) << "--> REQUEST_SESSION_BYE ";
                 if (recv(payload)) {
                     do {std::unique_lock<std::mutex> lock(mutex_);
                         session_closed_ = true;
                     } while (false);
-                    DVLOG_LP(log_trace) << "<-- RESPONSE_SESSION_BYE_OK ";  //NOLINT
+                    DVLOG_LP(log_trace) << "<-- RESPONSE_SESSION_BYE_OK ";
                     send_response(RESPONSE_SESSION_BYE_OK, 0, "", true);
                     continue;
                 }
-                DVLOG_LP(log_trace) << "socket is closed by the client abnormally";  //NOLINT
+                DVLOG_LP(log_trace) << "socket is closed by the client abnormally";
                 return false;
             default:
-                LOG_LP(ERROR) << "illegal message type " << static_cast<std::uint32_t>(info);  //NOLINT
+                LOG_LP(ERROR) << "illegal message type " << static_cast<std::uint32_t>(info);
                 close();
                 return false;  // to exit this thread
             }
@@ -316,10 +317,10 @@ private:
         if (session_closed_ && !force) {
             return;
         }
-        ::send(socket_, &info, 1, 0);
+        ::send(socket_, &info, 1, MSG_NOSIGNAL);
         buffer[0] = slot & 0xff;  // NOLINT
         buffer[1] = (slot / 0x100) & 0xff;  // NOLINT
-        ::send(socket_, &buffer[0], sizeof(std::uint16_t), MSG_MORE);
+        ::send(socket_, &buffer[0], sizeof(std::uint16_t), MSG_MORE | MSG_NOSIGNAL);
         send_payload(payload);
     }
     void send_payload(std::string_view payload) const {  // a support function, assumes caller hold lock
@@ -330,10 +331,10 @@ private:
         buffer[2] = (length / 0x10000) & 0xff;  // NOLINT
         buffer[3] = (length / 0x1000000) & 0xff;  // NOLINT
         if (length > 0) {
-            ::send(socket_, &buffer[0], sizeof(length), MSG_MORE);
-            ::send(socket_, payload.data(), length, 0);
+            ::send(socket_, &buffer[0], sizeof(length), MSG_MORE | MSG_NOSIGNAL);
+            ::send(socket_, payload.data(), length, MSG_NOSIGNAL);
         } else {
-            ::send(socket_, &buffer[0], sizeof(length), 0);
+            ::send(socket_, &buffer[0], sizeof(length), MSG_NOSIGNAL);
         }
     }
 
@@ -348,17 +349,20 @@ private:
 };
 
 // implements connect operation
+// one object per one stream endpoint
 class connection_socket
 {
+    static constexpr std::size_t default_socket_limit = 16384;
+
 public:
     /**
      * @brief Construct a new object.
      */
     connection_socket() = delete;
-    explicit connection_socket(std::uint32_t port) {
+    connection_socket(std::uint32_t port, std::size_t socket_limit) : socket_limit_(socket_limit) {
         // create a pipe
         if (pipe(&pair_[0]) != 0) {
-            throw std::runtime_error("cannot create a pipe");  //NOLINT
+            throw std::runtime_error("cannot create a pipe");
         }
 
         // create a socket
@@ -374,11 +378,12 @@ public:
         socket_address.sin_port = htons(port);
         socket_address.sin_addr.s_addr = INADDR_ANY;
         if (bind(socket_, (struct sockaddr *) &socket_address, sizeof(socket_address)) != 0) {  // NOLINT
-            throw std::runtime_error("bind error, probably another server is running on the same port");  //NOLINT
+            throw std::runtime_error("bind error, probably another server is running on the same port");
         }
         // listen the port
         listen(socket_, SOMAXCONN);
     }
+    explicit connection_socket(std::uint32_t port) : connection_socket(port, default_socket_limit) {}
     ~connection_socket() = default;
 
     /**
@@ -389,30 +394,43 @@ public:
     connection_socket& operator = (connection_socket const&) = delete;
     connection_socket& operator = (connection_socket&&) = delete;
 
-    std::shared_ptr<stream_socket> accept([[maybe_unused]] bool wait = false) {
-        fd_set fds;
-        FD_ZERO(&fds);  // NOLINT
-        FD_SET(socket_, &fds);  // NOLINT
-        FD_SET(pair_[0], &fds);  // NOLINT
-        select(((pair_[0] > socket_) ? pair_[0] : socket_) + 1, &fds, nullptr, nullptr, nullptr);
+    std::shared_ptr<stream_socket> accept(const std::function<void(void)>& cleanup = [](){} ) {
+        cleanup();
 
-        if (FD_ISSET(socket_, &fds)) {  // NOLINT
-            // Accept a connection request
-            struct sockaddr_in address{};
-            unsigned int len = sizeof(address);
-            int ts = ::accept(socket_, (struct sockaddr *)&address, &len);  // NOLINT
-            std::stringstream ss{};
-            ss << inet_ntoa(address.sin_addr) << ":" << address.sin_port;
-            return std::make_shared<stream_socket>(ts, ss.str());
-        }
-        if (FD_ISSET(pair_[0], &fds)) {  //  NOLINT
-            char trash{};
-            if (read(pair_[0], &trash, sizeof(trash)) <= 0) {
-                throw std::runtime_error("pipe connection error");  //NOLINT
+        struct timeval tv{};
+        tv.tv_sec = 1;  // 1(S)
+        tv.tv_usec = 0;
+        while (true) {
+            FD_ZERO(&fds_);  // NOLINT
+            if (is_socket_available()) {
+                FD_SET(socket_, &fds_);  // NOLINT
             }
-            return nullptr;
+            FD_SET(pair_[0], &fds_);  // NOLINT
+            if (auto rv = select(((pair_[0] > socket_) ? pair_[0] : socket_) + 1, &fds_, nullptr, nullptr, &tv); rv == 0) {
+                cleanup();
+                continue;
+            }
+            if (FD_ISSET(socket_, &fds_)) {  // NOLINT
+                // Accept a connection request
+                struct sockaddr_in address{};
+                unsigned int len = sizeof(address);
+                int ts = ::accept(socket_, (struct sockaddr *)&address, &len);  // NOLINT
+                if (ts == -1) {
+                    throw std::runtime_error("accept error");
+                }
+                std::stringstream ss{};
+                ss << inet_ntoa(address.sin_addr) << ":" << address.sin_port;
+                return std::make_shared<stream_socket>(ts, ss.str(), this);
+            }
+            if (FD_ISSET(pair_[0], &fds_)) {  //  NOLINT
+                char trash{};
+                if (read(pair_[0], &trash, sizeof(trash)) <= 0) {
+                    throw std::runtime_error("pipe connection error");
+                }
+                return nullptr;
+            }
+            throw std::runtime_error("select error");
         }
-        throw std::runtime_error("select error");  //NOLINT
     }
 
     void request_terminate() {
@@ -428,6 +446,26 @@ public:
 private:
     int socket_;
     int pair_[2]{};  // NOLINT
+    fd_set fds_{};
+
+    std::size_t socket_limit_;
+    std::atomic_uint64_t num_open_{0};
+    std::mutex num_mutex_{};
+    std::condition_variable num_condition_{};
+
+    friend class stream_socket;
+
+    [[nodiscard]] bool is_socket_available() {
+        return num_open_.load() < socket_limit_;
+    }
+    bool wait_socket_available() {
+        std::unique_lock<std::mutex> lock(num_mutex_);
+        return num_condition_.wait_for(lock, std::chrono::seconds(5), [this](){ return is_socket_available(); });
+    }
+    void notify_of_close() {
+        std::unique_lock<std::mutex> lock(num_mutex_);
+        num_condition_.notify_one();
+    }
 };
 
 }
