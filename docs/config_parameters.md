@@ -65,6 +65,7 @@ parameter=value
 |dev_profile_commits| ブール(true/false) | コミット処理の性能計測のためのプロファイリング情報を出力するか。デフォルトはfalse|開発用のため将来的に削除される可能性あり|
 |dev_return_os_pages| ブール(true/false) | メモリ管理用のページプールに返却されたページをOSに返却するか。デフォルトはfalse|開発用のため将来的に削除される可能性あり|
 |dev_omit_task_when_idle| ブール(true/false) | durable待ちトランザクションがない場合にdurability callback処理を行うタスクのスケジュールをスキップするか。デフォルトはtrue|開発用のため将来的に削除される可能性あり|
+|external_log_explain| ブール(true/false) | Altimeterのイベントログに `stmt_explain` 項目(SQL実行計画)を出力するか。デフォルトはtrue||
 
 ## ipc_endpointセクション
 
