@@ -21,9 +21,6 @@
 #include <string>
 #include <string_view>
 #include <exception>
-#include <sys/types.h>
-#include <pwd.h>
-#include <unistd.h>
 
 #include <tateyama/logging.h>
 #include <tateyama/framework/component.h>
@@ -65,10 +62,6 @@ std::shared_ptr<resource> server::find_resource_by_id(component::id_type id) {
 }
 
 #ifdef ENABLE_ALTIMETER
-inline static std::string_view get_username() {  // FIXME username should be obtained from credential used at tgctl start
-    return getpwuid(getuid())->pw_name;
-}
-
 inline static std::string get_database_name(environment& env) {
     auto database_name_opt = env.configuration()->get_section("ipc_endpoint")->get<std::string>("database_name");
     if (database_name_opt) {
@@ -103,7 +96,7 @@ bool server::setup() {
         LOG(ERROR) << "Server application framework setup phase failed.";
         // shutdown already setup components
 #ifdef ENABLE_ALTIMETER
-        db_start(get_username(), get_database_name(*environment_), db_start_stop_fail);
+        db_start("", get_database_name(*environment_), db_start_stop_fail);
 #endif
         shutdown();
     }
@@ -141,12 +134,12 @@ bool server::start() {
         LOG(ERROR) << "Server application framework start phase failed.";
         // shutdown already started components
 #ifdef ENABLE_ALTIMETER
-        db_start(get_username(), get_database_name(*environment_), db_start_stop_fail);
+        db_start("", get_database_name(*environment_), db_start_stop_fail);
 #endif
         shutdown();
     }
 #ifdef ENABLE_ALTIMETER
-    db_start(get_username(), get_database_name(*environment_), db_start_stop_success);
+    db_start("", get_database_name(*environment_), db_start_stop_success);
 #endif
     return success;
 }
@@ -170,7 +163,7 @@ bool server::shutdown() {
         VLOG(log_info) << "/:tateyama:lifecycle:component:shutdown_end " << arg.label();
     }, true);
 #ifdef ENABLE_ALTIMETER
-        db_stop(get_username(), get_database_name(*environment_), db_start_stop_success);
+        db_stop("", get_database_name(*environment_), db_start_stop_success);
 #endif
     return success;
 }
@@ -200,4 +193,3 @@ void add_core_components(server& svr) {
 }
 
 }
-
