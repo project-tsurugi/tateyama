@@ -48,4 +48,23 @@ static constexpr int error = 30;
 static constexpr int info = 50;
 } // namespace log_level::event
 
+// audit log type list
+namespace log_type::audit {
+static constexpr std::string_view db_start = "db_start";
+static constexpr std::string_view db_stop = "db_stop";
+} // namespace log_type::audit
+
+// audit log item list
+namespace log_item::audit {
+static constexpr std::string_view user = "user";
+static constexpr std::string_view dbname = "dbname";
+static constexpr std::string_view result = "result";
+}
+
+// audit log level list
+namespace log_level::audit {
+static constexpr int error = 30;
+static constexpr int info = 50;
+} // namespace log_level::audit
+
 }  // tateyama::altimeter

@@ -18,6 +18,9 @@
 #include <functional>
 #include <memory>
 #include <type_traits>
+#include <string>
+#include <string_view>
+#include <exception>
 
 #include <tateyama/logging.h>
 #include <tateyama/framework/component.h>
@@ -36,6 +39,9 @@
 #include <tateyama/status/resource/bridge.h>
 #include <tateyama/diagnostic/resource/diagnostic_resource.h>
 #include <tateyama/utils/boolalpha.h>
+#ifdef ENABLE_ALTIMETER
+#include "altimeter_logger.h"
+#endif
 
 namespace tateyama::framework {
 
@@ -54,6 +60,16 @@ void server::add_endpoint(std::shared_ptr<endpoint> arg) {
 std::shared_ptr<resource> server::find_resource_by_id(component::id_type id) {
     return environment_->resource_repository().find_by_id(id);
 }
+
+#ifdef ENABLE_ALTIMETER
+inline static std::string get_database_name(environment& env) {
+    auto database_name_opt = env.configuration()->get_section("ipc_endpoint")->get<std::string>("database_name");
+    if (database_name_opt) {
+        return std::string{database_name_opt.value()};
+    }
+    return {};
+}
+#endif
 
 bool server::setup() {
     if(setup_done_) return true;
@@ -79,6 +95,9 @@ bool server::setup() {
     if(! success) {
         LOG(ERROR) << "Server application framework setup phase failed.";
         // shutdown already setup components
+#ifdef ENABLE_ALTIMETER
+        db_start("", get_database_name(*environment_), db_start_stop_fail);
+#endif
         shutdown();
     }
     setup_done_ = success;
@@ -114,8 +133,14 @@ bool server::start() {
     if(! success) {
         LOG(ERROR) << "Server application framework start phase failed.";
         // shutdown already started components
+#ifdef ENABLE_ALTIMETER
+        db_start("", get_database_name(*environment_), db_start_stop_fail);
+#endif
         shutdown();
     }
+#ifdef ENABLE_ALTIMETER
+    db_start("", get_database_name(*environment_), db_start_stop_success);
+#endif
     return success;
 }
 
@@ -137,6 +162,9 @@ bool server::shutdown() {
         success = arg.shutdown(*environment_) && success;
         VLOG(log_info) << "/:tateyama:lifecycle:component:shutdown_end " << arg.label();
     }, true);
+#ifdef ENABLE_ALTIMETER
+        db_stop("", get_database_name(*environment_), db_start_stop_success);
+#endif
     return success;
 }
 
@@ -165,4 +193,3 @@ void add_core_components(server& svr) {
 }
 
 }
-
