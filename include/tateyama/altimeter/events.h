@@ -52,13 +52,18 @@ static constexpr int info = 50;
 namespace log_type::audit {
 static constexpr std::string_view db_start = "db_start";
 static constexpr std::string_view db_stop = "db_stop";
+static constexpr std::string_view backup = "backup";
+static constexpr std::string_view restore = "restore";
 } // namespace log_type::audit
 
 // audit log item list
 namespace log_item::audit {
 static constexpr std::string_view user = "user";
 static constexpr std::string_view dbname = "dbname";
+static constexpr std::string_view remote_host = "remote_host";
+static constexpr std::string_view application_name = "application_name";
 static constexpr std::string_view result = "result";
+static constexpr std::string_view command = "command";
 }
 
 // audit log level list
