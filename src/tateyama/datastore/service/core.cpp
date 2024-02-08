@@ -49,7 +49,7 @@ bool tateyama::datastore::service::core::operator()(const std::shared_ptr<reques
             backup_id_++;
             backup_ = std::make_unique<limestone_backup>(resource_->begin_backup());
 #ifdef ENABLE_ALTIMETER
-            service::backup(req, "classic", backup_restore_success);
+            service::backup(req, "all", backup_restore_success);
 #endif
 
             tateyama::proto::datastore::response::BackupBegin rp{};
@@ -72,7 +72,9 @@ bool tateyama::datastore::service::core::operator()(const std::shared_ptr<reques
                 limestone::api::backup_type::transaction;
             backup_detail_ = resource_->begin_backup(type);
 #ifdef ENABLE_ALTIMETER
-            service::backup(req, "prusik", backup_restore_success);
+            service::backup(req,
+                    type == limestone::api::backup_type::standard ? "standard" : "transaction",
+                    backup_restore_success);
 #endif
 
             tateyama::proto::datastore::response::BackupBegin rp{};
@@ -141,9 +143,15 @@ bool tateyama::datastore::service::core::operator()(const std::shared_ptr<reques
             auto& rb = rq.restore_begin();
             tateyama::proto::datastore::response::RestoreBegin rp{};
             limestone::status rc{};
+#ifdef ENABLE_ALTIMETER
+            std::string command{};
+#endif
             switch (rb.source_case()) {
             case ns::RestoreBegin::kBackupDirectory:
                 rc = resource_->restore_backup(rb.backup_directory(), rb.keep_backup());
+#ifdef ENABLE_ALTIMETER
+                command = "directory " + rb.backup_directory();
+#endif
                 break;
             case ns::RestoreBegin::kTagName:
                 LOG(ERROR) << "restore tag is not implemented";
@@ -160,6 +168,9 @@ bool tateyama::datastore::service::core::operator()(const std::shared_ptr<reques
                     );
                 }
                 rc = resource_->restore_backup(rb.entries().directory(), entries);
+#ifdef ENABLE_ALTIMETER
+                command = "entries " + rb.entries().directory();
+#endif
                 break;
             }
             default:
@@ -184,8 +195,7 @@ bool tateyama::datastore::service::core::operator()(const std::shared_ptr<reques
                 break;
             }
 #ifdef ENABLE_ALTIMETER
-            service::restore(req,
-                    rb.source_case() == ns::RestoreBegin::kBackupDirectory ? "classic" : "prusik",
+            service::restore(req, command,
                     rc == limestone::status::ok ? backup_restore_success : backup_restore_fail);
 #endif
             res->session_id(this_request_does_not_use_session_id);
