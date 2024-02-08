@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2023 Project Tsurugi.
+ * Copyright 2018-2024 Project Tsurugi.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,9 @@
 
 #include <tateyama/proto/datastore/request.pb.h>
 #include <tateyama/proto/datastore/response.pb.h>
+#ifdef ENABLE_ALTIMETER
+#include "altimeter_logger.h"
+#endif
 
 
 namespace tateyama::datastore::service {
@@ -45,6 +48,9 @@ bool tateyama::datastore::service::core::operator()(const std::shared_ptr<reques
         case ns::Request::kBackupBegin: {
             backup_id_++;
             backup_ = std::make_unique<limestone_backup>(resource_->begin_backup());
+#ifdef ENABLE_ALTIMETER
+            service::backup(req, "all", backup_restore_success);
+#endif
 
             tateyama::proto::datastore::response::BackupBegin rp{};
             auto success = rp.mutable_success();
@@ -65,6 +71,11 @@ bool tateyama::datastore::service::core::operator()(const std::shared_ptr<reques
                 limestone::api::backup_type::standard :
                 limestone::api::backup_type::transaction;
             backup_detail_ = resource_->begin_backup(type);
+#ifdef ENABLE_ALTIMETER
+            service::backup(req,
+                    type == limestone::api::backup_type::standard ? "standard" : "transaction",
+                    backup_restore_success);
+#endif
 
             tateyama::proto::datastore::response::BackupBegin rp{};
             auto success = rp.mutable_success();
@@ -132,9 +143,15 @@ bool tateyama::datastore::service::core::operator()(const std::shared_ptr<reques
             auto& rb = rq.restore_begin();
             tateyama::proto::datastore::response::RestoreBegin rp{};
             limestone::status rc{};
+#ifdef ENABLE_ALTIMETER
+            std::string command{};
+#endif
             switch (rb.source_case()) {
             case ns::RestoreBegin::kBackupDirectory:
                 rc = resource_->restore_backup(rb.backup_directory(), rb.keep_backup());
+#ifdef ENABLE_ALTIMETER
+                command = "directory " + rb.backup_directory();
+#endif
                 break;
             case ns::RestoreBegin::kTagName:
                 LOG(ERROR) << "restore tag is not implemented";
@@ -151,6 +168,9 @@ bool tateyama::datastore::service::core::operator()(const std::shared_ptr<reques
                     );
                 }
                 rc = resource_->restore_backup(rb.entries().directory(), entries);
+#ifdef ENABLE_ALTIMETER
+                command = "entries " + rb.entries().directory();
+#endif
                 break;
             }
             default:
@@ -174,6 +194,10 @@ bool tateyama::datastore::service::core::operator()(const std::shared_ptr<reques
                 rp.mutable_unknown_error();
                 break;
             }
+#ifdef ENABLE_ALTIMETER
+            service::restore(req, command,
+                    rc == limestone::status::ok ? backup_restore_success : backup_restore_fail);
+#endif
             res->session_id(this_request_does_not_use_session_id);
             auto body = rp.SerializeAsString();
             res->body(body);
