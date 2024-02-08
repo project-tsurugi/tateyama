@@ -1,0 +1,133 @@
+syntax = "proto3";
+
+package tateyama.proto.session.response;
+
+import "tateyama/proto/session/diagnostic.proto";
+
+// the running session information.
+message SessionInfo {
+    // the session ID, starting with ":".
+    string session_id = 1;
+
+    // the session label (may be empty).
+    string label = 2;
+
+    // the application name (may be empty).
+    string application = 3;
+
+    // the session user name (may be empty).
+    string user = 4; 
+
+    // the session starting time (millisecond offset from 1970-01-01T00:00:00.000Z).
+    sfixed64 start_at = 5;
+
+    // the session connection type (e.g. "ipc" or "tcp").
+    string connection_type = 6;
+
+    // the remote host information (e.g. TCP: remote host, IPC: PID).
+    string connection_info = 7;
+}
+
+// the results of request.SessionGet.
+message SessionGet {
+    // the successful message.
+    message Success {
+        // the obtained session information.
+        SessionInfo entry = 1;
+    }
+
+    // the response body.
+    oneof result {
+        // request is successfully completed.
+        Success success = 1;
+
+        // request was failed by error.
+        diagnostic.Error error = 2;
+    }
+}
+
+// the results of request.SessionList.
+message SessionList {
+    // the successful message.
+    message Success {
+        // the obtained list of sessions.
+        repeated SessionInfo entries = 1;
+    }
+
+    // the response body.
+    oneof result {
+        // request is successfully completed.
+        Success success = 1;
+
+        // request was failed by error.
+        diagnostic.Error error = 2;
+    }
+}
+
+// the results of request.SessionShutdown.
+message SessionShutdown {
+    // the successful message.
+    message Success {}
+
+    // the response body.
+    oneof result {
+        // the shutdown was successfully requested.
+        Success success = 1;
+
+        // request was failed by error.
+        diagnostic.Error error = 2;
+    }
+}
+
+// the results of request.SessionSetVariable.
+message SessionSetVariable {
+    // the successful message.
+    message Success {}
+
+    // the response body.
+    oneof result {
+        // the session variable was successfully set.
+        Success success = 1;
+
+        // request was failed by error.
+        diagnostic.Error error = 2;
+    }
+}
+
+// the results of request.SessionGetVariable.
+message SessionGetVariable {
+    // the successful message.
+    message Success {
+
+        // the canonical variable name.
+        string name = 1;
+
+        // the description of the variable.
+        string description = 2;
+
+        // the resulting value, or NOT_SET if the value is empty.
+        oneof value {
+
+            // the boolean value.
+            bool bool_value = 3;
+
+            // the signed integer value.
+            sint64 signed_integer_value = 4;
+
+            // the unsigned integer value.
+            uint64 unsigned_integer_value = 5;
+
+            // the character string value.
+            string string_value = 6;
+        }
+    }
+
+    // the response body.
+    oneof result {
+        // the session variable was successfully set.
+        Success success = 1;
+
+        // request was failed by error.
+        diagnostic.Error error = 2;
+    }
+}

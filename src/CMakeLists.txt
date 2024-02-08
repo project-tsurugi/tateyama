@@ -29,16 +29,19 @@ file(GLOB SOURCES
         "tateyama/endpoint/service/impl/*.cpp"
         "tateyama/endpoint/ipc/*.cpp"
         "tateyama/endpoint/ipc/bootstrap/*.cpp"
-        "tateyama/endpoint/loopback/*.cpp"
-        "tateyama/endpoint/loopback/bootstrap/*.cpp"
         "tateyama/endpoint/stream/*.cpp"
         "tateyama/endpoint/stream/bootstrap/*.cpp"
+        "tateyama/endpoint/loopback/*.cpp"
+        "tateyama/endpoint/loopback/bootstrap/*.cpp"
         "tateyama/framework/*.cpp"
         "tateyama/loopback/*.cpp"
         "tateyama/server/*.cpp"
         "tateyama/server/impl/*.cpp"
         "tateyama/utils/*.cpp"
         "tateyama/configuration/*.cpp"
+        "tateyama/session/*.cpp"
+        "tateyama/session/service/*.cpp"
+        "tateyama/session/resource/*.cpp"
 )
 
 if(TRACY_ENABLE)

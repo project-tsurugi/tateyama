@@ -1,0 +1,98 @@
+syntax = "proto3";
+
+package tateyama.proto.session.request;
+
+// the request message to session pseudo service.
+message Request {
+    // service message version (major)
+    uint64 service_message_version_major = 1;
+
+    // service message version (minor)
+    uint64 service_message_version_minor = 2;
+
+    // reserved for system use
+    reserved 3 to 10;
+
+    // the request command.
+    oneof command {
+        // obtains session information.
+        SessionGet session_get = 11;
+
+        // obtains list of active sessions.
+        SessionList session_list = 12;
+
+        // request shutdown to the session.
+        SessionShutdown session_shutdown = 13;
+
+        // set session variables.
+        SessionSetVariable session_set_variable = 14;
+
+        // retrieve session variables.
+        SessionGetVariable session_get_variable= 15;
+    }
+    reserved 16 to 99;
+}
+
+
+// obtains session information.
+message SessionGet {
+
+    // the target session specifier - ID or label.
+    string session_specifier = 1;
+}
+
+
+// obtains list of active sessions.
+message SessionList {
+    // no special properties.
+}
+
+
+// represents kind of shutdown request.
+enum SessionShutdownType {
+
+    // the shutdown request type is not set (default behavior).
+    SESSION_SHUTDOWN_TYPE_NOT_SET = 0;
+
+    // denies new requests, and shutdown the session after the all running requests were finished.
+    GRACEFUL = 1;
+
+    // denies new requests, tells cancellation to the running requests,
+    // and then shutdown the session after the all requests were finished or cancelled.
+    FORCEFUL = 2;
+}
+
+// request shutdown to the session.
+message SessionShutdown {
+
+    // the target session specifier - ID or label.
+    string session_specifier = 1;
+
+    // the shutdown request type.
+    SessionShutdownType request_type = 2;
+}
+
+
+// set session variables.
+message SessionSetVariable {
+
+    // the target session specifier - ID or label.
+    string session_specifier = 1;
+
+    // the target variable name, case insensitive.
+    string name = 2;
+
+    // the text represented value to set.
+    string value = 3;
+}
+
+
+// retrieve session variables.
+message SessionGetVariable {
+
+    // the target session specifier - ID or label.
+    string session_specifier = 1;
+
+    // the target variable name, case insensitive.
+    string name = 2;
+}

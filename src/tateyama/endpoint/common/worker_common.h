@@ -25,7 +25,8 @@
 #include <tateyama/framework/routing_service.h>
 #include <tateyama/framework/component_ids.h>
 #include <tateyama/status/resource/bridge.h>
-#include "tateyama/logging_helper.h"
+#include <tateyama/logging_helper.h>
+#include <tateyama/session/resource/bridge.h>
 
 #include <tateyama/proto/endpoint/request.pb.h>
 #include <tateyama/proto/endpoint/response.pb.h>
