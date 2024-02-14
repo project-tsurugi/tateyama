@@ -33,6 +33,7 @@
 #include <tateyama/logging.h>
 #include <tateyama/framework/routing_service.h>
 #include <tateyama/api/configuration.h>
+#include <tateyama/session/resource/bridge.h>
 
 #include "tateyama/endpoint/stream/stream_response.h"
 #include "tateyama/endpoint/common/logging.h"
@@ -55,7 +56,8 @@ public:
     explicit stream_listener(tateyama::framework::environment& env)
         : cfg_(env.configuration()),
           router_(env.service_repository().find<framework::routing_service>()),
-          status_(env.resource_repository().find<status_info::resource::bridge>()) {
+          status_(env.resource_repository().find<status_info::resource::bridge>()),
+          session_(env.resource_repository().find<session::resource::bridge>()) {
 
         auto endpoint_config = cfg_->get_section("stream_endpoint");
         if (endpoint_config == nullptr) {
@@ -140,7 +142,7 @@ public:
             }
             if (!found) {
                 try {
-                    auto worker_decline = std::make_unique<stream_worker>(*router_, session_id, std::move(stream), status_->database_info(), true);
+                    auto worker_decline = std::make_unique<stream_worker>(*router_, session_id, std::move(stream), status_->database_info(), true, nullptr);
                     auto* worker = worker_decline.get();
                     undertakers_.emplace(std::move(worker_decline));
                     worker->invoke([worker]{worker->run();});
@@ -151,7 +153,7 @@ public:
             } else {
                 auto& worker_entry = workers_.at(index);
                 try {
-                    worker_entry = std::make_unique<stream_worker>(*router_, session_id, std::move(stream), status_->database_info(), false);
+                    worker_entry = std::make_unique<stream_worker>(*router_, session_id, std::move(stream), status_->database_info(), false, session_);
                     auto* worker = worker_entry.get();
                     worker->invoke([worker]{worker->run();});
                     session_id++;
@@ -171,9 +173,10 @@ public:
     }
 
 private:
-    const std::shared_ptr<api::configuration::whole> cfg_{};
-    const std::shared_ptr<framework::routing_service> router_{};
-    const std::shared_ptr<status_info::resource::bridge> status_{};
+    const std::shared_ptr<api::configuration::whole> cfg_;
+    const std::shared_ptr<framework::routing_service> router_;
+    const std::shared_ptr<status_info::resource::bridge> status_;
+    const std::shared_ptr<tateyama::session::resource::bridge> session_;
     std::unique_ptr<connection_socket> connection_socket_{};
     std::vector<std::unique_ptr<stream_worker>> workers_{};
     std::set<std::unique_ptr<stream_worker>, tateyama::endpoint::common::pointer_comp<stream_worker>> undertakers_{};

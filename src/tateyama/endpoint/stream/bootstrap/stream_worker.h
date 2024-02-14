@@ -30,8 +30,10 @@ class stream_worker : public tateyama::endpoint::common::worker_common {
     stream_worker(tateyama::framework::routing_service& service,
                   std::size_t session_id,
                   std::shared_ptr<stream_socket> stream,
-                  const tateyama::api::server::database_info& database_info, bool decline)
-        : worker_common(connection_type::stream, session_id, stream->connection_info()),
+                  const tateyama::api::server::database_info& database_info,
+                  const bool decline,
+                  const std::shared_ptr<tateyama::session::resource::bridge> session)
+        : worker_common(connection_type::stream, session_id, stream->connection_info(), session),
           service_(service),
           session_stream_(std::move(stream)),
           database_info_(database_info),
@@ -44,7 +46,7 @@ class stream_worker : public tateyama::endpoint::common::worker_common {
                   std::size_t session_id,
                   std::shared_ptr<stream_socket> stream,
                   const tateyama::api::server::database_info& database_info)
-        : stream_worker(service, session_id, std::move(stream), database_info, false) {
+        : stream_worker(service, session_id, std::move(stream), database_info, false, nullptr) {
     }
     ~stream_worker() {
         if(thread_.joinable()) thread_.join();

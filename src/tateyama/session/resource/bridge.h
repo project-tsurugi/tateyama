@@ -101,8 +101,18 @@ public:
      */
     [[nodiscard]] std::optional<tateyama::proto::session::diagnostic::ErrorCode> get_valiable(std::string_view session_specifier, std::string_view name /* FIXME value */);
 
+    /**
+     * @brief relays to container::register_session()
+     * @param session the session context to register
+     * @return true if the target session is successfully registered
+     * @return false if the target session is not registered
+     *    because another session with such the numeric ID already exists in this container
+     * @note Symbolic session ID may duplicate in this container
+     */
+    bool register_session(std::shared_ptr<session_context> const& session);
+
 private:
-    sessions_core sessions_core_{};
+    tateyama::session::resource::sessions_core sessions_core_{};
 
 };
 

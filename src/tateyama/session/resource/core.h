@@ -21,6 +21,8 @@
 
 namespace tateyama::session::resource {
 
+class bridge;
+
 /**
  * @brief the core class of `sessions` resource that provides information about living sessions.
  */
@@ -51,6 +53,8 @@ private:
     session_container container_{};
 
     session_variable_declaration_set variable_declarations_{};
+
+    friend class bridge;
 };
 
 }

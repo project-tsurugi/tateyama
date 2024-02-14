@@ -64,4 +64,8 @@ std::optional<tateyama::proto::session::diagnostic::ErrorCode> bridge::get_valia
     return std::nullopt;
 }
 
+bool bridge::register_session(std::shared_ptr<session_context> const& session) {
+    return sessions_core_.container_.register_session(session);
+}
+
 }
