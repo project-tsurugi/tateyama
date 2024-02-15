@@ -60,10 +60,11 @@ public:
         : connection_type_(con),
           session_id_(session_id),
           session_info_(session_id, connection_label(con), conn_info),
-          session_(session)
+          session_(session),
+          session_variable_set_(worker_common::variable_declarations()),
+          session_context_(std::make_shared<tateyama::session::resource::session_context>(session_info_, session_variable_set_))
         {
-            auto variable_set = tateyama::session::resource::session_variable_set(variable_declarations());
-            session->register_session(std::make_shared<tateyama::session::resource::session_context>(session_info_, variable_set));
+            session_->register_session(session_context_);
     }
     worker_common(connection_type con, std::size_t id, std::shared_ptr<tateyama::session::resource::bridge> session) : worker_common(con, id, "", session) {
     }
@@ -80,6 +81,7 @@ protected:
     const connection_type connection_type_; // NOLINT
     const std::size_t session_id_;          // NOLINT
     session_info_impl session_info_;        // NOLINT
+
     // for ipc endpoint only
     std::string connection_info_{};         // NOLINT
     // for stream endpoint only
@@ -173,6 +175,9 @@ protected:
     }
 
 private:
+    tateyama::session::resource::session_variable_set session_variable_set_;
+    const std::shared_ptr<tateyama::session::resource::session_context> session_context_;
+
     std::string_view connection_label(connection_type con) {
         switch (con) {
         case connection_type::ipc:
@@ -184,7 +189,7 @@ private:
         }
     }
 
-    std::vector<std::tuple<std::string, tateyama::session::resource::session_variable_set::variable_type, tateyama::session::resource::session_variable_set::value_type>> variable_declarations() {
+    static std::vector<std::tuple<std::string, tateyama::session::resource::session_variable_set::variable_type, tateyama::session::resource::session_variable_set::value_type>> variable_declarations() {
         std::vector<std::tuple<std::string, tateyama::session::resource::session_variable_set::variable_type, tateyama::session::resource::session_variable_set::value_type>> rv{};
         rv.emplace_back("example_integer", tateyama::session::resource::session_variable_type::unsigned_integer, static_cast<std::int64_t>(0));
         return rv;
