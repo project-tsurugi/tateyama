@@ -29,6 +29,7 @@ using tateyama::api::server::request;
 using tateyama::api::server::response;
 
 bool tateyama::session::service::core::operator()(const std::shared_ptr<request>& req, const std::shared_ptr<response>& res) {
+    bool return_code =true;
     tateyama::proto::session::request::Request rq{};
 
     auto data = req->payload();
@@ -40,30 +41,30 @@ bool tateyama::session::service::core::operator()(const std::shared_ptr<request>
     switch(rq.command_case()) {
     case tateyama::proto::session::request::Request::kSessionGet:
     {
+        tateyama::proto::session::response::SessionGet rs{};
         auto& cmd = rq.session_get();
-        auto rv = resource_->get(cmd.session_specifier());
+        auto rv = resource_->get(cmd.session_specifier(), rs.mutable_success());
         if (!rv) {
-            tateyama::proto::session::response::SessionGet rs{};
-            rs.mutable_success();
             res->body(rs.SerializeAsString());
-            rs.clear_success();
         } else {
             send_error<tateyama::proto::session::response::SessionGet>(res, rv.value());
+            return_code = false;
         }
+        rs.clear_success();
         break;
     }
 
     case tateyama::proto::session::request::Request::kSessionList:
     {
-        auto rv = resource_->list();
+        tateyama::proto::session::response::SessionList rs{};
+        auto rv = resource_->list(rs.mutable_success());
         if (!rv) {
-            tateyama::proto::session::response::SessionList rs{};
-            rs.mutable_success();
             res->body(rs.SerializeAsString());
-            rs.clear_success();
         } else {
             send_error<tateyama::proto::session::response::SessionGet>(res, rv.value());
+            return_code = false;
         }
+        rs.clear_success();
         break;
     }
 
@@ -91,6 +92,7 @@ bool tateyama::session::service::core::operator()(const std::shared_ptr<request>
             rs.clear_success();
         } else {
             send_error<tateyama::proto::session::response::SessionSetVariable>(res, rv.value());
+            return false;
         }
         break;
     }
@@ -113,17 +115,16 @@ bool tateyama::session::service::core::operator()(const std::shared_ptr<request>
 
     case tateyama::proto::session::request::Request::kSessionGetVariable:
     {
+        tateyama::proto::session::response::SessionGetVariable rs{};
         auto& cmd = rq.session_get_variable();
-        auto rv = resource_->get_valiable(cmd.session_specifier(), cmd.name());
+        auto rv = resource_->get_valiable(cmd.session_specifier(), cmd.name(), rs.mutable_success());
         if (!rv) {
-            tateyama::proto::session::response::SessionGetVariable rs{};
-            rs.mutable_success();
             res->body(rs.SerializeAsString());
-            rs.clear_success();
         } else {
             send_error<tateyama::proto::session::response::SessionGetVariable>(res, rv.value());
-            return false;
+            return_code = false;
         }
+        rs.clear_success();
         break;
     }
 
@@ -131,7 +132,7 @@ bool tateyama::session::service::core::operator()(const std::shared_ptr<request>
         return false;
     }
 
-    return true;
+    return return_code;
 }
 
 core::core(std::shared_ptr<tateyama::api::configuration::whole> cfg) :
@@ -140,7 +141,6 @@ core::core(std::shared_ptr<tateyama::api::configuration::whole> cfg) :
 
 bool core::start(tateyama::session::resource::bridge* resource) {
     resource_ = resource;
-    //TODO implement
     return true;
 }
 

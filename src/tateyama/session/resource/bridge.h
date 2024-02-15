@@ -21,9 +21,10 @@
 #include <tateyama/framework/resource.h>
 #include <tateyama/framework/environment.h>
 
-#include <tateyama/proto/session/diagnostic.pb.h>
-
 #include <tateyama/session/resource/core.h>
+
+#include <tateyama/proto/session/response.pb.h>
+#include <tateyama/proto/session/diagnostic.pb.h>
 
 namespace tateyama::session::resource {
 
@@ -79,12 +80,12 @@ public:
     /**
      * @brief handle a SessionList command
      */
-    std::optional<tateyama::proto::session::diagnostic::ErrorCode> list(/* FIXME session list */);
+    std::optional<tateyama::proto::session::diagnostic::ErrorCode> list(::tateyama::proto::session::response::SessionList_Success* mutable_success);
 
     /**
      * @brief handle a SessionGet command
      */
-    std::optional<tateyama::proto::session::diagnostic::ErrorCode> get(std::string_view session_specifier /* FIXME session */);
+    std::optional<tateyama::proto::session::diagnostic::ErrorCode> get(std::string_view session_specifier, ::tateyama::proto::session::response::SessionGet_Success* mutable_success);
     
     /**
      * @brief handle a SessionShutdown command
@@ -99,7 +100,7 @@ public:
     /**
      * @brief handle a SessionGetVariable command
      */
-    [[nodiscard]] std::optional<tateyama::proto::session::diagnostic::ErrorCode> get_valiable(std::string_view session_specifier, std::string_view name /* FIXME value */);
+    [[nodiscard]] std::optional<tateyama::proto::session::diagnostic::ErrorCode> get_valiable(std::string_view session_specifier, std::string_view name, ::tateyama::proto::session::response::SessionGetVariable_Success* mutable_success);
 
     /**
      * @brief relays to container::register_session()
@@ -114,6 +115,7 @@ public:
 private:
     tateyama::session::resource::sessions_core sessions_core_{};
 
+    std::optional<tateyama::proto::session::diagnostic::ErrorCode> find_only_one_session(std::string_view session_specifier, session_context::numeric_id_type& numeric_id);
 };
 
 }

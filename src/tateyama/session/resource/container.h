@@ -67,6 +67,8 @@ private:
     std::map<session_context::numeric_id_type, std::shared_ptr<session_context>> session_contexts_{};
 
     std::vector<session_context::numeric_id_type> numeric_ids_{};
+
+    friend class bridge;
 };
 
 }
