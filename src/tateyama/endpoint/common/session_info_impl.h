@@ -31,7 +31,10 @@ public:
     session_info_impl(std::size_t id, std::string_view con_type, std::string_view con_info)
         : id_(id), connection_type_name_(con_type), connection_information_(con_info) {
     }
-    session_info_impl() : session_info_impl(0, "test_purpose", "test_purpose") {
+    session_info_impl(std::size_t id, std::string_view con_type, std::string_view con_info, std::string_view label, std::string_view application_name, std::string_view user_name)
+        : id_(id), connection_type_name_(con_type), connection_information_(con_info), connection_label_(label), application_name_(application_name), user_name_(user_name) {
+    }
+    session_info_impl() : session_info_impl(0, "", "") {
     }
 
     [[nodiscard]] id_type id() const noexcept override { return id_; }

@@ -15,6 +15,7 @@
  */
 #pragma once
 
+#include <string_view>
 #include <chrono>
 
 namespace tateyama::api::server {

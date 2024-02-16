@@ -67,6 +67,7 @@ file(GLOB SRCS
         "tateyama/loopback/*.cpp"
         "tateyama/server/*.cpp"
         "tateyama/utils/*.cpp"
+        "tateyama/session/*.cpp"
         )
 
 foreach(file ${SRCS})

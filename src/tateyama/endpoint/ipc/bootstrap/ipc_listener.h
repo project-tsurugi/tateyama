@@ -29,6 +29,7 @@
 #include <tateyama/logging.h>
 #include <tateyama/framework/routing_service.h>
 #include <tateyama/api/configuration.h>
+#include <tateyama/session/resource/bridge.h>
 
 #include "tateyama/endpoint/common/logging.h"
 #include "worker.h"
@@ -43,7 +44,8 @@ public:
     explicit ipc_listener(tateyama::framework::environment& env)
         : cfg_(env.configuration()),
           router_(env.service_repository().find<framework::routing_service>()),
-          status_(env.resource_repository().find<status_info::resource::bridge>()) {
+          status_(env.resource_repository().find<status_info::resource::bridge>()),
+          session_(env.resource_repository().find<session::resource::bridge>()) {
 
         auto endpoint_config = cfg_->get_section("ipc_endpoint");
         if (endpoint_config == nullptr) {
@@ -133,7 +135,7 @@ public:
                 VLOG_LP(log_trace) << "create session wire: " << session_name << " at index " << index;
                 status_->add_shm_entry(session_id, index);
                 auto& worker_entry = workers_.at(index);
-                worker_entry = std::make_shared<Worker>(*router_, session_id, std::move(wire), status_->database_info());
+                worker_entry = std::make_shared<Worker>(*router_, session_id, std::move(wire), status_->database_info(), session_);
                 auto* worker = worker_entry.get();
                 worker->invoke([worker, index, &connection_queue]{ worker->run(); connection_queue.disconnect(index); });
             } catch (std::exception& ex) {
@@ -167,9 +169,11 @@ public:
     }
 
 private:
-    const std::shared_ptr<api::configuration::whole> cfg_{};
-    const std::shared_ptr<framework::routing_service> router_{};
-    const std::shared_ptr<status_info::resource::bridge> status_{};
+    const std::shared_ptr<api::configuration::whole> cfg_;
+    const std::shared_ptr<framework::routing_service> router_;
+    const std::shared_ptr<status_info::resource::bridge> status_;
+    const std::shared_ptr<session::resource::bridge> session_;
+
     std::unique_ptr<connection_container> container_{};
     std::vector<std::shared_ptr<Worker>> workers_{};
     std::string database_name_;

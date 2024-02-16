@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+package tateyama.proto.session.diagnostic;
+
+// the error code.
+enum ErrorCode {
+    // the error code is not set.
+    ERROR_CODE_NOT_SPECIFIED = 0;
+
+    // the unknown error was occurred.
+    UNKNOWN = 1;
+
+    // the target session is not found.
+    SESSION_NOT_FOUND = 2;
+
+    // the session label is not unique within the target sessions.
+    SESSION_AMBIGUOUS = 3;
+
+    // the operation was not permitted.
+    OPERATION_NOT_PERMITTED = 4;
+
+    // the target session variable is not declared.
+    SESSION_VARIABLE_NOT_DECLARED = 5;
+
+    // the setting value is invalid for the target variable.
+    SESSION_VARIABLE_INVALID_VALUE = 6;
+}
+
+// the error information of the session control operations.
+message Error {
+    // the error code.
+    ErrorCode error_code = 1;
+
+    // the error message (optional).
+    string message = 2;
+
+    // the error message code (optional).
+    string message_code = 3;
+
+    // the arguments for the message code (optional).
+    repeated string message_arguments = 4;
+}
