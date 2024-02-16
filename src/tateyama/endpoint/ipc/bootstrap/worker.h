@@ -30,12 +30,18 @@ class Worker : public tateyama::endpoint::common::worker_common {
            std::size_t session_id,
            std::shared_ptr<server_wire_container_impl> wire,
            const tateyama::api::server::database_info& database_info,
-           const std::shared_ptr<tateyama::session::resource::bridge> session)
+           const std::shared_ptr<tateyama::session::resource::bridge>& session)
         : worker_common(connection_type::ipc, session_id, session),
           service_(service),
           wire_(std::move(wire)),
           request_wire_container_(dynamic_cast<server_wire_container_impl::wire_container_impl*>(wire_->get_request_wire())),
           database_info_(database_info) {
+    }
+    Worker(tateyama::framework::routing_service& service,
+           std::size_t session_id,
+           std::shared_ptr<server_wire_container_impl> wire,
+           const tateyama::api::server::database_info& database_info)
+        : Worker(service, session_id, std::move(wire), database_info, nullptr) {
     }
     ~Worker() {
         if(thread_.joinable()) thread_.join();

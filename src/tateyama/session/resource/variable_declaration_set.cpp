@@ -21,7 +21,7 @@ namespace tateyama::session::resource {
 session_variable_declaration_set::session_variable_declaration_set() noexcept = default;
 
 session_variable_declaration_set::session_variable_declaration_set(std::vector<session_variable_declaration> declarations) noexcept :
-    declarations_(declarations) {
+    declarations_(std::move(declarations)) {
 }
 
 bool session_variable_declaration_set::declare(session_variable_declaration declaration) {

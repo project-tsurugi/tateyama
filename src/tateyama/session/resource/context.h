@@ -49,20 +49,20 @@ public:
      * @brief returns the numeric ID of this session.
      * @return the numeric session ID
      */
-    numeric_id_type numeric_id() const noexcept;
+    [[nodiscard]] numeric_id_type numeric_id() const noexcept;
 
     /**
      * @brief returns the symbolic ID of this session.
      * @return the symbolic session ID
      * @return empty if the symbolic ID is not defined
      */
-    std::string_view symbolic_id() const noexcept;
+    [[nodiscard]] std::string_view symbolic_id() const noexcept;
 
     /**
      * @brief returns the session information.
      * @return the session information
      */
-    session_info const& info() const noexcept;
+    [[nodiscard]] session_info const& info() const noexcept;
 
     /**
      * @brief returns the session variable set.
@@ -71,13 +71,13 @@ public:
     session_variable_set& variables() noexcept;
 
     /// @copydoc variables()
-    session_variable_set const& variables() const noexcept;
+    [[nodiscard]] session_variable_set const& variables() const noexcept;
 
     /**
      * @brief returns the shutdown request status for this session.
      * @return the shutdown request status for this session
      */
-    shutdown_request_type shutdown_request() const noexcept;
+    [[nodiscard]] shutdown_request_type shutdown_request() const noexcept;
 
     /**
      * @brief requests to shutdown this session.

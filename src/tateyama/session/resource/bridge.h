@@ -112,6 +112,11 @@ public:
      */
     bool register_session(std::shared_ptr<session_context> const& session);
 
+    /**
+     * @brief returns sessions_core_ for test purpose
+     */
+    [[nodiscard]] tateyama::session::resource::sessions_core const& sessions_core() const noexcept;
+
 private:
     tateyama::session::resource::sessions_core sessions_core_{};
 

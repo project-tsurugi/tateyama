@@ -54,9 +54,9 @@ private:
     std::shared_ptr<tateyama::api::server::request> req_{};
 };
 
-class stream_listener_for_ifno_test {
+class stream_listener_for_info_test {
 public:
-    stream_listener_for_ifno_test(info_service_for_test& service) : service_(service) {
+    stream_listener_for_info_test(info_service_for_test& service) : service_(service) {
     }
     void operator()() {
         while (true) {
@@ -64,7 +64,7 @@ public:
             stream = connection_socket_.accept();
 
             if (stream != nullptr) {
-                worker_ = std::make_unique<tateyama::endpoint::stream::bootstrap::stream_worker>(service_, my_session_id_, std::move(stream), database_info_);
+                worker_ = std::make_unique<tateyama::endpoint::stream::bootstrap::stream_worker>(service_, my_session_id_, std::move(stream), database_info_, false);
                 worker_->invoke([&]{worker_->run();});
             } else {  // connect via pipe (request_terminate)
                 break;
@@ -101,7 +101,7 @@ class stream_info_test : public ::testing::Test {
 
 public:
     tateyama::endpoint::stream::info_service_for_test service_{};
-    tateyama::endpoint::stream::stream_listener_for_ifno_test listener_{service_};
+    tateyama::endpoint::stream::stream_listener_for_info_test listener_{service_};
     std::thread thread_{};
 };
 

@@ -38,6 +38,7 @@ bool tateyama::session::service::core::operator()(const std::shared_ptr<request>
         return false;
     }
 
+    res->session_id(req->session_id());
     switch(rq.command_case()) {
     case tateyama::proto::session::request::Request::kSessionGet:
     {

@@ -18,6 +18,7 @@
 #include <future>
 #include <thread>
 #include <functional>
+#include <vector>
 
 #include <tateyama/status.h>
 #include <tateyama/api/server/request.h>
@@ -60,13 +61,15 @@ public:
         : connection_type_(con),
           session_id_(session_id),
           session_info_(session_id, connection_label(con), conn_info),
-          session_(session),
-          session_variable_set_(worker_common::variable_declarations()),
+          session_(std::move(session)),
+          session_variable_set_(variable_declarations()),
           session_context_(std::make_shared<tateyama::session::resource::session_context>(session_info_, session_variable_set_))
         {
-            session_->register_session(session_context_);
+            if (session_) {
+                session_->register_session(session_context_);
+            }
     }
-    worker_common(connection_type con, std::size_t id, std::shared_ptr<tateyama::session::resource::bridge> session) : worker_common(con, id, "", session) {
+    worker_common(connection_type con, std::size_t id, std::shared_ptr<tateyama::session::resource::bridge> session) : worker_common(con, id, "", std::move(session)) {
     }
     void invoke(std::function<void(void)> func) {
         task_ = std::packaged_task<void()>(std::move(func));
@@ -93,7 +96,7 @@ protected:
     std::thread thread_{};                  // NOLINT
 
     // for session management
-    const std::shared_ptr<tateyama::session::resource::bridge> session_;
+    const std::shared_ptr<tateyama::session::resource::bridge> session_;  // NOLINT
 
     bool handshake(tateyama::api::server::request* req, tateyama::api::server::response* res) {
         if (req->service_id() != tateyama::framework::service_id_endpoint_broker) {
@@ -189,11 +192,12 @@ private:
         }
     }
 
-    static std::vector<std::tuple<std::string, tateyama::session::resource::session_variable_set::variable_type, tateyama::session::resource::session_variable_set::value_type>> variable_declarations() {
-        std::vector<std::tuple<std::string, tateyama::session::resource::session_variable_set::variable_type, tateyama::session::resource::session_variable_set::value_type>> rv{};
-        rv.emplace_back("example_integer", tateyama::session::resource::session_variable_type::unsigned_integer, static_cast<std::int64_t>(0));
-        return rv;
+    [[nodiscard]] std::vector<std::tuple<std::string, tateyama::session::resource::session_variable_set::variable_type, tateyama::session::resource::session_variable_set::value_type>> variable_declarations() const noexcept {
+        return {
+            { "example_integer", tateyama::session::resource::session_variable_type::signed_integer, static_cast<std::int64_t>(0) }
+        };
     }
+
 };
 
 }  // tateyama::endpoint::common

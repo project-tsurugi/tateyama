@@ -44,14 +44,14 @@ public:
      * @return the corresponded session context
      * @return empty if there is no such the session
      */
-    std::shared_ptr<session_context> find_session(session_context::numeric_id_type numeric_id) const;
+    [[nodiscard]] std::shared_ptr<session_context> find_session(session_context::numeric_id_type numeric_id) const;
 
     /**
      * @brief enumerates the list of numeric IDs of sessions in this container.
      * @return the list of numeric IDs
      * @return empty if there are no sessions in this container
      */
-    std::vector<session_context::numeric_id_type> enumerate_numeric_ids() const;
+    [[nodiscard]] std::vector<session_context::numeric_id_type> enumerate_numeric_ids() const;
 
     /**
      * @brief enumerates the list of numeric IDs of sessions with the specified symbolic ID.
@@ -59,7 +59,7 @@ public:
      * @return the list of numeric IDs
      * @return empty if there are no sessions with such the symbolic ID
      */
-    std::vector<session_context::numeric_id_type> enumerate_numeric_ids(std::string_view symbolic_id) const;
+    [[nodiscard]] std::vector<session_context::numeric_id_type> enumerate_numeric_ids(std::string_view symbolic_id) const;
 
     // ...
 

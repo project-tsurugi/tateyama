@@ -40,7 +40,7 @@ public:
      * @param declarations the initial list of the variable declarations
      * @attention undefined behavior if some declarations has the same name
      */
-    session_variable_declaration_set(std::vector<session_variable_declaration> declarations) noexcept;
+    explicit session_variable_declaration_set(std::vector<session_variable_declaration> declarations) noexcept;
 
     /**
      * @brief declares a new session variable.
@@ -56,19 +56,19 @@ public:
      * @return a pointer to the variable if it declared
      * @return nullptr if there are no such the variable with the specified name
      */
-    session_variable_declaration const* find(std::string_view name) const noexcept;
+    [[nodiscard]] session_variable_declaration const* find(std::string_view name) const noexcept;
 
     /**
      * @brief return the previously declared session variable names.
      * @return the list of declared variable names
      */
-    std::vector<std::string> enumerate_variable_names() const;
+    [[nodiscard]] std::vector<std::string> enumerate_variable_names() const;
 
     /**
      * @brief creates a new session_variable_set that holds variables declared in this object.
      * @return a new session variable set previously declared in this object
      */
-    session_variable_set make_variable_set() const;
+    [[nodiscard]] session_variable_set make_variable_set() const;
 
     // ...
 

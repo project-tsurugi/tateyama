@@ -47,19 +47,19 @@ public:
      * @brief returns the variable name.
      * @return the variable name
      */
-    std::string const& name() const noexcept;
+    [[nodiscard]] std::string const& name() const noexcept;
 
     /**
      * @brief returns the variable value type.
      * @return the value type
      */
-    session_variable_type type() const noexcept;
+    [[nodiscard]] session_variable_type type() const noexcept;
 
     /**
      * @brief returns the description of this session variable.
      * @return the session variable
      */
-    std::string const& description() const noexcept;
+    [[nodiscard]] std::string const& description() const noexcept;
 
     // ...
 

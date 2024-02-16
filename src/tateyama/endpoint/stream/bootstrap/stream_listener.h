@@ -142,7 +142,7 @@ public:
             }
             if (!found) {
                 try {
-                    auto worker_decline = std::make_unique<stream_worker>(*router_, session_id, std::move(stream), status_->database_info(), true, nullptr);
+                    auto worker_decline = std::make_unique<stream_worker>(*router_, session_id, std::move(stream), status_->database_info(), true);
                     auto* worker = worker_decline.get();
                     undertakers_.emplace(std::move(worker_decline));
                     worker->invoke([worker]{worker->run();});

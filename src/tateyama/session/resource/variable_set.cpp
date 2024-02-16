@@ -50,7 +50,7 @@ session_variable_set::value_type session_variable_set::get(std::string_view name
 bool session_variable_set::set(std::string_view name, value_type value) {
     auto it = variable_set_.find(std::string(name));
     if (it != variable_set_.end()) {
-        it->second.second = value;
+        it->second.second = std::move(value);
         return true;
     }
     return false;

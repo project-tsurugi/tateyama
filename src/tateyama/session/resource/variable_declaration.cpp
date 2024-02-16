@@ -23,7 +23,7 @@ session_variable_declaration::session_variable_declaration(
     session_variable_type type,
     session_variable_set::value_type initial_value,
     std::string description) noexcept
-    : name_(name), type_(type), initial_value_(initial_value), description_(description) {
+    : name_(std::move(name)), type_(type), initial_value_(std::move(initial_value)), description_(std::move(description)) {
 }
 
 std::string const& session_variable_declaration::name() const noexcept {

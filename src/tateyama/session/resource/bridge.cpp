@@ -47,7 +47,9 @@ std::string_view bridge::label() const noexcept {
 }
 
 static void set_entry(::tateyama::proto::session::response::SessionInfo* entry, const tateyama::api::server::session_info& info) {
-    entry->set_session_id(std::to_string(info.id()));
+    std::string sid{":"};
+    sid += std::to_string(info.id());
+    entry->set_session_id(sid);
     entry->set_label(std::string(info.label()));
     entry->set_application(std::string(info.application_name()));
     entry->set_user(std::string(info.user_name()));
@@ -58,7 +60,12 @@ static void set_entry(::tateyama::proto::session::response::SessionInfo* entry, 
 
 std::optional<tateyama::proto::session::diagnostic::ErrorCode> bridge::find_only_one_session(std::string_view session_specifier, session_context::numeric_id_type& numeric_id) {
     if (session_specifier.at(0) == ':') {
-        numeric_id = std::stol(std::string(session_specifier.data() + 1, session_specifier.length() -1));
+        try {
+            numeric_id = std::stol(std::string(session_specifier.data() + 1, session_specifier.length() -1));
+            return std::nullopt;
+        } catch (std::exception &ex) {
+            return tateyama::proto::session::diagnostic::ErrorCode::UNKNOWN;
+        }
     }
     auto v = sessions_core_.container_.enumerate_numeric_ids(session_specifier);
     if (v.empty()) {
@@ -201,7 +208,7 @@ std::optional<tateyama::proto::session::diagnostic::ErrorCode> bridge::set_valia
 
 class value {
 public:
-    value(::tateyama::proto::session::response::SessionGetVariable_Success* mutable_success) : mutable_success_(mutable_success) {
+    explicit value(::tateyama::proto::session::response::SessionGetVariable_Success* mutable_success) : mutable_success_(mutable_success) {
     }
     std::optional<tateyama::proto::session::diagnostic::ErrorCode> operator()([[maybe_unused]] const std::monostate& data) {
         return tateyama::proto::session::diagnostic::ErrorCode::UNKNOWN;
@@ -215,7 +222,7 @@ public:
         return std::nullopt;
     }
     std::optional<tateyama::proto::session::diagnostic::ErrorCode> operator()(const std::uint64_t& data) {
-        mutable_success_->set_signed_integer_value(data);
+        mutable_success_->set_unsigned_integer_value(data);
         return std::nullopt;
     }
     std::optional<tateyama::proto::session::diagnostic::ErrorCode> operator()(const std::string& data) {
@@ -269,6 +276,10 @@ std::optional<tateyama::proto::session::diagnostic::ErrorCode> bridge::get_valia
 
 bool bridge::register_session(std::shared_ptr<session_context> const& session) {
     return sessions_core_.container_.register_session(session);
+}
+
+tateyama::session::resource::sessions_core const& bridge::sessions_core() const noexcept {
+    return sessions_core_;
 }
 
 }

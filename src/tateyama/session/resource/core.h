@@ -35,7 +35,7 @@ public:
     session_container& sessions() noexcept;
 
     /// @copydoc sessions()
-    session_container const& sessions() const noexcept;
+    [[nodiscard]] session_container const& sessions() const noexcept;
 
     /**
      * @brief returns the session variable declarations.
@@ -44,7 +44,7 @@ public:
     session_variable_declaration_set& variable_declarations() noexcept;
 
     /// @copydoc variable_declarations()
-    session_variable_declaration_set const& variable_declarations() const noexcept;
+    [[nodiscard]] session_variable_declaration_set const& variable_declarations() const noexcept;
 
     // ...
 
