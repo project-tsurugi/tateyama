@@ -66,7 +66,9 @@ parameter=value
 |dev_return_os_pages| ブール(true/false) | メモリ管理用のページプールに返却されたページをOSに返却するか。デフォルトはfalse|開発用のため将来的に削除される可能性あり|
 |dev_omit_task_when_idle| ブール(true/false) | durable待ちトランザクションがない場合にdurability callback処理を行うタスクのスケジュールをスキップするか。デフォルトはtrue|開発用のため将来的に削除される可能性あり|
 |external_log_explain| ブール(true/false) | Altimeterのイベントログに `stmt_explain` 項目(SQL実行計画)を出力するか。デフォルトはtrue||
-|dev_try_insert_on_upserting_secondary| ブール(true/false) | INSERT OR REPLACEをセカンダリインデックスのある表に対して実行する際、INSERTを事前に実行する最適化を実施するか。デフォルトはtrue||
+|dev_try_insert_on_upserting_secondary| ブール(true/false) | INSERT OR REPLACEをセカンダリインデックスのある表に対して実行する際、INSERTを事前に実行する最適化を実施するか。デフォルトはtrue|開発用のため将来的に削除される可能性あり|
+|dev_scan_concurrent_operation_as_not_found| ブール(true/false) | スキャン操作において並列して挿入されたレコードを検知した際(WARN_CONCURRENT_INSERT)に、そのレコードが存在しないものとして取り扱うか。デフォルトはtrue|開発用のため将来的に削除される可能性あり|
+|dev_point_read_concurrent_operation_as_not_found| ブール(true/false) | ポイントリード操作において並列して挿入されたレコードを検知した際(WARN_CONCURRENT_INSERT)に、そのレコードが存在しないものとして取り扱うか。デフォルトはtrue|開発用のため将来的に削除される可能性あり|
 
 ## ipc_endpointセクション
 
