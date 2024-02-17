@@ -15,6 +15,7 @@
  */
 
 #include <chrono>
+#include <boost/lexical_cast.hpp>
 
 #include "tateyama/session/resource/bridge.h"
 
@@ -79,9 +80,7 @@ std::optional<tateyama::proto::session::diagnostic::ErrorCode> bridge::find_only
 }
 
 std::optional<tateyama::proto::session::diagnostic::ErrorCode> bridge::list(::tateyama::proto::session::response::SessionList_Success* mutable_success) {
-    for (const auto& e : sessions_core_.container_.session_contexts_) {
-        set_entry(mutable_success->add_entries(), e.second->info());
-    }
+    sessions_core_.container_.foreach([mutable_success](const session_context* entry){set_entry(mutable_success->add_entries(), entry->info());});
     return std::nullopt;
 }
 
@@ -162,31 +161,39 @@ std::optional<tateyama::proto::session::diagnostic::ErrorCode> bridge::set_valia
             switch(type.value()) {
             case session_variable_type::boolean:
             {
-                bool v =
-                    (value == "TRUE" ||
-                     value == "True" ||
-                     value == "true" ||
-                     value == "1");
-                if (vs.set(name, v)) {
-                    return std::nullopt;
+                try {
+                    bool v = boost::lexical_cast<bool>(value);
+                    if (vs.set(name, v)) {
+                        return std::nullopt;
+                    }
+                    break;
+                } catch (boost::bad_lexical_cast const &ex) {
+                    return tateyama::proto::session::diagnostic::ErrorCode::UNKNOWN; // FIXME
                 }
-                break;
             }
             case session_variable_type::signed_integer:
             {
-                std::int64_t v = std::stol(std::string(value));
-                if (vs.set(name, v)) {
-                    return std::nullopt;
+                try {
+                    std::int64_t v = std::stol(std::string(value));
+                    if (vs.set(name, v)) {
+                        return std::nullopt;
+                    }
+                    break;
+                } catch (std::exception const &ex) {
+                    return tateyama::proto::session::diagnostic::ErrorCode::UNKNOWN; // FIXME
                 }
-                break;
             }
             case session_variable_type::unsigned_integer:
             {
-                std::uint64_t v = std::stoul(std::string(value));
-                if (vs.set(name, v)) {
-                    return std::nullopt;
+                try {
+                    std::uint64_t v = std::stoul(std::string(value));
+                    if (vs.set(name, v)) {
+                        return std::nullopt;
+                    }
+                    break;
+                } catch (std::exception const &ex) {
+                    return tateyama::proto::session::diagnostic::ErrorCode::UNKNOWN; // FIXME
                 }
-                break;
             }
             case session_variable_type::string:
             {
