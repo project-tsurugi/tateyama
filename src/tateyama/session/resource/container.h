@@ -18,6 +18,8 @@
 #include <memory>
 #include <map>
 #include <vector>
+#include <mutex>
+#include <functional>
 
 #include <tateyama/session/resource/context.h>
 
@@ -66,7 +68,17 @@ public:
 private:
     std::map<session_context::numeric_id_type, std::shared_ptr<session_context>> session_contexts_{};
 
-    std::vector<session_context::numeric_id_type> numeric_ids_{};
+    std::mutex mtx_{};
+
+    std::shared_ptr<session_context> find_session_internal(session_context::numeric_id_type numeric_id);
+
+    std::vector<session_context::numeric_id_type> enumerate_numeric_ids_internal();
+
+    std::vector<session_context::numeric_id_type> enumerate_numeric_ids_internal(std::string_view symbolic_id);
+
+    void foreach(std::function<void(const session_context*)> func);
+
+    void collect_garbage();
 
     friend class bridge;
 };
