@@ -19,35 +19,51 @@
 namespace tateyama::session::resource {
 
 bool session_container::register_session(std::shared_ptr<session_context> const& session) {
-    auto id = session->numeric_id();
-    
-    session_contexts_.insert(std::make_pair(id, session));
-    numeric_ids_.emplace_back(id);
+    foreach([](const std::shared_ptr<session_context>&) {});
+
+    session_contexts_.emplace(session);
     return true;
 }
 
 std::shared_ptr<session_context> session_container::find_session(session_context::numeric_id_type numeric_id) const {
-    auto it = session_contexts_.find(numeric_id);
-
-    if (it != session_contexts_.end()) {
-        return it->second;
-    }
-    return nullptr;
+    std::shared_ptr<session_context> rv{nullptr};
+    const_cast<session_container*>(this)->foreach([&rv, numeric_id](const std::shared_ptr<session_context>& entry) {
+        if (numeric_id == entry->numeric_id()) {
+            rv = entry;
+        }
+    });
+    return rv;
 }
 
 std::vector<session_context::numeric_id_type> session_container::enumerate_numeric_ids() const {
-    return numeric_ids_;
+    std::vector<session_context::numeric_id_type> rv{};
+    const_cast<session_container*>(this)->foreach([&rv](const std::shared_ptr<session_context>& entry) {
+        rv.emplace_back(entry->numeric_id());
+    });
+    return rv;
 }
 
 std::vector<session_context::numeric_id_type> session_container::enumerate_numeric_ids(std::string_view symbolic_id) const {
     std::vector<session_context::numeric_id_type> rv{};
+    const_cast<session_container*>(this)->foreach([&rv, symbolic_id](const std::shared_ptr<session_context>& entry) {
+        if (symbolic_id == entry->symbolic_id()) {
+            rv.emplace_back(entry->numeric_id());
+        }
+    });
+    return rv;
+}
 
-    for (const auto& e : session_contexts_) {
-        if (symbolic_id == e.second->symbolic_id()) {
-            rv.emplace_back(e.second->numeric_id());
+void session_container::foreach(const std::function<void(const std::shared_ptr<session_context>&)>& func) {
+    std::unique_lock lock{mtx_};
+
+    for (auto&& it = session_contexts_.begin(), last = session_contexts_.end(); it != last;) {
+        if ((*it).use_count() == 1) {
+            it = session_contexts_.erase(it);
+        } else {
+            func(*it);
+            ++it;
         }
     }
-    return rv;
 }
 
 }

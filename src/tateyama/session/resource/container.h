@@ -16,9 +16,12 @@
 #pragma once
 
 #include <memory>
-#include <map>
+#include <set>
 #include <vector>
+#include <mutex>
+#include <functional>
 
+#include <tateyama/endpoint/common/pointer_comp.h>
 #include <tateyama/session/resource/context.h>
 
 namespace tateyama::session::resource {
@@ -61,14 +64,18 @@ public:
      */
     [[nodiscard]] std::vector<session_context::numeric_id_type> enumerate_numeric_ids(std::string_view symbolic_id) const;
 
+    /**
+     * @brief apply func to all entries stored in session_contexts_ with doing garbage collection
+     * @param func the function that takes std::shared_ptr<session_context>> as argument
+     */
+    void foreach(const std::function<void(const std::shared_ptr<session_context>&)>& func);
+
     // ...
 
 private:
-    std::map<session_context::numeric_id_type, std::shared_ptr<session_context>> session_contexts_{};
+    std::set<std::shared_ptr<session_context>, tateyama::endpoint::common::pointer_comp<session_context>> session_contexts_{};
 
-    std::vector<session_context::numeric_id_type> numeric_ids_{};
-
-    friend class bridge;
+    std::mutex mtx_{};
 };
 
 }
