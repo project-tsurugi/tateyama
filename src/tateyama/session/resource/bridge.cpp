@@ -80,7 +80,7 @@ std::optional<tateyama::proto::session::diagnostic::ErrorCode> bridge::find_only
 }
 
 std::optional<tateyama::proto::session::diagnostic::ErrorCode> bridge::list(::tateyama::proto::session::response::SessionList_Success* mutable_success) {
-    sessions_core_.container_.foreach([mutable_success](const session_context* entry){set_entry(mutable_success->add_entries(), entry->info());});
+    sessions_core_.container_.foreach([mutable_success](const std::shared_ptr<session_context>& entry){set_entry(mutable_success->add_entries(), entry->info());});
     return std::nullopt;
 }
 

@@ -16,11 +16,12 @@
 #pragma once
 
 #include <memory>
-#include <map>
+#include <set>
 #include <vector>
 #include <mutex>
 #include <functional>
 
+#include <tateyama/endpoint/common/pointer_comp.h>
 #include <tateyama/session/resource/context.h>
 
 namespace tateyama::session::resource {
@@ -63,24 +64,18 @@ public:
      */
     [[nodiscard]] std::vector<session_context::numeric_id_type> enumerate_numeric_ids(std::string_view symbolic_id) const;
 
+    /**
+     * @brief apply func to all entries stored in session_contexts_ with doing garbage collection
+     * @param func the function that takes std::shared_ptr<session_context>> as argument
+     */
+    void foreach(const std::function<void(const std::shared_ptr<session_context>&)>& func);
+
     // ...
 
 private:
-    std::map<session_context::numeric_id_type, std::shared_ptr<session_context>> session_contexts_{};
+    std::set<std::shared_ptr<session_context>, tateyama::endpoint::common::pointer_comp<session_context>> session_contexts_{};
 
     std::mutex mtx_{};
-
-    std::shared_ptr<session_context> find_session_internal(session_context::numeric_id_type numeric_id);
-
-    std::vector<session_context::numeric_id_type> enumerate_numeric_ids_internal();
-
-    std::vector<session_context::numeric_id_type> enumerate_numeric_ids_internal(std::string_view symbolic_id);
-
-    void foreach(std::function<void(const session_context*)> func);
-
-    void collect_garbage();
-
-    friend class bridge;
 };
 
 }

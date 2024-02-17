@@ -19,75 +19,48 @@
 namespace tateyama::session::resource {
 
 bool session_container::register_session(std::shared_ptr<session_context> const& session) {
-    std::unique_lock lock{mtx_};
-    collect_garbage();
+    foreach([](const std::shared_ptr<session_context>&) {});
 
-    auto id = session->numeric_id();
-    session_contexts_.insert(std::make_pair(id, session));
+    session_contexts_.emplace(session);
     return true;
 }
 
 std::shared_ptr<session_context> session_container::find_session(session_context::numeric_id_type numeric_id) const {
-    return const_cast<session_container*>(this)->find_session_internal(numeric_id);
+    std::shared_ptr<session_context> rv{nullptr};
+    const_cast<session_container*>(this)->foreach([&rv, numeric_id](const std::shared_ptr<session_context>& entry) {
+        if (numeric_id == entry->numeric_id()) {
+            rv = entry;
+        }
+    });
+    return rv;
 }
 
 std::vector<session_context::numeric_id_type> session_container::enumerate_numeric_ids() const {
-    return const_cast<session_container*>(this)->enumerate_numeric_ids_internal();
+    std::vector<session_context::numeric_id_type> rv{};
+    const_cast<session_container*>(this)->foreach([&rv](const std::shared_ptr<session_context>& entry) {
+        rv.emplace_back(entry->numeric_id());
+    });
+    return rv;
 }
 
 std::vector<session_context::numeric_id_type> session_container::enumerate_numeric_ids(std::string_view symbolic_id) const {
-    return const_cast<session_container*>(this)->enumerate_numeric_ids_internal(symbolic_id);
-}
-
-std::shared_ptr<session_context> session_container::find_session_internal(session_context::numeric_id_type numeric_id) {
-    std::unique_lock lock{mtx_};
-    collect_garbage();
-
-    auto it = session_contexts_.find(numeric_id);
-    if (it != session_contexts_.end()) {
-        return it->second;
-    }
-    return nullptr;
-}
-
-std::vector<session_context::numeric_id_type> session_container::enumerate_numeric_ids_internal() {
-    std::unique_lock lock{mtx_};
-    collect_garbage();
-
     std::vector<session_context::numeric_id_type> rv{};
-    for (const auto& e : session_contexts_) {
-        rv.emplace_back(e.second->numeric_id());
-    }
-    return rv;
-}
-
-std::vector<session_context::numeric_id_type> session_container::enumerate_numeric_ids_internal(std::string_view symbolic_id) {
-    std::unique_lock lock{mtx_};
-    collect_garbage();
-
-    std::vector<session_context::numeric_id_type> rv{};
-    for (const auto& e : session_contexts_) {
-        if (symbolic_id == e.second->symbolic_id()) {
-            rv.emplace_back(e.second->numeric_id());
+    const_cast<session_container*>(this)->foreach([&rv, symbolic_id](const std::shared_ptr<session_context>& entry) {
+        if (symbolic_id == entry->symbolic_id()) {
+            rv.emplace_back(entry->numeric_id());
         }
-    }
+    });
     return rv;
 }
 
-void session_container::foreach(std::function<void(const session_context*)> func) {
+void session_container::foreach(const std::function<void(const std::shared_ptr<session_context>&)>& func) {
     std::unique_lock lock{mtx_};
-    collect_garbage();
 
-    for (const auto& e : session_contexts_) {
-        func(e.second.get());
-    }
-}
-
-void session_container::collect_garbage() {
     for (auto&& it = session_contexts_.begin(), last = session_contexts_.end(); it != last;) {
-        if ((*it).second.use_count() == 1) {
+        if ((*it).use_count() == 1) {
             it = session_contexts_.erase(it);
         } else {
+            func(*it);
             ++it;
         }
     }
