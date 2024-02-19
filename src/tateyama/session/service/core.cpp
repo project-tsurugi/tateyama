@@ -72,14 +72,14 @@ bool tateyama::session::service::core::operator()(const std::shared_ptr<request>
     case tateyama::proto::session::request::Request::kSessionShutdown:
     {
         auto& cmd = rq.session_shutdown();
-        tateyama::session::resource::shutdown_request_type type{};
+        tateyama::session::shutdown_request_type type{};
         switch (cmd.request_type()) {
         case tateyama::proto::session::request::SessionShutdownType::SESSION_SHUTDOWN_TYPE_NOT_SET:
         case tateyama::proto::session::request::SessionShutdownType::GRACEFUL:
-            type = tateyama::session::resource::shutdown_request_type::graceful;
+            type = tateyama::session::shutdown_request_type::graceful;
             break;
         case tateyama::proto::session::request::SessionShutdownType::FORCEFUL:
-            type = tateyama::session::resource::shutdown_request_type::forceful;
+            type = tateyama::session::shutdown_request_type::forceful;
             break;
         default:
             send_error<tateyama::proto::session::response::SessionSetVariable>(res);

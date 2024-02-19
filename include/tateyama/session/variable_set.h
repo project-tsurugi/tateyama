@@ -22,9 +22,9 @@
 #include <optional>
 #include <map>
 
-#include <tateyama/session/resource/variable_type.h>
+#include <tateyama/session/variable_type.h>
 
-namespace tateyama::session::resource {
+namespace tateyama::session {
 
 /**
  * @brief a set of session variables.

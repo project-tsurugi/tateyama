@@ -21,7 +21,8 @@
 #include <tateyama/framework/resource.h>
 #include <tateyama/framework/environment.h>
 
-#include <tateyama/session/resource/core.h>
+#include "core_impl.h"
+#include "context_impl.h"
 
 #include <tateyama/proto/session/response.pb.h>
 #include <tateyama/proto/session/diagnostic.pb.h>
@@ -110,15 +111,15 @@ public:
      *    because another session with such the numeric ID already exists in this container
      * @note Symbolic session ID may duplicate in this container
      */
-    bool register_session(std::shared_ptr<session_context> const& session);
+    bool register_session(std::shared_ptr<session_context_impl> const& session);
 
     /**
      * @brief returns sessions_core_ for test purpose
      */
-    [[nodiscard]] tateyama::session::resource::sessions_core const& sessions_core() const noexcept;
+    [[nodiscard]] tateyama::session::sessions_core const& sessions_core() const noexcept;
 
 private:
-    tateyama::session::resource::sessions_core sessions_core_{};
+    sessions_core_impl sessions_core_impl_{};
 
     std::optional<tateyama::proto::session::diagnostic::ErrorCode> find_only_one_session(std::string_view session_specifier, session_context::numeric_id_type& numeric_id);
 };

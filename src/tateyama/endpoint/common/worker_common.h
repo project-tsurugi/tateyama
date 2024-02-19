@@ -17,7 +17,9 @@
 
 #include <future>
 #include <thread>
+#include <memory>
 #include <functional>
+#include <map>
 #include <vector>
 
 #include <tateyama/status.h>
@@ -28,7 +30,7 @@
 #include <tateyama/status/resource/bridge.h>
 #include <tateyama/logging_helper.h>
 #include <tateyama/session/resource/bridge.h>
-#include <tateyama/session/resource/variable_set.h>
+#include <tateyama/session/variable_set.h>
 
 #include <tateyama/proto/endpoint/request.pb.h>
 #include <tateyama/proto/endpoint/response.pb.h>
@@ -63,7 +65,7 @@ public:
           session_info_(session_id, connection_label(con), conn_info),
           session_(std::move(session)),
           session_variable_set_(variable_declarations()),
-          session_context_(std::make_shared<tateyama::session::resource::session_context>(session_info_, session_variable_set_))
+          session_context_(std::make_shared<tateyama::session::resource::session_context_impl>(session_info_, session_variable_set_))
         {
             if (session_) {
                 session_->register_session(session_context_);
@@ -177,9 +179,17 @@ protected:
         record.release_message();
     }
 
+    void register_response(std::size_t slot, const std::shared_ptr<tateyama::api::server::response>& response) noexcept {
+        responses_.emplace(slot, response);
+    }
+    void remove_response(std::size_t slot) noexcept {
+        responses_.erase(slot);
+    }
+
 private:
-    tateyama::session::resource::session_variable_set session_variable_set_;
-    const std::shared_ptr<tateyama::session::resource::session_context> session_context_;
+    tateyama::session::session_variable_set session_variable_set_;
+    const std::shared_ptr<tateyama::session::resource::session_context_impl> session_context_;
+    std::map<std::size_t, std::weak_ptr<tateyama::api::server::response>> responses_{};
 
     std::string_view connection_label(connection_type con) {
         switch (con) {
@@ -192,9 +202,9 @@ private:
         }
     }
 
-    [[nodiscard]] std::vector<std::tuple<std::string, tateyama::session::resource::session_variable_set::variable_type, tateyama::session::resource::session_variable_set::value_type>> variable_declarations() const noexcept {
+    [[nodiscard]] std::vector<std::tuple<std::string, tateyama::session::session_variable_set::variable_type, tateyama::session::session_variable_set::value_type>> variable_declarations() const noexcept {
         return {
-            { "example_integer", tateyama::session::resource::session_variable_type::signed_integer, static_cast<std::int64_t>(0) }
+            { "example_integer", tateyama::session::session_variable_type::signed_integer, static_cast<std::int64_t>(0) }
         };
     }
 
