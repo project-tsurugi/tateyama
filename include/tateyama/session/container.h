@@ -29,11 +29,6 @@ namespace tateyama::session {
 class session_container {
 public:
     /**
-     * @brief construct the object
-     */
-    session_container() = default;
-
-    /**
      * @brief find for a session context with such the numeric ID.
      * @param numeric_id the numeric ID of the target session
      * @return the corresponded session context
@@ -62,6 +57,7 @@ public:
     session_container& operator = (session_container&&) = delete;
 
 protected:
+    session_container() = default;
     ~session_container() = default;
 
 private:

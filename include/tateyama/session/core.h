@@ -27,11 +27,6 @@ namespace tateyama::session {
 class sessions_core {
 public:
     /**
-     * @brief construct the object
-     */
-    sessions_core() = default;
-
-    /**
      * @brief returns the session container.
      * @return the session container
      */
@@ -57,6 +52,7 @@ public:
     sessions_core& operator = (sessions_core&&) = delete;
 
 protected:
+    sessions_core() = default;
     ~sessions_core() = default;
 };
 
