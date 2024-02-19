@@ -84,13 +84,8 @@
     * このため、 `session kill` によって直ちに使用中のリソースが破棄されてしまうような状況を想定しない
 * バックグラウンド実行中のリクエストの完全な終了を保証するために、「キャンセル要求」と「完全な終了の報告」を導入する
   * endpoint はセッションで実行中のリクエストを終了させるために「キャンセル要求」を送り、それを受け取ったサービスはその処理を完全に終了させたうえで「完全な終了の報告」を endpoint に通知する
-  * 以下のいずれかがなされている場合、endpoint は当該リクエストが完全に終了しているものとみなす
-    * サービスはリクエストに関する「完全な終了の報告」を行っている
-    * サービスはリクエストに対するレスポンス本体を返している
-      * エラー等の理由により、リクエスト以外がレスポンスを返している場合、それは完全な終了とみなさない
-      * この場合、リクエストは別途「完全な終了の報告」を行う必要がある
-  * TBD: 上記はプログラミングエラーにより致命的な状態になりうるので、もう少しフォローが必要
-    * 一定の条件を満たすと、上記以外でも完全に終了したとみなせるようにする
+  * 「完全な終了の報告」はサービスが `std::shared_ptr<{request, response}>` を破棄することで行う
+    * リクエスト開始時にサービスへ渡された `std::shared_ptr<request>`, `std::shared_ptr<response>` の両方が endpoint 外部から参照されていない時点(参照カウント等により確認可能)で endpoint は当該リクエストが完全に終了したものとみなす
   * 基本的なデザインは Java のスレッドの `interrupt` に近い
 
 ## 登場人物
@@ -326,11 +321,11 @@ enum class shutdown_request_type {
      * @brief safely shutdown the session.
      * @details
      * This operation terminates the session in the following order:
-     * 
+     *
      * 1. reject subsequent new requests and respond `SESSION_CLOSED` to them.
      * 2. wait for "complete termination" of the current request, if any
      * 3. actually terminate the session
-     * 
+     *
      * @note the stronger request type (e.g. shutdown_request_type::terminate) can override this request
      */
     graceful,
@@ -339,7 +334,7 @@ enum class shutdown_request_type {
      * @brief terminates the session with cancelling ongoing requests.
      * @details
      * This operation terminates the session in the following order:
-     * 
+     *
      * 1. reject subsequent new requests, and respond `SESSION_CLOSED` to them.
      * 2. tell cancellation to ongoing requests, and  respond `SESSION_CLOSED` to them.
      * 3. wait for "complete termination" of the current request, if any
@@ -612,7 +607,7 @@ message response.SessionInfo {
     string application = 3;
 
     // the session user name (may be empty).
-    string user = 4; 
+    string user = 4;
 
     // the session starting time (millisecond offset from 1970-01-01T00:00:00.000Z).
     sfixed64 start_at = 6;
