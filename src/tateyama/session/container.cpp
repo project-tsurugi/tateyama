@@ -14,16 +14,9 @@
  * limitations under the License.
  */
 
-#include "tateyama/session/resource/container.h"
+#include "tateyama/session/container.h"
 
-namespace tateyama::session::resource {
-
-bool session_container::register_session(std::shared_ptr<session_context> const& session) {
-    foreach([](const std::shared_ptr<session_context>&) {});
-
-    session_contexts_.emplace(session);
-    return true;
-}
+namespace tateyama::session {
 
 std::shared_ptr<session_context> session_container::find_session(session_context::numeric_id_type numeric_id) const {
     std::shared_ptr<session_context> rv{nullptr};
@@ -51,19 +44,6 @@ std::vector<session_context::numeric_id_type> session_container::enumerate_numer
         }
     });
     return rv;
-}
-
-void session_container::foreach(const std::function<void(const std::shared_ptr<session_context>&)>& func) {
-    std::unique_lock lock{mtx_};
-
-    for (auto&& it = session_contexts_.begin(), last = session_contexts_.end(); it != last;) {
-        if ((*it).use_count() == 1) {
-            it = session_contexts_.erase(it);
-        } else {
-            func(*it);
-            ++it;
-        }
-    }
 }
 
 }
