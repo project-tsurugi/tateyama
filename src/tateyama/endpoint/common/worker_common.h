@@ -36,6 +36,7 @@
 #include <tateyama/proto/endpoint/response.pb.h>
 #include <tateyama/proto/diagnostics.pb.h>
 
+#include "response.h"
 #include "tateyama/endpoint/common/session_info_impl.h"
 
 namespace tateyama::endpoint::common {
@@ -179,7 +180,33 @@ protected:
         record.release_message();
     }
 
-    void register_response(std::size_t slot, const std::shared_ptr<tateyama::api::server::response>& response) noexcept {
+    bool endpoint_service([[maybe_unused]] const std::shared_ptr<tateyama::api::server::request>& req,
+                          const std::shared_ptr<tateyama::api::server::response>& res,
+                          std::size_t slot) {
+        auto data = req->payload();
+        tateyama::proto::endpoint::request::Request rq{};
+        if(! rq.ParseFromArray(data.data(), static_cast<int>(data.size()))) {
+            std::string error_message{"request parse error"};
+            LOG(INFO) << error_message;
+            notify_client(res.get(), tateyama::proto::diagnostics::Code::INVALID_REQUEST, error_message);
+            return false;
+        }
+        if(rq.command_case() != tateyama::proto::endpoint::request::Request::kCancel) {
+            std::stringstream ss;
+            ss << "bad request (cancel in endpoint): " << rq.command_case();
+            LOG(INFO) << ss.str();
+            notify_client(res.get(), tateyama::proto::diagnostics::Code::INVALID_REQUEST, ss.str());
+            return false;
+        }
+        if (auto itr = responses_.find(slot); itr != responses_.end()) {
+            if (auto ptr = itr->second.lock(); ptr) {
+                ptr->set_cancel(res);
+            }
+        }
+        return true;
+    }
+
+    void register_response(std::size_t slot, const std::shared_ptr<tateyama::endpoint::common::response>& response) noexcept {
         responses_.emplace(slot, response);
     }
     void remove_response(std::size_t slot) noexcept {
@@ -189,7 +216,7 @@ protected:
 private:
     tateyama::session::session_variable_set session_variable_set_;
     const std::shared_ptr<tateyama::session::resource::session_context_impl> session_context_;
-    std::map<std::size_t, std::weak_ptr<tateyama::api::server::response>> responses_{};
+    std::map<std::size_t, std::weak_ptr<tateyama::endpoint::common::response>> responses_{};
 
     std::string_view connection_label(connection_type con) {
         switch (con) {

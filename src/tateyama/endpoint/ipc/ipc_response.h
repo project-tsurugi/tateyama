@@ -21,8 +21,7 @@
 #include <atomic>
 #include <functional>
 
-#include <tateyama/api/server/response.h>
-
+#include "tateyama/endpoint/common/response.h"
 #include "tateyama/endpoint/common/pointer_comp.h"
 #include "server_wires.h"
 #include "ipc_request.h"
@@ -78,7 +77,7 @@ private:
 /**
  * @brief response object for ipc_endpoint
  */
-class ipc_response : public tateyama::api::server::response {
+class ipc_response : public tateyama::endpoint::common::response {
     friend ipc_data_channel;
 
 public:
