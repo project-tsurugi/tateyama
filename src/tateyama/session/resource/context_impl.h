@@ -15,24 +15,30 @@
  */
 #pragma once
 
+#include <functional>
+
+#include <tateyama/session/context.h>
+
 namespace tateyama::session::resource {
 
 /**
- * @brief represents kind of shutdown request.
+ * @brief Provides living database sessions.
  */
-enum class session_variable_type {
+class session_context_impl : public tateyama::session::session_context {
+public:
+    session_context_impl(session_info& info, session_variable_set variables) noexcept;
 
-    /// @brief the boolean value type.
-    boolean,
+    ~session_context_impl() {
+        clean_up_();
+    }
+    
+    session_context_impl(session_context_impl const&) = delete;
+    session_context_impl(session_context_impl&&) = delete;
+    session_context_impl& operator = (session_context_impl const&) = delete;
+    session_context_impl& operator = (session_context_impl&&) = delete;
 
-    /// @brief the signed 64-bit integer type.
-    signed_integer,
-
-    /// @brief the unsigned 64-bit integer type.
-    unsigned_integer,
-
-    /// @brief the character string type.
-    string,
+private:
+    std::function<void(void)> clean_up_{[](){}};
 };
 
 }

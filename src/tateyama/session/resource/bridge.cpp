@@ -68,7 +68,7 @@ std::optional<tateyama::proto::session::diagnostic::ErrorCode> bridge::find_only
             return tateyama::proto::session::diagnostic::ErrorCode::UNKNOWN;
         }
     }
-    auto v = sessions_core_.container_.enumerate_numeric_ids(session_specifier);
+    auto v = sessions_core_impl_.container_.enumerate_numeric_ids(session_specifier);
     if (v.empty()) {
         return tateyama::proto::session::diagnostic::ErrorCode::SESSION_NOT_FOUND;
     }
@@ -80,7 +80,7 @@ std::optional<tateyama::proto::session::diagnostic::ErrorCode> bridge::find_only
 }
 
 std::optional<tateyama::proto::session::diagnostic::ErrorCode> bridge::list(::tateyama::proto::session::response::SessionList_Success* mutable_success) {
-    sessions_core_.container_.foreach([mutable_success](const std::shared_ptr<session_context>& entry){set_entry(mutable_success->add_entries(), entry->info());});
+    sessions_core_impl_.container_.foreach([mutable_success](const std::shared_ptr<session_context>& entry){set_entry(mutable_success->add_entries(), entry->info());});
     return std::nullopt;
 }
 
@@ -97,7 +97,7 @@ std::optional<tateyama::proto::session::diagnostic::ErrorCode> bridge::get(std::
 
     std::shared_ptr<session_context> context{};
     try {
-        context = sessions_core_.container_.find_session(numeric_id);
+        context = sessions_core_impl_.container_.find_session(numeric_id);
         if (context) {
             set_entry(mutable_success->mutable_entry(), context->info());
             return std::nullopt;
@@ -121,7 +121,7 @@ std::optional<tateyama::proto::session::diagnostic::ErrorCode> bridge::shutdown(
 
     std::shared_ptr<session_context> context{};
     try {
-        context = sessions_core_.container_.find_session(numeric_id);
+        context = sessions_core_impl_.container_.find_session(numeric_id);
         if (context) {
             auto rv = context->shutdown_request(type);
             if (rv) {
@@ -148,7 +148,7 @@ std::optional<tateyama::proto::session::diagnostic::ErrorCode> bridge::set_valia
 
     std::shared_ptr<session_context> context{};
     try {
-        context = sessions_core_.container_.find_session(numeric_id);
+        context = sessions_core_impl_.container_.find_session(numeric_id);
         if (context) {
             auto& vs = context->variables();
             if (!vs.exists(name)) {
@@ -252,14 +252,14 @@ std::optional<tateyama::proto::session::diagnostic::ErrorCode> bridge::get_valia
     }
 
     mutable_success->set_name(std::string(name));
-    auto& vds = sessions_core_.variable_declarations();
+    auto& vds = sessions_core_impl_.variable_declarations();
     if (auto* vd = vds.find(name); vd) {
         mutable_success->set_description(vd->description());
     }
 
     std::shared_ptr<session_context> context{};
     try {
-        context = sessions_core_.container_.find_session(numeric_id);
+        context = sessions_core_impl_.container_.find_session(numeric_id);
         if (context) {
             auto& vs = context->variables();
             if (!vs.exists(name)) {
@@ -281,12 +281,12 @@ std::optional<tateyama::proto::session::diagnostic::ErrorCode> bridge::get_valia
     return tateyama::proto::session::diagnostic::ErrorCode::SESSION_NOT_FOUND;        
 }
 
-bool bridge::register_session(std::shared_ptr<session_context> const& session) {
-    return sessions_core_.container_.register_session(session);
+bool bridge::register_session(std::shared_ptr<session_context_impl> const& session) {
+    return sessions_core_impl_.container_.register_session(session);
 }
 
-tateyama::session::resource::sessions_core const& bridge::sessions_core() const noexcept {
-    return sessions_core_;
+tateyama::session::sessions_core const& bridge::sessions_core() const noexcept {
+    return sessions_core_impl_;
 }
 
 }
