@@ -21,8 +21,7 @@
 #include <condition_variable>
 #include <atomic>
 
-#include <tateyama/api/server/response.h>
-
+#include <tateyama/endpoint/common/response.h>
 #include "tateyama/endpoint/common/pointer_comp.h"
 #include "stream.h"
 
@@ -74,7 +73,7 @@ private:
 /**
  * @brief response object for stream_endpoint
  */
-class stream_response : public tateyama::api::server::response {
+class stream_response : public tateyama::endpoint::common::response {
     friend stream_data_channel;
 
 public:
