@@ -454,7 +454,7 @@ private:
     std::mutex num_mutex_{};
     std::condition_variable num_condition_{};
     std::size_t timeout_;
-    
+
     friend class stream_socket;
 
     [[nodiscard]] bool is_socket_available() {

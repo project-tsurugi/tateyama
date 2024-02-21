@@ -21,6 +21,7 @@
 #include <functional>
 #include <map>
 #include <vector>
+#include <mutex>
 
 #include <tateyama/status.h>
 #include <tateyama/api/server/request.h>
@@ -198,18 +199,26 @@ protected:
             notify_client(res.get(), tateyama::proto::diagnostics::Code::INVALID_REQUEST, ss.str());
             return false;
         }
-        if (auto itr = responses_.find(slot); itr != responses_.end()) {
-            if (auto ptr = itr->second.lock(); ptr) {
-                ptr->set_cancel();
+        {
+            std::lock_guard<std::mutex> lock(mtx_responses_);
+            if (auto itr = responses_.find(slot); itr != responses_.end()) {
+                if (auto ptr = itr->second.lock(); ptr) {
+                    ptr->set_cancel();
+                }
             }
         }
         return true;
     }
 
     void register_response(std::size_t slot, const std::shared_ptr<tateyama::endpoint::common::response>& response) noexcept {
+        std::lock_guard<std::mutex> lock(mtx_responses_);
+        if (auto itr = responses_.find(slot); itr != responses_.end()) {
+            responses_.erase(itr);
+        }
         responses_.emplace(slot, response);
     }
     void remove_response(std::size_t slot) noexcept {
+        std::lock_guard<std::mutex> lock(mtx_responses_);
         responses_.erase(slot);
     }
 
@@ -217,6 +226,7 @@ private:
     tateyama::session::session_variable_set session_variable_set_;
     const std::shared_ptr<tateyama::session::resource::session_context_impl> session_context_;
     std::map<std::size_t, std::weak_ptr<tateyama::endpoint::common::response>> responses_{};
+    std::mutex mtx_responses_{};
 
     std::string_view connection_label(connection_type con) {
         switch (con) {
