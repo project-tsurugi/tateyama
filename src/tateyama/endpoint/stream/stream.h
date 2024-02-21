@@ -397,10 +397,11 @@ public:
     std::shared_ptr<stream_socket> accept(const std::function<void(void)>& cleanup = [](){} ) {
         cleanup();
 
-        struct timeval tv{};
-        tv.tv_sec = 1;  // 1(S)
-        tv.tv_usec = 0;
         while (true) {
+            struct timeval tv{};
+            tv.tv_sec = 1;  // 1(S)
+            tv.tv_usec = 0;
+
             FD_ZERO(&fds_);  // NOLINT
             if (is_socket_available()) {
                 FD_SET(socket_, &fds_);  // NOLINT
