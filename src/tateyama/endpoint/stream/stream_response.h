@@ -21,7 +21,7 @@
 #include <condition_variable>
 #include <atomic>
 
-#include <tateyama/endpoint/common/response.h>
+#include <tateyama/api/server/response.h>
 #include "tateyama/endpoint/common/pointer_comp.h"
 #include "stream.h"
 
@@ -73,24 +73,12 @@ private:
 /**
  * @brief response object for stream_endpoint
  */
-class stream_response : public tateyama::endpoint::common::response {
+class stream_response : public tateyama::api::server::response {
     friend stream_data_channel;
 
 public:
-    stream_response(std::shared_ptr<stream_socket> stream, std::uint16_t index, std::function<void(void)> clean_up) :
-        stream_(std::move(stream)), index_(index), clean_up_(std::move(clean_up)) {
-    }
-    stream_response(std::shared_ptr<stream_socket> stream, std::uint16_t index) : stream_response(std::move(stream), index, [](){}) {
-    }
+    stream_response(std::shared_ptr<stream_socket> stream, std::uint16_t index);
     stream_response() = delete;
-    ~stream_response() override {
-        clean_up_();
-    }
-
-    stream_response(stream_response const&) = delete;
-    stream_response(stream_response&&) = delete;
-    stream_response& operator = (stream_response const&) = delete;
-    stream_response& operator = (stream_response&&) = delete;
 
     tateyama::status body(std::string_view body) override;
     tateyama::status body_head(std::string_view body_head) override;
@@ -101,10 +89,13 @@ public:
     void session_id(std::size_t id) override {
         session_id_ = id;
     }
+
+    [[nodiscard]] bool check_cancel() const override {
+        return false;
+    }
 private:
     std::shared_ptr<stream_socket> stream_;
     std::uint16_t index_;
-    const std::function<void(void)> clean_up_;
 
     std::string message_{};
 
