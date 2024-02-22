@@ -75,20 +75,10 @@ void stream_worker::run()
 
         auto request = std::make_shared<stream_request>(*session_stream_, payload, database_info_, session_info_);
         auto response = std::make_shared<stream_response>(session_stream_, slot);
-        if (request->service_id() != tateyama::framework::service_id_endpoint_broker) {
-            register_response(slot, static_cast<std::shared_ptr<tateyama::endpoint::common::response>>(response));
-            if(!service_(static_cast<std::shared_ptr<tateyama::api::server::request>>(request),
-                         static_cast<std::shared_ptr<tateyama::api::server::response>>(std::move(response)))) {
-                VLOG_LP(log_info) << "terminate worker because service returns an error";
-                break;
-            }
-        } else {
-            if (!endpoint_service(static_cast<std::shared_ptr<tateyama::api::server::request>>(request),
-                                  static_cast<std::shared_ptr<tateyama::api::server::response>>(std::move(response)),
-                                  slot)) {
-                VLOG_LP(log_info) << "terminate worker because endpoint service returns an error";
-                break;
-            }
+        if(!service_(static_cast<std::shared_ptr<tateyama::api::server::request>>(request),
+                     static_cast<std::shared_ptr<tateyama::api::server::response>>(std::move(response)))) {
+            VLOG_LP(log_info) << "terminate worker because service returns an error";
+            break;
         }
         request = nullptr;
     }
