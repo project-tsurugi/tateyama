@@ -101,6 +101,10 @@ public:
         session_id_ = id;
     }
 
+    [[nodiscard]] bool check_cancel() const override {
+        return false;
+    }
+
 private:
     std::shared_ptr<server_wire_container> server_wire_;
     std::size_t index_;

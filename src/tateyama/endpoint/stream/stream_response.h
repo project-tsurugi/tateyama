@@ -90,6 +90,11 @@ public:
     void session_id(std::size_t id) override {
         session_id_ = id;
     }
+
+    [[nodiscard]] bool check_cancel() const override {
+        return false;
+    }
+
 private:
     std::shared_ptr<stream_socket> stream_;
     std::uint16_t index_;

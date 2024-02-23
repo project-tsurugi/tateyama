@@ -84,6 +84,13 @@ public:
      */
     tateyama::status release_channel(tateyama::api::server::data_channel &ch) override;
 
+    /**
+     * @see tateyama::server::response::check_cancel()
+     */
+    [[nodiscard]] bool check_cancel() const override {
+        return false;
+    }
+
     // just for unit test
     [[nodiscard]] std::map<std::string, std::vector<std::string>, std::less<>> const& all_committed_data() const noexcept {
         return committed_data_map_;
