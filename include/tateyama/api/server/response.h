@@ -52,17 +52,11 @@ public:
     virtual void session_id(std::size_t id) = 0;
 
     /**
-     * @brief report error with diagnostics information.
+     * @brief report error with diagnostics information
      * @param record the diagnostic record to report
      * @details report an error with diagnostics information for client. When this function is called, no more
      * body_head() or body() is expected to be called.
      * @attention this function is not thread-safe and should be called from single thread at a time.
-     * @attention After calling this for cancelling the current job, the job must not use the related resources.
-     *    This includes the below:
-     *
-     *    - request object
-     *    - response object
-     *    - resources underlying session context
      */
     virtual void error(proto::diagnostics::Record const& record) = 0;
 
@@ -110,17 +104,6 @@ public:
      * @return other status code when error occurs
      */
     virtual status release_channel(data_channel& ch) = 0;
-
-    /**
-     * @brief returns whether or not cancellation was requested to the corresponding job.
-     * @details To cancel the job, first you must shutdown the operation of this job, and then call error().
-     *    At this time, `OPERATION_CANCELED` is recommended as the diagnostic code for cancelling the job.
-     *    Or, to avoid inappropriate conditions, you can omit the cancel request and complete the job.
-     * @return true if the job is calling for a cancel
-     * @return false otherwise
-     * @see error()
-     */
-    [[nodiscard]] virtual bool check_cancel() const = 0;
 
 };
 

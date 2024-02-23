@@ -122,7 +122,6 @@ public:
         }
         status acquire_channel(std::string_view name, std::shared_ptr<api::server::data_channel>& ch) override { return status::ok; }
         status release_channel(api::server::data_channel& ch) override { return status::ok; }
-        bool check_cancel() const override { return false; }
 
         std::size_t session_id_{};
         std::string body_{};

@@ -22,6 +22,7 @@
 #include <atomic>
 
 #include <tateyama/api/server/response.h>
+
 #include "tateyama/endpoint/common/pointer_comp.h"
 #include "stream.h"
 
@@ -88,10 +89,6 @@ public:
 
     void session_id(std::size_t id) override {
         session_id_ = id;
-    }
-
-    [[nodiscard]] bool check_cancel() const override {
-        return false;
     }
 private:
     std::shared_ptr<stream_socket> stream_;

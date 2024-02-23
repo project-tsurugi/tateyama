@@ -141,10 +141,7 @@
   * 例外的に、 `sessions` サービスそのものは非公開
 * 名前空間
   * `::tateyama::session`
-    * セッション管理に関連するオブジェクトの名前空間
-    * 一部のものは `::tateyama::api::server` 配下のオブジェクト( `request` 等) を経由してサービスに提供される
-    * セッションとリクエスト両方にまたがるものは `::tateyama::session` と `::tateyama::api::server` のどちらに属するか
-      * 原則として前者だが、リクエスト・レスポンスに特に結びつきの強いものは後者に配置してもよい
+    * TBD: 一部は `::tateyama::api::server` に置くべきか？
 
 ### `sessions_core` オブジェクト
 
@@ -329,11 +326,11 @@ enum class shutdown_request_type {
      * @brief safely shutdown the session.
      * @details
      * This operation terminates the session in the following order:
-     *
+     * 
      * 1. reject subsequent new requests and respond `SESSION_CLOSED` to them.
      * 2. wait for "complete termination" of the current request, if any
      * 3. actually terminate the session
-     *
+     * 
      * @note the stronger request type (e.g. shutdown_request_type::terminate) can override this request
      */
     graceful,
@@ -342,7 +339,7 @@ enum class shutdown_request_type {
      * @brief terminates the session with cancelling ongoing requests.
      * @details
      * This operation terminates the session in the following order:
-     *
+     * 
      * 1. reject subsequent new requests, and respond `SESSION_CLOSED` to them.
      * 2. tell cancellation to ongoing requests, and  respond `SESSION_CLOSED` to them.
      * 3. wait for "complete termination" of the current request, if any
@@ -615,7 +612,7 @@ message response.SessionInfo {
     string application = 3;
 
     // the session user name (may be empty).
-    string user = 4;
+    string user = 4; 
 
     // the session starting time (millisecond offset from 1970-01-01T00:00:00.000Z).
     sfixed64 start_at = 6;

@@ -19,10 +19,10 @@
 #include <atomic>
 
 #include <tateyama/api/server/session_info.h>
-#include <tateyama/session/variable_set.h>
-#include <tateyama/session/shutdown_request_type.h>
+#include <tateyama/session/resource/variable_set.h>
+#include <tateyama/session/resource/shutdown_request_type.h>
 
-namespace tateyama::session {
+namespace tateyama::session::resource {
 
 using session_info = tateyama::api::server::session_info;
 

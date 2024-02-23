@@ -17,7 +17,7 @@
 
 #include <cstdlib>
 
-namespace tateyama::session {
+namespace tateyama::session::resource {
 
 /**
  * @brief represents kind of shutdown request.

@@ -14,12 +14,24 @@
  * limitations under the License.
  */
 
-#include "context_impl.h"
+#include "tateyama/session/resource/core.h"
 
 namespace tateyama::session::resource {
 
-session_context_impl::session_context_impl(session_info& info, session_variable_set variables) noexcept :
-    session_context(info, std::move(variables)) {
+session_container& sessions_core::sessions() noexcept {
+    return container_;
+}
+
+session_container const& sessions_core::sessions() const noexcept {
+    return container_;
+}
+
+session_variable_declaration_set& sessions_core::variable_declarations() noexcept {
+    return variable_declarations_;
+}
+
+session_variable_declaration_set const& sessions_core::variable_declarations() const noexcept {
+    return variable_declarations_;
 }
 
 }

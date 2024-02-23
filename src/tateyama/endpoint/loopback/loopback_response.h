@@ -18,14 +18,14 @@
 #include <map>
 #include <mutex>
 
-#include <tateyama/endpoint/common/response.h>
+#include <tateyama/api/server/response.h>
 
 #include "loopback_data_writer.h"
 #include "loopback_data_channel.h"
 
 namespace tateyama::endpoint::loopback {
 
-class loopback_response: public tateyama::endpoint::common::response {
+class loopback_response: public tateyama::api::server::response {
 public:
     /**
      * @see tateyama::server::response::session_id()

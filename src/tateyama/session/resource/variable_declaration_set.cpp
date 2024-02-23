@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-#include <tateyama/session/variable_declaration_set.h>
+#include <tateyama/session/resource/variable_declaration_set.h>
 
-namespace tateyama::session {
+namespace tateyama::session::resource {
 
 session_variable_declaration_set::session_variable_declaration_set() noexcept = default;
 

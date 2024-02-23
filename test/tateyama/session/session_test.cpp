@@ -38,7 +38,7 @@ class session_test :
 public:
     void SetUp() override {
         temporary_.prepare();
-        session_context_ = std::make_shared<tateyama::session::resource::session_context_impl>(session_info_for_existing_session_, tateyama::session::session_variable_set(variable_declarations_));
+        session_context_ = std::make_shared<tateyama::session::resource::session_context>(session_info_for_existing_session_, tateyama::session::resource::session_variable_set(variable_declarations_));
     }
     void TearDown() override {
         temporary_.clean();
@@ -96,7 +96,6 @@ public:
         void error(proto::diagnostics::Record const& record) override {}
         status acquire_channel(std::string_view name, std::shared_ptr<api::server::data_channel>& ch) override { return status::ok; }
         status release_channel(api::server::data_channel& ch) override { return status::ok; }
-        bool check_cancel() const override { return false; }
 
         std::size_t session_id_{};
         std::string body_{};
@@ -104,12 +103,12 @@ public:
 
 private:
     tateyama::endpoint::common::session_info_impl session_info_for_existing_session_{111, "IPC", "9999", "label_fot_test", "application_for_test", "user_fot_test"};
-    std::vector<std::tuple<std::string, tateyama::session::session_variable_set::variable_type, tateyama::session::session_variable_set::value_type>> variable_declarations_ {
-        {"test_integer", tateyama::session::session_variable_type::signed_integer, static_cast<std::int64_t>(123)}
+    std::vector<std::tuple<std::string, tateyama::session::resource::session_variable_set::variable_type, tateyama::session::resource::session_variable_set::value_type>> variable_declarations_ {
+        {"test_integer", tateyama::session::resource::session_variable_type::signed_integer, static_cast<std::int64_t>(123)}
     };
 
 protected:
-    std::shared_ptr<tateyama::session::resource::session_context_impl> session_context_{};
+    std::shared_ptr<tateyama::session::resource::session_context> session_context_{};
 };
 
 using namespace std::string_view_literals;
@@ -380,7 +379,7 @@ TEST_F(session_test, session_shutdown) {
     ss->register_session(session_context_);
     auto context = ss->sessions_core().sessions().find_session(111);
     ASSERT_TRUE(context);
-    EXPECT_EQ(tateyama::session::shutdown_request_type::nothing, context->shutdown_request());
+    EXPECT_EQ(tateyama::session::resource::shutdown_request_type::nothing, context->shutdown_request());
     
     std::string str{};
     {
@@ -400,7 +399,7 @@ TEST_F(session_test, session_shutdown) {
     (*router)(svrreq, svrres);
     EXPECT_EQ(10, svrres->session_id_);
     auto& body = svrres->body_;
-    EXPECT_EQ(tateyama::session::shutdown_request_type::graceful, context->shutdown_request());
+    EXPECT_EQ(tateyama::session::resource::shutdown_request_type::graceful, context->shutdown_request());
 
     ::tateyama::proto::session::response::SessionGetVariable shrs{};
     EXPECT_TRUE(shrs.ParseFromString(body));
