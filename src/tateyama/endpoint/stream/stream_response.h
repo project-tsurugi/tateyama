@@ -22,6 +22,7 @@
 #include <atomic>
 
 #include <tateyama/api/server/response.h>
+
 #include "tateyama/endpoint/common/pointer_comp.h"
 #include "stream.h"
 
@@ -93,6 +94,7 @@ public:
     [[nodiscard]] bool check_cancel() const override {
         return false;
     }
+
 private:
     std::shared_ptr<stream_socket> stream_;
     std::uint16_t index_;

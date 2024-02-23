@@ -18,10 +18,10 @@
 #include <string>
 #include <string_view>
 
-#include <tateyama/session/variable_set.h>
-#include <tateyama/session/variable_declaration.h>
+#include <tateyama/session/resource/variable_set.h>
+#include <tateyama/session/resource/variable_declaration.h>
 
-namespace tateyama::session {
+namespace tateyama::session::resource {
 
 /**
  * @brief declarations of session variables.

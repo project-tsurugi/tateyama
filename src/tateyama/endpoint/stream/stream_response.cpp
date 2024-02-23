@@ -26,7 +26,6 @@
 
 namespace tateyama::endpoint::stream {
 
-// class stream_response
 class stream_request;
 
 // class stream_response
@@ -125,6 +124,7 @@ tateyama::status stream_response::release_channel(tateyama::api::server::data_ch
     }
     return tateyama::status::unknown;
 }
+
 
 // class stream_data_channel
 tateyama::status stream_data_channel::acquire(std::shared_ptr<tateyama::api::server::writer>& wrt) {

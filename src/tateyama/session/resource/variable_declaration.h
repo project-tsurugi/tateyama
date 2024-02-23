@@ -17,10 +17,10 @@
 
 #include <string>
 
-#include <tateyama/session/variable_set.h>
-#include <tateyama/session/variable_type.h>
+#include <tateyama/session/resource/variable_set.h>
+#include <tateyama/session/resource/variable_type.h>
 
-namespace tateyama::session {
+namespace tateyama::session::resource {
 
 class session_variable_declaration_set;
 
