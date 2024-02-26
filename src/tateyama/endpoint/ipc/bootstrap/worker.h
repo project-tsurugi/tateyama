@@ -24,7 +24,7 @@
 namespace tateyama::endpoint::ipc::bootstrap {
 class ipc_provider;
 
-class Worker : public tateyama::endpoint::common::worker_common {
+class alignas(64) Worker : public tateyama::endpoint::common::worker_common {
  public:
     Worker(tateyama::framework::routing_service& service,
            std::size_t session_id,

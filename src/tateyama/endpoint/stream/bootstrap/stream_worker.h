@@ -25,7 +25,7 @@
 namespace tateyama::endpoint::stream::bootstrap {
 class stream_provider;
 
-class stream_worker : public tateyama::endpoint::common::worker_common {
+class alignas(64) stream_worker : public tateyama::endpoint::common::worker_common {
  public:
     stream_worker(tateyama::framework::routing_service& service,
                   std::size_t session_id,
