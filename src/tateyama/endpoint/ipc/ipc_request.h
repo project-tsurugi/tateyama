@@ -32,7 +32,7 @@ namespace tateyama::endpoint::ipc {
 /**
  * @brief request object for ipc_endpoint
  */
-class ipc_request : public tateyama::api::server::request {
+class alignas(64) ipc_request : public tateyama::api::server::request {
     constexpr static std::size_t SPO_SIZE = 256;
 
 public:

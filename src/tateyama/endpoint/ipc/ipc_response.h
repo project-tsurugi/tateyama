@@ -39,7 +39,7 @@ class ipc_response;
 /**
  * @brief writer object for ipc_endpoint
  */
-class ipc_writer : public tateyama::api::server::writer {
+class alignas(64) ipc_writer : public tateyama::api::server::writer {
     friend ipc_data_channel;
 
 public:
@@ -56,7 +56,7 @@ private:
 /**
  * @brief data_channel object for ipc_endpoint
  */
-class ipc_data_channel : public tateyama::api::server::data_channel {
+class alignas(64) ipc_data_channel : public tateyama::api::server::data_channel {
 public:
     explicit ipc_data_channel(server_wire_container::unq_p_resultset_wires_conteiner data_channel)
         : data_channel_(std::move(data_channel)) {
@@ -78,7 +78,7 @@ private:
 /**
  * @brief response object for ipc_endpoint
  */
-class ipc_response : public tateyama::api::server::response {
+class alignas(64) ipc_response : public tateyama::api::server::response {
     friend ipc_data_channel;
 
 public:

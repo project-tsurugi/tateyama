@@ -27,7 +27,7 @@ namespace tateyama::endpoint::stream {
 /**
  * @brief request object for stream_endpoint
  */
-class stream_request : public tateyama::api::server::request {
+class alignas(64) stream_request : public tateyama::api::server::request {
 public:
     stream_request() = delete;
     explicit stream_request(stream_socket& session_socket, std::string& payload, const tateyama::api::server::database_info& database_info, const tateyama::api::server::session_info& session_info)

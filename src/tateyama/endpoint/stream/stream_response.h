@@ -36,7 +36,7 @@ class stream_data_channel;
 /**
  * @brief writer object for stream_endpoint
  */
-class stream_writer : public tateyama::api::server::writer {
+class alignas(64) stream_writer : public tateyama::api::server::writer {
     friend stream_data_channel;
 
 public:
@@ -54,7 +54,7 @@ private:
 /**
  * @brief data_channel object for stream_endpoint
  */
-class stream_data_channel : public tateyama::api::server::data_channel {
+class alignas(64) stream_data_channel : public tateyama::api::server::data_channel {
 public:
     stream_data_channel() = delete;
     explicit stream_data_channel(std::shared_ptr<stream_socket> stream, unsigned int slot)
@@ -74,7 +74,7 @@ private:
 /**
  * @brief response object for stream_endpoint
  */
-class stream_response : public tateyama::api::server::response {
+class alignas(64) stream_response : public tateyama::api::server::response {
     friend stream_data_channel;
 
 public:
