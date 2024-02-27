@@ -21,8 +21,11 @@ message Request {
     oneof command {
         // handshake operation.
         Handshake handshake = 11;
+
+        // cancel operation.
+        Cancel cancel = 12;
     }
-    reserved 12 to 99;
+    reserved 13 to 99;
 }
 
 // handshake operation.
@@ -35,6 +38,11 @@ message Handshake {
 
     // the wire information.
     WireInformation wire_information = 11;
+}
+
+// cancel operation.
+message Cancel {
+    // no special properties.
 }
 
 // client information
