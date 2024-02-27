@@ -77,8 +77,15 @@ public:
         }
         auto threads = threads_opt.value();
 
+        auto timeout_opt = endpoint_config->get<std::size_t>("dev_idle_work_interval");
+        if (!timeout_opt) {
+            LOG_LP(ERROR) << "cannot find dev_idle_work_interval at the section in the configuration";
+            exit(1);
+        }
+        auto timeout = timeout_opt.value();
+
         // connection stream
-        connection_socket_ = std::make_unique<connection_socket>(port);
+        connection_socket_ = std::make_unique<connection_socket>(port, timeout);
 
         // worker objects
         workers_.resize(threads);
@@ -90,6 +97,11 @@ public:
         LOG(INFO) << tateyama::endpoint::common::stream_endpoint_config_prefix
                   << "threads: " << threads_opt.value() << ", "
                   << "the number of maximum sessions.";
+        if (timeout != 1000) {
+            LOG(INFO) << tateyama::endpoint::common::stream_endpoint_config_prefix
+                      << "dev_idle_work_interval has changed to: " << timeout_opt.value() << ", "
+                      << "the idle work interval for stream listener in millisecond.";
+        }
     }
     ~stream_listener() {
         connection_socket_->close();

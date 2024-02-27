@@ -359,7 +359,7 @@ public:
      * @brief Construct a new object.
      */
     connection_socket() = delete;
-    connection_socket(std::uint32_t port, std::size_t socket_limit) : socket_limit_(socket_limit) {
+    connection_socket(std::uint32_t port, std::size_t timeout, std::size_t socket_limit) : socket_limit_(socket_limit), timeout_(timeout) {
         // create a pipe
         if (pipe(&pair_[0]) != 0) {
             throw std::runtime_error("cannot create a pipe");
@@ -383,7 +383,8 @@ public:
         // listen the port
         listen(socket_, SOMAXCONN);
     }
-    explicit connection_socket(std::uint32_t port) : connection_socket(port, default_socket_limit) {}
+    connection_socket(std::uint32_t port, std::size_t timeout) :  connection_socket(port, timeout, default_socket_limit) {}
+    explicit connection_socket(std::uint32_t port) :  connection_socket(port, 1000, default_socket_limit) {}  // for tests
     ~connection_socket() = default;
 
     /**
@@ -397,10 +398,10 @@ public:
     std::shared_ptr<stream_socket> accept(const std::function<void(void)>& cleanup = [](){} ) {
         cleanup();
 
-        struct timeval tv{};
-        tv.tv_sec = 1;  // 1(S)
-        tv.tv_usec = 0;
         while (true) {
+            struct timeval tv{};
+            tv.tv_sec = static_cast<std::int64_t>(timeout_ / 1000);            // sec
+            tv.tv_usec = static_cast<std::int64_t>((timeout_ % 1000) * 1000);  // usec
             FD_ZERO(&fds_);  // NOLINT
             if (is_socket_available()) {
                 FD_SET(socket_, &fds_);  // NOLINT
@@ -452,7 +453,8 @@ private:
     std::atomic_uint64_t num_open_{0};
     std::mutex num_mutex_{};
     std::condition_variable num_condition_{};
-
+    std::size_t timeout_;
+    
     friend class stream_socket;
 
     [[nodiscard]] bool is_socket_available() {
