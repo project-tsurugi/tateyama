@@ -359,7 +359,7 @@ public:
      * @brief Construct a new object.
      */
     connection_socket() = delete;
-    connection_socket(std::uint32_t port, std::size_t timeout, std::size_t socket_limit) : socket_limit_(socket_limit), timeout_(timeout) {
+    connection_socket(std::uint32_t port, std::size_t socket_limit) : socket_limit_(socket_limit) {
         // create a pipe
         if (pipe(&pair_[0]) != 0) {
             throw std::runtime_error("cannot create a pipe");
@@ -383,8 +383,7 @@ public:
         // listen the port
         listen(socket_, SOMAXCONN);
     }
-    connection_socket(std::uint32_t port, std::size_t timeout) :  connection_socket(port, timeout, default_socket_limit) {}
-    explicit connection_socket(std::uint32_t port) :  connection_socket(port, 1000, default_socket_limit) {}  // for tests
+    explicit connection_socket(std::uint32_t port) :  connection_socket(port, default_socket_limit) {}
     ~connection_socket() = default;
 
     /**
@@ -395,43 +394,34 @@ public:
     connection_socket& operator = (connection_socket const&) = delete;
     connection_socket& operator = (connection_socket&&) = delete;
 
-    std::shared_ptr<stream_socket> accept(const std::function<void(void)>& cleanup = [](){} ) {
-        cleanup();
-
-        while (true) {
-            struct timeval tv{};
-            tv.tv_sec = static_cast<std::int64_t>(timeout_ / 1000);            // sec
-            tv.tv_usec = static_cast<std::int64_t>((timeout_ % 1000) * 1000);  // usec
-            FD_ZERO(&fds_);  // NOLINT
-            if (is_socket_available()) {
-                FD_SET(socket_, &fds_);  // NOLINT
-            }
-            FD_SET(pair_[0], &fds_);  // NOLINT
-            if (auto rv = select(((pair_[0] > socket_) ? pair_[0] : socket_) + 1, &fds_, nullptr, nullptr, &tv); rv == 0) {
-                cleanup();
-                continue;
-            }
-            if (FD_ISSET(socket_, &fds_)) {  // NOLINT
-                // Accept a connection request
-                struct sockaddr_in address{};
-                unsigned int len = sizeof(address);
-                int ts = ::accept(socket_, (struct sockaddr *)&address, &len);  // NOLINT
-                if (ts == -1) {
-                    throw std::runtime_error("accept error");
-                }
-                std::stringstream ss{};
-                ss << inet_ntoa(address.sin_addr) << ":" << address.sin_port;
-                return std::make_shared<stream_socket>(ts, ss.str(), this);
-            }
-            if (FD_ISSET(pair_[0], &fds_)) {  //  NOLINT
-                char trash{};
-                if (read(pair_[0], &trash, sizeof(trash)) <= 0) {
-                    throw std::runtime_error("pipe connection error");
-                }
-                return nullptr;
-            }
-            throw std::runtime_error("select error");
+    std::shared_ptr<stream_socket> accept() {
+        FD_ZERO(&fds_);  // NOLINT
+        if (is_socket_available()) {
+            FD_SET(socket_, &fds_);  // NOLINT
         }
+        FD_SET(pair_[0], &fds_);  // NOLINT
+        select(((pair_[0] > socket_) ? pair_[0] : socket_) + 1, &fds_, nullptr, nullptr, nullptr);
+
+        if (FD_ISSET(socket_, &fds_)) {  // NOLINT
+            // Accept a connection request
+            struct sockaddr_in address{};
+            unsigned int len = sizeof(address);
+            int ts = ::accept(socket_, (struct sockaddr *)&address, &len);  // NOLINT
+            if (ts == -1) {
+                throw std::runtime_error("accept error");
+            }
+            std::stringstream ss{};
+            ss << inet_ntoa(address.sin_addr) << ":" << address.sin_port;
+            return std::make_shared<stream_socket>(ts, ss.str(), this);
+        }
+        if (FD_ISSET(pair_[0], &fds_)) {  //  NOLINT
+            char trash{};
+            if (read(pair_[0], &trash, sizeof(trash)) <= 0) {
+                throw std::runtime_error("pipe connection error");
+            }
+            return nullptr;
+        }
+        throw std::runtime_error("select error");
     }
 
     void request_terminate() {
@@ -453,7 +443,6 @@ private:
     std::atomic_uint64_t num_open_{0};
     std::mutex num_mutex_{};
     std::condition_variable num_condition_{};
-    std::size_t timeout_;
     
     friend class stream_socket;
 

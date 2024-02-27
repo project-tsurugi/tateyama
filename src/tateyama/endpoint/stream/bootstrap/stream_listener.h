@@ -77,15 +77,8 @@ public:
         }
         auto threads = threads_opt.value();
 
-        // dev_idle_work_interval need not be provided in the default configuration.
-        std::size_t timeout = 1000;
-        auto timeout_opt = endpoint_config->get<std::size_t>("dev_idle_work_interval");
-        if (timeout_opt) {
-            timeout = timeout_opt.value();
-        }
-
         // connection stream
-        connection_socket_ = std::make_unique<connection_socket>(port, timeout);
+        connection_socket_ = std::make_unique<connection_socket>(port);
 
         // worker objects
         workers_.resize(threads);
@@ -97,11 +90,6 @@ public:
         LOG(INFO) << tateyama::endpoint::common::stream_endpoint_config_prefix
                   << "threads: " << threads_opt.value() << ", "
                   << "the number of maximum sessions.";
-        if (timeout != 1000) {
-            LOG(INFO) << tateyama::endpoint::common::stream_endpoint_config_prefix
-                      << "dev_idle_work_interval has changed to: " << timeout_opt.value() << ", "
-                      << "the idle work interval for stream listener in millisecond.";
-        }
     }
     ~stream_listener() {
         connection_socket_->close();
@@ -117,19 +105,19 @@ public:
 
         arrive_and_wait();
         while(true) {
+            // clean up undertakers_
+            for (auto it{undertakers_.begin()}, end{undertakers_.end()}; it != end; ) {
+                if ((*it)->wait_for() == std::future_status::ready) {
+                    it = undertakers_.erase(it);
+                }
+                else {
+                    ++it;
+                }
+            }
 
             std::shared_ptr<stream_socket> stream{};
             try {
-                stream = connection_socket_->accept([this](){
-                    for (auto it{undertakers_.begin()}, end{undertakers_.end()}; it != end; ) {
-                        if ((*it)->wait_for() == std::future_status::ready) {
-                            it = undertakers_.erase(it);
-                        }
-                        else {
-                            ++it;
-                        }
-                    }
-                });
+                stream = connection_socket_->accept();
                 if (!stream) {
                     break;  // received termination request
                 }
