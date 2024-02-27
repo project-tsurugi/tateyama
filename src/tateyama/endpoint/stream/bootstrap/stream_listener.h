@@ -77,12 +77,12 @@ public:
         }
         auto threads = threads_opt.value();
 
+        // dev_idle_work_interval need not be provided in the default configuration.
+        std::size_t timeout = 1000;
         auto timeout_opt = endpoint_config->get<std::size_t>("dev_idle_work_interval");
-        if (!timeout_opt) {
-            LOG_LP(ERROR) << "cannot find dev_idle_work_interval at the section in the configuration";
-            exit(1);
+        if (timeout_opt) {
+            timeout = timeout_opt.value();
         }
-        auto timeout = timeout_opt.value();
 
         // connection stream
         connection_socket_ = std::make_unique<connection_socket>(port, timeout);
