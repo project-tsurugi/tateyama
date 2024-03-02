@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-#include "tateyama/session/resource/variable_declaration.h"
+#include "tateyama/session/variable_declaration.h"
 
-namespace tateyama::session::resource {
+namespace tateyama::session {
 
 session_variable_declaration::session_variable_declaration(
     std::string name,

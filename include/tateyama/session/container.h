@@ -16,28 +16,18 @@
 #pragma once
 
 #include <memory>
-#include <map>
 #include <vector>
+#include <functional>
 
-#include <tateyama/session/resource/context.h>
+#include <tateyama/session/context.h>
 
-namespace tateyama::session::resource {
+namespace tateyama::session {
 
 /**
  * @brief provides living database sessions.
  */
 class session_container {
 public:
-    /**
-     * @brief registers a new session context.
-     * @param session the session context to register
-     * @return true if the target session is successfully registered
-     * @return false if the target session is not registered
-     *    because another session with such the numeric ID already exists in this container
-     * @note Symbolic session ID may duplicate in this container
-     */
-    bool register_session(std::shared_ptr<session_context> const& session);
-
     /**
      * @brief find for a session context with such the numeric ID.
      * @param numeric_id the numeric ID of the target session
@@ -61,14 +51,24 @@ public:
      */
     [[nodiscard]] std::vector<session_context::numeric_id_type> enumerate_numeric_ids(std::string_view symbolic_id) const;
 
-    // ...
+    session_container(session_container const&) = delete;
+    session_container(session_container&&) = delete;
+    session_container& operator = (session_container const&) = delete;
+    session_container& operator = (session_container&&) = delete;
+
+protected:
+    session_container() = default;
+    ~session_container() = default;
 
 private:
-    std::map<session_context::numeric_id_type, std::shared_ptr<session_context>> session_contexts_{};
+    /**
+     * @brief apply func to all entries stored in session_contexts_ with doing garbage collection
+     * @param func the function that takes std::shared_ptr<session_context>> as argument
+     */
+    virtual void foreach(const std::function<void(const std::shared_ptr<session_context>&)>& func) = 0;
 
-    std::vector<session_context::numeric_id_type> numeric_ids_{};
+    // ...
 
-    friend class bridge;
 };
 
 }

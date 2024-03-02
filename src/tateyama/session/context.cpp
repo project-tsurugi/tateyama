@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-#include "tateyama/session/resource/context.h"
+#include "tateyama/session/context.h"
 
-namespace tateyama::session::resource {
+namespace tateyama::session {
 
 session_context::session_context(session_info& info, session_variable_set variables) noexcept :
     info_(info), variables_(std::move(variables)) {

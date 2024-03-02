@@ -54,11 +54,22 @@ void Worker::run()
             }
 
             auto request = std::make_shared<ipc_request>(*wire_, h, database_info_, session_info_);
-            auto response = std::make_shared<ipc_response>(wire_, h.get_idx());
-            if (!service_(static_cast<std::shared_ptr<tateyama::api::server::request>>(request),
-                          static_cast<std::shared_ptr<tateyama::api::server::response>>(std::move(response)))) {
-                VLOG_LP(log_info) << "terminate worker because service returns an error";
-                break;
+            std::size_t index = h.get_idx();
+            auto response = std::make_shared<ipc_response>(wire_, h.get_idx(), [this, index](){remove_response(index);});
+            if (request->service_id() != tateyama::framework::service_id_endpoint_broker) {
+                register_response(index, static_cast<std::shared_ptr<tateyama::endpoint::common::response>>(response));
+                if (!service_(static_cast<std::shared_ptr<tateyama::api::server::request>>(request),
+                              static_cast<std::shared_ptr<tateyama::api::server::response>>(std::move(response)))) {
+                    VLOG_LP(log_info) << "terminate worker because service returns an error";
+                    break;
+                }
+            } else {
+                if (!endpoint_service(static_cast<std::shared_ptr<tateyama::api::server::request>>(request),
+                                      static_cast<std::shared_ptr<tateyama::api::server::response>>(std::move(response)),
+                                      index)) {
+                    VLOG_LP(log_info) << "terminate worker because endpoint service returns an error";
+                    break;
+                }
             }
             request->dispose();
             request = nullptr;

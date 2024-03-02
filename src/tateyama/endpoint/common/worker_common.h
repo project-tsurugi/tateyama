@@ -17,8 +17,11 @@
 
 #include <future>
 #include <thread>
+#include <memory>
 #include <functional>
+#include <map>
 #include <vector>
+#include <mutex>
 
 #include <tateyama/status.h>
 #include <tateyama/api/server/request.h>
@@ -28,12 +31,13 @@
 #include <tateyama/status/resource/bridge.h>
 #include <tateyama/logging_helper.h>
 #include <tateyama/session/resource/bridge.h>
-#include <tateyama/session/resource/variable_set.h>
+#include <tateyama/session/variable_set.h>
 
 #include <tateyama/proto/endpoint/request.pb.h>
 #include <tateyama/proto/endpoint/response.pb.h>
 #include <tateyama/proto/diagnostics.pb.h>
 
+#include "response.h"
 #include "tateyama/endpoint/common/session_info_impl.h"
 
 namespace tateyama::endpoint::common {
@@ -63,7 +67,7 @@ public:
           session_info_(session_id, connection_label(con), conn_info),
           session_(std::move(session)),
           session_variable_set_(variable_declarations()),
-          session_context_(std::make_shared<tateyama::session::resource::session_context>(session_info_, session_variable_set_))
+          session_context_(std::make_shared<tateyama::session::resource::session_context_impl>(session_info_, session_variable_set_))
         {
             if (session_) {
                 session_->register_session(session_context_);
@@ -177,9 +181,52 @@ protected:
         record.release_message();
     }
 
+    bool endpoint_service(const std::shared_ptr<tateyama::api::server::request>& req,
+                          [[maybe_unused]] const std::shared_ptr<tateyama::api::server::response>& res,
+                          std::size_t slot) {
+        auto data = req->payload();
+        tateyama::proto::endpoint::request::Request rq{};
+        if(! rq.ParseFromArray(data.data(), static_cast<int>(data.size()))) {
+            std::string error_message{"request parse error"};
+            LOG(INFO) << error_message;
+            notify_client(res.get(), tateyama::proto::diagnostics::Code::INVALID_REQUEST, error_message);
+            return false;
+        }
+        if(rq.command_case() != tateyama::proto::endpoint::request::Request::kCancel) {
+            std::stringstream ss;
+            ss << "bad request (cancel in endpoint): " << rq.command_case();
+            LOG(INFO) << ss.str();
+            notify_client(res.get(), tateyama::proto::diagnostics::Code::INVALID_REQUEST, ss.str());
+            return false;
+        }
+        {
+            std::lock_guard<std::mutex> lock(mtx_responses_);
+            if (auto itr = responses_.find(slot); itr != responses_.end()) {
+                if (auto ptr = itr->second.lock(); ptr) {
+                    ptr->set_cancel();
+                }
+            }
+        }
+        return true;
+    }
+
+    void register_response(std::size_t slot, const std::shared_ptr<tateyama::endpoint::common::response>& response) noexcept {
+        std::lock_guard<std::mutex> lock(mtx_responses_);
+        if (auto itr = responses_.find(slot); itr != responses_.end()) {
+            responses_.erase(itr);
+        }
+        responses_.emplace(slot, response);
+    }
+    void remove_response(std::size_t slot) noexcept {
+        std::lock_guard<std::mutex> lock(mtx_responses_);
+        responses_.erase(slot);
+    }
+
 private:
-    tateyama::session::resource::session_variable_set session_variable_set_;
-    const std::shared_ptr<tateyama::session::resource::session_context> session_context_;
+    tateyama::session::session_variable_set session_variable_set_;
+    const std::shared_ptr<tateyama::session::resource::session_context_impl> session_context_;
+    std::map<std::size_t, std::weak_ptr<tateyama::endpoint::common::response>> responses_{};
+    std::mutex mtx_responses_{};
 
     std::string_view connection_label(connection_type con) {
         switch (con) {
@@ -192,9 +239,9 @@ private:
         }
     }
 
-    [[nodiscard]] std::vector<std::tuple<std::string, tateyama::session::resource::session_variable_set::variable_type, tateyama::session::resource::session_variable_set::value_type>> variable_declarations() const noexcept {
+    [[nodiscard]] std::vector<std::tuple<std::string, tateyama::session::session_variable_set::variable_type, tateyama::session::session_variable_set::value_type>> variable_declarations() const noexcept {
         return {
-            { "example_integer", tateyama::session::resource::session_variable_type::signed_integer, static_cast<std::int64_t>(0) }
+            { "example_integer", tateyama::session::session_variable_type::signed_integer, static_cast<std::int64_t>(0) }
         };
     }
 

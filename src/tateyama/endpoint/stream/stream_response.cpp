@@ -26,12 +26,8 @@
 
 namespace tateyama::endpoint::stream {
 
-class stream_request;
-
 // class stream_response
-stream_response::stream_response(std::shared_ptr<stream_socket> stream, std::uint16_t index)
-    : stream_(std::move(stream)), index_(index) {
-}
+class stream_request;
 
 tateyama::status stream_response::body(std::string_view body) {
     if (!completed_.test_and_set()) {

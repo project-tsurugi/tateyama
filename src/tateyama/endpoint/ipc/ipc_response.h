@@ -21,8 +21,7 @@
 #include <atomic>
 #include <functional>
 
-#include <tateyama/api/server/response.h>
-
+#include "tateyama/endpoint/common/response.h"
 #include "tateyama/endpoint/common/pointer_comp.h"
 #include "server_wires.h"
 #include "ipc_request.h"
@@ -78,18 +77,30 @@ private:
 /**
  * @brief response object for ipc_endpoint
  */
-class alignas(64) ipc_response : public tateyama::api::server::response {
+class alignas(64) ipc_response : public tateyama::endpoint::common::response {
     friend ipc_data_channel;
 
 public:
-    ipc_response(std::shared_ptr<server_wire_container> server_wire, std::size_t index) :
+    ipc_response(std::shared_ptr<server_wire_container> server_wire, std::size_t index, std::function<void(void)> clean_up) :
         server_wire_(std::move(server_wire)),
         index_(index),
-        garbage_collector_(server_wire_->get_garbage_collector()) {
+        garbage_collector_(server_wire_->get_garbage_collector()),
+        clean_up_(std::move(clean_up)) {
         // do dump here
         garbage_collector_->dump();
     }
+    ipc_response(std::shared_ptr<server_wire_container> server_wire, std::size_t index) :
+        ipc_response(std::move(server_wire), index, [](){}) {
+    }
     ipc_response() = delete;
+    ~ipc_response() override {
+        clean_up_();
+    }
+
+    ipc_response(ipc_response const&) = delete;
+    ipc_response(ipc_response&&) = delete;
+    ipc_response& operator = (ipc_response const&) = delete;
+    ipc_response& operator = (ipc_response&&) = delete;
 
     tateyama::status body(std::string_view body) override;
     tateyama::status body_head(std::string_view body_head) override;
@@ -101,14 +112,11 @@ public:
         session_id_ = id;
     }
 
-    [[nodiscard]] bool check_cancel() const override {
-        return false;
-    }
-
 private:
     std::shared_ptr<server_wire_container> server_wire_;
     std::size_t index_;
     garbage_collector* garbage_collector_;
+    const std::function<void(void)> clean_up_;
 
     std::string message_{};
 
