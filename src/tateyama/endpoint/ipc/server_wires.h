@@ -47,6 +47,7 @@ public:
         response_wire_container& operator = (response_wire_container&&) = default;
 
         virtual void write(const char*, tateyama::common::wire::response_header) = 0;
+        virtual void notify_shutdown() = 0;
     };
     class resultset_wire_container;
     using resultset_wire_deleter_type = void(*)(resultset_wire_container*);

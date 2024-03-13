@@ -56,11 +56,11 @@ public:
         ::close(sockfd_);
     }
 
-    void send(const std::uint8_t type, const std::uint16_t slot, std::string_view message);
-    void send(const std::size_t tag, std::string_view message);
+    bool send(const std::uint8_t type, const std::uint16_t slot, std::string_view message);
+    bool send(const std::size_t tag, std::string_view message);
     void receive(std::string &message);
     void receive() { receive(response_); }
-    void receive(std::string &message, tateyama::proto::framework::response::Header::PayloadType type);
+    void receive(std::string &message, tateyama::proto::framework::response::Header::PayloadType& type);
     void close() {
         ::close(sockfd_);
     }

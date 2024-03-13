@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2023 Project Tsurugi.
+ * Copyright 2018-2024 Project Tsurugi.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 #include "ipc_client.h"
-
-#include <gtest/gtest.h>
 
 namespace tateyama::endpoint::ipc {
 
@@ -45,7 +43,7 @@ ipc_client::ipc_client(std::string_view name, std::size_t session_id, tateyama::
     handshake();
 }
 
-static constexpr tsubakuro::common::wire::message_header::index_type ipc_test_index = 1234;
+static constexpr tsubakuro::common::wire::message_header::index_type ipc_test_index = 135;
 
 void ipc_client::send(const std::size_t tag, const std::string &message) {
     request_header_content hdr { session_id_, tag };
@@ -78,13 +76,11 @@ bool parse_response_header(std::string_view input, parse_response_result &result
 }
 
 void ipc_client::receive(std::string &message) {
-    receive(message, static_cast<tateyama::proto::framework::response::Header::PayloadType>(0), false);
-}
-void ipc_client::receive(std::string &message, tateyama::proto::framework::response::Header::PayloadType type) {
-    receive(message, type, true);
+    tateyama::proto::framework::response::Header::PayloadType type{};
+    receive(message, type);
 }
 
-void ipc_client::receive(std::string &message, tateyama::proto::framework::response::Header::PayloadType type, bool do_check) {
+void ipc_client::receive(std::string &message, tateyama::proto::framework::response::Header::PayloadType &type) {
     tsubakuro::common::wire::response_header header;
     int ntry = 0;
     bool ok = false;
@@ -94,6 +90,9 @@ void ipc_client::receive(std::string &message, tateyama::proto::framework::respo
             header = response_wire_->await();
             ok = true;
         } catch (const std::runtime_error &ex) {
+            if (response_wire_->check_shutdown()) {
+                throw std::runtime_error("server shutdown");
+            }
             std::cout << ex.what() << std::endl;
             ntry++;
             if (ntry >= 100) {
@@ -109,12 +108,10 @@ void ipc_client::receive(std::string &message, tateyama::proto::framework::respo
     //
     parse_response_result result;
     parse_response_header(r_msg, result);
-    if (do_check) {
-        EXPECT_EQ(type, result.payload_type_);
-    }
     // ASSERT_TRUE(parse_response_header(r_msg, result));
     // EXPECT_EQ(session_id_, result.session_id_);
     message = result.payload_;
+    type = result.payload_type_;
 }
 
 resultset_wires_container* ipc_client::create_resultset_wires() {

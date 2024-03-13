@@ -193,7 +193,7 @@ public:
 private:
     int socket_;
     static constexpr std::size_t N_FDS = 1;
-    static constexpr int TIMEOUT_MS = 1000;  // 1000(mS)
+    static constexpr int TIMEOUT_MS = 2000;  // 2000(mS)
     struct pollfd fds_[N_FDS]{};  // NOLINT
 
     bool session_closed_{false};

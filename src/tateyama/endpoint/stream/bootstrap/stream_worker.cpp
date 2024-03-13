@@ -53,6 +53,7 @@ void stream_worker::run()
                 session_stream_->close();
                 return;
             }
+
             session_stream_->change_slot_size(max_result_sets_);
             break;
         }
@@ -77,24 +78,28 @@ void stream_worker::run()
         std::string payload{};
 
         switch (session_stream_->await(slot, payload)) {
-
         case tateyama::endpoint::stream::stream_socket::await_result::payload:
         {
             auto request = std::make_shared<stream_request>(*session_stream_, payload, database_info_, session_info_);
             auto response = std::make_shared<stream_response>(session_stream_, slot, [this, slot](){remove_response(slot);});
+            bool break_while{false};
             if (request->service_id() != tateyama::framework::service_id_endpoint_broker) {
-                if (!handle_shutdown()) {
+                switch (handle_shutdown()) {
+                case shutdown_consequence::keep_working:
                     register_response(slot, static_cast<std::shared_ptr<tateyama::endpoint::common::response>>(response));
                     if(!service_(static_cast<std::shared_ptr<tateyama::api::server::request>>(request),
                                  static_cast<std::shared_ptr<tateyama::api::server::response>>(std::move(response)))) {
                         VLOG_LP(log_info) << "terminate worker because service returns an error";
-                        break;
+                        break_while = true;
                     }
-                } else {
+                    break;
+                case shutdown_consequence::postpone:
                     notify_client(response.get(), tateyama::proto::diagnostics::SESSION_CLOSED, "");
-                    if (!has_incomplete_response()) {
-                        break;
-                    }
+                    break;
+                case shutdown_consequence::immediate:
+                    notify_client(response.get(), tateyama::proto::diagnostics::SESSION_CLOSED, "");
+                    break_while = true;
+                    break;
                 }
             } else {
                 if (!endpoint_service(static_cast<std::shared_ptr<tateyama::api::server::request>>(request),
@@ -105,25 +110,26 @@ void stream_worker::run()
                 }
             }
             request = nullptr;
-            continue;
+            if (!break_while) {
+                continue;
+            }
+            break;
         }
 
         case tateyama::endpoint::stream::stream_socket::await_result::timeout:
-        {
-            if (handle_shutdown()) {
+            if (handle_shutdown() == shutdown_consequence::immediate) {
                 VLOG_LP(log_trace) << "received and completed shutdown request: session_id = " << std::to_string(session_id_);
                 break;
             }
             continue;
-        }
 
-        default:
-            session_stream_->close();
+        default:  // some error
             break;
         }
-
         break;
     }
+    session_stream_->close();
+
 #ifdef ENABLE_ALTIMETER
     tateyama::endpoint::altimeter::session_end(database_info_, session_info_);
 #endif
