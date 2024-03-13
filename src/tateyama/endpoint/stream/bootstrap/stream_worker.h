@@ -49,17 +49,6 @@ class alignas(64) stream_worker : public tateyama::endpoint::common::worker_comm
                   const bool decline)
         : stream_worker(service, session_id, std::move(stream), database_info, decline, nullptr) {
     }
-    ~stream_worker() {
-        if(thread_.joinable()) thread_.join();
-    }
-
-    /**
-     * @brief Copy and move constructers are delete.
-     */
-    stream_worker(stream_worker const&) = delete;
-    stream_worker(stream_worker&&) = delete;
-    stream_worker& operator = (stream_worker const&) = delete;
-    stream_worker& operator = (stream_worker&&) = delete;
 
     void run();
     friend class stream_provider;
@@ -77,6 +66,10 @@ class alignas(64) stream_worker : public tateyama::endpoint::common::worker_comm
         re->set_code(tateyama::proto::diagnostics::Code::RESOURCE_LIMIT_REACHED);
         response->body(rp.SerializeAsString());
         rp.clear_error();
+    }
+
+    bool has_incomplete_resultset() override {
+        return false;
     }
 };
 

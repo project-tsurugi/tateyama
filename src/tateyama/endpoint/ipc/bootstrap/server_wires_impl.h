@@ -388,7 +388,8 @@ public:
             std::lock_guard<std::mutex> lock(mtx_put_);
             resultset_wires_set_.emplace(std::move(wires));
         }
-        void dump() override {
+        bool dump() override {
+            bool rv{true};
             if (mtx_dump_.try_lock()) {
                 std::lock_guard<std::mutex> lock(mtx_put_);
 
@@ -396,12 +397,14 @@ public:
                 while (it != resultset_wires_set_.end()) {
                     if ((*it)->is_closed() && (*it)->is_disposable()) {
                         resultset_wires_set_.erase(it++);
+                        rv = false;
                     } else {
                         it++;
                     }
                 }
                 mtx_dump_.unlock();
             }
+            return rv;
         }
 
     private:
@@ -424,8 +427,8 @@ public:
             wire_ = wire;
             bip_buffer_ = bip_buffer;
         }
-        tateyama::common::wire::message_header peep(bool wait = false) {
-            return wire_->peep(bip_buffer_, wait);
+        tateyama::common::wire::message_header peep() {
+            return wire_->peep(bip_buffer_);
         }
         std::string_view payload() override {
             return wire_->payload(bip_buffer_);
@@ -435,7 +438,7 @@ public:
         }
         std::size_t read_point() override { return wire_->read_point(); }
         void dispose() override { wire_->dispose(); }
-        void terminate() { wire_->terminate(); }
+        void notify() { wire_->notify(); }
         [[nodiscard]] bool terminate_requested() const { return wire_->terminate_requested(); }
 
         // for mainly client, except for terminate request from server
@@ -464,6 +467,9 @@ public:
         void write(const char* from, tateyama::common::wire::response_header header) override {
             std::lock_guard<std::mutex> lock(mtx_);
             wire_->write(bip_buffer_, from, header);
+        }
+        void set_shutdown() {
+            wire_->set_shutdown();
         }
 
         // for client
@@ -549,9 +555,11 @@ public:
         return garbage_collector_impl_.get();
     }
 
-    void terminate() {
-        request_wire_.terminate();
+    void notify() {
+        request_wire_.notify();
+        response_wire_.set_shutdown();
     }
+
     [[nodiscard]] bool terminate_requested() const {
         return request_wire_.terminate_requested();
     }

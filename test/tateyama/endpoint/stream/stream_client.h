@@ -60,6 +60,7 @@ public:
     void send(const std::size_t tag, std::string_view message);
     void receive(std::string &message);
     void receive() { receive(response_); }
+    void receive(std::string &message, tateyama::proto::framework::response::Header::PayloadType type);
     void close() {
         ::close(sockfd_);
     }
@@ -79,6 +80,7 @@ private:
     std::string response_{};
 
     void handshake();
+    void receive(std::string &message, tateyama::proto::framework::response::Header::PayloadType type, bool do_check);
 };
 
 } // namespace tateyama::api::endpoint::stream

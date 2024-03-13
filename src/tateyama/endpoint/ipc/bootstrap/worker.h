@@ -37,26 +37,9 @@ class alignas(64) Worker : public tateyama::endpoint::common::worker_common {
           request_wire_container_(dynamic_cast<server_wire_container_impl::wire_container_impl*>(wire_->get_request_wire())),
           database_info_(database_info) {
     }
-    Worker(tateyama::framework::routing_service& service,
-           std::size_t session_id,
-           std::shared_ptr<server_wire_container_impl> wire,
-           const tateyama::api::server::database_info& database_info)
-        : Worker(service, session_id, std::move(wire), database_info, nullptr) {
-    }
-    ~Worker() {
-        if(thread_.joinable()) thread_.join();
-    }
-
-    /**
-     * @brief Copy and move constructers are delete.
-     */
-    Worker(Worker const&) = delete;
-    Worker(Worker&&) = delete;
-    Worker& operator = (Worker const&) = delete;
-    Worker& operator = (Worker&&) = delete;
 
     void run();
-    void terminate();
+    bool terminate(tateyama::session::shutdown_request_type type = tateyama::session::shutdown_request_type::graceful);
     [[nodiscard]] std::size_t session_id() const noexcept { return session_id_; }
     [[nodiscard]] bool terminated() const {
         return wait_for() == std::future_status::ready;
@@ -69,6 +52,10 @@ class alignas(64) Worker : public tateyama::endpoint::common::worker_common {
     std::shared_ptr<server_wire_container_impl> wire_;
     server_wire_container_impl::wire_container_impl* request_wire_container_;
     const tateyama::api::server::database_info& database_info_;
+
+    bool has_incomplete_resultset() override {
+        return !wire_->get_garbage_collector()->dump();
+    }
 };
 
 }

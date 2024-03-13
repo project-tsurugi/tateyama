@@ -85,6 +85,28 @@ class stream_socket
     };
 
 public:
+    enum class await_result : std::uint32_t {
+        /**
+         * @brief received a request message.
+         */
+        payload = 0U,
+
+        /**
+         * @brief timeout occurred while waiting for a request message.
+         */
+        timeout,
+
+        /**
+         * @brief the socket has been closed by the client, means client has requested shutdown this session.
+         */
+        socket_closed,
+
+        /**
+         * @brief the message received is in an illegal format.
+         */
+        illegal_message,
+    };
+
     explicit stream_socket(int socket, std::string_view info, connection_socket* envelope);
     ~stream_socket();
 
@@ -93,7 +115,7 @@ public:
     stream_socket(stream_socket&& other) noexcept = delete;
     stream_socket& operator=(stream_socket&& other) noexcept = delete;
 
-    [[nodiscard]] bool await(std::uint16_t& slot, std::string& payload) {
+    [[nodiscard]] await_result await(std::uint16_t& slot, std::string& payload) {
         unsigned char info{};
         return await(info, slot, payload);
     }
@@ -167,14 +189,11 @@ public:
     bool set_owner(void* owner) {
         return owner_.exchange(owner, std::memory_order_acquire) == nullptr;
     }
-    bool test_and_set_using() {
-        return using_.test_and_set(std::memory_order_acquire);
-    }
 
 private:
     int socket_;
     static constexpr std::size_t N_FDS = 1;
-    static constexpr int TIMEOUT_MS = 500;  // 500(mS)
+    static constexpr int TIMEOUT_MS = 1000;  // 1000(mS)
     struct pollfd fds_[N_FDS]{};  // NOLINT
 
     bool session_closed_{false};
@@ -187,10 +206,9 @@ private:
     std::mutex mutex_{};
     std::mutex slot_mutex_{};
     std::atomic<void*> owner_{nullptr};
-    std::atomic_flag using_{false};
     connection_socket* envelope_;
 
-    bool await(unsigned char& info, std::uint16_t& slot, std::string& payload) {
+    await_result await(unsigned char& info, std::uint16_t& slot, std::string& payload) {
         DVLOG_LP(log_trace) << "-- enter waiting REQUEST --";
 
         fds_[0].fd = socket_;     // NOLINT
@@ -203,12 +221,12 @@ private:
                 slot = entry.slot();
                 payload = entry.payload();
                 queue_.pop();
-                return true;
+                return await_result::payload;
             }
 
             if (auto rv = poll(fds_, N_FDS, TIMEOUT_MS); !(rv > 0)) {  // NOLINT
                 if (rv == 0) {
-                    continue;
+                    return await_result::timeout;
                 }
                 throw std::runtime_error("error in poll");
             }
@@ -216,13 +234,13 @@ private:
             if (fds_[0].revents & POLLIN) {  // NOLINT
                 if (auto size_i = ::recv(socket_, &info, 1, 0); size_i == 0) {
                     DVLOG_LP(log_trace) << "socket is closed by the client";
-                    return false;
+                    return await_result::socket_closed;
                 }
 
                 char buffer[sizeof(std::uint16_t)];  // NOLINT
                 if (!recv(&buffer[0], sizeof(std::uint16_t))) {
                         DVLOG_LP(log_trace) << "socket is closed by the client abnormally";
-                        return false;
+                        return await_result::socket_closed;
                 }
                 slot = (strip(buffer[1]) << 8) | strip(buffer[0]);  // NOLINT
             }
@@ -231,13 +249,13 @@ private:
                 DVLOG_LP(log_trace) << "--> REQUEST_SESSION_PAYLOAD " << static_cast<std::uint32_t>(slot);
                 if (recv(payload)) {
                     if (slot_using_ < slot_size_) {
-                        return true;
+                        return await_result::payload;
                     }
                     queue_.push(recv_entry(info, slot, payload));
                     break;
                 }
                 DVLOG_LP(log_trace) << "socket is closed by the client abnormally";
-                return false;
+                return await_result::socket_closed;
             case REQUEST_RESULT_SET_BYE_OK:
             {
                 DVLOG_LP(log_trace) << "--> REQUEST_RESULT_SET_BYE_OK " << static_cast<std::uint32_t>(slot);
@@ -247,7 +265,7 @@ private:
                     break;
                 }
                 DVLOG_LP(log_trace) << "socket is closed by the client abnormally";
-                return false;
+                return await_result::socket_closed;
             }
             case REQUEST_SESSION_HELLO:  // for backward compatibility
                 if (recv(payload)) {
@@ -268,11 +286,11 @@ private:
                     continue;
                 }
                 DVLOG_LP(log_trace) << "socket is closed by the client abnormally";
-                return false;
+                return await_result::socket_closed;
             default:
                 LOG_LP(ERROR) << "illegal message type " << static_cast<std::uint32_t>(info);
                 close();
-                return false;  // to exit this thread
+                return await_result::illegal_message;  // to exit this thread
             }
         }
     }

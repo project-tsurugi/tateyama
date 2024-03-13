@@ -90,7 +90,11 @@ public:
         garbage_collector& operator = (garbage_collector const&) = delete;
         garbage_collector& operator = (garbage_collector&&) = delete;
 
-        virtual void dump() = 0;
+        /**
+         * @brief try to dispose remaining resultset_wire
+         * @returns true if garbage_collector has no remaining resultset_wire.
+         */
+        virtual bool dump() = 0;
         virtual void put(unq_p_resultset_wires_conteiner) = 0;
     };
 

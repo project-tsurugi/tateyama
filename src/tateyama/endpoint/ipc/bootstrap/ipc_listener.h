@@ -16,9 +16,13 @@
 #pragma once
 
 #include <memory>
+#include <vector>
+#include <set>
 #include <string>
 #include <exception>
+#include <thread>
 #include <chrono>
+#include <mutex>
 #include <csignal>
 
 #include <boost/thread/barrier.hpp>
@@ -32,6 +36,7 @@
 #include <tateyama/session/resource/bridge.h>
 
 #include "tateyama/endpoint/common/logging.h"
+#include "tateyama/endpoint/common/pointer_comp.h"
 #include "worker.h"
 
 namespace tateyama::endpoint::ipc::bootstrap {
@@ -112,20 +117,16 @@ public:
 
         while(true) {
             try {
+                care_undertakers();
                 auto session_id = connection_queue.listen();
+                if (session_id == 0) {  // means timeout
+                    continue;
+                }
                 if (connection_queue.is_terminated()) {
                     VLOG_LP(log_trace) << "receive terminate request";
-                    for (auto& worker : workers_) {
-                        if (worker) {
-                            worker->terminate();
-                            if (auto rv = worker->wait_for(); rv != std::future_status::ready) {
-                                VLOG_LP(log_trace) << "exit: remaining thread " << worker->session_id();
-                            }
-                        }
-                    }
-                    workers_.clear();
+                    terminate_workers();
                     connection_queue.confirm_terminated();
-                    break;
+                    break;    // shutdown the ipc_listener
                 }
                 std::string session_name = database_name_;
                 session_name += "-";
@@ -136,12 +137,19 @@ public:
                 status_->add_shm_entry(session_id, index);
                 auto& worker_entry = workers_.at(index);
                 worker_entry = std::make_shared<Worker>(*router_, session_id, std::move(wire), status_->database_info(), session_);
-                auto* worker = worker_entry.get();
-                worker->invoke([worker, index, &connection_queue]{ worker->run(); connection_queue.disconnect(index); });
+                worker_entry->invoke([this, index, &connection_queue]{
+                    std::shared_ptr<Worker> worker = workers_.at(index);
+                    worker->run();
+                    if (!worker->is_quiet()) {
+                        std::unique_lock<std::mutex> lock(mtx_undertakers_);
+                        undertakers_.emplace(std::move(worker));
+                    }
+                    connection_queue.disconnect(index);
+                });
             } catch (std::exception& ex) {
                 LOG_LP(ERROR) << ex.what();
-                workers_.clear();
-                break;    // shutdown the ipc_listener
+                terminate_workers();
+                break;
             }
         }
     }
@@ -176,12 +184,46 @@ private:
 
     std::unique_ptr<connection_container> container_{};
     std::vector<std::shared_ptr<Worker>> workers_{};
+    std::set<std::shared_ptr<Worker>, tateyama::endpoint::common::pointer_comp<Worker>> undertakers_{};
     std::string database_name_;
     std::string proc_mutex_file_;
     std::size_t datachannel_buffer_size_{};
     std::size_t max_datachannel_buffers_{};
+    std::mutex mtx_undertakers_{};
 
     boost::barrier sync{2};
+
+    bool care_undertakers() {
+        std::unique_lock<std::mutex> lock(mtx_undertakers_);
+        for (auto it{undertakers_.begin()}, end{undertakers_.end()}; it != end; ) {
+            if ((*it)->is_quiet()) {
+                it = undertakers_.erase(it);
+            } else {
+                ++it;
+            }
+        }
+        return undertakers_.empty();
+    }
+    void terminate_workers() {
+        for (auto& worker : workers_) {
+            if (worker) {
+                worker->terminate();
+                while (true) {
+                    bool message_output{false};
+                    if (auto rv = worker->wait_for(); rv != std::future_status::ready) {
+                        if (!message_output) {
+                            VLOG_LP(log_trace) << "wait for remaining worker thread, session id = " << worker->session_id();
+                            message_output = true;
+                        }
+                        std::this_thread::sleep_for(std::chrono::milliseconds(20));
+                        continue;
+                    }
+                    break;
+                }
+            }
+        }
+        workers_.clear();
+    }
 };
 
 }
