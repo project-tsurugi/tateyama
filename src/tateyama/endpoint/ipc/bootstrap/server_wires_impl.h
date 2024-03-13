@@ -468,8 +468,8 @@ public:
             std::lock_guard<std::mutex> lock(mtx_);
             wire_->write(bip_buffer_, from, header);
         }
-        void set_shutdown() {
-            wire_->set_shutdown();
+        void notify_shutdown() override {
+            wire_->notify_shutdown();
         }
 
         // for client
@@ -555,9 +555,9 @@ public:
         return garbage_collector_impl_.get();
     }
 
-    void notify() {
+    void notify_shutdown() {
         request_wire_.notify();
-        response_wire_.set_shutdown();
+        response_wire_.notify_shutdown();
     }
 
     [[nodiscard]] bool terminate_requested() const {

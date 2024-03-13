@@ -42,7 +42,7 @@ class message_header {
 public:
     using length_type = std::uint32_t;
     using index_type = std::uint16_t;
-    static constexpr index_type not_use = 0xffff;
+    static constexpr index_type null_request = 0xffff;
 
     static constexpr std::size_t size = sizeof(length_type) + sizeof(index_type);
 
@@ -372,40 +372,44 @@ inline static std::int64_t n_cap(std::int64_t timeout) {
 
 // for request
 class unidirectional_message_wire : public simple_wire<message_header> {
+    constexpr static std::size_t watch_interval = 2;
 public:
     unidirectional_message_wire(boost::interprocess::managed_shared_memory* managed_shm_ptr, std::size_t capacity) : simple_wire<message_header>(managed_shm_ptr, capacity) {}
 
     /**
-     * @brief peep the current header.
+     * @brief wait a request message arives and peep the current header.
+     * @returnm the essage_header if request message has been received,
+     *  otherwise, say timeout or termination requested, dummy request message whose length is 0 and index is message_header::null_request.
      */
-    message_header peep(const char* base, bool wait_flag = false) {
+    message_header peep(const char* base) {
         while (true) {
-            if(stored() >= message_header::size || shutdown_requested_.load()) {
-                break;
+            if(stored() >= message_header::size) {
+                copy_header(base);
+                return header_received_;
             }
-            if (wait_flag) {
-                boost::interprocess::scoped_lock lock(m_mutex_);
-                wait_for_read_ = true;
-                std::atomic_thread_fence(std::memory_order_acq_rel);
-                c_empty_.wait(lock, [this](){ return (stored() >= message_header::size) || shutdown_requested_.load(); });
+            if (termination_requested_.load() || onetime_notification_.load()) {
+                onetime_notification_.store(false);
+                return {message_header::null_request, 0};
+            }
+            boost::interprocess::scoped_lock lock(m_mutex_);
+            wait_for_read_ = true;
+            std::atomic_thread_fence(std::memory_order_acq_rel);
+            if (!c_empty_.timed_wait(lock,
+                                     boost::get_system_time() + boost::posix_time::microseconds(u_cap(u_round(watch_interval * 1000 * 1000))),
+                                     [this](){ return (stored() >= message_header::size) || termination_requested_.load() || onetime_notification_.load(); })) {
                 wait_for_read_ = false;
-            } else {
-                if (stored() < message_header::size) { return {}; }
+                header_received_ = message_header(message_header::null_request, 0);
+                return header_received_;
             }
+            wait_for_read_ = false;
         }
-        if (!shutdown_requested_.load()) {
-            copy_header(base);
-        } else {
-            header_received_ = message_header(message_header::not_use, 0);
-        }
-        return header_received_;
     }
 
     /**
-     * @brief wake up the worker thread waiting for request arrival, supposed to be used in server shutdown.
+     * @brief wake up the worker immediately.
      */
-    void terminate() {
-        shutdown_requested_.store(true);
+    void notify() {
+        onetime_notification_.store(true);
         std::atomic_thread_fence(std::memory_order_acq_rel);
         if (wait_for_read_) {
             boost::interprocess::scoped_lock lock(m_mutex_);
@@ -413,14 +417,34 @@ public:
         }
     }
 
+    /**
+     * @brief wake up the worker thread waiting for request arrival, supposed to be used in server termination.
+     */
+    void terminate() {
+        termination_requested_.store(true);
+        std::atomic_thread_fence(std::memory_order_acq_rel);
+        if (wait_for_read_) {
+            boost::interprocess::scoped_lock lock(m_mutex_);
+            c_empty_.notify_one();
+        }
+    }
+    /**
+     * @brief check if an termination request has been made
+     * @retrun true if terminate request has been made
+     */
+    [[nodiscard]] bool terminate_requested() {
+        return termination_requested_.load();
+    }
+
 private:
-    std::atomic_bool shutdown_requested_{};
+    std::atomic_bool termination_requested_{};
+    std::atomic_bool onetime_notification_{};
 };
 
 
 // for response
 class unidirectional_response_wire : public simple_wire<response_header> {
-    constexpr static std::size_t watch_interval = 5;
+    constexpr static std::size_t watch_interval = 2;
 public:
     unidirectional_response_wire(boost::interprocess::managed_shared_memory* managed_shm_ptr, std::size_t capacity) : simple_wire<response_header>(managed_shm_ptr, capacity) {}
 
@@ -473,6 +497,9 @@ public:
     [[nodiscard]] response_header::msg_type get_type() const {
         return header_received_.get_type();
     }
+    void notify_shutdown() noexcept {
+        shutdown_.store(true);
+    }
 
     void close() {
         closed_.store(true);
@@ -482,15 +509,19 @@ public:
             c_empty_.notify_one();
         }
     }
+    [[nodiscard]] bool check_shutdown() const noexcept {
+        return shutdown_.load();
+    }
 
 private:
     std::atomic_bool closed_{};
+    std::atomic_bool shutdown_{};
 };
 
 
 // for resultset
 class unidirectional_simple_wires {
-    constexpr static std::size_t watch_interval = 5;
+    constexpr static std::size_t watch_interval = 2;
 public:
 
     class unidirectional_simple_wire : public simple_wire<length_header> {
@@ -890,18 +921,22 @@ public:
     status_provider(boost::interprocess::managed_shared_memory* managed_shm_ptr, std::string_view file) : mutex_file_(file, managed_shm_ptr->get_segment_manager()) {
     }
 
-    [[nodiscard]] bool is_alive() {
-        int fd = open(mutex_file_.c_str(), O_WRONLY);  // NOLINT
+    [[nodiscard]] std::string is_alive() {
+        int fd = open(mutex_file_.c_str(), O_RDONLY);  // NOLINT
         if (fd < 0) {
-            return false;
+            std::stringstream ss{};
+            ss << "cannot open the lock file (" << mutex_file_.c_str() << ")";
+            return ss.str();
         }
         if (flock(fd, LOCK_EX | LOCK_NB) == 0) {  // NOLINT
             flock(fd, LOCK_UN);
             close(fd);
-            return false;
+            std::stringstream ss{};
+            ss << "the lock file (" << mutex_file_.c_str() << ") is not locked, possibly due to server crash";
+            return ss.str();
         }
         close(fd);
-        return true;
+        return {};
     }
 
 private:
@@ -916,6 +951,7 @@ public:
     constexpr static const char* name = "connection_queue";
 
     class index_queue {
+        constexpr static std::size_t watch_interval = 2;
         using long_allocator = boost::interprocess::allocator<std::size_t, boost::interprocess::managed_shared_memory::segment_manager>;
 
     public:
@@ -946,10 +982,12 @@ public:
                 }
             }
         }
-        void wait(std::atomic_bool& terminate) {
+        [[nodiscard]] bool wait(std::atomic_bool& terminate) {
             boost::interprocess::scoped_lock lock(mutex_);
             std::atomic_thread_fence(std::memory_order_acq_rel);
-            condition_.wait(lock, [this, &terminate](){ return (pushed_.load() > poped_.load()) || terminate.load(); });
+            return condition_.timed_wait(lock,
+                                         boost::get_system_time() + boost::posix_time::microseconds(u_cap(u_round(watch_interval * 1000 * 1000))),
+                                         [this, &terminate](){ return (pushed_.load() > poped_.load()) || terminate.load(); });
         }
         [[nodiscard]] std::size_t pop() {
             return queue_.at(index(poped_.fetch_add(1)));
@@ -1058,10 +1096,11 @@ public:
     bool check(std::size_t rid) {
         return v_requested_.at(rid).check();
     }
-
     std::size_t listen() {
-        q_requested_.wait(terminate_);
-        return ++session_id_;
+        if (q_requested_.wait(terminate_)) {
+            return ++session_id_;
+        }
+        return 0;
     }
     std::size_t accept(std::size_t session_id) {
         std::size_t sid = q_requested_.pop();

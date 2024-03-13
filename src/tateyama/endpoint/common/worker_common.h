@@ -43,7 +43,24 @@
 namespace tateyama::endpoint::common {
 
 class worker_common {
-public:
+protected:
+    enum class shutdown_consequence : std::uint32_t {
+    /**
+     * @brief no shutdown, continue normal processing.
+     */
+    keep_working = 0U,
+
+    /**
+     * @brief postpone the shutdown.
+     */
+    postpone,
+
+    /**
+     * @brief shutdown immediately.
+     */
+    immediate,
+    };
+
     enum class connection_type : std::uint32_t {
     /**
      * @brief undefined type.
@@ -61,6 +78,7 @@ public:
     stream,
     };
 
+public:
     worker_common(connection_type con, std::size_t session_id, std::string_view conn_info, std::shared_ptr<tateyama::session::resource::bridge> session)
         : connection_type_(con),
           session_id_(session_id),
@@ -117,7 +135,7 @@ protected:
 
     // for session management
     const std::shared_ptr<tateyama::session::resource::bridge> session_;  // NOLINT
-    bool cancel_requested_to_all_responses{};                             // NOLINT
+    bool cancel_requested_to_all_responses_{};                            // NOLINT
 
     bool handshake(tateyama::api::server::request* req, tateyama::api::server::response* res) {
         if (req->service_id() != tateyama::framework::service_id_endpoint_broker) {
@@ -251,30 +269,44 @@ protected:
         responses_.erase(slot);
     }
 
-    bool handle_shutdown() {
-        if (auto type = session_context_->shutdown_request(); type != tateyama::session::shutdown_request_type::nothing) {
-            if (type == tateyama::session::shutdown_request_type::forceful && !cancel_requested_to_all_responses) {
-                foreach_response([](tateyama::endpoint::common::response& e){e.cancel();});
-                cancel_requested_to_all_responses = true;
+    shutdown_consequence handle_shutdown() {
+        switch (session_context_->shutdown_request()) {
+        case tateyama::session::shutdown_request_type::graceful:
+            if (has_incomplete_response()) {
+                return shutdown_consequence::postpone;
             }
-            return true;
+            return shutdown_consequence::immediate;
+        case tateyama::session::shutdown_request_type::forceful:
+            if (!cancel_requested_to_all_responses_) {
+                foreach_response([this](tateyama::endpoint::common::response& e){
+                    e.cancel();
+                    notify_client(&e, tateyama::proto::diagnostics::Code::OPERATION_CANCELED, "");
+                });
+                cancel_requested_to_all_responses_ = true;
+            }
+            return shutdown_consequence::immediate;
+        default:
+            return shutdown_consequence::keep_working;
         }
-        return false;
     }
 
     bool foreach_response(const std::function<void(tateyama::endpoint::common::response&)>& func) {
-        bool rv{false};
-        std::lock_guard<std::mutex> lock(mtx_responses_);
-        for (auto it{responses_.begin()}, end{responses_.end()}; it != end; ) {
-            if (auto r = it->second.lock(); r) {
-                func(*r);
-                rv = true;
-                ++it;
-            } else {
-                it = responses_.erase(it);
+        std::vector<std::shared_ptr<tateyama::endpoint::common::response>> targets{};
+        {
+            std::lock_guard<std::mutex> lock(mtx_responses_);
+            for (auto it{responses_.begin()}, end{responses_.end()}; it != end; ) {
+                if (auto r = it->second.lock(); r) {
+                    targets.emplace_back(r);
+                    ++it;
+                } else {
+                    it = responses_.erase(it);
+                }
             }
         }
-        return rv;
+        for (auto &&e: targets) {
+            func(*e);
+        }
+        return !targets.empty();
     }
 
     bool shutdown_request(tateyama::session::shutdown_request_type type) noexcept {

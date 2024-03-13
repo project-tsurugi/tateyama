@@ -108,7 +108,7 @@ std::optional<tateyama::proto::session::diagnostic::ErrorCode> bridge::get(std::
     return tateyama::proto::session::diagnostic::ErrorCode::SESSION_NOT_FOUND;        
 }
 
-std::optional<tateyama::proto::session::diagnostic::ErrorCode> bridge::shutdown(std::string_view session_specifier, [[maybe_unused]] shutdown_request_type type) {
+std::optional<tateyama::proto::session::diagnostic::ErrorCode> bridge::shutdown(std::string_view session_specifier, shutdown_request_type type) {
     session_context::numeric_id_type numeric_id{};
     try {
         auto opt = find_only_one_session(session_specifier, numeric_id);

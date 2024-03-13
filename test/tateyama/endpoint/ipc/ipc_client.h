@@ -40,7 +40,7 @@ public:
     }
     void send(const std::size_t tag, const std::string &message);
     void receive(std::string &message);
-    void receive(std::string &message, tateyama::proto::framework::response::Header::PayloadType type);
+    void receive(std::string &message, tateyama::proto::framework::response::Header::PayloadType& type);
 
     resultset_wires_container* create_resultset_wires();
     void dispose_resultset_wires(resultset_wires_container *rwc);

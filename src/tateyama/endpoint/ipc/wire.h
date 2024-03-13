@@ -372,7 +372,7 @@ inline static std::int64_t n_cap(std::int64_t timeout) {
 
 // for request
 class unidirectional_message_wire : public simple_wire<message_header> {
-    constexpr static std::size_t watch_interval = 5;
+    constexpr static std::size_t watch_interval = 2;
 public:
     unidirectional_message_wire(boost::interprocess::managed_shared_memory* managed_shm_ptr, std::size_t capacity) : simple_wire<message_header>(managed_shm_ptr, capacity) {}
 
@@ -497,7 +497,7 @@ public:
     [[nodiscard]] response_header::msg_type get_type() const {
         return header_received_.get_type();
     }
-    void set_shutdown() noexcept {
+    void notify_shutdown() noexcept {
         shutdown_.store(true);
     }
 
@@ -509,7 +509,7 @@ public:
             c_empty_.notify_one();
         }
     }
-    [[nodiscard]] bool get_shutdown() const noexcept {
+    [[nodiscard]] bool check_shutdown() const noexcept {
         return shutdown_.load();
     }
 

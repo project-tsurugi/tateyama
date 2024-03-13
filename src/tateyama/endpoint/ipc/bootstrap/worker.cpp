@@ -29,6 +29,10 @@ void Worker::run() {
     while(true) {
         auto hdr = request_wire_container_->peep();
         if (hdr.get_length() == 0 && hdr.get_idx() == tateyama::common::wire::message_header::null_request) {
+            if (handle_shutdown() == shutdown_consequence::immediate) {
+                VLOG_LP(log_trace) << "received and completed shutdown request: session_id = " << std::to_string(session_id_);
+                return;
+            }
             if (request_wire_container_->terminate_requested()) {
                 VLOG_LP(log_trace) << "received shutdown request: session_id = " << std::to_string(session_id_);
                 return;
@@ -52,7 +56,8 @@ void Worker::run() {
         try {
             auto h = request_wire_container_->peep();
             if (h.get_length() == 0 && h.get_idx() == tateyama::common::wire::message_header::null_request) {
-                if (handle_shutdown()) {
+                if (handle_shutdown() == shutdown_consequence::immediate) {
+                    wire_->get_response_wire().notify_shutdown();
                     VLOG_LP(log_trace) << "received and completed shutdown request: session_id = " << std::to_string(session_id_);
                     break;
                 }
@@ -65,19 +70,26 @@ void Worker::run() {
             auto request = std::make_shared<ipc_request>(*wire_, h, database_info_, session_info_);
             std::size_t index = h.get_idx();
             auto response = std::make_shared<ipc_response>(wire_, h.get_idx(), [this, index](){remove_response(index);});
+            bool break_while{false};
             if (request->service_id() != tateyama::framework::service_id_endpoint_broker) {
-                if (!handle_shutdown()) {
+                switch (handle_shutdown()) {
+                case shutdown_consequence::keep_working:
                     register_response(index, static_cast<std::shared_ptr<tateyama::endpoint::common::response>>(response));
                     if (!service_(static_cast<std::shared_ptr<tateyama::api::server::request>>(request),
                                   static_cast<std::shared_ptr<tateyama::api::server::response>>(std::move(response)))) {
                         VLOG_LP(log_info) << "terminate worker because service returns an error";
-                        break;
+                        break_while = true;
                     }
-                } else {
+                    break;
+                case shutdown_consequence::postpone:
                     notify_client(response.get(), tateyama::proto::diagnostics::SESSION_CLOSED, "");
-                    if (!has_incomplete_response()) {
-                        break;
-                    }
+                    break;
+                case shutdown_consequence::immediate:
+                    notify_client(response.get(), tateyama::proto::diagnostics::SESSION_CLOSED, "");
+                    wire_->get_response_wire().notify_shutdown();
+                    break_while = true;
+                    VLOG_LP(log_trace) << "received and completed shutdown request: session_id = " << std::to_string(session_id_);
+                    break;
                 }
             } else {
                 if (!endpoint_service(static_cast<std::shared_ptr<tateyama::api::server::request>>(request),
@@ -86,6 +98,9 @@ void Worker::run() {
                     VLOG_LP(log_info) << "terminate worker because endpoint service returns an error";
                     break;
                 }
+            }
+            if (break_while) {
+                break;
             }
             request->dispose();
             request = nullptr;
@@ -106,7 +121,7 @@ bool Worker::terminate(tateyama::session::shutdown_request_type type) {
     VLOG_LP(log_trace) << "send terminate request: session_id = " << std::to_string(session_id_);
 
     auto rv = shutdown_request(type);
-    wire_->notify();
+    wire_->notify_shutdown();
     return rv;
 }
 
