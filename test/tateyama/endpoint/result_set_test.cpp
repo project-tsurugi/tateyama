@@ -94,12 +94,12 @@ TEST_F(result_set_test, normal) {
 
     request_wire->write(request_message.data(), request_message.length(), index_);
 
-    auto h = request_wire->peep(true);
+    auto h = request_wire->peep();
     EXPECT_EQ(index_, h.get_idx());
     EXPECT_EQ(request_wire->payload(), request_message);
 
     auto request = std::make_shared<ipc_request>(*wire_, h, dmy_dbinfo_, dmy_ssinfo_);
-    auto response = std::make_shared<ipc_response>(wire_, h.get_idx());
+    auto response = std::make_shared<ipc_response>(wire_, h.get_idx(), [](){});
 
     test_service sv;
     sv(static_cast<std::shared_ptr<tateyama::api::server::request>>(request),
@@ -151,12 +151,12 @@ TEST_F(result_set_test, large) {
 
     request_wire->write(request_message.data(), request_message.length(), index_);
 
-    auto h = request_wire->peep(true);
+    auto h = request_wire->peep();
     EXPECT_EQ(index_, h.get_idx());
     EXPECT_EQ(request_wire->payload(), request_message);
 
     auto request = std::make_shared<ipc_request>(*wire_, h, dmy_dbinfo_, dmy_ssinfo_);
-    auto response = std::make_shared<ipc_response>(wire_, h.get_idx());
+    auto response = std::make_shared<ipc_response>(wire_, h.get_idx(), [](){});
 
 
     // server side

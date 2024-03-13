@@ -57,7 +57,7 @@ TEST_F(wire_test, payload_loop) {
         tateyama::common::wire::message_header::index_type index = n % 11;
         request_wire->write(request_test_message_.data(), request_test_message_.length(), index);
 
-        auto h = request_wire->peep(true);
+        auto h = request_wire->peep();
         EXPECT_EQ(index, h.get_idx());
         auto length = h.get_length();
         EXPECT_EQ(request_test_message_.length(), length);
@@ -85,7 +85,7 @@ TEST_F(wire_test, read_loop) {
         tateyama::common::wire::message_header::index_type index = n % 11;
         request_wire->write(request_test_message_.data(), request_test_message_.length(), index);
     
-        auto h = request_wire->peep(true);
+        auto h = request_wire->peep();
         EXPECT_EQ(index, h.get_idx());
         auto length = h.get_length();
         EXPECT_EQ(request_test_message_.length(), length);
@@ -115,7 +115,7 @@ TEST_F(wire_test, large_messege) {
                        request_wire->write(request_test_message_.data(), request_test_message_.length(), index);
                    });
 
-    auto h = request_wire->peep(true);
+    auto h = request_wire->peep();
     EXPECT_EQ(index, h.get_idx());
     auto length = h.get_length();
     EXPECT_EQ(request_test_message_.length(), length);

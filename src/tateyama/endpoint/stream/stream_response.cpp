@@ -30,7 +30,8 @@ namespace tateyama::endpoint::stream {
 class stream_request;
 
 tateyama::status stream_response::body(std::string_view body) {
-    if (!completed_.test_and_set()) {
+    bool expected = false;
+    if (completed_.compare_exchange_strong(expected, true)) {
         VLOG_LP(log_trace) << static_cast<const void*>(stream_.get()) << " length = " << body.length();  //NOLINT
 
         std::stringstream ss{};
@@ -42,9 +43,11 @@ tateyama::status stream_response::body(std::string_view body) {
         }
         auto s = ss.str();
         stream_->send(index_, s, true);
+        clean_up_();
         return tateyama::status::ok;
     }
     LOG_LP(ERROR) << "response is already completed";
+    clean_up_();
     return status::unknown;        
 }
 
@@ -64,7 +67,8 @@ tateyama::status stream_response::body_head(std::string_view body_head) {
 }
 
 void stream_response::error(proto::diagnostics::Record const& record) {
-    if (!completed_.test_and_set()) {
+    bool expected = false;
+    if (completed_.compare_exchange_strong(expected, true)) {
         VLOG_LP(log_trace) << static_cast<const void*>(stream_.get());  //NOLINT
 
         std::string s{};
@@ -77,6 +81,7 @@ void stream_response::error(proto::diagnostics::Record const& record) {
     } else {
         LOG_LP(ERROR) << "response is already completed";
     }
+    clean_up_();
 }
 
 void stream_response::server_diagnostics(std::string_view diagnostic_record) {

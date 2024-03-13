@@ -15,6 +15,8 @@
  */
 #include "ipc_client.h"
 
+#include <gtest/gtest.h>
+
 namespace tateyama::endpoint::ipc {
 
 ipc_client::ipc_client(std::shared_ptr<tateyama::api::configuration::whole> const &cfg, tateyama::proto::endpoint::request::Handshake& hs)
@@ -59,6 +61,7 @@ void ipc_client::send(const std::size_t tag, const std::string &message) {
  */
 struct parse_response_result {
     std::size_t session_id_ { };
+    tateyama::proto::framework::response::Header::PayloadType payload_type_{};
     std::string_view payload_ { };
 };
 
@@ -70,10 +73,18 @@ bool parse_response_header(std::string_view input, parse_response_result &result
         return false;
     }
     result.session_id_ = hdr.session_id();
+    result.payload_type_ = hdr.payload_type();
     return utils::GetDelimitedBodyFromZeroCopyStream(std::addressof(in), nullptr, result.payload_);
 }
 
 void ipc_client::receive(std::string &message) {
+    receive(message, static_cast<tateyama::proto::framework::response::Header::PayloadType>(0), false);
+}
+void ipc_client::receive(std::string &message, tateyama::proto::framework::response::Header::PayloadType type) {
+    receive(message, type, true);
+}
+
+void ipc_client::receive(std::string &message, tateyama::proto::framework::response::Header::PayloadType type, bool do_check) {
     tsubakuro::common::wire::response_header header;
     int ntry = 0;
     bool ok = false;
@@ -92,13 +103,15 @@ void ipc_client::receive(std::string &message) {
     } while (!ok);
     // EXPECT_EQ(ipc_test_index, header.get_idx());
     // ASSERT_GT(header.get_length(), 0);
-    // EXPECT_EQ(1, header.get_type());
     std::string r_msg;
     r_msg.resize(header.get_length());
     response_wire_->read(reinterpret_cast<signed char*>(r_msg.data()));
     //
     parse_response_result result;
     parse_response_header(r_msg, result);
+    if (do_check) {
+        EXPECT_EQ(type, result.payload_type_);
+    }
     // ASSERT_TRUE(parse_response_header(r_msg, result));
     // EXPECT_EQ(session_id_, result.session_id_);
     message = result.payload_;

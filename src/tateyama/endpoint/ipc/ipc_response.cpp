@@ -28,8 +28,10 @@ namespace tateyama::endpoint::ipc {
 
 // class server_wire
 tateyama::status ipc_response::body(std::string_view body) {
-    if (!completed_.test_and_set()) {
+    bool expected = false;
+    if (completed_.compare_exchange_strong(expected, true)) {
         VLOG_LP(log_trace) << static_cast<const void*>(server_wire_.get()) << " length = " << body.length();  //NOLINT
+        clean_up_();
 
         std::stringstream ss{};
         endpoint::common::header_content arg{};
@@ -47,6 +49,10 @@ tateyama::status ipc_response::body(std::string_view body) {
 }
 
 tateyama::status ipc_response::body_head(std::string_view body_head) {
+    if (check_cancel()) {
+        LOG_LP(ERROR) << "request correspoinding to the response has been canceled";
+        return status::unknown;
+    }
     VLOG_LP(log_trace) << static_cast<const void*>(server_wire_.get());  //NOLINT
 
     std::stringstream ss{};
@@ -62,8 +68,10 @@ tateyama::status ipc_response::body_head(std::string_view body_head) {
 }
 
 void ipc_response::error(proto::diagnostics::Record const& record) {
-    if (!completed_.test_and_set()) {
+    bool expected = false;
+    if (completed_.compare_exchange_strong(expected, true)) {
         VLOG_LP(log_trace) << static_cast<const void*>(server_wire_.get());  //NOLINT
+        clean_up_();
 
         std::string s{};
         if(record.SerializeToString(&s)) {
@@ -90,6 +98,10 @@ void ipc_response::server_diagnostics(std::string_view diagnostic_record) {
 }
 
 tateyama::status ipc_response::acquire_channel(std::string_view name, std::shared_ptr<tateyama::api::server::data_channel>& ch) {
+    if (completed_.load()) {
+        LOG_LP(ERROR) << "response is already completed";
+        return tateyama::status::unknown;
+    }
     try {
         data_channel_ = std::make_shared<ipc_data_channel>(server_wire_->create_resultset_wires(name));
     } catch (std::runtime_error &ex) {
@@ -109,10 +121,12 @@ tateyama::status ipc_response::acquire_channel(std::string_view name, std::share
 tateyama::status ipc_response::release_channel(tateyama::api::server::data_channel& ch) {
     VLOG_LP(log_trace) << static_cast<const void*>(server_wire_.get()) << " data_channel_ = " << static_cast<const void*>(data_channel_.get());  //NOLINT
 
-    data_channel_->set_eor();
-    if (data_channel_.get() == dynamic_cast<ipc_data_channel*>(&ch)) {
-        if (!data_channel_->is_closed()) {
-            garbage_collector_->put(data_channel_->get_resultset_wires());
+    if (data_channel_.get() == &ch) {
+        auto *data_channel = dynamic_cast<ipc_data_channel*>(data_channel_.get());
+        data_channel->set_eor();
+        data_channel->release();
+        if (!data_channel->is_closed()) {
+            garbage_collector_->put(data_channel->get_resultset_wires());
         }
         data_channel_ = nullptr;
         return tateyama::status::ok;
@@ -154,8 +168,20 @@ tateyama::status ipc_data_channel::release(tateyama::api::server::writer& wrt) {
     return tateyama::status::unknown;
 }
 
+void ipc_data_channel::release() {
+    std::unique_lock lock{mutex_};
+    for (auto&& it = data_writers_.begin(), last = data_writers_.end(); it != last;) {
+        (*it)->release();
+        it = data_writers_.erase(it);
+    }
+}
+
 // class writer
 tateyama::status ipc_writer::write(char const* data, std::size_t length) {
+    if (released_.load()) {
+        LOG_LP(INFO) << "ipc_writer (" << static_cast<const void*>(this) << ") has already been released";  //NOLINT
+        return tateyama::status::unknown;
+    }
     VLOG_LP(log_trace) << static_cast<const void*>(this);  //NOLINT
 
     try {
@@ -175,6 +201,7 @@ tateyama::status ipc_writer::commit() {
 }
 
 void ipc_writer::release() {
+    released_.store(true);
     resultset_wire_->release(std::move(resultset_wire_));
 }
 

@@ -18,6 +18,8 @@
 
 #include "stream_client.h"
 
+#include <gtest/gtest.h>
+
 namespace tateyama::api::endpoint::stream {
 
 stream_client::stream_client(tateyama::proto::endpoint::request::Handshake& hs) : endpoint_handshake_(hs)
@@ -76,6 +78,7 @@ void stream_client::send(const std::size_t tag, std::string_view message) {
 
 struct parse_response_result {
     std::size_t session_id_ { };
+    tateyama::proto::framework::response::Header::PayloadType payload_type_{ };
     std::string_view payload_ { };
 };
 
@@ -87,12 +90,20 @@ static bool parse_response_header(std::string_view input, parse_response_result 
         return false;
     }
     result.session_id_ = hdr.session_id();
+    result.payload_type_ = hdr.payload_type();
     return utils::GetDelimitedBodyFromZeroCopyStream(std::addressof(in), nullptr, result.payload_);
 }
 
 void
-stream_client::receive(std::string& message)
-{
+stream_client::receive(std::string& message) {
+    receive(message, static_cast<tateyama::proto::framework::response::Header::PayloadType>(0), false);
+}
+void
+stream_client::receive(std::string &message, tateyama::proto::framework::response::Header::PayloadType type) {
+    receive(message, type, true);
+}
+void
+stream_client::receive(std::string& message, tateyama::proto::framework::response::Header::PayloadType type, bool do_check) {
     std::uint8_t  data[4];  // NOLINT
 
     recv(sockfd_, &type_, 1, 0);
@@ -114,7 +125,12 @@ stream_client::receive(std::string& message)
 
         parse_response_result result;
         if (parse_response_header(r_msg, result)) {
+            if (do_check) {
+                EXPECT_EQ(type, result.payload_type_);
+            }
             message = result.payload_;
+        } else {
+            FAIL();
         }
     } else {
         r_msg.clear();

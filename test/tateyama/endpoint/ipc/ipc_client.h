@@ -40,6 +40,7 @@ public:
     }
     void send(const std::size_t tag, const std::string &message);
     void receive(std::string &message);
+    void receive(std::string &message, tateyama::proto::framework::response::Header::PayloadType type);
 
     resultset_wires_container* create_resultset_wires();
     void dispose_resultset_wires(resultset_wires_container *rwc);
@@ -73,6 +74,7 @@ private:
     tateyama::proto::endpoint::request::Handshake default_endpoint_handshake_{};
 
     void handshake();
+    void receive(std::string &message, tateyama::proto::framework::response::Header::PayloadType type, bool do_check);
 };
 
 } // namespace tateyama::endpoint::ipc

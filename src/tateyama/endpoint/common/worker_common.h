@@ -67,21 +67,37 @@ public:
           session_info_(session_id, connection_label(con), conn_info),
           session_(std::move(session)),
           session_variable_set_(variable_declarations()),
-          session_context_(std::make_shared<tateyama::session::resource::session_context_impl>(session_info_, session_variable_set_))
-        {
-            if (session_) {
-                session_->register_session(session_context_);
-            }
+          session_context_(std::make_shared<tateyama::session::resource::session_context_impl>(session_info_, session_variable_set_)) {
+        if (session_) {
+            session_->register_session(session_context_);
+        }
     }
     worker_common(connection_type con, std::size_t id, std::shared_ptr<tateyama::session::resource::bridge> session) : worker_common(con, id, "", std::move(session)) {
     }
+    virtual ~worker_common() {
+        if(thread_.joinable()) thread_.join();
+    }
+
+    /**
+     * @brief Copy and move constructers are delete.
+     */
+    worker_common(worker_common const&) = delete;
+    worker_common(worker_common&&) = delete;
+    worker_common& operator = (worker_common const&) = delete;
+    worker_common& operator = (worker_common&&) = delete;
+
     void invoke(std::function<void(void)> func) {
         task_ = std::packaged_task<void()>(std::move(func));
         future_ = task_.get_future();
         thread_ = std::thread(std::move(task_));
     }
+
     [[nodiscard]] auto wait_for() const {
         return future_.wait_for(std::chrono::seconds(0));
+    }
+
+    [[nodiscard]] bool is_quiet() {
+        return !has_incomplete_response() && !has_incomplete_resultset();
     }
 
 protected:
@@ -101,6 +117,7 @@ protected:
 
     // for session management
     const std::shared_ptr<tateyama::session::resource::bridge> session_;  // NOLINT
+    bool cancel_requested_to_all_responses{};                             // NOLINT
 
     bool handshake(tateyama::api::server::request* req, tateyama::api::server::response* res) {
         if (req->service_id() != tateyama::framework::service_id_endpoint_broker) {
@@ -192,22 +209,34 @@ protected:
             notify_client(res.get(), tateyama::proto::diagnostics::Code::INVALID_REQUEST, error_message);
             return false;
         }
-        if(rq.command_case() != tateyama::proto::endpoint::request::Request::kCancel) {
+
+        switch (rq.command_case()) {
+
+        case tateyama::proto::endpoint::request::Request::kCancel:
+        {
+            std::shared_ptr<tateyama::endpoint::common::response> ptr{};
+            {
+                std::lock_guard<std::mutex> lock(mtx_responses_);
+                if (auto itr = responses_.find(slot); itr != responses_.end()) {
+                    ptr = itr->second.lock();
+                }
+            }
+            if (ptr) {
+                ptr->cancel();
+                notify_client(ptr.get(), tateyama::proto::diagnostics::Code::OPERATION_CANCELED, "");
+            }
+        }
+        return true;
+
+        default: // error
+        {
             std::stringstream ss;
             ss << "bad request (cancel in endpoint): " << rq.command_case();
             LOG(INFO) << ss.str();
             notify_client(res.get(), tateyama::proto::diagnostics::Code::INVALID_REQUEST, ss.str());
-            return false;
         }
-        {
-            std::lock_guard<std::mutex> lock(mtx_responses_);
-            if (auto itr = responses_.find(slot); itr != responses_.end()) {
-                if (auto ptr = itr->second.lock(); ptr) {
-                    ptr->set_cancel();
-                }
-            }
+        return false;
         }
-        return true;
     }
 
     void register_response(std::size_t slot, const std::shared_ptr<tateyama::endpoint::common::response>& response) noexcept {
@@ -221,6 +250,44 @@ protected:
         std::lock_guard<std::mutex> lock(mtx_responses_);
         responses_.erase(slot);
     }
+
+    bool handle_shutdown() {
+        if (auto type = session_context_->shutdown_request(); type != tateyama::session::shutdown_request_type::nothing) {
+            if (type == tateyama::session::shutdown_request_type::forceful && !cancel_requested_to_all_responses) {
+                foreach_response([](tateyama::endpoint::common::response& e){e.cancel();});
+                cancel_requested_to_all_responses = true;
+            }
+            return true;
+        }
+        return false;
+    }
+
+    bool foreach_response(const std::function<void(tateyama::endpoint::common::response&)>& func) {
+        bool rv{false};
+        std::lock_guard<std::mutex> lock(mtx_responses_);
+        for (auto it{responses_.begin()}, end{responses_.end()}; it != end; ) {
+            if (auto r = it->second.lock(); r) {
+                func(*r);
+                rv = true;
+                ++it;
+            } else {
+                it = responses_.erase(it);
+            }
+        }
+        return rv;
+    }
+
+    bool shutdown_request(tateyama::session::shutdown_request_type type) noexcept {
+        return session_context_->shutdown_request(type);
+    }
+
+    [[nodiscard]] bool has_incomplete_response() {
+        bool rv{false};
+        foreach_response([&rv](tateyama::endpoint::common::response& r){if(!r.is_completed()){rv = true;}});
+        return rv;
+    }
+
+    virtual bool has_incomplete_resultset() = 0;
 
 private:
     tateyama::session::session_variable_set session_variable_set_;
