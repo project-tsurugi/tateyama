@@ -213,7 +213,6 @@ protected:
         record.set_code(code);
         record.set_message(message);
         res->error(record);
-        record.release_message();
     }
 
     bool endpoint_service(const std::shared_ptr<tateyama::api::server::request>& req,
