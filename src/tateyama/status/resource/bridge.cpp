@@ -35,7 +35,8 @@ bool bridge::setup(environment& env) {
     const auto& conf = env.configuration();
     set_digest(conf->get_canonical_path().string());
 
-    auto database_name_opt = conf->get_section("ipc_endpoint")->get<std::string>("database_name");
+    auto* ipc_section = conf->get_section("ipc_endpoint");
+    auto database_name_opt = ipc_section->get<std::string>("database_name");
     if (!database_name_opt) {
         LOG(ERROR) << "cannot find database_name at the section in the configuration";
         return false;
@@ -45,13 +46,18 @@ bool bridge::setup(environment& env) {
     dbinfo->name(name);
     database_info_ = std::move(dbinfo);
 
+    auto threads_opt = ipc_section->get<std::size_t>("threads");
+    if (!threads_opt) {
+        LOG(ERROR) << "cannot find thread_pool_size at the section in the configuration";
+        return false;
+    }
     std::string status_file_name{file_prefix};
     status_file_name += digest_;
     status_file_name += ".stat";
     boost::interprocess::shared_memory_object::remove(status_file_name.c_str());
     shm_remover_ = std::make_unique<shm_remover>(status_file_name);
     try {
-        segment_ = std::make_unique<boost::interprocess::managed_shared_memory>(boost::interprocess::create_only, status_file_name.c_str(), shm_size);
+        segment_ = std::make_unique<boost::interprocess::managed_shared_memory>(boost::interprocess::create_only, status_file_name.c_str(), shm_size(threads_opt.value()));
         resource_status_memory_ = std::make_unique<resource_status_memory>(*segment_);
         resource_status_memory_->set_pid();
         resource_status_memory_->set_database_name(name);

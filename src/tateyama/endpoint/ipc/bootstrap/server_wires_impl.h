@@ -592,8 +592,6 @@ inline void server_wire_container_impl::resultset_wire_container_impl::write_com
 
 class connection_container
 {
-    static constexpr std::size_t request_queue_size = (1<<15);  // 32K bytes (tentative)  NOLINT
-
 public:
     explicit connection_container(std::string_view name, std::size_t n) : name_(name) {
         boost::interprocess::shared_memory_object::remove(name_.c_str());
@@ -602,7 +600,7 @@ public:
             unrestricted_permissions.set_unrestricted();
 
             managed_shared_memory_ =
-                std::make_unique<boost::interprocess::managed_shared_memory>(boost::interprocess::create_only, name_.c_str(), request_queue_size, nullptr, unrestricted_permissions);
+                std::make_unique<boost::interprocess::managed_shared_memory>(boost::interprocess::create_only, name_.c_str(), request_queue_size(n), nullptr, unrestricted_permissions);
             managed_shared_memory_->destroy<tateyama::common::wire::connection_queue>(tateyama::common::wire::connection_queue::name);
             connection_queue_ = managed_shared_memory_->construct<tateyama::common::wire::connection_queue>(tateyama::common::wire::connection_queue::name)(n, managed_shared_memory_->get_segment_manager());
         }
@@ -643,6 +641,13 @@ private:
     std::unique_ptr<boost::interprocess::managed_shared_memory> managed_shared_memory_{};
     tateyama::common::wire::connection_queue* connection_queue_;
 
+    static constexpr std::size_t initial_size = 720;      // obtained by experiment
+    static constexpr std::size_t per_size = 112;          // obtained by experiment
+    std::size_t request_queue_size(std::size_t n) {
+        std::size_t size = initial_size + (n * per_size); // exact size
+        size += initial_size / 2;                         // a little bit of leeway
+        return ((size / 4096) + 1) * 4096;                // round up to the page size
+    }
 };
 
 };  // namespace tateyama::common::wire
