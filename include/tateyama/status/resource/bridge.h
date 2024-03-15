@@ -57,8 +57,6 @@ class bridge : public framework::resource {
     };
 
 public:
-    static constexpr std::size_t shm_size = 16384;
-
     static constexpr id_type tag = framework::resource_id_status;
 
     static constexpr std::string_view file_prefix = "tsurugidb-";  // NOLINT
@@ -155,6 +153,14 @@ private:
     std::unique_ptr<tateyama::api::server::database_info> database_info_{};
 
     void set_digest(const std::string& path_string);
+
+    static constexpr std::size_t initial_size = 640;      // obtained by experiment
+    static constexpr std::size_t per_size = 8;            // obtained by experiment
+    std::size_t shm_size(std::size_t n) {
+        std::size_t size = initial_size + (n * per_size); // exact size
+        size += initial_size / 2;                         // a little bit of leeway
+        return ((size / 4096) + 1) * 4096;                // round up to the page size
+    }
 };
 
 } // namespace tateyama::status_info::resource
