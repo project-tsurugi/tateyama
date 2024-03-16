@@ -225,40 +225,6 @@ public:
     }
 
     /**
-     * @brief write response message in the response wire, which is used by endpoint IF
-     */
-    void write(char* base, const char* from, T header) {
-        std::size_t length = header.get_length() + T::size;
-        auto msg_length = min(length, capacity_);
-        if (msg_length > room()) { wait_to_write(msg_length); }
-        write_in_buffer(base, buffer_address(base, pushed_.load()), header.get_buffer(), T::size);
-        if (msg_length > T::size) {
-            write_in_buffer(base, buffer_address(base, pushed_.load() + T::size), from, msg_length - T::size);
-        }
-        pushed_.fetch_add(msg_length);
-        length -= msg_length;
-        from += (msg_length - T::size);  // NOLINT
-        std::atomic_thread_fence(std::memory_order_acq_rel);
-        if (wait_for_read_) {
-            boost::interprocess::scoped_lock lock(m_mutex_);
-            c_empty_.notify_one();
-        }
-        while (length > 0) {
-            msg_length = min(length, capacity_);
-            if (msg_length > room()) { wait_to_write(msg_length); }
-            write_in_buffer(base, buffer_address(base, pushed_.load()), from, msg_length);
-            pushed_.fetch_add(msg_length);
-            length -= msg_length;
-            from += msg_length;  // NOLINT
-            std::atomic_thread_fence(std::memory_order_acq_rel);
-            if (wait_for_read_) {
-                boost::interprocess::scoped_lock lock(m_mutex_);
-                c_empty_.notify_one();
-            }
-        }
-    }
-
-    /**
      * @brief dispose the message in the queue at read_point that has completed read and is no longer needed
      *  used by endpoint IF
      */
@@ -298,11 +264,43 @@ protected:
     [[nodiscard]] const char* read_address(const char* base, std::size_t offset) const { return base + index(poped_.load() + offset); }  //NOLINT
     [[nodiscard]] const char* read_address(const char* base) const { return base + index(poped_.load()); }  //NOLINT
 
-    void wait_to_write(std::size_t length) {
+    void write(char* base, const char* from, T header, std::atomic_bool& closed) {
+        std::size_t length = header.get_length() + T::size;
+        auto msg_length = min(length, capacity_);
+        if (msg_length > room() && !closed.load()) { wait_to_write(msg_length, closed); }
+        if (closed.load()) { return; }
+        write_in_buffer(base, buffer_address(base, pushed_.load()), header.get_buffer(), T::size);
+        if (msg_length > T::size) {
+            write_in_buffer(base, buffer_address(base, pushed_.load() + T::size), from, msg_length - T::size);
+        }
+        pushed_.fetch_add(msg_length);
+        length -= msg_length;
+        from += (msg_length - T::size);  // NOLINT
+        std::atomic_thread_fence(std::memory_order_acq_rel);
+        if (wait_for_read_) {
+            boost::interprocess::scoped_lock lock(m_mutex_);
+            c_empty_.notify_one();
+        }
+        while (length > 0) {
+            msg_length = min(length, capacity_);
+            if (msg_length > room() && !closed.load()) { wait_to_write(msg_length, closed); }
+            if (closed.load()) { return; }
+            write_in_buffer(base, buffer_address(base, pushed_.load()), from, msg_length);
+            pushed_.fetch_add(msg_length);
+            length -= msg_length;
+            from += msg_length;  // NOLINT
+            std::atomic_thread_fence(std::memory_order_acq_rel);
+            if (wait_for_read_) {
+                boost::interprocess::scoped_lock lock(m_mutex_);
+                c_empty_.notify_one();
+            }
+        }
+    }
+    void wait_to_write(std::size_t length, std::atomic_bool& closed) {
         boost::interprocess::scoped_lock lock(m_mutex_);
         wait_for_write_ = true;
         std::atomic_thread_fence(std::memory_order_acq_rel);
-        c_full_.wait(lock, [this, length](){ return room() >= length; });
+        c_full_.wait(lock, [this, length, &closed](){ return room() >= length || closed.load(); });
         wait_for_write_ = false;
     }
     void write_in_buffer(char *base, char* top, const char* from, std::size_t length) noexcept {
@@ -404,7 +402,13 @@ public:
             wait_for_read_ = false;
         }
     }
-
+    /**
+     * @brief check if an termination request has been made
+     * @retrun true if terminate request has been made
+     */
+    [[nodiscard]] bool terminate_requested() {
+        return termination_requested_.load();
+    }
     /**
      * @brief wake up the worker immediately.
      */
@@ -416,7 +420,27 @@ public:
             c_empty_.notify_one();
         }
     }
+    /**
+     * @brief close the request wire, used by the server.
+     */
+    void close() {
+        closed_.store(true);
+        std::atomic_thread_fence(std::memory_order_acq_rel);
+        if (wait_for_write_) {
+            boost::interprocess::scoped_lock lock(m_mutex_);
+            c_full_.notify_one();
+        }
+    }
 
+    /**
+     * @brief write request message
+     * @param base the base address of the request wire
+     * @param from the request message to be written in the request wire
+     * @param header the header of the request message
+     */
+    void write(char* base, const char* from, message_header header) {
+        simple_wire<message_header>::write(base, from, header, closed_);
+    }
     /**
      * @brief wake up the worker thread waiting for request arrival, supposed to be used in server termination.
      */
@@ -428,17 +452,11 @@ public:
             c_empty_.notify_one();
         }
     }
-    /**
-     * @brief check if an termination request has been made
-     * @retrun true if terminate request has been made
-     */
-    [[nodiscard]] bool terminate_requested() {
-        return termination_requested_.load();
-    }
 
 private:
     std::atomic_bool termination_requested_{};
     std::atomic_bool onetime_notification_{};
+    std::atomic_bool closed_{};
 };
 
 
@@ -497,20 +515,39 @@ public:
     [[nodiscard]] response_header::msg_type get_type() const {
         return header_received_.get_type();
     }
-    void notify_shutdown() noexcept {
-        shutdown_.store(true);
-    }
-
+    /**
+     * @brief close the response wire, used by the client.
+     */
     void close() {
         closed_.store(true);
         std::atomic_thread_fence(std::memory_order_acq_rel);
-        if (wait_for_read_) {
+        if (wait_for_write_) {
             boost::interprocess::scoped_lock lock(m_mutex_);
             c_empty_.notify_one();
         }
     }
+    /**
+     * @brief check the session has been shut down
+     * @return true if the session has been shut down
+     */
     [[nodiscard]] bool check_shutdown() const noexcept {
         return shutdown_.load();
+    }
+
+    /**
+     * @brief write response message
+     * @param base the base address of the response wire
+     * @param from the response message to be written in the response wire
+     * @param header the header of the response message
+     */
+    void write(char* base, const char* from, response_header header) {
+        simple_wire<response_header>::write(base, from, header, closed_);
+    }
+    /**
+     * @brief notify client of the client of the shutdown
+     */
+    void notify_shutdown() noexcept {
+        shutdown_.store(true);
     }
 
 private:
