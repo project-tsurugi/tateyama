@@ -51,7 +51,7 @@ private:
     template<typename T> 
     void send_error(
         const std::shared_ptr<response>& res,
-        tateyama::proto::session::diagnostic::ErrorCode err = tateyama::proto::session::diagnostic::ErrorCode::UNKNOWN
+        tateyama::proto::session::diagnostic::ErrorCode err = tateyama::proto::session::diagnostic::ErrorCode::ERROR_CODE_NOT_SPECIFIED
     ) {
         T rs{};
         auto* error = rs.mutable_error();

@@ -2,6 +2,10 @@ syntax = "proto3";
 
 package tateyama.proto.session.response;
 
+option java_multiple_files = false;
+option java_package = "com.tsurugidb.session.proto";
+option java_outer_classname = "SessionResponse";
+
 import "tateyama/proto/session/diagnostic.proto";
 
 // the running session information.
@@ -16,7 +20,7 @@ message SessionInfo {
     string application = 3;
 
     // the session user name (may be empty).
-    string user = 4; 
+    string user = 4;
 
     // the session starting time (millisecond offset from 1970-01-01T00:00:00.000Z).
     sfixed64 start_at = 5;

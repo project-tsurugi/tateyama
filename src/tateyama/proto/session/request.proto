@@ -2,6 +2,10 @@ syntax = "proto3";
 
 package tateyama.proto.session.request;
 
+option java_multiple_files = false;
+option java_package = "com.tsurugidb.session.proto";
+option java_outer_classname = "SessionRequest";
+
 // the request message to session pseudo service.
 message Request {
     // service message version (major)

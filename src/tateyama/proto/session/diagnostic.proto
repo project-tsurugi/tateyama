@@ -24,6 +24,9 @@ enum ErrorCode {
 
     // the setting value is invalid for the target variable.
     SESSION_VARIABLE_INVALID_VALUE = 6;
+
+    // the argument given is inappropriate.
+    INVALID_ARGUMENT = 7;
 }
 
 // the error information of the session control operations.
