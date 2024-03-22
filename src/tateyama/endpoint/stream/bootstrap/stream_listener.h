@@ -154,7 +154,7 @@ public:
             }
             if (!found) {
                 try {
-                    auto worker_decline = std::make_unique<stream_worker>(*router_, session_id, std::move(stream), status_->database_info(), true);
+                    auto worker_decline = std::make_shared<stream_worker>(*router_, session_id, std::move(stream), status_->database_info(), true);
                     auto* worker = worker_decline.get();
                     undertakers_.emplace(std::move(worker_decline));
                     worker->invoke([worker]{worker->run();});
@@ -165,9 +165,12 @@ public:
             } else {
                 auto& worker_entry = workers_.at(index);
                 try {
-                    worker_entry = std::make_unique<stream_worker>(*router_, session_id, std::move(stream), status_->database_info(), false, session_);
-                    auto* worker = worker_entry.get();
-                    worker->invoke([worker]{worker->run();});
+                    worker_entry = std::make_shared<stream_worker>(*router_, session_id, std::move(stream), status_->database_info(), false, session_);
+                    worker_entry->invoke([this, index]{
+                        std::shared_ptr<stream_worker> worker = workers_.at(index);
+                        worker->register_worker_in_context(worker);
+                        worker->run();
+                    });
                     session_id++;
                 } catch (std::exception& ex) {
                     LOG_LP(ERROR) << ex.what();
@@ -190,8 +193,8 @@ private:
     const std::shared_ptr<status_info::resource::bridge> status_;
     const std::shared_ptr<tateyama::session::resource::bridge> session_;
     std::unique_ptr<connection_socket> connection_socket_{};
-    std::vector<std::unique_ptr<stream_worker>> workers_{};
-    std::set<std::unique_ptr<stream_worker>, tateyama::endpoint::common::pointer_comp<stream_worker>> undertakers_{};
+    std::vector<std::shared_ptr<stream_worker>> workers_{};
+    std::set<std::shared_ptr<stream_worker>, tateyama::endpoint::common::pointer_comp<stream_worker>> undertakers_{};
 
     boost::barrier sync{2};
 };

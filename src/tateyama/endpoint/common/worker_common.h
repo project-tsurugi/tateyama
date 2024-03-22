@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2023 Project Tsurugi.
+ * Copyright 2018-2024 Project Tsurugi.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -114,8 +114,23 @@ public:
         return future_.wait_for(std::chrono::seconds(0));
     }
 
+    [[nodiscard]] bool terminated() const {
+        return wait_for() == std::future_status::ready;
+    }
+
     [[nodiscard]] bool is_quiet() {
         return !has_incomplete_response() && !has_incomplete_resultset();
+    }
+
+    /**
+     * @brief Register this in the session_context.
+     * @param me the shared_ptr of this object
+     */
+    void register_worker_in_context(const std::shared_ptr<worker_common>& me) {
+        if (me.get() != this) {
+            throw std::runtime_error("invalid argument");
+        }
+        session_context_->set_worker(me);
     }
 
 protected:

@@ -13,6 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <thread>
+#include <chrono>
+
 #include <tateyama/session/service/bridge.h>
 
 #include <tateyama/framework/server.h>
@@ -92,14 +95,21 @@ public:
             session_id_ = id;
         };
         status body_head(std::string_view body_head) override { return status::ok; }
-        status body(std::string_view body) override { body_ = body;  return status::ok; }
+        status body(std::string_view body) override { body_ = body; body_arrived_ = true; return status::ok; }
         void error(proto::diagnostics::Record const& record) override {}
         status acquire_channel(std::string_view name, std::shared_ptr<api::server::data_channel>& ch) override { return status::ok; }
         status release_channel(api::server::data_channel& ch) override { return status::ok; }
         bool check_cancel() const override { return false; }
-
+        std::string& wait_and_get_body() {
+            while (!body_arrived_) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            }
+            return body_;
+        }
         std::size_t session_id_{};
         std::string body_{};
+    private:
+        bool body_arrived_{};
     };
 
 private:
@@ -329,7 +339,7 @@ TEST_F(session_test, session_set_variable) {
         EXPECT_EQ(10, svrres->session_id_);
         auto& body = svrres->body_;
 
-        ::tateyama::proto::session::response::SessionGetVariable svrs{};
+        ::tateyama::proto::session::response::SessionSetVariable svrs{};
         EXPECT_TRUE(svrs.ParseFromString(body));
         EXPECT_TRUE(svrs.has_success());
     }
@@ -399,10 +409,10 @@ TEST_F(session_test, session_shutdown) {
 
     (*router)(svrreq, svrres);
     EXPECT_EQ(10, svrres->session_id_);
-    auto& body = svrres->body_;
+    auto& body = svrres->wait_and_get_body();
     EXPECT_EQ(tateyama::session::shutdown_request_type::graceful, context->shutdown_request());
 
-    ::tateyama::proto::session::response::SessionGetVariable shrs{};
+    ::tateyama::proto::session::response::SessionShutdown shrs{};
     EXPECT_TRUE(shrs.ParseFromString(body));
     EXPECT_TRUE(shrs.has_success());
 

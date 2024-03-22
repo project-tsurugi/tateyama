@@ -139,6 +139,7 @@ public:
                 worker_entry = std::make_shared<Worker>(*router_, session_id, std::move(wire), status_->database_info(), session_);
                 worker_entry->invoke([this, index, &connection_queue]{
                     std::shared_ptr<Worker> worker = workers_.at(index);
+                    worker->register_worker_in_context(worker);
                     worker->run();
                     if (!worker->is_quiet()) {
                         std::unique_lock<std::mutex> lock(mtx_undertakers_);

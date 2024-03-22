@@ -88,7 +88,7 @@ class ipc_session_test : public ::testing::Test {
 
     virtual void TearDown() {
         tateyama::server::ipc_listener_for_session_test::wait(*worker_);
-        
+
         rv_ = system("if [ -f /dev/shm/ipc_session_test ]; then rm -f /dev/shm/ipc_session_test; fi");
     }
 
@@ -112,7 +112,7 @@ TEST_F(ipc_session_test, cancel_request) {
     endpoint_request.set_allocated_cancel(&cancel);
     client_->send(tateyama::framework::service_id_endpoint_broker, endpoint_request.SerializeAsString());
     endpoint_request.release_cancel();
-    
+
     // client part (receive)
     std::string res{};
     tateyama::proto::framework::response::Header::PayloadType type{};
@@ -135,7 +135,8 @@ TEST_F(ipc_session_test, shutdown_after_request) {
     }
 
     // shutdown request
-    session_bridge_->shutdown(std::string(":") + std::to_string(my_session_id), session::shutdown_request_type::forceful);
+    std::shared_ptr<tateyama::session::session_context> session_context{};
+    session_bridge_->session_shutdown(std::string(":") + std::to_string(my_session_id), session::shutdown_request_type::forceful, session_context);
 
     // client part (receive)
     std::string res{};
@@ -151,7 +152,8 @@ TEST_F(ipc_session_test, shutdown_after_request) {
 
 TEST_F(ipc_session_test, shutdown_before_request) {
     // shutdown request
-    session_bridge_->shutdown(std::string(":") + std::to_string(my_session_id), session::shutdown_request_type::forceful);
+    std::shared_ptr<tateyama::session::session_context> session_context{};
+    session_bridge_->session_shutdown(std::string(":") + std::to_string(my_session_id), session::shutdown_request_type::forceful, session_context);
 
     // ensure shutdown request has been processed by the worker
     std::this_thread::sleep_for(std::chrono::milliseconds(2500));

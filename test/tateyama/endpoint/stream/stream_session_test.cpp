@@ -164,7 +164,8 @@ TEST_F(stream_session_test, shutdown_after_request) {
         }
 
         // shutdown request
-        if (auto rv = session_bridge_->shutdown(std::string(":") + std::to_string(my_session_id), session::shutdown_request_type::forceful); rv) {
+        std::shared_ptr<tateyama::session::session_context> session_context{};
+        if (auto rv = session_bridge_->session_shutdown(std::string(":") + std::to_string(my_session_id), session::shutdown_request_type::forceful, session_context); rv) {
             FAIL();
         }
 
@@ -187,7 +188,8 @@ TEST_F(stream_session_test, shutdown_after_request) {
 TEST_F(stream_session_test, shutdown_before_request) {
     try {
         // shutdown request
-        if (auto rv = session_bridge_->shutdown(std::string(":") + std::to_string(my_session_id), session::shutdown_request_type::forceful); rv) {
+        std::shared_ptr<tateyama::session::session_context> session_context{};
+        if (auto rv = session_bridge_->session_shutdown(std::string(":") + std::to_string(my_session_id), session::shutdown_request_type::forceful, session_context); rv) {
             FAIL();
         }
 
