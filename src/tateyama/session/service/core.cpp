@@ -13,6 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <thread>
+
 #include <tateyama/session/service/core.h>
 
 #include <tateyama/api/configuration.h>
@@ -22,6 +24,9 @@
 #include <tateyama/proto/session/request.pb.h>
 #include <tateyama/proto/session/response.pb.h>
 #include <tateyama/proto/session/diagnostic.pb.h>
+
+#include "tateyama/session/resource/context_impl.h"
+#include "tateyama/endpoint/common/worker_common.h"
 
 namespace tateyama::session::service {
 
@@ -62,7 +67,7 @@ bool tateyama::session::service::core::operator()(const std::shared_ptr<request>
         if (!rv) {
             res->body(rs.SerializeAsString());
         } else {
-            send_error<tateyama::proto::session::response::SessionGet>(res, rv.value());
+            send_error<tateyama::proto::session::response::SessionList>(res, rv.value());
             return_code = false;
         }
         rs.clear_success();
@@ -82,17 +87,31 @@ bool tateyama::session::service::core::operator()(const std::shared_ptr<request>
             type = tateyama::session::shutdown_request_type::forceful;
             break;
         default:
-            send_error<tateyama::proto::session::response::SessionSetVariable>(res);
+            send_error<tateyama::proto::session::response::SessionShutdown>(res);
             return false;
         }
-        auto rv = resource_->shutdown(cmd.session_specifier(), type);
+        std::shared_ptr<tateyama::session::session_context> session_context{};
+        auto rv = resource_->session_shutdown(cmd.session_specifier(), type, session_context);
         if (!rv) {
-            tateyama::proto::session::response::SessionSetVariable rs{};
-            rs.mutable_success();
-            res->body(rs.SerializeAsString());
-            rs.clear_success();
+            std::thread th([res, session_context]{
+                while (true) {
+                    auto* session_context_impl = reinterpret_cast<tateyama::session::resource::session_context_impl*>(session_context.get());  // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
+                    auto worker = session_context_impl->get_session_worker();
+                    if (!worker) {
+                        break;
+                    }
+                    if (worker->terminated()) {
+                        break;
+                    }
+                }
+                tateyama::proto::session::response::SessionShutdown rs{};
+                rs.mutable_success();
+                res->body(rs.SerializeAsString());
+                rs.clear_success();
+            });
+            th.detach();
         } else {
-            send_error<tateyama::proto::session::response::SessionSetVariable>(res, rv.value());
+            send_error<tateyama::proto::session::response::SessionShutdown>(res, rv.value());
             return false;
         }
         break;

@@ -91,7 +91,7 @@ public:
     /**
      * @brief handle a SessionShutdown command
      */
-    std::optional<tateyama::proto::session::diagnostic::ErrorCode> shutdown(std::string_view session_specifier, shutdown_request_type type);
+    std::optional<tateyama::proto::session::diagnostic::ErrorCode> session_shutdown(std::string_view session_specifier, shutdown_request_type type, std::shared_ptr<session_context>& context);
 
     /**
      * @brief handle a SessionSetVariable command

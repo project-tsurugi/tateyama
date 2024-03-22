@@ -41,9 +41,6 @@ class alignas(64) Worker : public tateyama::endpoint::common::worker_common {
     void run();
     bool terminate(tateyama::session::shutdown_request_type type = tateyama::session::shutdown_request_type::graceful);
     [[nodiscard]] std::size_t session_id() const noexcept { return session_id_; }
-    [[nodiscard]] bool terminated() const {
-        return wait_for() == std::future_status::ready;
-    }
 
     friend class ipc_provider;
 
