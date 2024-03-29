@@ -130,8 +130,9 @@ public:
                         }
                     }
                 });
-                if (!stream) {
-                    break;  // received termination request
+                if (!stream) {  // received termination request.
+                    terminate_workers();
+                    break;
                 }
             } catch (std::exception& ex) {
                 LOG_LP(ERROR) << ex.what();
@@ -193,10 +194,31 @@ private:
     const std::shared_ptr<status_info::resource::bridge> status_;
     const std::shared_ptr<tateyama::session::resource::bridge> session_;
     std::unique_ptr<connection_socket> connection_socket_{};
-    std::vector<std::shared_ptr<stream_worker>> workers_{};
+    std::vector<std::shared_ptr<stream_worker>> workers_{};  // accessed only by the listner thread, thus mutual exclusion in unnecessary.
     std::set<std::shared_ptr<stream_worker>, tateyama::endpoint::common::pointer_comp<stream_worker>> undertakers_{};
 
     boost::barrier sync{2};
+
+    void terminate_workers() {
+        for (auto& worker : workers_) {
+            if (worker) {
+                worker->terminate();
+                bool message_output{false};
+                while (true) {
+                    if (auto rv = worker->wait_for(); rv != std::future_status::ready) {
+                        if (!message_output) {
+                            VLOG_LP(log_trace) << "wait for remaining worker thread, session id = " << worker->session_id();
+                            message_output = true;
+                        }
+                        std::this_thread::sleep_for(std::chrono::milliseconds(20));
+                        continue;
+                    }
+                    break;
+                }
+            }
+        }
+        workers_.clear();
+    }
 };
 
 }

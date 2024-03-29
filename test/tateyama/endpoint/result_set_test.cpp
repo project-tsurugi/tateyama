@@ -113,7 +113,7 @@ TEST_F(result_set_test, normal) {
 
     std::stringstream expected_resultset_wire_name{};
     tateyama::endpoint::common::header_content hc{};
-    tateyama::endpoint::common::append_response_header(expected_resultset_wire_name, resultset_wire_name_, hc);
+    tateyama::endpoint::common::append_response_header(expected_resultset_wire_name, resultset_wire_name_, hc, ::tateyama::proto::framework::response::Header::SERVICE_RESULT);
     EXPECT_EQ(r_name, expected_resultset_wire_name.str());
     auto resultset_wires =
         wire_->create_resultset_wires_for_client(resultset_wire_name_);
@@ -135,7 +135,7 @@ TEST_F(result_set_test, normal) {
 
     std::stringstream expected{};
     tateyama::endpoint::common::header_content hc2{};
-    tateyama::endpoint::common::append_response_header(expected, response_test_message_, hc2);
+    tateyama::endpoint::common::append_response_header(expected, response_test_message_, hc2, ::tateyama::proto::framework::response::Header::SERVICE_RESULT);
     EXPECT_EQ(r_msg, expected.str());
 }
 
@@ -191,7 +191,7 @@ TEST_F(result_set_test, large) {
 
     std::stringstream expected_resultset_wire_name{};
     tateyama::endpoint::common::header_content hc{};
-    tateyama::endpoint::common::append_response_header(expected_resultset_wire_name, resultset_wire_name_, hc);
+    tateyama::endpoint::common::append_response_header(expected_resultset_wire_name, resultset_wire_name_, hc, ::tateyama::proto::framework::response::Header::SERVICE_RESULT);
     EXPECT_EQ(r_name, expected_resultset_wire_name.str());
     auto resultset_wires =
         wire_->create_resultset_wires_for_client(resultset_wire_name_);
@@ -215,7 +215,7 @@ TEST_F(result_set_test, large) {
 
     std::stringstream expected{};
     tateyama::endpoint::common::header_content hc2{};
-    tateyama::endpoint::common::append_response_header(expected, response_test_message_, hc2);
+    tateyama::endpoint::common::append_response_header(expected, response_test_message_, hc2, ::tateyama::proto::framework::response::Header::SERVICE_RESULT);
     EXPECT_EQ(r_msg, expected.str());
 }
 

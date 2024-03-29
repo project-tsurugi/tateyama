@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2023 Project Tsurugi.
+ * Copyright 2018-2024 Project Tsurugi.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,6 @@
 #include "tateyama/endpoint/stream/stream.h"
 
 namespace tateyama::endpoint::stream::bootstrap {
-class stream_provider;
 
 class alignas(64) stream_worker : public tateyama::endpoint::common::worker_common {
  public:
@@ -51,7 +50,8 @@ class alignas(64) stream_worker : public tateyama::endpoint::common::worker_comm
     }
 
     void run();
-    friend class stream_provider;
+    bool terminate(tateyama::session::shutdown_request_type type = tateyama::session::shutdown_request_type::graceful);
+    [[nodiscard]] std::size_t session_id() const noexcept { return session_id_; }
 
  private:
     tateyama::framework::routing_service& service_;

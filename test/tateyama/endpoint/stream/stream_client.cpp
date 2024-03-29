@@ -66,7 +66,9 @@ stream_client::send(const std::uint8_t type, const std::uint16_t slot, std::stri
     return true;
 }
 
-bool stream_client::send(const std::size_t tag, std::string_view message) {
+static constexpr std::size_t stream_test_index = 135;
+
+bool stream_client::send(const std::size_t tag, std::string_view message, std::size_t index_offset) {
     ::tateyama::proto::framework::request::Header hdr{};
     hdr.set_service_id(tag);
     std::stringstream ss{};
@@ -77,7 +79,7 @@ bool stream_client::send(const std::size_t tag, std::string_view message) {
         throw std::runtime_error("payload serialize error");
     }
     auto request_message = ss.str();
-    return send(REQUEST_SESSION_PAYLOAD, 1, request_message);
+    return send(REQUEST_SESSION_PAYLOAD, stream_test_index + index_offset, request_message);
 }
 
 struct parse_response_result {

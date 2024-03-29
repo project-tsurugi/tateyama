@@ -38,7 +38,7 @@ public:
     ipc_client(std::string_view database_name, std::size_t session_id, tateyama::proto::endpoint::request::Handshake& hs);
     ipc_client(std::string_view database_name, std::size_t session_id) : ipc_client(database_name, session_id, default_endpoint_handshake_) {
     }
-    void send(const std::size_t tag, const std::string &message);
+    void send(const std::size_t tag, const std::string &message, std::size_t index_offset = 0);
     void receive(std::string &message);
     void receive(std::string &message, tateyama::proto::framework::response::Header::PayloadType& type);
 

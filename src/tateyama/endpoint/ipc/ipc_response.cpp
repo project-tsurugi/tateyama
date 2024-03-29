@@ -30,13 +30,13 @@ namespace tateyama::endpoint::ipc {
 tateyama::status ipc_response::body(std::string_view body) {
     bool expected = false;
     if (completed_.compare_exchange_strong(expected, true)) {
-        VLOG_LP(log_trace) << static_cast<const void*>(server_wire_.get()) << " length = " << body.length();  //NOLINT
+        VLOG_LP(log_trace) << static_cast<const void*>(server_wire_.get()) << " length = " << body.length() << " slot = " << index_;  //NOLINT
         clean_up_();
 
         std::stringstream ss{};
         endpoint::common::header_content arg{};
         arg.session_id_ = session_id_;
-        if(auto res = endpoint::common::append_response_header(ss, body, arg); ! res) {
+        if(auto res = endpoint::common::append_response_header(ss, body, arg, ::tateyama::proto::framework::response::Header::SERVICE_RESULT); ! res) {
             LOG_LP(ERROR) << "error formatting response message";
             return status::unknown;
         }
@@ -53,12 +53,12 @@ tateyama::status ipc_response::body_head(std::string_view body_head) {
         LOG_LP(ERROR) << "request correspoinding to the response has been canceled";
         return status::unknown;
     }
-    VLOG_LP(log_trace) << static_cast<const void*>(server_wire_.get());  //NOLINT
+    VLOG_LP(log_trace) << static_cast<const void*>(server_wire_.get()) << " slot = " << index_;  //NOLINT
 
     std::stringstream ss{};
     endpoint::common::header_content arg{};
     arg.session_id_ = session_id_;
-    if(auto res = endpoint::common::append_response_header(ss, body_head, arg); ! res) {
+    if(auto res = endpoint::common::append_response_header(ss, body_head, arg, ::tateyama::proto::framework::response::Header::SERVICE_RESULT); ! res) {
         LOG_LP(ERROR) << "error formatting response message";
         return status::unknown;
     }
@@ -70,7 +70,7 @@ tateyama::status ipc_response::body_head(std::string_view body_head) {
 void ipc_response::error(proto::diagnostics::Record const& record) {
     bool expected = false;
     if (completed_.compare_exchange_strong(expected, true)) {
-        VLOG_LP(log_trace) << static_cast<const void*>(server_wire_.get());  //NOLINT
+        VLOG_LP(log_trace) << static_cast<const void*>(server_wire_.get()) << " slot = " << index_;  //NOLINT
         clean_up_();
 
         std::string s{};

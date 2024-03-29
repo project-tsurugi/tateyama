@@ -37,7 +37,7 @@ tateyama::status stream_response::body(std::string_view body) {
         std::stringstream ss{};
         endpoint::common::header_content arg{};
         arg.session_id_ = session_id_;
-        if(auto res = endpoint::common::append_response_header(ss, body, arg); ! res) {
+        if(auto res = endpoint::common::append_response_header(ss, body, arg, ::tateyama::proto::framework::response::Header::SERVICE_RESULT); ! res) {
             LOG_LP(ERROR) << "error formatting response message";
             return status::unknown;
         }
@@ -57,7 +57,7 @@ tateyama::status stream_response::body_head(std::string_view body_head) {
     std::stringstream ss{};
     endpoint::common::header_content arg{};
     arg.session_id_ = session_id_;
-    if(auto res = endpoint::common::append_response_header(ss, body_head, arg); ! res) {
+    if(auto res = endpoint::common::append_response_header(ss, body_head, arg, ::tateyama::proto::framework::response::Header::SERVICE_RESULT); ! res) {
         LOG_LP(ERROR) << "error formatting response message";
         return status::unknown;
     }

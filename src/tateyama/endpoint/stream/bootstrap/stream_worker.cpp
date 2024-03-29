@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2023 Project Tsurugi.
+ * Copyright 2018-2024 Project Tsurugi.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -81,43 +81,36 @@ void stream_worker::run()
         case tateyama::endpoint::stream::stream_socket::await_result::payload:
         {
             auto request = std::make_shared<stream_request>(*session_stream_, payload, database_info_, session_info_);
-            auto response = std::make_shared<stream_response>(session_stream_, slot, [this, slot](){remove_response(slot);});
-            bool break_while{false};
+            auto response = std::make_shared<stream_response>(session_stream_, slot, [this, slot](){remove_reqres(slot);});
+            register_reqres(slot,
+                            static_cast<std::shared_ptr<tateyama::api::server::request>>(request),
+                            static_cast<std::shared_ptr<tateyama::endpoint::common::response>>(response));
             if (request->service_id() != tateyama::framework::service_id_endpoint_broker) {
-                switch (handle_shutdown()) {
-                case shutdown_consequence::keep_working:
-                    register_response(slot, static_cast<std::shared_ptr<tateyama::endpoint::common::response>>(response));
-                    if(!service_(static_cast<std::shared_ptr<tateyama::api::server::request>>(request),
-                                 static_cast<std::shared_ptr<tateyama::api::server::response>>(std::move(response)))) {
-                        VLOG_LP(log_info) << "terminate worker because service returns an error";
-                        break_while = true;
+                if (!is_shuttingdown()) {
+                    if(service_(static_cast<std::shared_ptr<tateyama::api::server::request>>(request),
+                                static_cast<std::shared_ptr<tateyama::api::server::response>>(std::move(response)))) {
+                        continue;
                     }
-                    break;
-                case shutdown_consequence::postpone:
+                    VLOG_LP(log_info) << "terminate worker because service returns an error";
+                } else {
                     notify_client(response.get(), tateyama::proto::diagnostics::SESSION_CLOSED, "");
-                    break;
-                case shutdown_consequence::immediate:
-                    notify_client(response.get(), tateyama::proto::diagnostics::SESSION_CLOSED, "");
-                    break_while = true;
-                    break;
+                    continue;
                 }
             } else {
-                if (!endpoint_service(static_cast<std::shared_ptr<tateyama::api::server::request>>(request),
-                                      static_cast<std::shared_ptr<tateyama::api::server::response>>(std::move(response)),
-                                      slot)) {
-                    VLOG_LP(log_info) << "terminate worker because endpoint service returns an error";
-                    break;
+                if (endpoint_service(static_cast<std::shared_ptr<tateyama::api::server::request>>(request),
+                                     static_cast<std::shared_ptr<tateyama::api::server::response>>(std::move(response)),
+                                     slot)) {
+                    continue;
                 }
+                VLOG_LP(log_info) << "terminate worker because endpoint service returns an error";
             }
             request = nullptr;
-            if (!break_while) {
-                continue;
-            }
             break;
         }
 
         case tateyama::endpoint::stream::stream_socket::await_result::timeout:
-            if (handle_shutdown() == shutdown_consequence::immediate) {
+            care_reqreses();
+            if (is_shuttingdown() && is_completed()) {
                 VLOG_LP(log_trace) << "received and completed shutdown request: session_id = " << std::to_string(session_id_);
                 break;
             }
@@ -134,6 +127,12 @@ void stream_worker::run()
     tateyama::endpoint::altimeter::session_end(database_info_, session_info_);
 #endif
     VLOG(log_debug_timing_event) << "/:tateyama:timing:session:finished " << session_id_;
+}
+
+bool stream_worker::terminate(tateyama::session::shutdown_request_type type) {
+    VLOG_LP(log_trace) << "send terminate request: session_id = " << std::to_string(session_id_);
+
+    return request_shutdown(type);
 }
 
 }

@@ -22,7 +22,6 @@
 #include "server_wires_impl.h"
 
 namespace tateyama::endpoint::ipc::bootstrap {
-class ipc_provider;
 
 class alignas(64) Worker : public tateyama::endpoint::common::worker_common {
  public:
@@ -41,8 +40,6 @@ class alignas(64) Worker : public tateyama::endpoint::common::worker_common {
     void run();
     bool terminate(tateyama::session::shutdown_request_type type = tateyama::session::shutdown_request_type::graceful);
     [[nodiscard]] std::size_t session_id() const noexcept { return session_id_; }
-
-    friend class ipc_provider;
 
  private:
     tateyama::framework::routing_service& service_;

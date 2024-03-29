@@ -37,7 +37,7 @@
 
 #include "tateyama/endpoint/common/logging.h"
 #include "tateyama/endpoint/common/pointer_comp.h"
-#include "worker.h"
+#include "ipc_worker.h"
 
 namespace tateyama::endpoint::ipc::bootstrap {
 
@@ -206,11 +206,11 @@ private:
         return undertakers_.empty();
     }
     void terminate_workers() {
-        for (auto& worker : workers_) {
+        for (auto&& worker : workers_) {
             if (worker) {
                 worker->terminate();
+                bool message_output{false};
                 while (true) {
-                    bool message_output{false};
                     if (auto rv = worker->wait_for(); rv != std::future_status::ready) {
                         if (!message_output) {
                             VLOG_LP(log_trace) << "wait for remaining worker thread, session id = " << worker->session_id();

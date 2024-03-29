@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "tateyama/endpoint/ipc/bootstrap/worker.h"
+#include "tateyama/endpoint/ipc/bootstrap/ipc_worker.h"
 #include "tateyama/endpoint/header_utils.h"
 #include <tateyama/proto/endpoint/request.pb.h>
 #include "tateyama/status/resource/database_info_impl.h"

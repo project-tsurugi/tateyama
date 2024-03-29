@@ -45,13 +45,14 @@ ipc_client::ipc_client(std::string_view name, std::size_t session_id, tateyama::
 
 static constexpr tsubakuro::common::wire::message_header::index_type ipc_test_index = 135;
 
-void ipc_client::send(const std::size_t tag, const std::string &message) {
+void ipc_client::send(const std::size_t tag, const std::string &message, std::size_t index_offset) {
     request_header_content hdr { session_id_, tag };
     std::stringstream ss { };
     append_request_header(ss, message, hdr);
     auto request_message = ss.str();
-    request_wire_->write(reinterpret_cast<const signed char*>(request_message.data()), request_message.length(),
-            ipc_test_index);
+    request_wire_->write(reinterpret_cast<const signed char*>(request_message.data()),
+                         request_message.length(),
+                         ipc_test_index + index_offset);
 }
 
 /*

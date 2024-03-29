@@ -98,7 +98,7 @@ TEST_F(response_only_test, normal) {
 
     std::stringstream expected{};
     tateyama::endpoint::common::header_content hc{10};
-    tateyama::endpoint::common::append_response_header(expected, response_test_message_, hc);
+    tateyama::endpoint::common::append_response_header(expected, response_test_message_, hc, ::tateyama::proto::framework::response::Header::SERVICE_RESULT);
     EXPECT_EQ(r_msg, expected.str());
 }
 

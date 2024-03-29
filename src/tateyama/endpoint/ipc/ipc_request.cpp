@@ -23,13 +23,13 @@ namespace tateyama::endpoint::ipc {
 
 std::string_view
 ipc_request::payload() const {
-    VLOG_LP(log_trace) << static_cast<const void*>(&server_wire_) << " length = " << payload_.length();  //NOLINT
+    VLOG_LP(log_trace) << static_cast<const void*>(&server_wire_) << " length = " << payload_.length() << " slot = " << index_;  //NOLINT
     return payload_;
 }
 
 void
 ipc_request::dispose() {
-    VLOG_LP(log_trace) << static_cast<const void*>(&server_wire_);  //NOLINT
+    VLOG_LP(log_trace) << static_cast<const void*>(&server_wire_) << " slot = " << index_;  //NOLINT
 }
 
 std::size_t ipc_request::session_id() const {
