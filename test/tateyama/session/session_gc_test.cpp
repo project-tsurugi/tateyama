@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2023 Project Tsurugi.
+ * Copyright 2018-2024 Project Tsurugi.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "session_test_common.h"
+
 #include <tateyama/session/service/bridge.h>
 
 #include <tateyama/framework/server.h>
@@ -21,15 +23,10 @@
 #include <tateyama/proto/session/request.pb.h>
 #include <tateyama/proto/session/response.pb.h>
 
-#include "tateyama/status/resource/database_info_impl.h"
-#include "tateyama/endpoint//common/session_info_impl.h"
-
 #include <gtest/gtest.h>
 #include <tateyama/utils/test_utils.h>
 
 namespace tateyama::session {
-
-using namespace std::literals::string_literals;
 
 class session_gc_test :
     public ::testing::Test,
@@ -44,64 +41,6 @@ public:
         temporary_.clean();
     }
 
-    class test_request : public api::server::request {
-    public:
-        test_request(
-            std::size_t session_id,
-            std::size_t service_id,
-            std::string_view payload
-        ) :
-            session_id_(session_id),
-            service_id_(service_id),
-            payload_(payload)
-        {}
-
-        [[nodiscard]] std::size_t session_id() const override {
-            return session_id_;
-        }
-
-        [[nodiscard]] std::size_t service_id() const override {
-            return service_id_;
-        }
-
-        [[nodiscard]] std::string_view payload() const override {
-            return payload_;
-        }
-
-        tateyama::api::server::database_info const& database_info() const noexcept override {
-            return database_info_;
-        }
-
-        tateyama::api::server::session_info const& session_info() const noexcept override {
-            return session_info_;
-        }
-
-        std::size_t session_id_{};
-        std::size_t service_id_{};
-        std::string payload_{};
-
-        tateyama::status_info::resource::database_info_impl database_info_{};
-        tateyama::endpoint::common::session_info_impl session_info_{};
-    };
-
-    class test_response : public api::server::response {
-    public:
-        test_response() = default;
-
-        void session_id(std::size_t id) override {
-            session_id_ = id;
-        };
-        status body_head(std::string_view body_head) override { return status::ok; }
-        status body(std::string_view body) override { body_ = body;  return status::ok; }
-        void error(proto::diagnostics::Record const& record) override {}
-        status acquire_channel(std::string_view name, std::shared_ptr<api::server::data_channel>& ch) override { return status::ok; }
-        status release_channel(api::server::data_channel& ch) override { return status::ok; }
-        bool check_cancel() const override { return false; }
-
-        std::size_t session_id_{};
-        std::string body_{};
-    };
-
 private:
     tateyama::endpoint::common::session_info_impl session_info_for_existing_session_{111, "IPC", "9999", "label_fot_test", "application_for_test", "user_fot_test"};
     std::vector<std::tuple<std::string, tateyama::session::session_variable_set::variable_type, tateyama::session::session_variable_set::value_type>> variable_declarations_ {
@@ -111,8 +50,6 @@ private:
 protected:
     std::shared_ptr<tateyama::session::resource::session_context_impl> session_context_{};
 };
-
-using namespace std::string_view_literals;
 
 TEST_F(session_gc_test, session_list) {
     auto cfg = api::configuration::create_configuration("", tateyama::test::default_configuration_for_tests);

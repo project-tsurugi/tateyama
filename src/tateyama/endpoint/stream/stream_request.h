@@ -17,7 +17,7 @@
 
 #include <string_view>
 
-#include <tateyama/api/server/request.h>
+#include <tateyama/endpoint/common/request.h>
 
 #include "stream.h"
 #include "tateyama/endpoint/common/endpoint_proto_utils.h"
@@ -27,11 +27,11 @@ namespace tateyama::endpoint::stream {
 /**
  * @brief request object for stream_endpoint
  */
-class alignas(64) stream_request : public tateyama::api::server::request {
+class alignas(64) stream_request : public tateyama::endpoint::common::request {
 public:
     stream_request() = delete;
-    explicit stream_request(stream_socket& session_socket, std::string& payload, const tateyama::api::server::database_info& database_info, const tateyama::api::server::session_info& session_info)
-        : session_socket_(session_socket), database_info_(database_info), session_info_(session_info) {
+    explicit stream_request(stream_socket& session_socket, std::string& payload, const tateyama::api::server::database_info& database_info, const tateyama::api::server::session_info& session_info, tateyama::api::server::session_store& session_store)
+        : tateyama::endpoint::common::request(database_info, session_info, session_store), session_socket_(session_socket) {
         endpoint::common::parse_result res{};
         endpoint::common::parse_header(payload, res); // TODO handle error
         payload_ = res.payload_;
@@ -43,13 +43,8 @@ public:
     [[nodiscard]] std::size_t session_id() const override;
     [[nodiscard]] std::size_t service_id() const override;
 
-    [[nodiscard]] tateyama::api::server::database_info const& database_info() const noexcept override;
-    [[nodiscard]] tateyama::api::server::session_info const& session_info() const noexcept override;
-
 private:
     stream_socket& session_socket_;
-    const tateyama::api::server::database_info& database_info_;
-    const tateyama::api::server::session_info& session_info_;
 
     std::string_view payload_{};
     std::size_t session_id_{};

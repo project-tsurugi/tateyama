@@ -15,6 +15,11 @@
  */
 #pragma once
 
+#include <map>
+#include <shared_mutex>
+
+#include <tateyama/api/server/session_element.h>
+
 namespace tateyama::api::server {
 
 /**
@@ -35,7 +40,16 @@ public:
      * @returns false if another element already exists in this store
      */
     template<class T> // static_assert(std::is_base_of_v<session_element, T>)
-    bool put(id_type element_id, std::shared_ptr<T> element);
+    bool put(id_type element_id, std::shared_ptr<T> element) {
+        static_assert(std::is_base_of<session_element, T>::value, "T is not a derived class of session_elemsnt");
+        std::lock_guard<std::shared_mutex> lock(mtx_);
+
+        if (auto itr = element_map_.find(element_id); itr != element_map_.end()) {
+            return false;
+        }
+        element_map_.emplace(element_id, element);
+        return true;
+    }
 
     /**
      * @brief obtains the stored session data.
@@ -45,7 +59,15 @@ public:
      * @returns empty std::shared_ptr if it is absent, or element type was mismatched
      */
     template<class T> // static_assert(std::is_base_of_v<session_element, T>)
-    [[nodiscard]] std::shared_ptr<T> find(id_type element_id) const;
+    [[nodiscard]] std::shared_ptr<T> find(id_type element_id) const {
+        static_assert(std::is_base_of<session_element, T>::value, "T is not a derived class of session_elemsnt");
+        std::shared_lock<std::shared_mutex> lock(const_cast<session_store*>(this)->mtx_);
+
+        if (auto itr = element_map_.find(element_id); itr != element_map_.end()) {
+            return std::dynamic_pointer_cast<T>(itr->second);
+        }
+        return {};
+    }
 
     /**
      * @brief obtains the stored session data, or creates new session data and register.
@@ -60,7 +82,16 @@ public:
      * @returns empty if the existing element type was mismatched
      */
     template<class T, class... Args> // static_assert(std::is_base_of_v<session_element, T>)
-    [[nodiscard]] std::shared_ptr<T> find_or_emplace(id_type element_id, Args&&...args);
+    [[nodiscard]] std::shared_ptr<T> find_or_emplace(id_type element_id, Args&&...args) {
+        static_assert(std::is_base_of<session_element, T>::value, "T is not a derived class of session_elemsnt");
+        std::shared_lock<std::shared_mutex> lock(mtx_);
+        
+        if (auto itr = element_map_.find(element_id); itr != element_map_.end()) {
+            return std::dynamic_pointer_cast<T>(itr->second);
+        }
+        element_map_.emplace(element_id, std::make_shared<T>(std::forward<Args>(args)...));
+        return {};
+    }
 
     /**
      * @brief removes the stored session data.
@@ -70,15 +101,35 @@ public:
      * @attention this never call session_element::dispose() for the removed.
      */
     template<class T> // static_assert(std::is_base_of_v<session_element, T>)
-    bool remove(id_type element_id);
+    bool remove(id_type element_id) {
+        static_assert(std::is_base_of<session_element, T>::value, "T is not a derived class of session_elemsnt");
+        std::lock_guard<std::shared_mutex> lock(mtx_);
+
+        if (auto itr = element_map_.find(element_id); itr != element_map_.end()) {
+            if (std::dynamic_pointer_cast<T>(itr->second)) {
+                element_map_.erase(itr);
+                return true;
+            }
+            return false;
+        }
+        return true;
+    }
 
     /**
      * @brief disposes underlying resources of this session store.
      * @throws std::runtime_error if failed to dispose this session store
      */
-    void dispose();
+    void dispose() {
+        std::lock_guard<std::shared_mutex> lock(mtx_);
 
-    // ...
+        for (auto&& e: element_map_) {
+            e.second->dispose();
+        }
+    }
+
+private:
+    std::map<id_type, std::shared_ptr<session_element>> element_map_{};
+    std::shared_mutex mtx_{};
 };
 
 }

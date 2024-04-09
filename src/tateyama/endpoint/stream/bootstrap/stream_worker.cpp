@@ -23,7 +23,7 @@
 
 namespace tateyama::endpoint::stream::bootstrap {
 
-void stream_worker::run()
+void stream_worker::do_work()
 {
     while (true) {
         std::uint16_t slot{};
@@ -32,7 +32,7 @@ void stream_worker::run()
 
         case tateyama::endpoint::stream::stream_socket::await_result::payload:
         {
-            stream_request request_obj{*session_stream_, payload, database_info_, session_info_};
+            stream_request request_obj{*session_stream_, payload, database_info_, session_info_, session_store_};
             stream_response response_obj{session_stream_, slot, [](){}};
 
             if (decline_) {
@@ -71,7 +71,7 @@ void stream_worker::run()
 
     VLOG(log_debug_timing_event) << "/:tateyama:timing:session:started " << std::to_string(session_id_);
 #ifdef ENABLE_ALTIMETER
-    tateyama::endpoint::altimeter::session_start(database_info_, session_info_);
+    tateyama::endpoint::altimeter::session_start(database_info_, session_info_, session_store_);
 #endif
     while(true) {
         std::uint16_t slot{};
@@ -80,15 +80,15 @@ void stream_worker::run()
         switch (session_stream_->await(slot, payload)) {
         case tateyama::endpoint::stream::stream_socket::await_result::payload:
         {
-            auto request = std::make_shared<stream_request>(*session_stream_, payload, database_info_, session_info_);
+            auto request = std::make_shared<stream_request>(*session_stream_, payload, database_info_, session_info_, session_store_);
             auto response = std::make_shared<stream_response>(session_stream_, slot, [this, slot](){remove_reqres(slot);});
             register_reqres(slot,
-                            static_cast<std::shared_ptr<tateyama::api::server::request>>(request),
-                            static_cast<std::shared_ptr<tateyama::endpoint::common::response>>(response));
+                            std::dynamic_pointer_cast<tateyama::api::server::request>(request),
+                            std::dynamic_pointer_cast<tateyama::endpoint::common::response>(response));
             if (request->service_id() != tateyama::framework::service_id_endpoint_broker) {
                 if (!is_shuttingdown()) {
-                    if(service_(static_cast<std::shared_ptr<tateyama::api::server::request>>(request),
-                                static_cast<std::shared_ptr<tateyama::api::server::response>>(std::move(response)))) {
+                    if(service_(std::dynamic_pointer_cast<tateyama::api::server::request>(request),
+                                std::dynamic_pointer_cast<tateyama::api::server::response>(response))) {
                         continue;
                     }
                     VLOG_LP(log_info) << "terminate worker because service returns an error";
@@ -97,14 +97,15 @@ void stream_worker::run()
                     continue;
                 }
             } else {
-                if (endpoint_service(static_cast<std::shared_ptr<tateyama::api::server::request>>(request),
-                                     static_cast<std::shared_ptr<tateyama::api::server::response>>(std::move(response)),
+                if (endpoint_service(std::dynamic_pointer_cast<tateyama::api::server::request>(request),
+                                     std::dynamic_pointer_cast<tateyama::api::server::response>(response),
                                      slot)) {
                     continue;
                 }
                 VLOG_LP(log_info) << "terminate worker because endpoint service returns an error";
             }
             request = nullptr;
+            response = nullptr;
             break;
         }
 

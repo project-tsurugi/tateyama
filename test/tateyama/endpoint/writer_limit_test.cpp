@@ -62,6 +62,7 @@ public:
 
     tateyama::status_info::resource::database_info_impl dmy_dbinfo_{};
     tateyama::endpoint::common::session_info_impl dmy_ssinfo_{};
+    tateyama::api::server::session_store dmy_ssstore_{};
 
     bool timeout(std::function<void()>&& test_behavior) {
         std::promise<bool> promisedFinished;
@@ -89,7 +90,7 @@ TEST_F(writer_limit_test, within_writers) {
     EXPECT_EQ(index_, h.get_idx());
     EXPECT_EQ(request_wire->payload(), request_message);
 
-    auto request = std::make_shared<ipc_request>(*wire_, h, dmy_dbinfo_, dmy_ssinfo_);
+    auto request = std::make_shared<ipc_request>(*wire_, h, dmy_dbinfo_, dmy_ssinfo_, dmy_ssstore_);
     auto response = std::make_shared<ipc_response>(wire_, h.get_idx(), [](){});
 
     std::array<std::shared_ptr<tateyama::api::server::data_channel>, writers> dcs{};
@@ -122,7 +123,7 @@ TEST_F(writer_limit_test, exceed_writers) {
     EXPECT_EQ(index_, h.get_idx());
     EXPECT_EQ(request_wire->payload(), request_message);
 
-    auto request = std::make_shared<ipc_request>(*wire_, h, dmy_dbinfo_, dmy_ssinfo_);
+    auto request = std::make_shared<ipc_request>(*wire_, h, dmy_dbinfo_, dmy_ssinfo_, dmy_ssstore_);
     auto response = std::make_shared<ipc_response>(wire_, h.get_idx(), [](){});
 
     std::array<std::shared_ptr<tateyama::api::server::data_channel>, writers+1> dcs{};

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2023 Project Tsurugi.
+ * Copyright 2018-2024 Project Tsurugi.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -120,16 +120,7 @@ public:
 
             std::shared_ptr<stream_socket> stream{};
             try {
-                stream = connection_socket_->accept([this](){
-                    for (auto it{undertakers_.begin()}, end{undertakers_.end()}; it != end; ) {
-                        if ((*it)->wait_for() == std::future_status::ready) {
-                            it = undertakers_.erase(it);
-                        }
-                        else {
-                            ++it;
-                        }
-                    }
-                });
+                stream = connection_socket_->accept([this](){care_undertakers();});
                 if (!stream) {  // received termination request.
                     terminate_workers();
                     break;
@@ -148,29 +139,40 @@ public:
                     found = true;
                     break;
                 }
-                if (auto rv = worker->wait_for(); rv == std::future_status::ready) {
-                    found = true;
-                    break;
-                }
             }
             if (!found) {
                 try {
                     auto worker_decline = std::make_shared<stream_worker>(*router_, session_id, std::move(stream), status_->database_info(), true);
                     auto* worker = worker_decline.get();
-                    undertakers_.emplace(std::move(worker_decline));
+                    {
+                        std::unique_lock<std::mutex> lock(mtx_undertakers_);
+                        undertakers_.emplace(std::move(worker_decline));
+                    }
                     worker->invoke([worker]{worker->run();});
                     LOG_LP(INFO) << "the number of sessions exceeded the limit (" << workers_.size() << ")";
                 } catch (std::runtime_error &ex) {
                     LOG_LP(ERROR) << ex.what();
                 }
             } else {
-                auto& worker_entry = workers_.at(index);
                 try {
-                    worker_entry = std::make_shared<stream_worker>(*router_, session_id, std::move(stream), status_->database_info(), false, session_);
+                    auto& worker_entry = workers_.at(index);
+                    {
+                        std::unique_lock<std::mutex> lock(mtx_workers_);
+                        worker_entry = std::make_shared<stream_worker>(*router_, session_id, std::move(stream), status_->database_info(), false, session_);
+                    }
                     worker_entry->invoke([this, index]{
-                        std::shared_ptr<stream_worker> worker = workers_.at(index);
+                        auto& worker = workers_.at(index);
                         worker->register_worker_in_context(worker);
                         worker->run();
+                        std::shared_ptr<stream_worker> worker_ptr{};
+                        {
+                            std::unique_lock<std::mutex> lock(mtx_workers_);
+                            worker_ptr = std::move(worker);
+                        }
+                        {
+                            std::unique_lock<std::mutex> lock(mtx_undertakers_);
+                            undertakers_.emplace(std::move(worker_ptr));
+                        }
                     });
                     session_id++;
                 } catch (std::exception& ex) {
@@ -178,6 +180,7 @@ public:
                 }
             }
         }
+        confirm_workers_termination();
     }
 
     void arrive_and_wait() {
@@ -196,28 +199,52 @@ private:
     std::unique_ptr<connection_socket> connection_socket_{};
     std::vector<std::shared_ptr<stream_worker>> workers_{};  // accessed only by the listner thread, thus mutual exclusion in unnecessary.
     std::set<std::shared_ptr<stream_worker>, tateyama::endpoint::common::pointer_comp<stream_worker>> undertakers_{};
+    std::mutex mtx_workers_{};
+    std::mutex mtx_undertakers_{};
 
     boost::barrier sync{2};
 
-    void terminate_workers() {
-        for (auto& worker : workers_) {
-            if (worker) {
-                worker->terminate();
-                bool message_output{false};
-                while (true) {
-                    if (auto rv = worker->wait_for(); rv != std::future_status::ready) {
-                        if (!message_output) {
-                            VLOG_LP(log_trace) << "wait for remaining worker thread, session id = " << worker->session_id();
-                            message_output = true;
-                        }
-                        std::this_thread::sleep_for(std::chrono::milliseconds(20));
-                        continue;
-                    }
-                    break;
-                }
+    bool care_undertakers() {
+        std::unique_lock<std::mutex> lock(mtx_undertakers_);
+        for (auto it{undertakers_.begin()}, end{undertakers_.end()}; it != end; ) {
+            if ((*it)->wait_for() == std::future_status::ready) {
+                it = undertakers_.erase(it);
+            }
+            else {
+                ++it;
             }
         }
-        workers_.clear();
+        return undertakers_.empty();
+    }
+    void terminate_workers() {
+        std::unique_lock<std::mutex> lock(mtx_workers_);
+        for (auto&& worker : workers_) {
+            if (worker) {
+                worker->terminate();
+            }
+        }
+    }
+    void confirm_workers_termination() {
+        bool message_output{false};
+        while (true) {
+            bool worker_remain{false};
+            for (auto&& worker : workers_) {
+                std::shared_ptr<stream_worker> worker_ptr = worker;
+                if (worker_ptr) {
+                    if (!message_output) {
+                        VLOG_LP(log_trace) << "wait for remaining worker thread, session id = " << worker->session_id();
+                        message_output = true;
+                    }
+                    std::this_thread::sleep_for(std::chrono::milliseconds(20));
+                }
+            }
+            if (!worker_remain) {
+                break;
+            }
+        }
+        while (!care_undertakers()) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(20));
+        }
     }
 };
 

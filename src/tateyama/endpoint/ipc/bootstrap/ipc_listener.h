@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2023 Project Tsurugi.
+ * Copyright 2018-2024 Project Tsurugi.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -135,15 +135,24 @@ public:
                 std::size_t index = connection_queue.accept(session_id);
                 VLOG_LP(log_trace) << "create session wire: " << session_name << " at index " << index;
                 status_->add_shm_entry(session_id, index);
+
                 auto& worker_entry = workers_.at(index);
-                worker_entry = std::make_shared<Worker>(*router_, session_id, std::move(wire), status_->database_info(), session_);
+                {
+                    std::unique_lock<std::mutex> lock(mtx_workers_);
+                    worker_entry = std::make_shared<Worker>(*router_, session_id, std::move(wire), status_->database_info(), session_);
+                }
                 worker_entry->invoke([this, index, &connection_queue]{
-                    std::shared_ptr<Worker> worker = workers_.at(index);
+                    auto& worker = workers_.at(index);
                     worker->register_worker_in_context(worker);
                     worker->run();
-                    if (!worker->is_quiet()) {
+                    std::shared_ptr<Worker> worker_ptr{};
+                    {
+                        std::unique_lock<std::mutex> lock(mtx_workers_);
+                        worker_ptr = std::move(worker);
+                    }
+                    {
                         std::unique_lock<std::mutex> lock(mtx_undertakers_);
-                        undertakers_.emplace(std::move(worker));
+                        undertakers_.emplace(std::move(worker_ptr));
                     }
                     connection_queue.disconnect(index);
                 });
@@ -153,6 +162,7 @@ public:
                 break;
             }
         }
+        confirm_workers_termination();
     }
 
     void terminate() {
@@ -166,6 +176,8 @@ public:
     void print_diagnostic(std::ostream& os) {
         os << "/:tateyama:ipc_endpoint print diagnostics start" << std::endl;
         bool cont{};
+
+        std::unique_lock<std::mutex> lock(mtx_workers_);
         for (auto && e : workers_) {
             if (std::shared_ptr<Worker> worker = e; worker) {
                 if (!worker->terminated()) {
@@ -190,6 +202,7 @@ private:
     std::string proc_mutex_file_;
     std::size_t datachannel_buffer_size_{};
     std::size_t max_datachannel_buffers_{};
+    std::mutex mtx_workers_{};
     std::mutex mtx_undertakers_{};
 
     boost::barrier sync{2};
@@ -206,24 +219,35 @@ private:
         return undertakers_.empty();
     }
     void terminate_workers() {
+        std::unique_lock<std::mutex> lock(mtx_workers_);
         for (auto&& worker : workers_) {
             if (worker) {
                 worker->terminate();
-                bool message_output{false};
-                while (true) {
-                    if (auto rv = worker->wait_for(); rv != std::future_status::ready) {
-                        if (!message_output) {
-                            VLOG_LP(log_trace) << "wait for remaining worker thread, session id = " << worker->session_id();
-                            message_output = true;
-                        }
-                        std::this_thread::sleep_for(std::chrono::milliseconds(20));
-                        continue;
-                    }
-                    break;
-                }
             }
         }
-        workers_.clear();
+    }
+    void confirm_workers_termination() {
+        bool message_output{false};
+        while (true) {
+            bool worker_remain{false};
+            for (auto&& worker : workers_) {
+                std::shared_ptr<Worker> worker_ptr = worker;
+                if (worker_ptr) {
+                    if (!message_output) {  // message output for the first worker only
+                        VLOG_LP(log_trace) << "wait for remaining worker thread, session id = " << worker_ptr->session_id();
+                        message_output = true;
+                    }
+                    worker_remain = true;
+                    std::this_thread::sleep_for(std::chrono::milliseconds(20));
+                }
+            }
+            if (!worker_remain) {
+                break;
+            }
+        }
+        while (!care_undertakers()) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(20));
+        }
     }
 };
 

@@ -20,6 +20,7 @@
 
 #include "database_info.h"
 #include "session_info.h"
+#include "session_store.h"
 
 namespace tateyama::api::server {
 
@@ -70,6 +71,12 @@ public:
      * @returns the current session information
      */
     [[nodiscard]] virtual tateyama::api::server::session_info const& session_info() const noexcept = 0;
+
+    /**
+     * @brief returns the current session store.
+     * @returns the current session store
+     */
+    [[nodiscard]] virtual tateyama::api::server::session_store& session_store() noexcept = 0;
 };
 
 }

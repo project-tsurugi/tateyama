@@ -49,7 +49,16 @@ class alignas(64) stream_worker : public tateyama::endpoint::common::worker_comm
         : stream_worker(service, session_id, std::move(stream), database_info, decline, nullptr) {
     }
 
-    void run();
+    void run() {
+        try {
+            do_work();
+        } catch(std::exception &ex) {
+            LOG(ERROR) << "ipc_endpoint worker thread got an exception: " << ex.what();
+        }
+        if (!decline_) {
+            dispose_session_store();
+        }
+    }
     bool terminate(tateyama::session::shutdown_request_type type = tateyama::session::shutdown_request_type::graceful);
     [[nodiscard]] std::size_t session_id() const noexcept { return session_id_; }
 
@@ -59,6 +68,7 @@ class alignas(64) stream_worker : public tateyama::endpoint::common::worker_comm
     const tateyama::api::server::database_info& database_info_;
     const bool decline_;
 
+    void do_work();
     void notify_of_decline(tateyama::api::server::response* response) {
         tateyama::proto::endpoint::response::Handshake rp{};
         auto re = rp.mutable_error();

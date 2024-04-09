@@ -27,7 +27,7 @@ public:
     session_element(session_element const&) = delete;
     session_element& operator=(session_element const&) = delete;
     session_element(session_element&&) noexcept = delete;
-    session_element& operator=session_element(session_element&&) noexcept = delete;
+    session_element& operator=(session_element&&) noexcept = delete;
     virtual ~session_element() = default;
 
     /**

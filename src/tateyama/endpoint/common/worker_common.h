@@ -25,21 +25,21 @@
 #include <mutex>
 
 #include <tateyama/status.h>
-#include <tateyama/api/server/request.h>
-#include <tateyama/api/server/response.h>
 #include <tateyama/framework/routing_service.h>
 #include <tateyama/framework/component_ids.h>
 #include <tateyama/status/resource/bridge.h>
 #include <tateyama/logging_helper.h>
 #include <tateyama/session/resource/bridge.h>
 #include <tateyama/session/variable_set.h>
+#include <tateyama/api/server/session_store.h>
 
 #include <tateyama/proto/endpoint/request.pb.h>
 #include <tateyama/proto/endpoint/response.pb.h>
 #include <tateyama/proto/diagnostics.pb.h>
 
+#include "request.h"
 #include "response.h"
-#include "tateyama/endpoint/common/session_info_impl.h"
+#include "session_info_impl.h"
 
 namespace tateyama::endpoint::common {
 
@@ -117,6 +117,13 @@ public:
         session_context_->set_worker(me);
     }
 
+    /**
+     * @brief dispose the session_elements in the session_store.
+     */
+    void dispose_session_store() {
+        session_store_.dispose();
+    }
+
 protected:
     const connection_type connection_type_; // NOLINT
     const std::size_t session_id_;          // NOLINT
@@ -134,6 +141,9 @@ protected:
 
     // for session management
     const std::shared_ptr<tateyama::session::resource::bridge> session_;  // NOLINT
+
+    // session store
+    tateyama::api::server::session_store session_store_{};  // NOLINT
 
     bool handshake(tateyama::api::server::request* req, tateyama::api::server::response* res) {
         if (req->service_id() != tateyama::framework::service_id_endpoint_broker) {

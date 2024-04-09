@@ -22,7 +22,7 @@
 #include <tateyama/api/server/request.h>
 
 #include "tateyama/status/resource/database_info_impl.h"
-#include "tateyama/endpoint//common/session_info_impl.h"
+#include "tateyama/endpoint/common/session_info_impl.h"
 
 namespace tateyama::endpoint::loopback {
 
@@ -71,6 +71,10 @@ public:
         return session_info_;
     }
 
+    [[nodiscard]] tateyama::api::server::session_store& session_store() noexcept override {
+        return session_store_;
+    }
+
 private:
     const std::size_t session_id_;
     const std::size_t service_id_;
@@ -78,6 +82,7 @@ private:
 
     const tateyama::status_info::resource::database_info_impl database_info_{};
     const tateyama::endpoint::common::session_info_impl session_info_{};
+    tateyama::api::server::session_store session_store_{};
 };
 
 } // namespace tateyama::endpoint::loopback

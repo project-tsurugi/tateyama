@@ -43,7 +43,7 @@ namespace tateyama::endpoint::ipc {
 
 static constexpr std::size_t my_session_id = 123;
 
-static constexpr std::string_view database_name = "ipc_sessionsession_test";
+static constexpr std::string_view database_name = "ipc_session_test";
 static constexpr std::size_t datachannel_buffer_size = 64 * 1024;
 static constexpr std::string_view request_test_message = "abcdefgh";
 static constexpr std::string_view response_test_message = "opqrstuvwxyz";
