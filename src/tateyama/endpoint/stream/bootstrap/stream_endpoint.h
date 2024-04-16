@@ -15,6 +15,7 @@
  */
 #pragma once
 
+#include <tateyama/api/configuration.h>
 #include <tateyama/framework/endpoint.h>
 #include <tateyama/framework/environment.h>
 #include "stream_listener.h"
@@ -52,8 +53,13 @@ public:
      */
     bool setup(environment& env) override {
         try {
-            // create listener object
-            listener_ = std::make_unique<tateyama::endpoint::stream::bootstrap::stream_listener>(env);
+            auto enabled_opt = env.configuration()->get_section("stream_endpoint")->get<bool>("enabled");
+            if (enabled_opt) {
+                if (enabled_ = enabled_opt.value(); enabled_) {
+                    // create listener object
+                    listener_ = std::make_unique<tateyama::endpoint::stream::bootstrap::stream_listener>(env);
+                }
+            }
             return true;
         } catch (std::exception &ex) {
             LOG_LP(ERROR) << ex.what();
@@ -65,8 +71,10 @@ public:
      * @brief start the component (the state will be `activated`)
      */
     bool start(environment&) override {
-        listener_thread_ = std::thread(std::ref(*listener_));
-        listener_->arrive_and_wait();
+        if (enabled_) {
+            listener_thread_ = std::thread(std::ref(*listener_));
+            listener_->arrive_and_wait();
+        }
         return true;
     }
 
@@ -74,14 +82,16 @@ public:
      * @brief shutdown the component (the state will be `deactivated`)
      */
     bool shutdown(environment&) override {
-        // For clean up, shutdown can be called multiple times with/without setup()/start().
-        if(listener_thread_.joinable()) {
-            if(listener_) {
-                listener_->terminate();
+        if (enabled_) {
+            // For clean up, shutdown can be called multiple times with/without setup()/start().
+            if(listener_thread_.joinable()) {
+                if(listener_) {
+                    listener_->terminate();
+                }
+                listener_thread_.join();
             }
-            listener_thread_.join();
+            listener_.reset();
         }
-        listener_.reset();
         return true;
     }
 
@@ -95,6 +105,7 @@ public:
 private:
     std::unique_ptr<tateyama::endpoint::stream::bootstrap::stream_listener> listener_;
     std::thread listener_thread_;
+    bool enabled_{true};
 };
 
 }
