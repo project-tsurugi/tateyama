@@ -254,4 +254,19 @@ TEST_F(configuration_test, rel_path_base_empty) {
     }
 }
 
+TEST_F(configuration_test, not_exist) {
+    std::string content{
+            "[sql]\n"
+            "default_partitions=\n"
+    };
+    std::stringstream ss0{content};
+    configuration::whole cfg{ss0, tateyama::test::default_configuration_for_tests};
+
+    auto section = cfg.get_section("sql");
+    ASSERT_TRUE(section);
+
+    auto value = section->get<bool>("property_not_exist");
+    ASSERT_FALSE(value);
+}
+
 }

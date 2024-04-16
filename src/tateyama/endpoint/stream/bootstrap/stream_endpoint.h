@@ -53,12 +53,12 @@ public:
      */
     bool setup(environment& env) override {
         try {
-            auto enabled_opt = env.configuration()->get_section("stream_endpoint")->get<bool>("enabled");
-            if (enabled_opt) {
-                if (enabled_ = enabled_opt.value(); enabled_) {
-                    // create listener object
-                    listener_ = std::make_unique<tateyama::endpoint::stream::bootstrap::stream_listener>(env);
-                }
+            if (auto enabled_opt = env.configuration()->get_section("stream_endpoint")->get<bool>("enabled"); enabled_opt) {
+                enabled_ = enabled_opt.value();
+            }
+            if (enabled_) {
+                // create listener object
+                listener_ = std::make_unique<tateyama::endpoint::stream::bootstrap::stream_listener>(env);
             }
             return true;
         } catch (std::exception &ex) {
