@@ -97,6 +97,7 @@ parameter=value
 |---:| :---: | :--- |---|
 |port | 整数 | stream_endpointに接続する際のport番号、デフォルトは12345
 |threads | 整数 | stream_endpointの最大同時接続数、デフォルトは104
+|enabled | ブール(true/false) | stream_endpointを有効化 or 無効化してtsurugidbを起動する、デフォルトはtrue（有効化して起動する）
 
 ## sessionセクション
 
