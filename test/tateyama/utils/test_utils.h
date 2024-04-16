@@ -67,6 +67,7 @@ static constexpr std::string_view default_configuration_for_tests {  // NOLINT
         "max_datachannel_buffers=16\n"
 
     "[stream_endpoint]\n"
+        "enabled=true\n"
         "port=12345\n"
         "threads=104\n"
 
