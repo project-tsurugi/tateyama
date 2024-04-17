@@ -130,7 +130,7 @@ TEST_F(ipc_info_test, basic) {
     EXPECT_EQ(si.label(), label);
     EXPECT_EQ(si.application_name(), application_name);
     EXPECT_EQ(si.id(), my_session_id);
-    EXPECT_EQ(si.connection_type_name(), "IPC");
+    EXPECT_EQ(si.connection_type_name(), "ipc");
     auto s_start = si.start_at();
     EXPECT_TRUE(std::chrono::duration_cast<std::chrono::milliseconds>(now - s_start).count() < 500);
 

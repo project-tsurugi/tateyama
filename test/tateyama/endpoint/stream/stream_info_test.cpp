@@ -141,7 +141,7 @@ TEST_F(stream_info_test, basic) {
         EXPECT_EQ(si.label(), label);
         EXPECT_EQ(si.application_name(), application_name);
         EXPECT_EQ(si.id(), my_session_id_);
-        EXPECT_EQ(si.connection_type_name(), "TCP/IP");
+        EXPECT_EQ(si.connection_type_name(), "tcp");
         EXPECT_EQ(std::string(si.connection_information()).substr(0, 10), "127.0.0.1:");
         auto s_start = si.start_at();
         EXPECT_TRUE(std::chrono::duration_cast<std::chrono::milliseconds>(now - s_start).count() < 500);

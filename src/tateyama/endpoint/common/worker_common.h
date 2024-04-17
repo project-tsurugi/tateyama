@@ -363,9 +363,9 @@ private:
     std::string_view connection_label(connection_type con) {
         switch (con) {
         case connection_type::ipc:
-            return "IPC";
+            return "ipc";
         case connection_type::stream:
-            return "TCP/IP";
+            return "tcp";
         default:
             return "";
         }
