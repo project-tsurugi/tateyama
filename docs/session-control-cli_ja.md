@@ -94,9 +94,8 @@ tgctl session list [--conf </path/to/conf>] [--id] [-v|--verbose] [--monitor </p
   * ID はとびとびになる
   * ID は必ずしも tateyama 内部の session ID と一致しない
   * ID は `:` から始まり、 label は `:` から始められない
-  * `tgctl session list` コマンドを実行したセッション自体も表示に含まれる
-    * TBD: 特別な対応が必要？ ([session kill](#session-kill) との相性が悪い)
-      * `-a,--all` を入れない限り自身は表示しない等
+  * verbose表示におけるstart時刻はUTCをISO 8601フォーマットで表示する
+  * `tgctl session list` コマンドを実行したセッションは表示に含まれない
 
 ### session show
 
