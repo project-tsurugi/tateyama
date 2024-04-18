@@ -19,8 +19,18 @@
 namespace tateyama::session::resource {
 
 bool session_container_impl::register_session(std::shared_ptr<session_context_impl> const& session) {
-    foreach([](const std::shared_ptr<session_context>&) {});
+    std::unique_lock lock{mtx_};
 
+    for (auto&& it = session_contexts_.begin(), last = session_contexts_.end(); it != last;) {
+        if (auto sp = (*it).lock(); sp) {
+            ++it;
+        } else {
+            it = session_contexts_.erase(it);
+        }
+    }
+    if (session_contexts_.find(session) != session_contexts_.end()) {
+        return false;
+    }
     session_contexts_.emplace(session);
     return true;
 }
