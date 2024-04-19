@@ -164,14 +164,10 @@ public:
                         auto& worker = workers_.at(index);
                         worker->register_worker_in_context(worker);
                         worker->run();
-                        std::shared_ptr<stream_worker> worker_ptr{};
                         {
-                            std::unique_lock<std::mutex> lock(mtx_workers_);
-                            worker_ptr = std::move(worker);
-                        }
-                        {
-                            std::unique_lock<std::mutex> lock(mtx_undertakers_);
-                            undertakers_.emplace(std::move(worker_ptr));
+                            std::unique_lock<std::mutex> lock_w(mtx_workers_);
+                            std::unique_lock<std::mutex> lock_u(mtx_undertakers_);
+                            undertakers_.emplace(std::move(worker));
                         }
                     });
                     session_id++;
@@ -227,20 +223,23 @@ private:
     void confirm_workers_termination() {
         bool message_output{false};
         while (true) {
-            bool worker_remain{false};
-            for (auto&& worker : workers_) {
-                std::shared_ptr<stream_worker> worker_ptr = worker;
-                if (worker_ptr) {
-                    if (!message_output) {
-                        VLOG_LP(log_trace) << "wait for remaining worker thread, session id = " << worker->session_id();
-                        message_output = true;
+            {
+                std::unique_lock<std::mutex> lock(mtx_workers_);
+                bool worker_remain{false};
+                for (auto& worker : workers_) {
+                    if (worker) {
+                        if (!message_output) {  // message output for the first worker only
+                            VLOG_LP(log_trace) << "wait for remaining worker thread, session id = " << worker->session_id();
+                            message_output = true;
+                        }
+                        worker_remain = true;
                     }
-                    std::this_thread::sleep_for(std::chrono::milliseconds(20));
+                }
+                if (!worker_remain) {
+                    break;
                 }
             }
-            if (!worker_remain) {
-                break;
-            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(20));
         }
         while (!care_undertakers()) {
             std::this_thread::sleep_for(std::chrono::milliseconds(20));

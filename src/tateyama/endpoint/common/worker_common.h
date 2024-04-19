@@ -103,7 +103,7 @@ public:
     }
 
     [[nodiscard]] bool is_quiet() {
-        return !has_incomplete_response() && !has_incomplete_resultset();
+        return !has_incomplete_response() && !has_incomplete_resultset() && terminated();
     }
 
     /**
