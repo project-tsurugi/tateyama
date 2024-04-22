@@ -249,6 +249,35 @@ protected:
             return true;
         }
 
+        case tateyama::proto::endpoint::request::Request::kShutdown:
+        {
+            VLOG_LP(log_trace) << "received shutdown request, slot = " << slot;  //NOLINT
+            {
+                tateyama::session::shutdown_request_type shutdown_type{};
+                switch (rq.shutdown().type()) {
+                case tateyama::proto::endpoint::request::ShutdownType::SHUTDOWN_TYPE_NOT_SET:
+                    shutdown_type = tateyama::session::shutdown_request_type::forceful;
+                    break;
+                case tateyama::proto::endpoint::request::ShutdownType::GRACEFUL:
+                    shutdown_type = tateyama::session::shutdown_request_type::graceful;
+                    break;
+                case tateyama::proto::endpoint::request::ShutdownType::FORCEFUL:
+                    shutdown_type = tateyama::session::shutdown_request_type::forceful;
+                    break;
+                default: // error
+                    return false;
+                }
+                request_shutdown(shutdown_type);
+
+                // FIXME confirm when response should be sent
+                tateyama::proto::endpoint::response::Shutdown rp{};
+                auto body = rp.SerializeAsString();
+                res->body(body);
+                return true;
+            }
+            return true;
+        }
+
         default: // error
         {
             std::stringstream ss;
