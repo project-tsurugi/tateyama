@@ -96,7 +96,7 @@ public:
             wire_->write(bip_buffer_, ptr, message_header(index, length));
         }
         void disconnect() {
-            wire_->write(bip_buffer_, nullptr, message_header(message_header::null_request, 0));
+            wire_->terminate();
         }
 
     private:

@@ -53,6 +53,7 @@ void Worker::do_work() {
             auto h = request_wire_container_->peep();
             if (h.get_length() == 0 && h.get_idx() == tateyama::common::wire::message_header::null_request) {
                 if (request_wire_container_->terminate_requested()) {
+                    dispose_session_store();
                     request_shutdown(tateyama::session::shutdown_request_type::forceful);
                 }
                 care_reqreses();

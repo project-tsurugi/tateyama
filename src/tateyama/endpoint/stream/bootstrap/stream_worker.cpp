@@ -117,7 +117,13 @@ void stream_worker::do_work()
             }
             continue;
 
+        case tateyama::endpoint::stream::stream_socket::await_result::termination_request:
+            dispose_session_store();
+            session_stream_->send_session_bye_ok();
+            continue;
+
         default:  // some error
+            dispose_session_store();
             break;
         }
         break;

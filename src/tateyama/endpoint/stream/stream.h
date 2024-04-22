@@ -102,6 +102,11 @@ public:
         socket_closed,
 
         /**
+         * @brief the client has sent a request of session close.
+         */
+        termination_request,
+
+        /**
          * @brief the message received is in an illegal format.
          */
         illegal_message,
@@ -137,6 +142,11 @@ public:
         DVLOG_LP(log_trace) << "<-- RESPONSE_RESULT_SET_BYE " << static_cast<std::uint32_t>(slot);
         send_response(RESPONSE_RESULT_SET_BYE, slot, "");
     }
+    void send_session_bye_ok() {  // for RESPONSE_SESSION_BYE_OK
+        DVLOG_LP(log_trace) << "<-- RESPONSE_SESSION_BYE_OK ";
+        send_response(RESPONSE_SESSION_BYE_OK, 0, "", true);
+    }
+
     void send(std::uint16_t slot, unsigned char writer, std::string_view payload) { // for RESPONSE_RESULT_SET_PAYLOAD
         DVLOG_LP(log_trace) << (payload.length() > 0 ? "<-- RESPONSE_RESULT_SET_PAYLOAD " : "<-- RESPONSE_RESULT_SET_COMMIT ") << static_cast<std::uint32_t>(slot) << ", " << static_cast<std::uint32_t>(writer);
         std::unique_lock<std::mutex> lock(mutex_);
@@ -281,9 +291,7 @@ private:
                     do {std::unique_lock<std::mutex> lock(mutex_);
                         session_closed_ = true;
                     } while (false);
-                    DVLOG_LP(log_trace) << "<-- RESPONSE_SESSION_BYE_OK ";
-                    send_response(RESPONSE_SESSION_BYE_OK, 0, "", true);
-                    continue;
+                    return await_result::termination_request;
                 }
                 DVLOG_LP(log_trace) << "socket is closed by the client abnormally";
                 return await_result::socket_closed;

@@ -457,14 +457,14 @@ private:
     std::atomic_bool termination_requested_{};
     std::atomic_bool onetime_notification_{};
     std::atomic_bool closed_{};
-    std::atomic_bool rfu_{};
 };
 
 
 // for response
 class unidirectional_response_wire : public simple_wire<response_header> {
-    constexpr static std::size_t watch_interval = 5;
 public:
+    constexpr static std::size_t watch_interval = 5;
+
     unidirectional_response_wire(boost::interprocess::managed_shared_memory* managed_shm_ptr, std::size_t capacity) : simple_wire<response_header>(managed_shm_ptr, capacity) {}
 
     /**
@@ -474,7 +474,6 @@ public:
         if (timeout == 0) {
             timeout = watch_interval * 1000 * 1000;
         }
-
         while (true) {
             if (closed_.load()) {
                 header_received_ = response_header(0, 0, 0);
@@ -554,8 +553,6 @@ public:
 private:
     std::atomic_bool closed_{};
     std::atomic_bool shutdown_{};
-    std::atomic_bool rfu1_{};
-    std::atomic_bool rfu2_{};
 };
 
 
@@ -1181,4 +1178,4 @@ private:
     std::size_t session_id_{};
 };
 
-};  // namespace tsubakuro::common
+};  // namespace tateyama::common

@@ -15,6 +15,9 @@
  */
 
 #include <iostream>
+#include <mutex>
+#include <condition_variable>
+#include <chrono>
 
 #include "tateyama/endpoint/stream/bootstrap/stream_worker.h"
 #include "tateyama/endpoint/header_utils.h"
@@ -118,11 +121,24 @@ class element_one : public tateyama::api::server::session_element {
 public:
     element_one(std::size_t v) : value_(v) {}
     std::size_t value() { return value_; }
-    void dispose() { disposed_ = true; }
+    void dispose() {
+        std::unique_lock<std::mutex> lock(mutex_);
+        idx_++;
+        disposed_ = true;
+        cond_.notify_one();
+    }
     bool disposed() { return disposed_; }
+    bool wait(std::size_t idx) {
+        std::unique_lock<std::mutex> lk(mutex_);
+        return cond_.wait_for(lk, std::chrono::seconds(3), [this, idx]{ return idx <= idx_; });
+    }
+    std::size_t idx() { return idx_; }
 private:
     std::size_t value_;
     bool disposed_{false};
+    std::size_t idx_{};
+    std::mutex mutex_{};
+    std::condition_variable cond_{};
 };
 
 class element_two : public tateyama::api::server::session_element {
@@ -248,6 +264,42 @@ TEST_F(stream_store_test, keep_and_dispose) {
             listener_.terminate();
             EXPECT_TRUE(e1->disposed());
             EXPECT_TRUE(e2->disposed());
+        }
+    } catch (std::runtime_error &ex) {
+        std::cout << ex.what() << std::endl;
+        FAIL();
+    }
+}
+
+TEST_F(stream_store_test, dispose_on_disconnect) {
+    try {
+        std::shared_ptr<element_one> e1 = std::make_shared<element_one>(1);
+
+        {
+            // client part (send request)
+            client_->send(service_id_of_store_service, request_test_message);  // we do not care service_id nor request message here
+
+            // client part (receive)
+            std::string res{};
+            tateyama::proto::framework::response::Header::PayloadType type{};
+            client_->receive(res, type);
+        }
+
+        {
+            auto* req = service_.request();
+            auto& store = req->session_store();
+
+            // put
+            EXPECT_TRUE(store.put<element_one>(1, e1));
+            auto idx = e1->idx();
+
+            client_->disconnect();
+            EXPECT_TRUE(e1->wait(idx + 1));
+            EXPECT_TRUE(e1->disposed());
+
+            client_->close();
+            listener_.wait_worker_termination();
+            listener_.terminate();
         }
     } catch (std::runtime_error &ex) {
         std::cout << ex.what() << std::endl;

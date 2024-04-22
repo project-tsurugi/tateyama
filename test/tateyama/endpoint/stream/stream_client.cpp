@@ -108,9 +108,10 @@ stream_client::receive(std::string &message) {
 
 void
 stream_client::receive(std::string& message, tateyama::proto::framework::response::Header::PayloadType& type) {
-    std::uint8_t  data[4];  // NOLINT
+    std::uint8_t packet_type;  // NOLINT
+    std::uint8_t data[4];  // NOLINT
 
-    if (::recv(sockfd_, &type_, 1, 0) < 0) {
+    if (::recv(sockfd_, &packet_type, 1, 0) < 0) {
         throw std::runtime_error("error in recv()");
     }
     if (::recv(sockfd_, data, 2, 0) < 0) {
@@ -118,7 +119,7 @@ stream_client::receive(std::string& message, tateyama::proto::framework::respons
     }
     slot_ = data[0] | (data[1] << 8);
 
-    if (type_ ==  RESPONSE_RESULT_SET_PAYLOAD) {
+    if (packet_type == RESPONSE_RESULT_SET_PAYLOAD) {
         if (::recv(sockfd_, &writer_, 1, 0) < 0) {
             throw std::runtime_error("error in recv()");
         }
@@ -129,7 +130,7 @@ stream_client::receive(std::string& message, tateyama::proto::framework::respons
     }
     std::size_t length = data[0] | (data[1] << 8) | (data[2] << 16) | (data[3] << 24);
 
-    std::string r_msg;
+    std::string r_msg{};
     if (length > 0) {
         r_msg.resize(length);
         if (::recv(sockfd_, r_msg.data(), length, 0) < 0) {

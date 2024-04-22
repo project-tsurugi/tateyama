@@ -41,6 +41,7 @@ public:
     void send(const std::size_t tag, const std::string &message, std::size_t index_offset = 0);
     void receive(std::string &message);
     void receive(std::string &message, tateyama::proto::framework::response::Header::PayloadType& type);
+    void disconnect() { request_wire_->disconnect(); }
 
     resultset_wires_container* create_resultset_wires();
     void dispose_resultset_wires(resultset_wires_container *rwc);
@@ -71,7 +72,7 @@ private:
     std::unique_ptr<tsubakuro::common::wire::session_wire_container> swc_ { };
     tsubakuro::common::wire::session_wire_container::wire_container *request_wire_ { };
     tsubakuro::common::wire::session_wire_container::response_wire_container *response_wire_ { };
-    tateyama::proto::endpoint::request::Handshake default_endpoint_handshake_{};
+    tateyama::proto::endpoint::request::Handshake default_endpoint_handshake_{ };
 
     void handshake();
     void receive(std::string &message, tateyama::proto::framework::response::Header::PayloadType type, bool do_check);
