@@ -38,11 +38,17 @@ public:
     ipc_client(std::string_view database_name, std::size_t session_id, tateyama::proto::endpoint::request::Handshake& hs);
     ipc_client(std::string_view database_name, std::size_t session_id) : ipc_client(database_name, session_id, default_endpoint_handshake_) {
     }
+    ~ipc_client() { disconnect(); }
+
     void send(const std::size_t tag, const std::string &message, std::size_t index_offset = 0);
     void receive(std::string &message);
     void receive(std::string &message, tateyama::proto::framework::response::Header::PayloadType& type);
-    void disconnect() { request_wire_->disconnect(); }
-
+    void disconnect() {
+        if (!disconnected_) {
+            request_wire_->disconnect();
+            disconnected_ = true;
+        }
+    }
     resultset_wires_container* create_resultset_wires();
     void dispose_resultset_wires(resultset_wires_container *rwc);
 
@@ -73,6 +79,7 @@ private:
     tsubakuro::common::wire::session_wire_container::wire_container *request_wire_ { };
     tsubakuro::common::wire::session_wire_container::response_wire_container *response_wire_ { };
     tateyama::proto::endpoint::request::Handshake default_endpoint_handshake_{ };
+    bool disconnected_{ };
 
     void handshake();
     void receive(std::string &message, tateyama::proto::framework::response::Header::PayloadType type, bool do_check);

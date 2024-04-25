@@ -26,14 +26,16 @@
 namespace tateyama::endpoint::ipc::bootstrap {
 
 void Worker::do_work() {
+    tateyama::common::wire::message_header hdr{};
     while(true) {
-        auto hdr = request_wire_container_->peep();
-        if (hdr.get_length() == 0 && hdr.get_idx() == tateyama::common::wire::message_header::null_request) {
-            if (request_wire_container_->terminate_requested()) {
-                VLOG_LP(log_trace) << "received shutdown request: session_id = " << std::to_string(session_id_);
-                return;
-            }
+        try {
+            hdr = request_wire_container_->peep();
+        } catch (std::runtime_error &ex) {
             continue;
+        }
+        if (hdr.get_length() == 0 && hdr.get_idx() == tateyama::common::wire::message_header::terminate_request) {
+            VLOG_LP(log_trace) << "received shutdown request: session_id = " << std::to_string(session_id_);
+            return;
         }
 
         ipc_request request_obj{*wire_, hdr, database_info_, session_info_, session_store_};
@@ -50,12 +52,20 @@ void Worker::do_work() {
 #endif
     while(true) {
         try {
-            auto h = request_wire_container_->peep();
-            if (h.get_length() == 0 && h.get_idx() == tateyama::common::wire::message_header::null_request) {
-                if (request_wire_container_->terminate_requested()) {
-                    dispose_session_store();
-                    request_shutdown(tateyama::session::shutdown_request_type::forceful);
-                }
+            hdr = request_wire_container_->peep();
+        } catch (std::runtime_error &ex) {
+            care_reqreses();
+            if (is_shuttingdown() && is_completed()) {
+                wire_->get_response_wire().notify_shutdown();
+                VLOG_LP(log_info) << "terminate worker because shutdown completed";
+                break;
+            }
+            continue;
+        }
+        try {
+            if (hdr.get_length() == 0 && hdr.get_idx() == tateyama::common::wire::message_header::terminate_request) {
+                dispose_session_store();
+                request_shutdown(tateyama::session::shutdown_request_type::forceful);
                 care_reqreses();
                 if (is_shuttingdown() && is_completed()) {
                     wire_->get_response_wire().notify_shutdown();
@@ -65,9 +75,9 @@ void Worker::do_work() {
                 continue;
             }
 
-            auto request = std::make_shared<ipc_request>(*wire_, h, database_info_, session_info_, session_store_);
-            std::size_t index = h.get_idx();
-            auto response = std::make_shared<ipc_response>(wire_, h.get_idx(), [this, index](){remove_reqres(index);});
+            auto request = std::make_shared<ipc_request>(*wire_, hdr, database_info_, session_info_, session_store_);
+            std::size_t index = hdr.get_idx();
+            auto response = std::make_shared<ipc_response>(wire_, hdr.get_idx(), [this, index](){remove_reqres(index);});
             register_reqres(index,
                             std::dynamic_pointer_cast<tateyama::api::server::request>(request),
                             std::dynamic_pointer_cast<tateyama::endpoint::common::response>(response));
