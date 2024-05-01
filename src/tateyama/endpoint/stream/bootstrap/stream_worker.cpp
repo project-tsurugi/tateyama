@@ -85,7 +85,29 @@ void stream_worker::do_work()
             register_reqres(slot,
                             std::dynamic_pointer_cast<tateyama::api::server::request>(request),
                             std::dynamic_pointer_cast<tateyama::endpoint::common::response>(response));
-            if (request->service_id() != tateyama::framework::service_id_endpoint_broker) {
+            switch (request->service_id()) {
+            case tateyama::framework::service_id_endpoint_broker:
+                if (endpoint_service(std::dynamic_pointer_cast<tateyama::api::server::request>(request),
+                                     std::dynamic_pointer_cast<tateyama::api::server::response>(response),
+                                     slot)) {
+                    continue;
+                }
+                VLOG_LP(log_info) << "terminate worker because endpoint service returns an error";
+                break;
+
+            case tateyama::framework::service_id_routing:
+                if (routing_service_chain(std::dynamic_pointer_cast<tateyama::api::server::request>(request),
+                                          std::dynamic_pointer_cast<tateyama::api::server::response>(response))) {
+                    continue;
+                }
+                if (service_(std::dynamic_pointer_cast<tateyama::api::server::request>(request),
+                              std::dynamic_pointer_cast<tateyama::api::server::response>(response))) {
+                    continue;
+                }
+                VLOG_LP(log_info) << "terminate worker because service returns an error";
+                break;
+
+            default:
                 if (!is_shuttingdown()) {
                     if(service_(std::dynamic_pointer_cast<tateyama::api::server::request>(request),
                                 std::dynamic_pointer_cast<tateyama::api::server::response>(response))) {
@@ -96,13 +118,6 @@ void stream_worker::do_work()
                     notify_client(response.get(), tateyama::proto::diagnostics::SESSION_CLOSED, "");
                     continue;
                 }
-            } else {
-                if (endpoint_service(std::dynamic_pointer_cast<tateyama::api::server::request>(request),
-                                     std::dynamic_pointer_cast<tateyama::api::server::response>(response),
-                                     slot)) {
-                    continue;
-                }
-                VLOG_LP(log_info) << "terminate worker because endpoint service returns an error";
             }
             request = nullptr;
             response = nullptr;

@@ -26,10 +26,10 @@
 
 #include <gtest/gtest.h>
 
-static constexpr std::size_t my_session_id_ = 123;
+static constexpr std::size_t my_session_id_ = 1234;
 static constexpr std::string_view request_test_message = "abcdefgh";
 static constexpr std::string_view response_test_message = "opqrstuvwxyz";
-static constexpr std::size_t service_id_of_store_service = 0;
+static constexpr std::size_t service_id_of_store_service = 123;
 
 namespace tateyama::endpoint::stream {
 
@@ -40,7 +40,7 @@ public:
     bool shutdown(tateyama::framework::environment&) { return true; }
     std::string_view label() const noexcept { return __func__; }
 
-    id_type id() const noexcept { return 100;  } // dummy
+    id_type id() const noexcept { return service_id_of_store_service; }
     bool operator ()(std::shared_ptr<tateyama::api::server::request> req,
                      std::shared_ptr<tateyama::api::server::response> res) override {
         req_ = req;

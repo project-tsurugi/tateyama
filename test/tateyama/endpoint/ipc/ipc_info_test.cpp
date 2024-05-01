@@ -45,6 +45,7 @@ static constexpr std::size_t datachannel_buffer_size = 64 * 1024;
 static constexpr tateyama::common::wire::message_header::index_type index_ = 1;
 static constexpr std::string_view response_test_message = "opqrstuvwxyz";
 static constexpr std::string_view request_test_message = "abcdefgh";
+static constexpr std::size_t service_id_of_info_service = 101;
 
 class info_service : public tateyama::framework::routing_service {
 public:
@@ -53,7 +54,7 @@ public:
     bool shutdown(tateyama::framework::environment&) { return true; }
     std::string_view label() const noexcept { return __func__; }
 
-    id_type id() const noexcept { return 100;  } // dummy
+    id_type id() const noexcept { return service_id_of_info_service; }
     bool operator ()(std::shared_ptr<tateyama::api::server::request> req,
                      std::shared_ptr<tateyama::api::server::response> res) override {
         req_ = req;
@@ -109,7 +110,7 @@ TEST_F(ipc_info_test, basic) {
     cci.release_credential();
     hs.release_client_information();
 
-    client->send(0, std::string(request_test_message));  // we do not care service_id nor request message here
+    client->send(service_id_of_info_service, std::string(request_test_message));  // we do not care service_id nor request message here
     std::string res{};
     client->receive(res);
     

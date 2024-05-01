@@ -47,15 +47,15 @@ static constexpr std::string_view database_name = "ipc_session_test";
 static constexpr std::size_t datachannel_buffer_size = 64 * 1024;
 static constexpr std::string_view request_test_message = "abcdefgh";
 static constexpr std::string_view response_test_message = "opqrstuvwxyz";
-static constexpr std::size_t service_id_of_session_service = 0;
+static constexpr std::size_t service_id_of_session_service = 100;
 
-class session_service : public tateyama::framework::routing_service {
+class service_for_ipc_session_test : public tateyama::framework::routing_service {
 public:
     bool setup(tateyama::framework::environment&) { return true; }
     bool start(tateyama::framework::environment&) { return true; }
     bool shutdown(tateyama::framework::environment&) { return true; }
 
-    id_type id() const noexcept { return 100;  } // dummy
+    id_type id() const noexcept { return service_id_of_session_service;  }
     bool operator ()(std::shared_ptr<tateyama::api::server::request> req,
                      std::shared_ptr<tateyama::api::server::response> res) override {
         req_ = req;
@@ -129,7 +129,7 @@ class ipc_session_test : public ::testing::Test {
 
 protected:
     tateyama::status_info::resource::database_info_impl database_info_{database_name};
-    session_service service_{};
+    service_for_ipc_session_test service_{};
     std::unique_ptr<tateyama::endpoint::ipc::bootstrap::Worker> worker_{};
     std::shared_ptr<session::resource::bridge> session_bridge_{};
     std::unique_ptr<ipc_client> client_{};

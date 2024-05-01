@@ -81,23 +81,44 @@ void Worker::do_work() {
             register_reqres(index,
                             std::dynamic_pointer_cast<tateyama::api::server::request>(request),
                             std::dynamic_pointer_cast<tateyama::endpoint::common::response>(response));
-            if (request->service_id() != tateyama::framework::service_id_endpoint_broker) {
-                if (!is_shuttingdown()) {
-                    if (!service_(std::dynamic_pointer_cast<tateyama::api::server::request>(request),
-                                  std::dynamic_pointer_cast<tateyama::api::server::response>(response))) {
-                        VLOG_LP(log_info) << "terminate worker because service returns an error";
-                        break;
-                    }
-                } else {
-                    notify_client(response.get(), tateyama::proto::diagnostics::SESSION_CLOSED, "");
-                }
-            } else {
+            bool exit_frag = false;
+            switch (request->service_id()) {
+            case tateyama::framework::service_id_endpoint_broker:
                 if (!endpoint_service(std::dynamic_pointer_cast<tateyama::api::server::request>(request),
                                       std::dynamic_pointer_cast<tateyama::api::server::response>(response),
                                       index)) {
                     VLOG_LP(log_info) << "terminate worker because endpoint service returns an error";
+                    exit_frag = true;
+                }
+                break;
+
+            case tateyama::framework::service_id_routing:
+                if (routing_service_chain(std::dynamic_pointer_cast<tateyama::api::server::request>(request),
+                                          std::dynamic_pointer_cast<tateyama::api::server::response>(response))) {
                     break;
                 }
+                if (!service_(std::dynamic_pointer_cast<tateyama::api::server::request>(request),
+                              std::dynamic_pointer_cast<tateyama::api::server::response>(response))) {
+                    VLOG_LP(log_info) << "terminate worker because service returns an error";
+                    exit_frag = true;
+                }
+                break;
+
+            default:
+                if (!is_shuttingdown()) {
+                    if (!service_(std::dynamic_pointer_cast<tateyama::api::server::request>(request),
+                                  std::dynamic_pointer_cast<tateyama::api::server::response>(response))) {
+                        VLOG_LP(log_info) << "terminate worker because service returns an error";
+                        exit_frag = true;
+                    }
+                } else {
+                    notify_client(response.get(), tateyama::proto::diagnostics::SESSION_CLOSED, "");
+                }
+                break;
+
+            }
+            if (exit_frag) {
+                break;
             }
             request->dispose();
             request = nullptr;

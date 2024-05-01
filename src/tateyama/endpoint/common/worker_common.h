@@ -35,6 +35,8 @@
 
 #include <tateyama/proto/endpoint/request.pb.h>
 #include <tateyama/proto/endpoint/response.pb.h>
+#include <tateyama/proto/core/request.pb.h>
+#include <tateyama/proto/core/response.pb.h>
 #include <tateyama/proto/diagnostics.pb.h>
 
 #include "request.h"
@@ -249,19 +251,43 @@ protected:
             return true;
         }
 
-        case tateyama::proto::endpoint::request::Request::kShutdown:
+        default: // error
         {
-            VLOG_LP(log_trace) << "received shutdown request, slot = " << slot;  //NOLINT
+            std::stringstream ss;
+            ss << "bad request for endpoint: " << rq.command_case();
+            LOG(INFO) << ss.str();
+            notify_client(res.get(), tateyama::proto::diagnostics::Code::INVALID_REQUEST, ss.str());
+        }
+        return false;
+        }
+    }
+
+    bool routing_service_chain(const std::shared_ptr<tateyama::api::server::request>& req,
+                         const std::shared_ptr<tateyama::api::server::response>& res) {
+        auto data = req->payload();
+        tateyama::proto::core::request::Request rq{};
+        if(! rq.ParseFromArray(data.data(), static_cast<int>(data.size()))) {
+            std::string error_message{"request parse error"};
+            LOG(INFO) << error_message;
+            notify_client(res.get(), tateyama::proto::diagnostics::Code::INVALID_REQUEST, error_message);
+            return false;
+        }
+
+        switch (rq.command_case()) {
+
+        case tateyama::proto::core::request::Request::kShutdown:
+        {
+            VLOG_LP(log_trace) << "received shutdown request";  //NOLINT
             {
                 tateyama::session::shutdown_request_type shutdown_type{};
                 switch (rq.shutdown().type()) {
-                case tateyama::proto::endpoint::request::ShutdownType::SHUTDOWN_TYPE_NOT_SET:
+                case tateyama::proto::core::request::ShutdownType::SHUTDOWN_TYPE_NOT_SET:
                     shutdown_type = tateyama::session::shutdown_request_type::forceful;
                     break;
-                case tateyama::proto::endpoint::request::ShutdownType::GRACEFUL:
+                case tateyama::proto::core::request::ShutdownType::GRACEFUL:
                     shutdown_type = tateyama::session::shutdown_request_type::graceful;
                     break;
-                case tateyama::proto::endpoint::request::ShutdownType::FORCEFUL:
+                case tateyama::proto::core::request::ShutdownType::FORCEFUL:
                     shutdown_type = tateyama::session::shutdown_request_type::forceful;
                     break;
                 default: // error
@@ -270,7 +296,7 @@ protected:
                 request_shutdown(shutdown_type);
 
                 // FIXME confirm when response should be sent
-                tateyama::proto::endpoint::response::Shutdown rp{};
+                tateyama::proto::core::response::Shutdown rp{};
                 auto body = rp.SerializeAsString();
                 res->body(body);
                 return true;
@@ -278,14 +304,25 @@ protected:
             return true;
         }
 
-        default: // error
+        case tateyama::proto::core::request::Request::kUpdateExpirationTime:
         {
-            std::stringstream ss;
-            ss << "bad request (cancel in endpoint): " << rq.command_case();
-            LOG(INFO) << ss.str();
-            notify_client(res.get(), tateyama::proto::diagnostics::Code::INVALID_REQUEST, ss.str());
+            // mock impl. for UpdateExpirationTime // TODO
+            auto et = rq.update_expiration_time().expiration_time();
+            VLOG_LP(log_debug) <<
+                "UpdateExpirationTime received session_id:" << req->session_id() <<
+                " expiration_time:" << et;
+            tateyama::proto::core::response::UpdateExpirationTime rp{};
+            rp.mutable_success();
+            res->session_id(req->session_id());
+            auto body = rp.SerializeAsString();
+            res->body(body);
+            rp.clear_success();
+            return true;
         }
-        return false;
+
+        default:
+            // this request can not be handled here;
+            return false;
         }
     }
 

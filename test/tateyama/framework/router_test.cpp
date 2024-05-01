@@ -194,10 +194,10 @@ TEST_F(router_test, update_expiration_time) {
     (*router)(svrreq, svrres);
     ASSERT_FALSE(svc0->called_);
 
-    auto pl = svrreq->payload();
-    ::tateyama::proto::core::response::UpdateExpirationTime out{};
-    ASSERT_TRUE(out.ParseFromArray(pl.data(), pl.size()));
-    EXPECT_TRUE(out.has_success());
+    // update_expiration_time is now handled at the endpoint
+    ASSERT_TRUE(svrres->error_invoked_);
+    ASSERT_EQ(svrres->error_record_.code(), ::tateyama::proto::diagnostics::Code::UNSUPPORTED_OPERATION);
+
     sv.shutdown();
 }
 

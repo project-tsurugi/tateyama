@@ -25,20 +25,20 @@
 
 #include <gtest/gtest.h>
 
-static constexpr std::size_t my_session_id = 123;
+static constexpr std::size_t my_session_id = 1234;
 static constexpr std::string_view request_test_message = "abcdefgh";
 static constexpr std::string_view response_test_message = "opqrstuvwxyz";
-static constexpr std::size_t service_id_of_session_service = 0;
+static constexpr std::size_t service_id_of_session_service = 121;
 
 namespace tateyama::endpoint::stream {
 
-class service_for_session_test : public tateyama::framework::routing_service {
+class service_for_stream_session_test : public tateyama::framework::routing_service {
 public:
     bool setup(tateyama::framework::environment&) { return true; }
     bool start(tateyama::framework::environment&) { return true; }
     bool shutdown(tateyama::framework::environment&) { return true; }
 
-    id_type id() const noexcept { return 100;  } // dummy
+    id_type id() const noexcept { return service_id_of_session_service;  }
     bool operator ()(std::shared_ptr<tateyama::api::server::request> req,
                      std::shared_ptr<tateyama::api::server::response> res) override {
         req_ = req;
@@ -88,7 +88,7 @@ private:
 
 class stream_listener_for_session_test {
 public:
-    stream_listener_for_session_test(service_for_session_test& service, std::shared_ptr<session::resource::bridge> session_bridge) :
+    stream_listener_for_session_test(service_for_stream_session_test& service, std::shared_ptr<session::resource::bridge> session_bridge) :
         service_(service),
         session_bridge_(session_bridge) {
     }
@@ -121,7 +121,7 @@ public:
     }
 
 private:
-    service_for_session_test& service_;
+    service_for_stream_session_test& service_;
     std::shared_ptr<session::resource::bridge> session_bridge_;
     connection_socket connection_socket_{tateyama::api::endpoint::stream::stream_client::PORT_FOR_TEST};
     std::unique_ptr<tateyama::endpoint::stream::bootstrap::stream_worker> worker_{};
@@ -156,7 +156,7 @@ class stream_session_test : public ::testing::Test {
 public:
     std::shared_ptr<session::resource::bridge> session_bridge_{};
     std::unique_ptr<tateyama::endpoint::stream::stream_listener_for_session_test> listener_{};
-    tateyama::endpoint::stream::service_for_session_test service_{};
+    tateyama::endpoint::stream::service_for_stream_session_test service_{};
     std::thread thread_{};
     std::unique_ptr<stream_client> client_{};
 };
@@ -164,7 +164,7 @@ public:
 TEST_F(stream_session_test, cancel_request_reply) {
     try {
         // client part (send request)
-        EXPECT_TRUE(client_->send(0, request_test_message));  // we do not care service_id nor request message here
+        EXPECT_TRUE(client_->send(service_id_of_session_service, request_test_message));  // we do not care service_id nor request message here
 
         // client part (send cancel)
         tateyama::proto::endpoint::request::Cancel cancel{};
@@ -196,7 +196,7 @@ TEST_F(stream_session_test, cancel_request_reply) {
 TEST_F(stream_session_test, cancel_request_noreply) {
     try {
         // client part (send request)
-        EXPECT_TRUE(client_->send(0, request_test_message));  // we do not care service_id nor request message here
+        EXPECT_TRUE(client_->send(service_id_of_session_service, request_test_message));  // we do not care service_id nor request message here
 
         // client part (send cancel)
         tateyama::proto::endpoint::request::Cancel cancel{};
@@ -228,7 +228,7 @@ TEST_F(stream_session_test, cancel_request_noreply) {
 TEST_F(stream_session_test, forceful_shutdown_after_request) {
     try {
         // client part (send request)
-        EXPECT_TRUE(client_->send(0, std::string(request_test_message)));  // we do not care service_id nor request message here
+        EXPECT_TRUE(client_->send(service_id_of_session_service, std::string(request_test_message)));  // we do not care service_id nor request message here
         service_.wait_request_arrival();
 
         // shutdown request
@@ -288,7 +288,7 @@ TEST_F(stream_session_test, forceful_shutdown_before_request) {
         EXPECT_EQ(listener_->worker()->wait_for(), std::future_status::ready);
 
         // client part (send request)
-        EXPECT_FALSE(client_->send(0, std::string(request_test_message)));
+        EXPECT_FALSE(client_->send(service_id_of_session_service, std::string(request_test_message)));
     } catch (std::runtime_error &ex) {
         std::cout << ex.what() << std::endl;
         FAIL();
@@ -298,7 +298,7 @@ TEST_F(stream_session_test, forceful_shutdown_before_request) {
 TEST_F(stream_session_test, graceful_shutdown_after_request) {
     try {
         // client part (send request)
-        EXPECT_TRUE(client_->send(0, std::string(request_test_message)));  // we do not care service_id nor request message here
+        EXPECT_TRUE(client_->send(service_id_of_session_service, std::string(request_test_message)));  // we do not care service_id nor request message here
         service_.wait_request_arrival();
 
         // shutdown request
@@ -358,7 +358,7 @@ TEST_F(stream_session_test, graceful_shutdown_before_request) {
         EXPECT_EQ(listener_->worker()->wait_for(), std::future_status::ready);
 
         // client part (send request)
-        EXPECT_FALSE(client_->send(0, std::string(request_test_message)));
+        EXPECT_FALSE(client_->send(service_id_of_session_service, std::string(request_test_message)));
     } catch (std::runtime_error &ex) {
         std::cout << ex.what() << std::endl;
         FAIL();
