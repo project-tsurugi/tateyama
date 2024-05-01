@@ -221,9 +221,9 @@ private:
     await_result await(unsigned char& info, std::uint16_t& slot, std::string& payload) {
         DVLOG_LP(log_trace) << "-- enter waiting REQUEST --";
 
-        fds_[0].fd = socket_;     // NOLINT
-        fds_[0].events = POLLIN;  // NOLINT
-        fds_[0].revents = 0;      // NOLINT
+        fds_[0].fd = socket_;               // NOLINT
+        fds_[0].events = POLLIN | POLLPRI;  // NOLINT
+        fds_[0].revents = 0;                // NOLINT
         while (true) {
             if (!queue_.empty() && slot_using_ < slot_size_) {
                 auto entry = queue_.front();
@@ -241,6 +241,13 @@ private:
                 throw std::runtime_error("error in poll");
             }
 
+            if (fds_[0].revents & POLLPRI) {  // NOLINT
+                unsigned char buf{};
+                if (::recv (socket_, &buf, 1, MSG_OOB) < 0) {
+                    return await_result::socket_closed;
+                }
+                return await_result::timeout;
+            }
             if (fds_[0].revents & POLLIN) {  // NOLINT
                 if (auto size_i = ::recv(socket_, &info, 1, 0); size_i == 0) {
                     DVLOG_LP(log_trace) << "socket is closed by the client";
