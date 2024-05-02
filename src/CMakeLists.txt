@@ -42,6 +42,9 @@ file(GLOB SOURCES
         "tateyama/session/*.cpp"
         "tateyama/session/service/*.cpp"
         "tateyama/session/resource/*.cpp"
+        "tateyama/metrics/*.cpp"
+        "tateyama/metrics/service/*.cpp"
+        "tateyama/metrics/resource/*.cpp"
 )
 
 if(TRACY_ENABLE)

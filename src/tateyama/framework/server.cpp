@@ -41,6 +41,8 @@
 #include <tateyama/utils/boolalpha.h>
 #include <tateyama/session/service/bridge.h>
 #include <tateyama/session/resource/bridge.h>
+#include <tateyama/metrics/service/bridge.h>
+#include <tateyama/metrics/resource/bridge.h>
 #ifdef ENABLE_ALTIMETER
 #include "altimeter_logger.h"
 #endif
@@ -180,12 +182,14 @@ server::server(framework::boot_mode mode, std::shared_ptr<api::configuration::wh
 
 void add_core_components(server& svr) {
     svr.add_resource(std::make_shared<diagnostic::resource::diagnostic_resource>());
+    svr.add_resource(std::make_shared<metrics::resource::bridge>());
     svr.add_resource(std::make_shared<status_info::resource::bridge>());
     svr.add_resource(std::make_shared<framework::transactional_kvs_resource>());
     svr.add_resource(std::make_shared<datastore::resource::bridge>());
     svr.add_resource(std::make_shared<session::resource::bridge>());
 
     svr.add_service(std::make_shared<framework::routing_service>());
+    svr.add_service(std::make_shared<metrics::service::bridge>());
     svr.add_service(std::make_shared<datastore::service::bridge>());
 #ifdef ENABLE_DEBUG_SERVICE
     svr.add_service(std::make_shared<debug::service>());

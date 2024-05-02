@@ -14,12 +14,11 @@
  * limitations under the License.
  */
 
-#include "bridge.h"
+#include <memory>
 
-namespace tateyama::session::service {
+#include "tateyama/metrics/resource/bridge.h"
 
-using tateyama::api::server::request;
-using tateyama::api::server::response;
+namespace tateyama::metrics::resource {
 
 using namespace framework;
 
@@ -27,38 +26,31 @@ component::id_type bridge::id() const noexcept {
     return tag;
 }
 
-bool bridge::setup(environment& env) {
-    core_ = std::make_unique<core>(env.configuration());
+bool bridge::setup(environment&) {
+    auto metrics_store = std::make_unique<metrics_store_impl>();
+    core_.metrics_store_impl_ = metrics_store.get();
+    metrics_store_ = std::make_unique<tateyama::metrics::metrics_store>(std::move(metrics_store));
     return true;
 }
 
-bool bridge::start(environment& env) {
-    auto resource = env.resource_repository().find<tateyama::session::resource::bridge>();
-    if (! resource) {
-        LOG(ERROR) << "session resource not found";
-        return false;
-    }
-    return core_->start(resource.get());
+bool bridge::start(environment&) {
+    return true;
 }
 
 bool bridge::shutdown(environment&) {
     return true;
 }
 
-bool bridge::operator()(std::shared_ptr<request> req, std::shared_ptr<response> res) {
-    return core_->operator()(req, res);
-}
-
 bridge::~bridge() {
-    if(core_ && ! deactivated_) {
-        core_->shutdown(true);
-        deactivated_ = true;
-    }
     VLOG(log_info) << "/:tateyama:lifecycle:component:<dtor> " << component_label;
-}
+};
 
 std::string_view bridge::label() const noexcept {
     return component_label;
+}
+
+tateyama::metrics::resource::core const& bridge::core() const noexcept {
+    return core_;
 }
 
 }

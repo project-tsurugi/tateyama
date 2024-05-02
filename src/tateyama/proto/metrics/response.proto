@@ -1,0 +1,56 @@
+syntax = "proto3";
+
+package tateyama.proto.metrics.response;
+
+option java_multiple_files = false;
+option java_package = "com.tsurugidb.metrics.proto";
+option java_outer_classname = "MetricsResponse";
+
+// the metrics value.
+message MetricsValue {
+    // variant of metrics value, or empty if it is not set.
+    oneof value_or_array {
+        // just a value.
+        double value = 1;
+
+        // sub-elements.
+        MetricsElementArray array = 2;
+    }
+}
+
+// a variation of metrics value that holds multiple elements.
+message MetricsElementArray {
+
+    // the metrics elements.
+    repeated MetricsElement elements = 1;
+}
+
+// an element of MetricsElementArray.
+message MetricsElement {
+
+    // the metrics element value.
+    double value = 1;
+
+    // attributes of this metrics element.
+    map<string, string> attributes = 2;
+}
+
+// represents an item of metrics.
+message MetricsItem {
+
+    // the metrics item key.
+    string key = 1;
+
+    // human-readable description of the item.
+    string description = 2;
+
+    // the value of this item.
+    MetricsValue value = 3;
+}
+
+// represents metrics information.
+message MetricsInformation {
+
+    // the individual metrics items.
+    repeated MetricsItem items = 1;
+}
