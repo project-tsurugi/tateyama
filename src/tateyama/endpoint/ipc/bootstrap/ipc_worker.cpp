@@ -48,7 +48,7 @@ void Worker::do_work() {
 
     VLOG(log_debug_timing_event) << "/:tateyama:timing:session:started " << session_id_;
 #ifdef ENABLE_ALTIMETER
-    tateyama::endpoint::altimeter::session_start(database_info_, session_info_, session_store_);
+    tateyama::endpoint::altimeter::session_start(database_info_, session_info_);
 #endif
     while(true) {
         try {

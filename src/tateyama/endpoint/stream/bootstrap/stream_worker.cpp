@@ -71,7 +71,7 @@ void stream_worker::do_work()
 
     VLOG(log_debug_timing_event) << "/:tateyama:timing:session:started " << std::to_string(session_id_);
 #ifdef ENABLE_ALTIMETER
-    tateyama::endpoint::altimeter::session_start(database_info_, session_info_, session_store_);
+    tateyama::endpoint::altimeter::session_start(database_info_, session_info_);
 #endif
     while(true) {
         std::uint16_t slot{};
