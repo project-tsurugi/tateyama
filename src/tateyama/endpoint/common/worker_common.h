@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2023 Project Tsurugi.
+ * Copyright 2018-2024 Project Tsurugi.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -178,7 +178,6 @@ protected:
         record.set_code(code);
         record.set_message(message);
         res->error(record);
-        record.release_message();
     }
 
     bool endpoint_service(const std::shared_ptr<tateyama::api::server::request>& req,
