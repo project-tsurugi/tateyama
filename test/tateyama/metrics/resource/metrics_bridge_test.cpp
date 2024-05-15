@@ -229,7 +229,8 @@ TEST_F(metrics_bridge_test, show) {
             for (int j = 0; j < alen; j++) {
                 auto&& element = array.elements(j);
                 auto&& attributes = element.attributes();
-                if (!attributes.contains("table_name") || !attributes.contains("index_name")) {
+//                if (!attributes.contains("table_name") || !attributes.contains("index_name")) {  // N.G. on ubuntu 20.04
+                if ((attributes.find("table_name") == attributes.end()) || (attributes.find("index_name") == attributes.end())) {
                     FAIL();
                 }
                 auto&& table_name = attributes.at("table_name");
