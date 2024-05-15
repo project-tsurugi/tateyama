@@ -40,7 +40,7 @@ public:
      * @returns the metrics item slot for the registered one
      * @throws std::runtime_error if another item with the same key is already in this store
      */
-    metrics_item_slot& register_item(metrics_metadata metadata);
+    metrics_item_slot& register_item(const metrics_metadata& metadata);
     // NOTE: or std::shared_ptr ?
 
     /**

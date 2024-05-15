@@ -27,7 +27,7 @@ public:
         value_ = value;
     }
 
-    double value() {
+    [[nodiscard]] double value() const {
         return value_;
     }
 

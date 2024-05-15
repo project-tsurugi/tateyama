@@ -42,6 +42,10 @@ public:
     virtual ~metrics_aggregator() = default;
 
     // NOTE: cannot copy, cannot move
+    metrics_aggregator(metrics_aggregator const&) = delete;
+    metrics_aggregator(metrics_aggregator&&) = delete;
+    metrics_aggregator& operator = (metrics_aggregator const&) = delete;
+    metrics_aggregator& operator = (metrics_aggregator&&) = delete;
 
     /**
      * @brief add a metrics item and its value.

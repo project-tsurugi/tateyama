@@ -48,6 +48,8 @@ public:
         std::shared_ptr<tateyama::metrics::resource::metrics_item_slot_impl> arg
     ) noexcept;
 
+    ~metrics_item_slot() = default;
+
 private:
     std::shared_ptr<tateyama::metrics::resource::metrics_item_slot_impl> body_;
 };

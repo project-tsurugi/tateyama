@@ -52,7 +52,7 @@ class metrics_store_impl {
     using second_map_type = std::map<tateyama::metrics::metrics_metadata, std::pair<tateyama::metrics::metrics_item_slot, std::shared_ptr<metrics_item_slot_impl>>, metadata_less>;
 
 public:
-    metrics_item_slot& register_item(metrics_metadata metadata) {
+    metrics_item_slot& register_item(const metrics_metadata& metadata) {
         auto key = std::string(metadata.key());
         if (metrics_.find(key) == metrics_.end()) {
             metrics_.emplace(key, std::make_unique<second_map_type>());
@@ -134,7 +134,7 @@ private:
             void operator()(const double v) {
                 value_->set_value(v);
             }
-            void operator()(const std::vector<metrics_element> v) {
+            void operator()(const std::vector<metrics_element>& v) {
                 auto* me = value_->mutable_array()->mutable_elements();
                 for (auto&& ve: v) {
                     auto* element = me->Add();

@@ -23,9 +23,9 @@ class metrics_element_impl {
 public:
     metrics_element_impl() = default;
 
-    double value() const noexcept { return value_; }
+    [[nodiscard]] double value() const noexcept { return value_; }
 
-    std::vector<std::tuple<std::string, std::string>> const& attributes() const noexcept { return attributes_; }
+    [[nodiscard]] std::vector<std::tuple<std::string, std::string>> const& attributes() const noexcept { return attributes_; }
 
 private:
     double value_{};

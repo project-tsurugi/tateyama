@@ -31,19 +31,19 @@ public:
      * @brief returns the metrics item key.
      * @returns the metrics item key string
      */
-    std::string_view key() const noexcept;
+    [[nodiscard]] std::string_view key() const noexcept;
 
     /**
      * @brief returns the metrics item description.
      * @returns the metrics item description
      */
-    std::string_view description() const noexcept;
+    [[nodiscard]] std::string_view description() const noexcept;
 
     /**
      * @brief returns the attributes of this item
      * @returns the attributes of this item
      */
-    std::vector<std::tuple<std::string, std::string>> const& attributes() const noexcept;
+    [[nodiscard]] std::vector<std::tuple<std::string, std::string>> const& attributes() const noexcept;
 
     /**
      * @brief returns whether to include this item to metrics.
@@ -51,14 +51,14 @@ public:
      * @returns true if this metrics item is visible
      * @returns false otherwise
      */
-    bool is_visible() const noexcept;
+    [[nodiscard]] bool is_visible() const noexcept;
 
     /**
      * @brief returns key list of the aggregation group which this item participating.
      * @returns the metrics aggregation group keys
      * @return empty vector if this item is not a member of any groups
      */
-    std::vector<std::string> const& group_keys() const noexcept;
+    [[nodiscard]] std::vector<std::string> const& group_keys() const noexcept;
 
     /**
      * @brief creates a new instance.

@@ -21,7 +21,7 @@ namespace tateyama::metrics {
 metrics_store::metrics_store(std::unique_ptr<tateyama::metrics::resource::metrics_store_impl> arg) noexcept : body_(std::move(arg)) {
 }
 
-metrics_item_slot& metrics_store::register_item(metrics_metadata metadata) {
+metrics_item_slot& metrics_store::register_item(const metrics_metadata& metadata) {
     return body_->register_item(metadata);
 }
 

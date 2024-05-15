@@ -32,7 +32,7 @@ public:
      * @brief returns the metrics aggregation group key.
      * @returns the metrics aggregation group key string
      */
-    std::string_view group_key() const noexcept {
+    [[nodiscard]] std::string_view group_key() const noexcept {
         return group_key_;
     }
 
@@ -40,7 +40,7 @@ public:
      * @brief returns the metrics item description.
      * @returns the metrics item description
      */
-    std::string_view description() const noexcept {
+    [[nodiscard]] std::string_view description() const noexcept {
         return description_;
     }
 
@@ -48,7 +48,7 @@ public:
      * @brief returns a new aggregator of this aggregation.
      * @returns the aggregation operation type
      */
-    virtual std::unique_ptr<metrics_aggregator> create_aggregator() const noexcept = 0;
+    [[nodiscard]] virtual std::unique_ptr<metrics_aggregator> create_aggregator() const noexcept = 0;
 
     /**
      * @brief create a new object
@@ -56,11 +56,21 @@ public:
      * @param description the metrics item description
      */
     metrics_aggregation(
-        const std::string& group_key,
-        const std::string& description) noexcept :
+        std::string_view group_key,
+        std::string_view description) noexcept :
         group_key_(group_key),
         description_(description) {
     }
+
+    /**
+     * @brief disposes this instance.
+     */
+    virtual ~metrics_aggregation() = default;
+
+    metrics_aggregation(metrics_aggregation const&) = delete;
+    metrics_aggregation(metrics_aggregation&&) = delete;
+    metrics_aggregation& operator = (metrics_aggregation const&) = delete;
+    metrics_aggregation& operator = (metrics_aggregation&&) = delete;
 
 private:
     std::string group_key_{};

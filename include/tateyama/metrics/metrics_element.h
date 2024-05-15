@@ -37,17 +37,24 @@ public:
      * @brief returns the value of this element.
      * @returns the element value
      */
-    double value() const noexcept;
+    [[nodiscard]] double value() const noexcept;
 
     /**
      * @brief returns the attributes of this item
      * @returns the attributes of this item
      */
-    std::vector<std::tuple<std::string, std::string>> const& attributes() const noexcept;
+    [[nodiscard]] std::vector<std::tuple<std::string, std::string>> const& attributes() const noexcept;
 
     explicit metrics_element(
         std::shared_ptr<tateyama::metrics::resource::metrics_element_impl> arg
     ) noexcept;
+
+    ~metrics_element() = default;
+
+    metrics_element(metrics_element const&) = delete;
+    metrics_element(metrics_element&&) = delete;
+    metrics_element& operator = (metrics_element const&) = delete;
+    metrics_element& operator = (metrics_element&&) = delete;
 
 private:
     std::shared_ptr<tateyama::metrics::resource::metrics_element_impl> body_;
