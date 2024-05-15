@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2023 Project Tsurugi.
+ * Copyright 2018-2024 Project Tsurugi.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,6 @@
 #include "tateyama/endpoint/stream/stream.h"
 
 namespace tateyama::endpoint::stream::bootstrap {
-class stream_provider;
 
 class alignas(64) stream_worker : public tateyama::endpoint::common::worker_common {
  public:
@@ -49,20 +48,19 @@ class alignas(64) stream_worker : public tateyama::endpoint::common::worker_comm
                   const bool decline)
         : stream_worker(service, session_id, std::move(stream), database_info, decline, nullptr) {
     }
-    ~stream_worker() {
-        if(thread_.joinable()) thread_.join();
+
+    void run() {
+        try {
+            do_work();
+        } catch(std::exception &ex) {
+            LOG(ERROR) << "ipc_endpoint worker thread got an exception: " << ex.what();
+        }
+        if (!decline_) {
+            dispose_session_store();
+        }
     }
-
-    /**
-     * @brief Copy and move constructers are delete.
-     */
-    stream_worker(stream_worker const&) = delete;
-    stream_worker(stream_worker&&) = delete;
-    stream_worker& operator = (stream_worker const&) = delete;
-    stream_worker& operator = (stream_worker&&) = delete;
-
-    void run();
-    friend class stream_provider;
+    bool terminate(tateyama::session::shutdown_request_type type = tateyama::session::shutdown_request_type::graceful);
+    [[nodiscard]] std::size_t session_id() const noexcept { return session_id_; }
 
  private:
     tateyama::framework::routing_service& service_;
@@ -70,6 +68,7 @@ class alignas(64) stream_worker : public tateyama::endpoint::common::worker_comm
     const tateyama::api::server::database_info& database_info_;
     const bool decline_;
 
+    void do_work();
     void notify_of_decline(tateyama::api::server::response* response) {
         tateyama::proto::endpoint::response::Handshake rp{};
         auto re = rp.mutable_error();
@@ -77,6 +76,10 @@ class alignas(64) stream_worker : public tateyama::endpoint::common::worker_comm
         re->set_code(tateyama::proto::diagnostics::Code::RESOURCE_LIMIT_REACHED);
         response->body(rp.SerializeAsString());
         rp.clear_error();
+    }
+
+    bool has_incomplete_resultset() override {
+        return false;
     }
 };
 

@@ -25,9 +25,10 @@
 
 static constexpr std::string_view label = "label_fot_test";
 static constexpr std::string_view application_name = "application_name_fot_test";
-static constexpr std::size_t my_session_id_ = 123;
+static constexpr std::size_t my_session_id_ = 1234;
 static constexpr std::string_view request_test_message = "abcdefgh";
 static constexpr std::string_view response_test_message = "opqrstuvwxyz";
+static constexpr std::size_t service_id_of_info_service = 122;
 
 namespace tateyama::endpoint::stream {
 
@@ -38,7 +39,7 @@ public:
     bool shutdown(tateyama::framework::environment&) { return true; }
     std::string_view label() const noexcept { return __func__; }
 
-    id_type id() const noexcept { return 100;  } // dummy
+    id_type id() const noexcept { return service_id_of_info_service; }
     bool operator ()(std::shared_ptr<tateyama::api::server::request> req,
                      std::shared_ptr<tateyama::api::server::response> res) override {
         req_ = req;
@@ -119,7 +120,7 @@ TEST_F(stream_info_test, basic) {
         tateyama::proto::endpoint::request::Handshake hs{};
         hs.set_allocated_client_information(&cci);
         auto client = std::make_unique<stream_client>(hs);
-        client->send(0, request_test_message);  // we do not care service_id nor request message here
+        client->send(service_id_of_info_service, request_test_message);  // we do not care service_id nor request message here
         cci.release_credential();
         hs.release_client_information();
         client->receive();
@@ -141,7 +142,7 @@ TEST_F(stream_info_test, basic) {
         EXPECT_EQ(si.label(), label);
         EXPECT_EQ(si.application_name(), application_name);
         EXPECT_EQ(si.id(), my_session_id_);
-        EXPECT_EQ(si.connection_type_name(), "TCP/IP");
+        EXPECT_EQ(si.connection_type_name(), "tcp");
         EXPECT_EQ(std::string(si.connection_information()).substr(0, 10), "127.0.0.1:");
         auto s_start = si.start_at();
         EXPECT_TRUE(std::chrono::duration_cast<std::chrono::milliseconds>(now - s_start).count() < 500);

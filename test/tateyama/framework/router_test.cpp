@@ -27,7 +27,7 @@
 #include <tateyama/proto/core/response.pb.h>
 
 #include "tateyama/status/resource/database_info_impl.h"
-#include "tateyama/endpoint//common/session_info_impl.h"
+#include "tateyama/endpoint/common/session_info_impl.h"
 
 #include <gtest/gtest.h>
 #include <tateyama/utils/test_utils.h>
@@ -99,12 +99,17 @@ public:
             return session_info_;
         }
 
+        tateyama::api::server::session_store& session_store() noexcept override {
+            return session_store_;
+        }
+
         std::size_t session_id_{};
         std::size_t service_id_{};
         std::string payload_{};
 
         tateyama::status_info::resource::database_info_impl database_info_{};
         tateyama::endpoint::common::session_info_impl session_info_{};
+        tateyama::api::server::session_store session_store_{};
     };
 
     class test_response : public api::server::response {
@@ -189,10 +194,10 @@ TEST_F(router_test, update_expiration_time) {
     (*router)(svrreq, svrres);
     ASSERT_FALSE(svc0->called_);
 
-    auto pl = svrreq->payload();
-    ::tateyama::proto::core::response::UpdateExpirationTime out{};
-    ASSERT_TRUE(out.ParseFromArray(pl.data(), pl.size()));
-    EXPECT_TRUE(out.has_success());
+    // update_expiration_time is now handled at the endpoint
+    ASSERT_TRUE(svrres->error_invoked_);
+    ASSERT_EQ(svrres->error_record_.code(), ::tateyama::proto::diagnostics::Code::UNSUPPORTED_OPERATION);
+
     sv.shutdown();
 }
 

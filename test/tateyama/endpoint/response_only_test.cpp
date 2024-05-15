@@ -50,6 +50,7 @@ public:
 
     tateyama::status_info::resource::database_info_impl dmy_dbinfo_{};
     tateyama::endpoint::common::session_info_impl dmy_ssinfo_{};
+    tateyama::api::server::session_store dmy_ssstore_{};
 
     class test_service {
     public:
@@ -77,12 +78,12 @@ TEST_F(response_only_test, normal) {
 
     request_wire->write(request_message.data(), request_message.length(), index_);
 
-    auto h = request_wire->peep(true);
+    auto h = request_wire->peep();
     EXPECT_EQ(index_, h.get_idx());
     EXPECT_EQ(request_wire->payload(), request_message);
 
-    auto request = std::make_shared<ipc_request>(*wire_, h, dmy_dbinfo_, dmy_ssinfo_);
-    auto response = std::make_shared<ipc_response>(wire_, h.get_idx());
+    auto request = std::make_shared<ipc_request>(*wire_, h, dmy_dbinfo_, dmy_ssinfo_, dmy_ssstore_);
+    auto response = std::make_shared<ipc_response>(wire_, h.get_idx(), [](){});
     EXPECT_EQ(request->session_id(), 10);
     EXPECT_EQ(request->service_id(), 100);
 
@@ -98,7 +99,7 @@ TEST_F(response_only_test, normal) {
 
     std::stringstream expected{};
     tateyama::endpoint::common::header_content hc{10};
-    tateyama::endpoint::common::append_response_header(expected, response_test_message_, hc);
+    tateyama::endpoint::common::append_response_header(expected, response_test_message_, hc, ::tateyama::proto::framework::response::Header::SERVICE_RESULT);
     EXPECT_EQ(r_msg, expected.str());
 }
 

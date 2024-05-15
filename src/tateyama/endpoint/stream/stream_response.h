@@ -78,19 +78,10 @@ class alignas(64) stream_response : public tateyama::endpoint::common::response 
 
 public:
     stream_response(std::shared_ptr<stream_socket> stream, std::uint16_t index, std::function<void(void)> clean_up) :
-        stream_(std::move(stream)), index_(index), clean_up_(std::move(clean_up)) {
+        tateyama::endpoint::common::response(index),
+        stream_(std::move(stream)),
+        clean_up_(std::move(clean_up)) {
     }
-    stream_response(std::shared_ptr<stream_socket> stream, std::uint16_t index) : stream_response(std::move(stream), index, [](){}) {
-    }
-    stream_response() = delete;
-    ~stream_response() override {
-        clean_up_();
-    }
-
-    stream_response(stream_response const&) = delete;
-    stream_response(stream_response&&) = delete;
-    stream_response& operator = (stream_response const&) = delete;
-    stream_response& operator = (stream_response&&) = delete;
 
     tateyama::status body(std::string_view body) override;
     tateyama::status body_head(std::string_view body_head) override;
@@ -98,22 +89,9 @@ public:
     tateyama::status acquire_channel(std::string_view name, std::shared_ptr<tateyama::api::server::data_channel>& ch) override;
     tateyama::status release_channel(tateyama::api::server::data_channel& ch) override;
 
-    void session_id(std::size_t id) override {
-        session_id_ = id;
-    }
-
 private:
     std::shared_ptr<stream_socket> stream_;
-    std::uint16_t index_;
     const std::function<void(void)> clean_up_;
-
-    std::string message_{};
-
-    std::shared_ptr<stream_data_channel> data_channel_{};
-
-    std::size_t session_id_{};
-
-    std::atomic_flag completed_{};
 
     void server_diagnostics(std::string_view diagnostic_record);
 };

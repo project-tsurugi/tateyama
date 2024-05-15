@@ -47,6 +47,7 @@ public:
         response_wire_container& operator = (response_wire_container&&) = default;
 
         virtual void write(const char*, tateyama::common::wire::response_header) = 0;
+        virtual void notify_shutdown() = 0;
     };
     class resultset_wire_container;
     using resultset_wire_deleter_type = void(*)(resultset_wire_container*);
@@ -90,7 +91,11 @@ public:
         garbage_collector& operator = (garbage_collector const&) = delete;
         garbage_collector& operator = (garbage_collector&&) = delete;
 
-        virtual void dump() = 0;
+        /**
+         * @brief try to dispose remaining resultset_wire
+         * @returns true if garbage_collector has no remaining resultset_wire.
+         */
+        virtual bool dump() = 0;
         virtual void put(unq_p_resultset_wires_conteiner) = 0;
     };
 

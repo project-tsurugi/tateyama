@@ -15,9 +15,14 @@
  */
 #pragma once
 
+#include <memory>
 #include <functional>
 
 #include <tateyama/session/context.h>
+
+namespace tateyama::endpoint::common {
+class worker_common;
+}
 
 namespace tateyama::session::resource {
 
@@ -37,8 +42,16 @@ public:
     session_context_impl& operator = (session_context_impl const&) = delete;
     session_context_impl& operator = (session_context_impl&&) = delete;
 
+    void set_worker(const std::shared_ptr<tateyama::endpoint::common::worker_common>& worker) {
+        session_worker_ = worker;
+    }
+    std::shared_ptr<tateyama::endpoint::common::worker_common> get_session_worker() {
+        return  session_worker_.lock();
+    };
+
 private:
     std::function<void(void)> clean_up_{[](){}};
+    std::weak_ptr<tateyama::endpoint::common::worker_common> session_worker_{};
 };
 
 }

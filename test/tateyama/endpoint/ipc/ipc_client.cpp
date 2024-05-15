@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2023 Project Tsurugi.
+ * Copyright 2018-2024 Project Tsurugi.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,15 +43,16 @@ ipc_client::ipc_client(std::string_view name, std::size_t session_id, tateyama::
     handshake();
 }
 
-static constexpr tsubakuro::common::wire::message_header::index_type ipc_test_index = 1234;
+static constexpr tsubakuro::common::wire::message_header::index_type ipc_test_index = 135;
 
-void ipc_client::send(const std::size_t tag, const std::string &message) {
+void ipc_client::send(const std::size_t tag, const std::string &message, std::size_t index_offset) {
     request_header_content hdr { session_id_, tag };
     std::stringstream ss { };
     append_request_header(ss, message, hdr);
     auto request_message = ss.str();
-    request_wire_->write(reinterpret_cast<const signed char*>(request_message.data()), request_message.length(),
-            ipc_test_index);
+    request_wire_->write(reinterpret_cast<const signed char*>(request_message.data()),
+                         request_message.length(),
+                         ipc_test_index + index_offset);
 }
 
 /*
@@ -59,6 +60,7 @@ void ipc_client::send(const std::size_t tag, const std::string &message) {
  */
 struct parse_response_result {
     std::size_t session_id_ { };
+    tateyama::proto::framework::response::Header::PayloadType payload_type_{};
     std::string_view payload_ { };
 };
 
@@ -70,10 +72,16 @@ bool parse_response_header(std::string_view input, parse_response_result &result
         return false;
     }
     result.session_id_ = hdr.session_id();
+    result.payload_type_ = hdr.payload_type();
     return utils::GetDelimitedBodyFromZeroCopyStream(std::addressof(in), nullptr, result.payload_);
 }
 
 void ipc_client::receive(std::string &message) {
+    tateyama::proto::framework::response::Header::PayloadType type{};
+    receive(message, type);
+}
+
+void ipc_client::receive(std::string &message, tateyama::proto::framework::response::Header::PayloadType &type) {
     tsubakuro::common::wire::response_header header;
     int ntry = 0;
     bool ok = false;
@@ -83,6 +91,9 @@ void ipc_client::receive(std::string &message) {
             header = response_wire_->await();
             ok = true;
         } catch (const std::runtime_error &ex) {
+            if (response_wire_->check_shutdown()) {
+                throw std::runtime_error("server shutdown");
+            }
             std::cout << ex.what() << std::endl;
             ntry++;
             if (ntry >= 100) {
@@ -92,7 +103,6 @@ void ipc_client::receive(std::string &message) {
     } while (!ok);
     // EXPECT_EQ(ipc_test_index, header.get_idx());
     // ASSERT_GT(header.get_length(), 0);
-    // EXPECT_EQ(1, header.get_type());
     std::string r_msg;
     r_msg.resize(header.get_length());
     response_wire_->read(reinterpret_cast<signed char*>(r_msg.data()));
@@ -102,6 +112,7 @@ void ipc_client::receive(std::string &message) {
     // ASSERT_TRUE(parse_response_header(r_msg, result));
     // EXPECT_EQ(session_id_, result.session_id_);
     message = result.payload_;
+    type = result.payload_type_;
 }
 
 resultset_wires_container* ipc_client::create_resultset_wires() {

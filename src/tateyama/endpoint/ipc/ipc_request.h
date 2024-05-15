@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2023 Project Tsurugi.
+ * Copyright 2018-2024 Project Tsurugi.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,12 +19,10 @@
 #include <array>
 #include <exception>
 
-#include <tateyama/api/server/request.h>
+#include <tateyama/endpoint/common/request.h>
 
 #include "server_wires.h"
 #include "tateyama/endpoint/common/endpoint_proto_utils.h"
-#include "tateyama/status/resource/database_info_impl.h"
-#include "tateyama/endpoint/common/session_info_impl.h"
 #include "tateyama/logging_helper.h"
 
 namespace tateyama::endpoint::ipc {
@@ -32,12 +30,12 @@ namespace tateyama::endpoint::ipc {
 /**
  * @brief request object for ipc_endpoint
  */
-class alignas(64) ipc_request : public tateyama::api::server::request {
+class alignas(64) ipc_request : public tateyama::endpoint::common::request {
     constexpr static std::size_t SPO_SIZE = 256;
 
 public:
-    ipc_request(server_wire_container& server_wire, tateyama::common::wire::message_header& header, const tateyama::api::server::database_info& database_info, const tateyama::api::server::session_info& session_info)
-        : server_wire_(server_wire), length_(header.get_length()), database_info_(database_info), session_info_(session_info) {
+    ipc_request(server_wire_container& server_wire, tateyama::common::wire::message_header& header, const tateyama::api::server::database_info& database_info, const tateyama::api::server::session_info& session_info, tateyama::api::server::session_store& session_store)
+        : tateyama::endpoint::common::request(database_info, session_info, session_store), server_wire_(server_wire), length_(header.get_length()), index_(header.get_idx()) {
         std::string_view message{};
         auto *request_wire = server_wire_.get_request_wire();
 
@@ -67,14 +65,10 @@ public:
     [[nodiscard]] std::size_t session_id() const override;
     [[nodiscard]] std::size_t service_id() const override;
 
-    [[nodiscard]] tateyama::api::server::database_info const& database_info() const noexcept override;
-    [[nodiscard]] tateyama::api::server::session_info const& session_info() const noexcept override;
-
 private:
     server_wire_container& server_wire_;
     const std::size_t length_;
-    const tateyama::api::server::database_info& database_info_;
-    const tateyama::api::server::session_info& session_info_;
+    const std::size_t index_;
 
     std::size_t session_id_{};
     std::size_t service_id_{};

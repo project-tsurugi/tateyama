@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "tateyama/endpoint/ipc/bootstrap/worker.h"
+#include "tateyama/endpoint/ipc/bootstrap/ipc_worker.h"
 #include "tateyama/endpoint/header_utils.h"
 #include <tateyama/proto/endpoint/request.pb.h>
 #include "tateyama/status/resource/database_info_impl.h"
@@ -45,6 +45,7 @@ static constexpr std::size_t datachannel_buffer_size = 64 * 1024;
 static constexpr tateyama::common::wire::message_header::index_type index_ = 1;
 static constexpr std::string_view response_test_message = "opqrstuvwxyz";
 static constexpr std::string_view request_test_message = "abcdefgh";
+static constexpr std::size_t service_id_of_info_service = 101;
 
 class info_service : public tateyama::framework::routing_service {
 public:
@@ -53,7 +54,7 @@ public:
     bool shutdown(tateyama::framework::environment&) { return true; }
     std::string_view label() const noexcept { return __func__; }
 
-    id_type id() const noexcept { return 100;  } // dummy
+    id_type id() const noexcept { return service_id_of_info_service; }
     bool operator ()(std::shared_ptr<tateyama::api::server::request> req,
                      std::shared_ptr<tateyama::api::server::response> res) override {
         req_ = req;
@@ -93,7 +94,7 @@ TEST_F(ipc_info_test, basic) {
     session_name += "-";
     session_name += std::to_string(my_session_id);
     auto wire = std::make_shared<bootstrap::server_wire_container_impl>(session_name, "dummy_mutex_file_name", datachannel_buffer_size, 16);
-    tateyama::endpoint::ipc::bootstrap::Worker worker(service_, my_session_id, wire, database_info_);
+    tateyama::endpoint::ipc::bootstrap::Worker worker(service_, my_session_id, wire, database_info_, nullptr);
     tateyama::server::ipc_listener_for_test::run(worker);
 
     // client part
@@ -109,7 +110,7 @@ TEST_F(ipc_info_test, basic) {
     cci.release_credential();
     hs.release_client_information();
 
-    client->send(0, std::string(request_test_message));  // we do not care service_id nor request message here
+    client->send(service_id_of_info_service, std::string(request_test_message));  // we do not care service_id nor request message here
     std::string res{};
     client->receive(res);
     
@@ -130,7 +131,7 @@ TEST_F(ipc_info_test, basic) {
     EXPECT_EQ(si.label(), label);
     EXPECT_EQ(si.application_name(), application_name);
     EXPECT_EQ(si.id(), my_session_id);
-    EXPECT_EQ(si.connection_type_name(), "IPC");
+    EXPECT_EQ(si.connection_type_name(), "ipc");
     auto s_start = si.start_at();
     EXPECT_TRUE(std::chrono::duration_cast<std::chrono::milliseconds>(now - s_start).count() < 500);
 

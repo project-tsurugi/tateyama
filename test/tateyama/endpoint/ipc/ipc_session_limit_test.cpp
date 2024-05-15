@@ -66,10 +66,10 @@ public:
     }
 
     void client_thread_serial() {
-        std::vector<ipc_client> clients { };
+        std::vector<std::unique_ptr<ipc_client>> clients { };
         for (int i = 1; i <= nsession_; i++) {
             try {
-                clients.emplace_back(cfg_);
+                clients.emplace_back(std::make_unique<ipc_client>(cfg_));
             } catch (std::exception &ex) {
                 std::cout << "nproc=" << i << ", ipc_max_session=" << ipc_max_session_ << " : " << ex.what()
                         << std::endl;
@@ -83,8 +83,8 @@ public:
                 return;
             }
         }
-        for (ipc_client &client : clients) {
-            send_receive_loop(client);
+        for (auto& e : clients) {
+            send_receive_loop(*e);
         }
     }
 

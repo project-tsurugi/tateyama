@@ -48,6 +48,7 @@ class stream_client {
 
 public:
     static constexpr int PORT_FOR_TEST = 12349;
+    static constexpr int TERMINATION_REQUEST = 0xffff;
 
     explicit stream_client(tateyama::proto::endpoint::request::Handshake& hs);
     stream_client() : stream_client(default_endpoint_handshake_) {
@@ -56,11 +57,21 @@ public:
         ::close(sockfd_);
     }
 
-    void send(const std::uint8_t type, const std::uint16_t slot, std::string_view message);
-    void send(const std::size_t tag, std::string_view message);
+    bool send(const std::uint8_t type, const std::uint16_t slot, std::string_view message);
+    bool send(const std::size_t tag, std::string_view message, std::size_t index_offset = 0);
     void receive(std::string &message);
     void receive() { receive(response_); }
+    void receive(std::string &message, tateyama::proto::framework::response::Header::PayloadType& type);
+    void disconnect() {
+        if (!send_bye_) {
+            send(REQUEST_SESSION_BYE, TERMINATION_REQUEST, "");
+            send_bye_ = true;
+            std::string dmy{};
+            receive(dmy);
+        }
+    }
     void close() {
+        disconnect();
         ::close(sockfd_);
     }
 
@@ -77,8 +88,10 @@ private:
     tateyama::proto::endpoint::request::Handshake default_endpoint_handshake_{};
     std::string handshake_response_{};
     std::string response_{};
+    bool send_bye_{};
 
     void handshake();
+    void receive(std::string &message, tateyama::proto::framework::response::Header::PayloadType type, bool do_check);
 };
 
 } // namespace tateyama::api::endpoint::stream

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2023 Project Tsurugi.
+ * Copyright 2018-2024 Project Tsurugi.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 #pragma once
 
+#include <atomic>
 #include <memory>
 
 #include <tateyama/api/server/response.h>
@@ -25,16 +26,39 @@ namespace tateyama::endpoint::common {
  */
 class response : public tateyama::api::server::response {
 public:
+    explicit response(std::size_t index) : index_(index) {
+    }
+
     [[nodiscard]] bool check_cancel() const override {
         return cancel_;
     }
 
-    void set_cancel() noexcept {
-        cancel_ = true;
+    void session_id(std::size_t id) override {
+        session_id_ = id;
     }
+
+    void cancel() noexcept {
+        cancel_ = true;
+        if (data_channel_) {
+            release_channel(*data_channel_);
+        }
+    }
+
+    [[nodiscard]] bool is_completed() noexcept {
+        return completed_.load();
+    }
+
+protected:
+    std::size_t index_; // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes,misc-non-private-member-variables-in-classes)
+
+    std::size_t session_id_{};  // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes,misc-non-private-member-variables-in-classes)
+
+    std::shared_ptr<tateyama::api::server::data_channel> data_channel_{};  // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes,misc-non-private-member-variables-in-classes)
+
+    std::atomic_bool completed_{};  // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes,misc-non-private-member-variables-in-classes)
 
 private:
     bool cancel_{};
 };
 
-}  // tateyama::common::wire
+}  // tateyama::endpoint::common

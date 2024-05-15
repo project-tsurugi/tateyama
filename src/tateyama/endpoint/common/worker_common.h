@@ -20,68 +20,110 @@
 #include <memory>
 #include <functional>
 #include <map>
+#include <utility>
 #include <vector>
 #include <mutex>
 
 #include <tateyama/status.h>
-#include <tateyama/api/server/request.h>
-#include <tateyama/api/server/response.h>
 #include <tateyama/framework/routing_service.h>
 #include <tateyama/framework/component_ids.h>
 #include <tateyama/status/resource/bridge.h>
 #include <tateyama/logging_helper.h>
 #include <tateyama/session/resource/bridge.h>
 #include <tateyama/session/variable_set.h>
+#include <tateyama/api/server/session_store.h>
 
 #include <tateyama/proto/endpoint/request.pb.h>
 #include <tateyama/proto/endpoint/response.pb.h>
+#include <tateyama/proto/core/request.pb.h>
+#include <tateyama/proto/core/response.pb.h>
 #include <tateyama/proto/diagnostics.pb.h>
 
+#include "request.h"
 #include "response.h"
-#include "tateyama/endpoint/common/session_info_impl.h"
+#include "session_info_impl.h"
 
 namespace tateyama::endpoint::common {
 
 class worker_common {
-public:
+protected:
     enum class connection_type : std::uint32_t {
-    /**
-     * @brief undefined type.
-     */
-    undefined = 0U,
+        /**
+         * @brief undefined type.
+         */
+        undefined = 0U,
 
-    /**
-     * @brief IPC connection.
-     */
-    ipc,
+        /**
+         * @brief IPC connection.
+         */
+        ipc,
 
-    /**
-     * @brief stream (TCP/IP) connection.
-     */
-    stream,
+        /**
+         * @brief stream (TCP/IP) connection.
+         */
+        stream,
     };
 
+public:
     worker_common(connection_type con, std::size_t session_id, std::string_view conn_info, std::shared_ptr<tateyama::session::resource::bridge> session)
         : connection_type_(con),
           session_id_(session_id),
           session_info_(session_id, connection_label(con), conn_info),
           session_(std::move(session)),
           session_variable_set_(variable_declarations()),
-          session_context_(std::make_shared<tateyama::session::resource::session_context_impl>(session_info_, session_variable_set_))
-        {
-            if (session_) {
-                session_->register_session(session_context_);
-            }
+          session_context_(std::make_shared<tateyama::session::resource::session_context_impl>(session_info_, session_variable_set_)) {
+        if (session_) {
+            session_->register_session(session_context_);
+        }
     }
     worker_common(connection_type con, std::size_t id, std::shared_ptr<tateyama::session::resource::bridge> session) : worker_common(con, id, "", std::move(session)) {
     }
+    virtual ~worker_common() {
+        if(thread_.joinable()) thread_.join();
+    }
+
+    /**
+     * @brief Copy and move constructers are delete.
+     */
+    worker_common(worker_common const&) = delete;
+    worker_common(worker_common&&) = delete;
+    worker_common& operator = (worker_common const&) = delete;
+    worker_common& operator = (worker_common&&) = delete;
+
     void invoke(std::function<void(void)> func) {
         task_ = std::packaged_task<void()>(std::move(func));
         future_ = task_.get_future();
         thread_ = std::thread(std::move(task_));
     }
+
     [[nodiscard]] auto wait_for() const {
         return future_.wait_for(std::chrono::seconds(0));
+    }
+
+    [[nodiscard]] bool terminated() const {
+        return wait_for() == std::future_status::ready;
+    }
+
+    [[nodiscard]] bool is_quiet() {
+        return !has_incomplete_response() && !has_incomplete_resultset() && terminated();
+    }
+
+    /**
+     * @brief Register this in the session_context.
+     * @param me the shared_ptr of this object
+     */
+    void register_worker_in_context(const std::shared_ptr<worker_common>& me) {
+        if (me.get() != this) {
+            throw std::runtime_error("invalid argument");
+        }
+        session_context_->set_worker(me);
+    }
+
+    /**
+     * @brief dispose the session_elements in the session_store.
+     */
+    void dispose_session_store() {
+        session_store_.dispose();
     }
 
 protected:
@@ -101,6 +143,9 @@ protected:
 
     // for session management
     const std::shared_ptr<tateyama::session::resource::bridge> session_;  // NOLINT
+
+    // session store
+    tateyama::api::server::session_store session_store_{};  // NOLINT
 
     bool handshake(tateyama::api::server::request* req, tateyama::api::server::response* res) {
         if (req->service_id() != tateyama::framework::service_id_endpoint_broker) {
@@ -171,7 +216,7 @@ protected:
         return true;
     }
 
-    void notify_client(tateyama::api::server::response* res,
+    static void notify_client(tateyama::api::server::response* res,
                        tateyama::proto::diagnostics::Code code,
                        const std::string& message) {
         tateyama::proto::diagnostics::Record record{};
@@ -191,48 +236,202 @@ protected:
             notify_client(res.get(), tateyama::proto::diagnostics::Code::INVALID_REQUEST, error_message);
             return false;
         }
-        if(rq.command_case() != tateyama::proto::endpoint::request::Request::kCancel) {
+
+        switch (rq.command_case()) {
+
+        case tateyama::proto::endpoint::request::Request::kCancel:
+        {
+            VLOG_LP(log_trace) << "received cancel request, slot = " << slot;  //NOLINT
+            {
+                std::lock_guard<std::mutex> lock(mtx_reqreses_);
+                if (auto itr = reqreses_.find(slot); itr != reqreses_.end()) {
+                    itr->second.second->cancel();
+                }
+            }
+            return true;
+        }
+
+        default: // error
+        {
             std::stringstream ss;
-            ss << "bad request (cancel in endpoint): " << rq.command_case();
+            ss << "bad request for endpoint: " << rq.command_case();
             LOG(INFO) << ss.str();
             notify_client(res.get(), tateyama::proto::diagnostics::Code::INVALID_REQUEST, ss.str());
+        }
+        return false;
+        }
+    }
+
+    bool routing_service_chain(const std::shared_ptr<tateyama::api::server::request>& req,
+                         const std::shared_ptr<tateyama::api::server::response>& res) {
+        auto data = req->payload();
+        tateyama::proto::core::request::Request rq{};
+        if(! rq.ParseFromArray(data.data(), static_cast<int>(data.size()))) {
+            std::string error_message{"request parse error"};
+            LOG(INFO) << error_message;
+            notify_client(res.get(), tateyama::proto::diagnostics::Code::INVALID_REQUEST, error_message);
             return false;
         }
+
+        switch (rq.command_case()) {
+
+        case tateyama::proto::core::request::Request::kShutdown:
         {
-            std::lock_guard<std::mutex> lock(mtx_responses_);
-            if (auto itr = responses_.find(slot); itr != responses_.end()) {
-                if (auto ptr = itr->second.lock(); ptr) {
-                    ptr->set_cancel();
+            VLOG_LP(log_trace) << "received shutdown request";  //NOLINT
+            {
+                tateyama::session::shutdown_request_type shutdown_type{};
+                switch (rq.shutdown().type()) {
+                case tateyama::proto::core::request::ShutdownType::SHUTDOWN_TYPE_NOT_SET:
+                    shutdown_type = tateyama::session::shutdown_request_type::forceful;
+                    break;
+                case tateyama::proto::core::request::ShutdownType::GRACEFUL:
+                    shutdown_type = tateyama::session::shutdown_request_type::graceful;
+                    break;
+                case tateyama::proto::core::request::ShutdownType::FORCEFUL:
+                    shutdown_type = tateyama::session::shutdown_request_type::forceful;
+                    break;
+                default: // error
+                    return false;
+                }
+                request_shutdown(shutdown_type);
+
+                // FIXME confirm when response should be sent
+                tateyama::proto::core::response::Shutdown rp{};
+                auto body = rp.SerializeAsString();
+                res->body(body);
+                return true;
+            }
+            return true;
+        }
+
+        case tateyama::proto::core::request::Request::kUpdateExpirationTime:
+        {
+            // mock impl. for UpdateExpirationTime // TODO
+            auto et = rq.update_expiration_time().expiration_time();
+            VLOG_LP(log_debug) <<
+                "UpdateExpirationTime received session_id:" << req->session_id() <<
+                " expiration_time:" << et;
+            tateyama::proto::core::response::UpdateExpirationTime rp{};
+            rp.mutable_success();
+            res->session_id(req->session_id());
+            auto body = rp.SerializeAsString();
+            res->body(body);
+            rp.clear_success();
+            return true;
+        }
+
+        default:
+            // this request can not be handled here;
+            return false;
+        }
+    }
+
+    void register_reqres(std::size_t slot, const std::shared_ptr<tateyama::api::server::request>& request, const std::shared_ptr<tateyama::endpoint::common::response>& response) noexcept {
+        std::lock_guard<std::mutex> lock(mtx_reqreses_);
+        if (auto itr = reqreses_.find(slot); itr != reqreses_.end()) {
+            reqreses_.erase(itr);
+        }
+        reqreses_.emplace(slot, std::pair<std::shared_ptr<tateyama::api::server::request>, std::shared_ptr<tateyama::endpoint::common::response>>(request, response));
+    }
+
+    void remove_reqres(std::size_t slot) noexcept {
+        std::lock_guard<std::mutex> lock(mtx_reqreses_);
+        if (auto&& itr = reqreses_.find(slot); itr != reqreses_.end()) {
+            reqreses_.erase(itr);
+        }
+    }
+
+    bool is_shuttingdown() {
+        auto sr = session_context_->shutdown_request();
+        if ((sr == tateyama::session::shutdown_request_type::forceful) && !cancel_requested_to_all_responses_) {
+            foreach_reqreses([](tateyama::endpoint::common::response& r){ r.cancel(); });
+            cancel_requested_to_all_responses_ = true;
+        }
+        return (sr == tateyama::session::shutdown_request_type::graceful) ||
+            (sr == tateyama::session::shutdown_request_type::forceful);
+    }
+
+    void care_reqreses() {
+        std::vector<std::shared_ptr<tateyama::endpoint::common::response>> targets{};
+        {
+            std::lock_guard<std::mutex> lock(mtx_reqreses_);
+            for (auto itr{reqreses_.begin()}, end{reqreses_.end()}; itr != end; ) {
+                auto&& pair = itr->second;
+                auto && res = itr->second.second;
+                if ((pair.first.use_count() == 1) && (res.use_count() == 1)) {
+                    if (!res->is_completed()) {
+                        targets.emplace_back(res);
+                    }
+                    itr = reqreses_.erase(itr);
+                } else {
+                    ++itr;
                 }
             }
         }
-        return true;
+        for (auto &&e: targets) {
+            notify_client(e.get(), tateyama::proto::diagnostics::Code::UNKNOWN, "request dissipated");
+        }
     }
 
-    void register_response(std::size_t slot, const std::shared_ptr<tateyama::endpoint::common::response>& response) noexcept {
-        std::lock_guard<std::mutex> lock(mtx_responses_);
-        if (auto itr = responses_.find(slot); itr != responses_.end()) {
-            responses_.erase(itr);
+    bool is_completed() {
+        std::lock_guard<std::mutex> lock(mtx_reqreses_);
+        return reqreses_.empty();
+    }
+
+    void foreach_reqreses(const std::function<void(tateyama::endpoint::common::response&)>& func) {
+        std::vector<std::shared_ptr<tateyama::endpoint::common::response>> targets{};
+        {
+            std::lock_guard<std::mutex> lock(mtx_reqreses_);
+            for (auto itr{reqreses_.begin()}, end{reqreses_.end()}; itr != end; ) {
+                auto& ptr = itr->second.second;
+                if (ptr.use_count() > 1) {
+                    targets.emplace_back(ptr);
+                    ++itr;
+                } else {
+                    if (itr->second.first.use_count() == 1) {
+                        itr = reqreses_.erase(itr);
+                    } else {
+                        ++itr;
+                    }
+                }
+            }
         }
-        responses_.emplace(slot, response);
+        for (auto &&e: targets) {
+            func(*e);
+        }
     }
-    void remove_response(std::size_t slot) noexcept {
-        std::lock_guard<std::mutex> lock(mtx_responses_);
-        responses_.erase(slot);
+
+    bool request_shutdown(tateyama::session::shutdown_request_type type) noexcept {
+        if (type == session::shutdown_request_type::forceful) {
+            if (!cancel_requested_to_all_responses_) {
+                foreach_reqreses([](tateyama::endpoint::common::response& r){ r.cancel(); });
+                cancel_requested_to_all_responses_ = true;
+            }
+        }
+        return session_context_->shutdown_request(type);
     }
+
+    [[nodiscard]] bool has_incomplete_response() {
+        bool rv{false};
+        foreach_reqreses([&rv](tateyama::endpoint::common::response& r){if(!r.is_completed()){rv = true;}});
+        return rv;
+    }
+
+    virtual bool has_incomplete_resultset() = 0;
 
 private:
     tateyama::session::session_variable_set session_variable_set_;
     const std::shared_ptr<tateyama::session::resource::session_context_impl> session_context_;
-    std::map<std::size_t, std::weak_ptr<tateyama::endpoint::common::response>> responses_{};
-    std::mutex mtx_responses_{};
+    std::map<std::size_t, std::pair<std::shared_ptr<tateyama::api::server::request>, std::shared_ptr<tateyama::endpoint::common::response>>> reqreses_{};
+    std::mutex mtx_reqreses_{};
+    bool cancel_requested_to_all_responses_{};
 
     std::string_view connection_label(connection_type con) {
         switch (con) {
         case connection_type::ipc:
-            return "IPC";
+            return "ipc";
         case connection_type::stream:
-            return "TCP/IP";
+            return "tcp";
         default:
             return "";
         }

@@ -65,7 +65,7 @@ std::optional<tateyama::proto::session::diagnostic::ErrorCode> bridge::find_only
             numeric_id = std::stol(std::string(session_specifier.data() + 1, session_specifier.length() -1));
             return std::nullopt;
         } catch (std::exception &ex) {
-            return tateyama::proto::session::diagnostic::ErrorCode::UNKNOWN;
+            return tateyama::proto::session::diagnostic::ErrorCode::INVALID_ARGUMENT;
         }
     }
     auto v = sessions_core_impl_.container_.enumerate_numeric_ids(session_specifier);
@@ -108,7 +108,7 @@ std::optional<tateyama::proto::session::diagnostic::ErrorCode> bridge::get(std::
     return tateyama::proto::session::diagnostic::ErrorCode::SESSION_NOT_FOUND;        
 }
 
-std::optional<tateyama::proto::session::diagnostic::ErrorCode> bridge::shutdown(std::string_view session_specifier, [[maybe_unused]] shutdown_request_type type) {
+std::optional<tateyama::proto::session::diagnostic::ErrorCode> bridge::session_shutdown(std::string_view session_specifier, shutdown_request_type type, std::shared_ptr<session_context>& context) {
     session_context::numeric_id_type numeric_id{};
     try {
         auto opt = find_only_one_session(session_specifier, numeric_id);
@@ -119,7 +119,6 @@ std::optional<tateyama::proto::session::diagnostic::ErrorCode> bridge::shutdown(
         return tateyama::proto::session::diagnostic::ErrorCode::SESSION_NOT_FOUND;
     }
 
-    std::shared_ptr<session_context> context{};
     try {
         context = sessions_core_impl_.container_.find_session(numeric_id);
         if (context) {
@@ -127,7 +126,7 @@ std::optional<tateyama::proto::session::diagnostic::ErrorCode> bridge::shutdown(
             if (rv) {
                 return std::nullopt;
             }
-            return tateyama::proto::session::diagnostic::ErrorCode::UNKNOWN;  // FIXME assign suitable code
+            return tateyama::proto::session::diagnostic::ErrorCode::OPERATION_NOT_PERMITTED;
         }
     } catch (std::invalid_argument &ex) {
         return tateyama::proto::session::diagnostic::ErrorCode::SESSION_VARIABLE_INVALID_VALUE;
@@ -168,7 +167,7 @@ std::optional<tateyama::proto::session::diagnostic::ErrorCode> bridge::set_valia
                     }
                     break;
                 } catch (boost::bad_lexical_cast const &ex) {
-                    return tateyama::proto::session::diagnostic::ErrorCode::UNKNOWN; // FIXME
+                    return tateyama::proto::session::diagnostic::ErrorCode::SESSION_VARIABLE_INVALID_VALUE;
                 }
             }
             case session_variable_type::signed_integer:
@@ -180,7 +179,7 @@ std::optional<tateyama::proto::session::diagnostic::ErrorCode> bridge::set_valia
                     }
                     break;
                 } catch (std::exception const &ex) {
-                    return tateyama::proto::session::diagnostic::ErrorCode::UNKNOWN; // FIXME
+                    return tateyama::proto::session::diagnostic::ErrorCode::SESSION_VARIABLE_INVALID_VALUE;
                 }
             }
             case session_variable_type::unsigned_integer:
@@ -192,7 +191,7 @@ std::optional<tateyama::proto::session::diagnostic::ErrorCode> bridge::set_valia
                     }
                     break;
                 } catch (std::exception const &ex) {
-                    return tateyama::proto::session::diagnostic::ErrorCode::UNKNOWN; // FIXME
+                    return tateyama::proto::session::diagnostic::ErrorCode::SESSION_VARIABLE_INVALID_VALUE;
                 }
             }
             case session_variable_type::string:
@@ -205,7 +204,7 @@ std::optional<tateyama::proto::session::diagnostic::ErrorCode> bridge::set_valia
             default:
                 break;
             }
-            return tateyama::proto::session::diagnostic::ErrorCode::UNKNOWN;
+            return tateyama::proto::session::diagnostic::ErrorCode::OPERATION_NOT_PERMITTED;
         }
     } catch (std::invalid_argument &ex) {
         return tateyama::proto::session::diagnostic::ErrorCode::SESSION_VARIABLE_INVALID_VALUE;
@@ -218,7 +217,7 @@ public:
     explicit value(::tateyama::proto::session::response::SessionGetVariable_Success* mutable_success) : mutable_success_(mutable_success) {
     }
     std::optional<tateyama::proto::session::diagnostic::ErrorCode> operator()([[maybe_unused]] const std::monostate& data) {
-        return tateyama::proto::session::diagnostic::ErrorCode::UNKNOWN;
+        return tateyama::proto::session::diagnostic::ErrorCode::OPERATION_NOT_PERMITTED;
     }
     std::optional<tateyama::proto::session::diagnostic::ErrorCode> operator()(const bool data) {
         mutable_success_->set_bool_value(data);

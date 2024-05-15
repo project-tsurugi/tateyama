@@ -88,15 +88,15 @@ public:
     public:
         wire_container() = default;
         wire_container(unidirectional_message_wire* wire, char* bip_buffer) : wire_(wire), bip_buffer_(bip_buffer) {};
-        message_header peep(bool wait = false) {
-            return wire_->peep(bip_buffer_, wait);
+        message_header peep() {
+            return wire_->peep(bip_buffer_);
         }
         void write(const signed char* from, std::size_t length, message_header::index_type index) {
             const char *ptr = reinterpret_cast<const char*>(from);
             wire_->write(bip_buffer_, ptr, message_header(index, length));
         }
         void disconnect() {
-            wire_->write(bip_buffer_, nullptr, message_header(message_header::not_use, 0));
+            wire_->terminate();
         }
 
     private:
@@ -122,6 +122,9 @@ public:
         }
         void read(signed char* to) {
             wire_->read(reinterpret_cast<char*>(to), bip_buffer_);
+        }
+        bool check_shutdown() {
+            return wire_->check_shutdown();
         }
         void close() {
             wire_->close();

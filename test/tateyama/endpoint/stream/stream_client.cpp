@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <exception>
 #include <arpa/inet.h>  // for inet_addr()
 #include <strings.h>    // for bezero()
 
@@ -41,7 +42,7 @@ stream_client::stream_client(tateyama::proto::endpoint::request::Handshake& hs) 
     handshake();
 }
 
-void
+bool
 stream_client::send(const std::uint8_t type, const std::uint16_t slot, std::string_view message)
 {
     std::uint8_t  header[7];  // NOLINT
@@ -54,13 +55,20 @@ stream_client::send(const std::uint8_t type, const std::uint16_t slot, std::stri
     header[4] = (length >> 8) & 0xff;
     header[5] = (length >> 16) & 0xff;
     header[6] = (length >> 24) & 0xff;
-    ::send(sockfd_, header, 7, 0);
-    if (length > 0) {
-        ::send(sockfd_, message.data(), length, 0);
+    if (::send(sockfd_, header, 7, MSG_NOSIGNAL) < 0) {
+        return false;
     }
+    if (length > 0) {
+        if (::send(sockfd_, message.data(), length, MSG_NOSIGNAL) < 0) {
+            return false;
+        }
+    }
+    return true;
 }
 
-void stream_client::send(const std::size_t tag, std::string_view message) {
+static constexpr std::size_t stream_test_index = 135;
+
+bool stream_client::send(const std::size_t tag, std::string_view message, std::size_t index_offset) {
     ::tateyama::proto::framework::request::Header hdr{};
     hdr.set_service_id(tag);
     std::stringstream ss{};
@@ -71,11 +79,12 @@ void stream_client::send(const std::size_t tag, std::string_view message) {
         throw std::runtime_error("payload serialize error");
     }
     auto request_message = ss.str();
-    send(REQUEST_SESSION_PAYLOAD, 1, request_message);
+    return send(REQUEST_SESSION_PAYLOAD, stream_test_index + index_offset, request_message);
 }
 
 struct parse_response_result {
     std::size_t session_id_ { };
+    tateyama::proto::framework::response::Header::PayloadType payload_type_{ };
     std::string_view payload_ { };
 };
 
@@ -87,34 +96,50 @@ static bool parse_response_header(std::string_view input, parse_response_result 
         return false;
     }
     result.session_id_ = hdr.session_id();
+    result.payload_type_ = hdr.payload_type();
     return utils::GetDelimitedBodyFromZeroCopyStream(std::addressof(in), nullptr, result.payload_);
 }
 
 void
-stream_client::receive(std::string& message)
-{
-    std::uint8_t  data[4];  // NOLINT
+stream_client::receive(std::string &message) {
+    tateyama::proto::framework::response::Header::PayloadType type{};
+    receive(message, type);
+}
 
-    recv(sockfd_, &type_, 1, 0);
+void
+stream_client::receive(std::string& message, tateyama::proto::framework::response::Header::PayloadType& type) {
+    std::uint8_t packet_type;  // NOLINT
+    std::uint8_t data[4];  // NOLINT
 
-    recv(sockfd_, data, 2, 0);  
+    if (::recv(sockfd_, &packet_type, 1, 0) < 0) {
+        throw std::runtime_error("error in recv()");
+    }
+    if (::recv(sockfd_, data, 2, 0) < 0) {
+        throw std::runtime_error("error in recv()");
+    }
     slot_ = data[0] | (data[1] << 8);
 
-    if (type_ ==  RESPONSE_RESULT_SET_PAYLOAD) {
-        ::recv(sockfd_, &writer_, 1, 0);
+    if (packet_type == RESPONSE_RESULT_SET_PAYLOAD) {
+        if (::recv(sockfd_, &writer_, 1, 0) < 0) {
+            throw std::runtime_error("error in recv()");
+        }
     }
 
-    ::recv(sockfd_, data, 4, 0);
+    if (::recv(sockfd_, data, 4, 0) < 0) {
+        throw std::runtime_error("error in recv()");
+    }
     std::size_t length = data[0] | (data[1] << 8) | (data[2] << 16) | (data[3] << 24);
 
-    std::string r_msg;
+    std::string r_msg{};
     if (length > 0) {
         r_msg.resize(length);
-        ::recv(sockfd_, r_msg.data(), length, 0);
-
+        if (::recv(sockfd_, r_msg.data(), length, 0) < 0) {
+            throw std::runtime_error("error in recv()");
+        }
         parse_response_result result;
         if (parse_response_header(r_msg, result)) {
             message = result.payload_;
+            type = result.payload_type_;
         }
     } else {
         r_msg.clear();
@@ -128,11 +153,19 @@ void stream_client::handshake() {
     endpoint_handshake_.set_allocated_wire_information(&wire_information);
     tateyama::proto::endpoint::request::Request endpoint_request{};
     endpoint_request.set_allocated_handshake(&endpoint_handshake_);
-    send(tateyama::framework::service_id_endpoint_broker, endpoint_request.SerializeAsString());
+    try {
+        send(tateyama::framework::service_id_endpoint_broker, endpoint_request.SerializeAsString());
+    } catch (std::exception &ex) {
+        std::cout << ex.what() << std::endl;
+    }
     endpoint_request.release_handshake();
     endpoint_handshake_.release_wire_information();
 
-    receive(handshake_response_);
+    try {
+        receive(handshake_response_);
+    } catch (std::exception &ex) {
+        std::cout << ex.what() << std::endl;
+    }
 }
 
 

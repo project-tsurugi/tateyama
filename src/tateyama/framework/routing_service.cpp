@@ -31,6 +31,7 @@
 
 #include <tateyama/proto/core/request.pb.h>
 #include <tateyama/proto/core/response.pb.h>
+#include <tateyama/proto/diagnostics.pb.h>
 
 namespace tateyama::framework {
 
@@ -59,7 +60,7 @@ bool routing_service::shutdown(environment&) {
     return true;
 }
 
-bool handle_update_expiration_time(
+static bool service_(
     std::shared_ptr<request> const& req,
     std::shared_ptr<response> const& res
 ) {
@@ -70,26 +71,20 @@ bool handle_update_expiration_time(
         VLOG_LP(log_error) << "request parse error";
         return false;
     }
-    if(rq.command_case() != ns::Request::kUpdateExpirationTime) {
+    tateyama::proto::diagnostics::Record record{};
+    switch (rq.command_case()) {
+    case ns::Request::kUpdateExpirationTime:
+        LOG_LP(INFO) << "does not support UpdateExpirationTime for this endpoint";
+        record.set_code(tateyama::proto::diagnostics::Code::UNSUPPORTED_OPERATION);
+        res->error(record);
+        return true;
+
+    default:
+        record.set_code(tateyama::proto::diagnostics::Code::UNKNOWN);
+        res->error(record);
         LOG_LP(ERROR) << "bad request destination (routing service): " << rq.command_case();
         return false;
     }
-    if(! rq.has_update_expiration_time()) {
-        LOG_LP(ERROR) << "bad request content";
-        return false;
-    }
-    // mock impl. for UpdateExpirationTime // TODO
-    auto et = rq.update_expiration_time().expiration_time();
-    VLOG_LP(log_debug) <<
-        "UpdateExpirationTime received session_id:" << req->session_id() <<
-        " expiration_time:" << et;
-    tateyama::proto::core::response::UpdateExpirationTime rp{};
-    rp.mutable_success();
-    res->session_id(req->session_id());
-    auto body = rp.SerializeAsString();
-    res->body(body);
-    rp.clear_success();
-    return true;
 }
 
 bool routing_service::operator()(std::shared_ptr<request> req, std::shared_ptr<response> res) {
@@ -99,7 +94,7 @@ bool routing_service::operator()(std::shared_ptr<request> req, std::shared_ptr<r
     }
     if (req->service_id() == tag) {
         // must be UpdateExpirationTime
-        return handle_update_expiration_time(req, res);
+        return service_(req, res);
     }
     if (auto destination = services_->find_by_id(req->service_id()); destination != nullptr) {
         destination->operator()(std::move(req), std::move(res));

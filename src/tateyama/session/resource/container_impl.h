@@ -47,19 +47,27 @@ public:
      */
     virtual ~session_container_impl() = default;
     
-    bool register_session(std::shared_ptr<session_context_impl> const& session);
-
-    void foreach(const std::function<void(const std::shared_ptr<session_context>&)>& func) override;
-
     session_container_impl(session_container_impl const&) = delete;
     session_container_impl(session_container_impl&&) = delete;
     session_container_impl& operator = (session_container_impl const&) = delete;
     session_container_impl& operator = (session_container_impl&&) = delete;
 
+    /**
+     * @brief registers a new session context.
+     * @param session the session context to register
+     * @return true if the target session is successfully registered
+     * @return false if the target session is not registered
+     *    because another session with such the numeric ID already exists in this container
+     * @note Session labels may duplicate in this container
+     */
+    bool register_session(std::shared_ptr<session_context_impl> const& session);
+
+    void foreach(const std::function<void(const std::shared_ptr<session_context>&)>& func) override;
+
 private:
     std::set<std::weak_ptr<session_context_impl>, address_compare> session_contexts_{};
 
-    std::mutex mtx_{};
+    mutable std::mutex mtx_{};
 };
 
 }

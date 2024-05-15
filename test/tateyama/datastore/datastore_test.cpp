@@ -22,7 +22,7 @@
 #include <tateyama/proto/datastore/response.pb.h>
 
 #include "tateyama/status/resource/database_info_impl.h"
-#include "tateyama/endpoint//common/session_info_impl.h"
+#include "tateyama/endpoint/common/session_info_impl.h"
 
 #include <gtest/gtest.h>
 #include <tateyama/utils/test_utils.h>
@@ -75,12 +75,17 @@ public:
             return session_info_;
         }
 
+        tateyama::api::server::session_store& session_store() noexcept override {
+            return session_store_;
+        }
+
         std::size_t session_id_{};
         std::size_t service_id_{};
         std::string payload_{};
 
         tateyama::status_info::resource::database_info_impl database_info_{};
         tateyama::endpoint::common::session_info_impl session_info_{};
+        tateyama::api::server::session_store session_store_{};
     };
 
     class test_response : public api::server::response {

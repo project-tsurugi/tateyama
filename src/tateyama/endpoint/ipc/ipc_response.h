@@ -50,12 +50,15 @@ public:
 
 private:
     server_wire_container::unq_p_resultset_wire_conteiner resultset_wire_;
+    std::atomic_bool released_{};
 };
 
 /**
  * @brief data_channel object for ipc_endpoint
  */
 class alignas(64) ipc_data_channel : public tateyama::api::server::data_channel {
+    friend ipc_response;
+
 public:
     explicit ipc_data_channel(server_wire_container::unq_p_resultset_wires_conteiner data_channel)
         : data_channel_(std::move(data_channel)) {
@@ -72,6 +75,8 @@ private:
 
     std::set<std::shared_ptr<ipc_writer>, tateyama::endpoint::common::pointer_comp<ipc_writer>> data_writers_{};
     std::mutex mutex_{};
+
+    void release();
 };
 
 /**
@@ -82,25 +87,11 @@ class alignas(64) ipc_response : public tateyama::endpoint::common::response {
 
 public:
     ipc_response(std::shared_ptr<server_wire_container> server_wire, std::size_t index, std::function<void(void)> clean_up) :
+        tateyama::endpoint::common::response(index),
         server_wire_(std::move(server_wire)),
-        index_(index),
         garbage_collector_(server_wire_->get_garbage_collector()),
         clean_up_(std::move(clean_up)) {
-        // do dump here
-        garbage_collector_->dump();
     }
-    ipc_response(std::shared_ptr<server_wire_container> server_wire, std::size_t index) :
-        ipc_response(std::move(server_wire), index, [](){}) {
-    }
-    ipc_response() = delete;
-    ~ipc_response() override {
-        clean_up_();
-    }
-
-    ipc_response(ipc_response const&) = delete;
-    ipc_response(ipc_response&&) = delete;
-    ipc_response& operator = (ipc_response const&) = delete;
-    ipc_response& operator = (ipc_response&&) = delete;
 
     tateyama::status body(std::string_view body) override;
     tateyama::status body_head(std::string_view body_head) override;
@@ -108,23 +99,10 @@ public:
     tateyama::status acquire_channel(std::string_view name, std::shared_ptr<tateyama::api::server::data_channel>& ch) override;
     tateyama::status release_channel(tateyama::api::server::data_channel& ch) override;
 
-    void session_id(std::size_t id) override {
-        session_id_ = id;
-    }
-
 private:
     std::shared_ptr<server_wire_container> server_wire_;
-    std::size_t index_;
     garbage_collector* garbage_collector_;
     const std::function<void(void)> clean_up_;
-
-    std::string message_{};
-
-    std::shared_ptr<ipc_data_channel> data_channel_{};
-
-    std::size_t session_id_{};
-
-    std::atomic_flag completed_{};
 
     void server_diagnostics(std::string_view diagnostic_record);
 };
