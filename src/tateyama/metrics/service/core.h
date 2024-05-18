@@ -26,6 +26,8 @@ namespace tateyama::metrics::service {
 using tateyama::api::server::request;
 using tateyama::api::server::response;
 
+extern __thread bool ipc_correction;  // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
+
 /**
  * @brief metrics service main object
  */

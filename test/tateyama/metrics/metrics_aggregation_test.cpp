@@ -28,38 +28,28 @@ using namespace std::literals::string_literals;
 using namespace std::string_view_literals;
 
 // example aggregator
-class count_aggregator : public metrics_aggregator {
+class aggregator_for_aggregation_test : public metrics_aggregator {
 public:
-    count_aggregator(std::string_view group_key) : group_key_(group_key) {
-    }
     void add(metrics_metadata const& metadata, double value) override {
-        for (auto&& k: metadata.group_keys()) {
-            if (k == group_key_) {
-                value_ += 1.0;
-                break;
-            }
-        }
+        value_ += 1.0;
     }
     result_type aggregate() override {
         return value_;
     }
-
 private:
-    const std::string group_key_;
     double value_{};
 };
 
 // example aggregation
-class count_aggregation : public metrics_aggregation {
+class aggregation_for_aggregation_test : public metrics_aggregation {
 public:
-    count_aggregation(
+    aggregation_for_aggregation_test(
         const std::string& group_key,
         const std::string& description) :
         metrics_aggregation(group_key, description) {
     }
-    
     std::unique_ptr<metrics_aggregator> create_aggregator() const noexcept override {
-        return std::make_unique<count_aggregator>(group_key());
+        return std::make_unique<aggregator_for_aggregation_test>();
     }
 };
 
@@ -107,15 +97,13 @@ protected:
         },
         std::vector<std::string> {"table_count"s}
     };
-
-//    count_aggregation aggregation_{"table_count", "number of user tables"};
 };
 
 TEST_F(metrics_aggregation_test, basic) {
     auto& slot_A1 = metrics_store_->register_item(metadata_table_A1_);
     auto& slot_A2 = metrics_store_->register_item(metadata_table_A2_);
     auto& slot_B = metrics_store_->register_item(metadata_table_B_);
-    metrics_store_->register_aggregation(std::make_unique<count_aggregation>("table_count", "number of user tables"));
+    metrics_store_->register_aggregation(std::make_unique<aggregation_for_aggregation_test>("table_count", "number of user tables"));
 
     slot_A1 = 65536;
     slot_A2 = 16777216;

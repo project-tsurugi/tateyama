@@ -27,7 +27,10 @@ namespace tateyama::metrics::service {
 using tateyama::api::server::request;
 using tateyama::api::server::response;
 
+__thread bool ipc_correction{};  // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
+
 bool tateyama::metrics::service::core::operator()(const std::shared_ptr<request>& req, const std::shared_ptr<response>& res) {
+
     tateyama::proto::metrics::request::Request rq{};
     auto data = req->payload();
     if(!rq.ParseFromArray(data.data(), static_cast<int>(data.size()))) {
@@ -43,8 +46,10 @@ bool tateyama::metrics::service::core::operator()(const std::shared_ptr<request>
         break;
 
     case tateyama::proto::metrics::request::Request::kShow:
+        ipc_correction = (req->session_info().connection_type_name() == "ipc");
         resource_->core().show(rs);
         res->body(rs.SerializeAsString());
+        ipc_correction = false;
         break;
 
     case tateyama::proto::metrics::request::Request::COMMAND_NOT_SET:

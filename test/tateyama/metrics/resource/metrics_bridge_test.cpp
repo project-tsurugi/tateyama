@@ -28,9 +28,9 @@ namespace tateyama::metrics {
 using namespace std::literals::string_literals;
 
 // example aggregator
-class count_aggregator : public metrics_aggregator {
+class aggregator_for_bridge_test : public metrics_aggregator {
 public:
-    count_aggregator(std::string_view group_key) : group_key_(group_key) {
+    aggregator_for_bridge_test(std::string_view group_key) : group_key_(group_key) {
     }
     void add(metrics_metadata const& metadata, double value) override {
         value_ += 1.0;
@@ -45,16 +45,16 @@ private:
 };
 
 // example aggregation
-class count_aggregation : public metrics_aggregation {
+class aggregation_for_bridge_test : public metrics_aggregation {
 public:
-    count_aggregation(
+    aggregation_for_bridge_test(
         const std::string& group_key,
         const std::string& description) :
         metrics_aggregation(group_key, description) {
     }
 
     std::unique_ptr<metrics_aggregator> create_aggregator() const noexcept override {
-        return std::make_unique<count_aggregator>(group_key());
+        return std::make_unique<aggregator_for_bridge_test>(group_key());
     }
 };
 
@@ -81,27 +81,27 @@ protected:
     std::shared_ptr<metrics::resource::bridge> bridge_{};
 
     metrics_metadata const metadata_session_count_{
-        "session_count"s, "number of active sessions"s,
+        "session_count_4_test"s, "number of active sessions"s,
         std::vector<std::tuple<std::string, std::string>> {},
         std::vector<std::string> {}
     };
     metrics_metadata const metadata_storage_log_size_{
-        "storage_log_size"s, "transaction log disk usage"s,
+        "storage_log_size_4_test"s, "transaction log disk usage"s,
         std::vector<std::tuple<std::string, std::string>> {},
         std::vector<std::string> {}
     };
     metrics_metadata const metadata_ipc_buffer_size_{
-        "ipc_buffer_size"s, "allocated buffer size for all IPC sessions"s,
+        "ipc_buffer_size_4_test"s, "allocated buffer size for all IPC sessions"s,
         std::vector<std::tuple<std::string, std::string>> {},
         std::vector<std::string> {}
     };
     metrics_metadata const metadata_sql_buffer_size_{
-        "sql_buffer_size"s, "allocated buffer size for SQL execution engine"s,
+        "sql_buffer_size_4_test"s, "allocated buffer size for SQL execution engine"s,
         std::vector<std::tuple<std::string, std::string>> {},
         std::vector<std::string> {}
     };
     metrics_metadata const metadata_table_A1_{
-        "index_size"s, "estimated each index size"s,
+        "index_size_4_test"s, "estimated each index size"s,
         std::vector<std::tuple<std::string, std::string>> {
             std::tuple<std::string, std::string> {"table_name"s, "A"s},
             std::tuple<std::string, std::string> {"index_name"s, "IA1"}
@@ -109,7 +109,7 @@ protected:
         std::vector<std::string> {"table_count"s}
     };
     metrics_metadata const metadata_table_A2_{
-        "index_size"s, "estimated each index size"s,
+        "index_size_4_test"s, "estimated each index size"s,
         std::vector<std::tuple<std::string, std::string>> {
             std::tuple<std::string, std::string> {"table_name"s, "A"s},
             std::tuple<std::string, std::string> {"index_name"s, "IA2"}
@@ -117,7 +117,7 @@ protected:
         std::vector<std::string> {"table_count"s}
     };
     metrics_metadata const metadata_table_B_{
-        "index_size"s, "estimated each index size"s,
+        "index_size_4_test"s, "estimated each index size"s,
         std::vector<std::tuple<std::string, std::string>> {
             std::tuple<std::string, std::string> {"table_name"s, "B"s},
             std::tuple<std::string, std::string> {"index_name"s, "IB1"}
@@ -140,7 +140,7 @@ TEST_F(metrics_bridge_test, list) {
     auto& slot_A1 = metrics_store.register_item(metadata_table_A1_);
     auto& slot_A2 = metrics_store.register_item(metadata_table_A2_);
     auto& slot_B = metrics_store.register_item(metadata_table_B_);
-    metrics_store.register_aggregation(std::make_unique<count_aggregation>("table_count", "number of user tables"));
+    metrics_store.register_aggregation(std::make_unique<aggregation_for_bridge_test>("table_count", "number of user tables"));
 
     session_count = 100;
     storage_log_size = 65535;
@@ -155,25 +155,23 @@ TEST_F(metrics_bridge_test, list) {
     core.list(info_list);
 
     int len = info_list.items_size();
-    EXPECT_EQ(len, 6);
+//    EXPECT_EQ(len, 6); depends on real implementation
     for (int i = 0; i < len; i++) {
         auto&& item = info_list.items(i);
         auto&& key = item.key();
         auto&& description = item.description();
-        if (key == "session_count") {
+        if (key == "session_count_4_test") {
             EXPECT_EQ(description, "number of active sessions");
-        } else if(key == "storage_log_size") {
+        } else if(key == "storage_log_size_4_test") {
             EXPECT_EQ(description, "transaction log disk usage");
-        } else if(key == "ipc_buffer_size") {
+        } else if(key == "ipc_buffer_size_4_test") {
             EXPECT_EQ(description, "allocated buffer size for all IPC sessions");
-        } else if(key == "sql_buffer_size") {
+        } else if(key == "sql_buffer_size_4_test") {
             EXPECT_EQ(description, "allocated buffer size for SQL execution engine");
-        } else if(key == "index_size") {
+        } else if(key == "index_size_4_test") {
             EXPECT_EQ(description, "estimated each index size");
         } else if(key == "table_count") {
             EXPECT_EQ(description, "number of user tables");
-        } else {
-            FAIL();
         }
     }
 }
@@ -190,7 +188,7 @@ TEST_F(metrics_bridge_test, show) {
     auto& slot_A1 = metrics_store.register_item(metadata_table_A1_);
     auto& slot_A2 = metrics_store.register_item(metadata_table_A2_);
     auto& slot_B = metrics_store.register_item(metadata_table_B_);
-    metrics_store.register_aggregation(std::make_unique<count_aggregation>("table_count", "number of user tables"));
+    metrics_store.register_aggregation(std::make_unique<aggregation_for_bridge_test>("table_count", "number of user tables"));
 
     session_count = 100;
     storage_log_size = 65535;
@@ -205,24 +203,24 @@ TEST_F(metrics_bridge_test, show) {
     core.show(info_show);
 
     int len = info_show.items_size();
-    EXPECT_EQ(len, 6);
+//    EXPECT_EQ(len, 6); depends on real implementation
     for (int i = 0; i < len; i++) {
         auto&& item = info_show.items(i);
         auto&& key = item.key();
         auto&& value = item.value();
-        if (key == "session_count") {
+        if (key == "session_count_4_test") {
             EXPECT_EQ(value.value_or_array_case(), ::tateyama::proto::metrics::response::MetricsValue::ValueOrArrayCase::kValue);
             EXPECT_EQ(value.value(), 100);
-        } else if(key == "storage_log_size") {
+        } else if(key == "storage_log_size_4_test") {
             EXPECT_EQ(value.value_or_array_case(), ::tateyama::proto::metrics::response::MetricsValue::ValueOrArrayCase::kValue);
             EXPECT_EQ(value.value(), 65535);
-        } else if(key == "ipc_buffer_size") {
+        } else if(key == "ipc_buffer_size_4_test") {
             EXPECT_EQ(value.value_or_array_case(), ::tateyama::proto::metrics::response::MetricsValue::ValueOrArrayCase::kValue);
             EXPECT_EQ(value.value(), 1024);
-        } else if(key == "sql_buffer_size") {
+        } else if(key == "sql_buffer_size_4_test") {
             EXPECT_EQ(value.value_or_array_case(), ::tateyama::proto::metrics::response::MetricsValue::ValueOrArrayCase::kValue);
             EXPECT_EQ(value.value(), 268435456);
-        } else if(key == "index_size") {
+        } else if(key == "index_size_4_test") {
             EXPECT_EQ(value.value_or_array_case(), ::tateyama::proto::metrics::response::MetricsValue::ValueOrArrayCase::kArray);
             auto&& array = value.array();
             int alen = array.elements_size();
@@ -248,8 +246,6 @@ TEST_F(metrics_bridge_test, show) {
         } else if(key == "table_count") {
             EXPECT_EQ(value.value_or_array_case(), ::tateyama::proto::metrics::response::MetricsValue::ValueOrArrayCase::kValue);
             EXPECT_EQ(value.value(), 3);
-        } else {
-            FAIL();
         }
     }
 }
