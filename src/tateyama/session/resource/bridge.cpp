@@ -79,8 +79,12 @@ std::optional<tateyama::proto::session::diagnostic::ErrorCode> bridge::find_only
     return std::nullopt;
 }
 
-std::optional<tateyama::proto::session::diagnostic::ErrorCode> bridge::list(::tateyama::proto::session::response::SessionList_Success* mutable_success) {
-    sessions_core_impl_.container_.foreach([mutable_success](const std::shared_ptr<session_context>& entry){set_entry(mutable_success->add_entries(), entry->info());});
+std::optional<tateyama::proto::session::diagnostic::ErrorCode> bridge::list(::tateyama::proto::session::response::SessionList_Success* mutable_success, std::size_t session_id) {
+    sessions_core_impl_.container_.foreach([mutable_success, session_id](const std::shared_ptr<session_context>& entry){
+        if (session_id != (entry->info()).id()) {
+            set_entry(mutable_success->add_entries(), entry->info());
+        }
+    });
     return std::nullopt;
 }
 

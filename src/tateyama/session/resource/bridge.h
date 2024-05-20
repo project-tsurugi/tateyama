@@ -81,7 +81,7 @@ public:
     /**
      * @brief handle a SessionList command
      */
-    std::optional<tateyama::proto::session::diagnostic::ErrorCode> list(::tateyama::proto::session::response::SessionList_Success* mutable_success);
+    std::optional<tateyama::proto::session::diagnostic::ErrorCode> list(::tateyama::proto::session::response::SessionList_Success* mutable_success, std::size_t session_id = 0);
 
     /**
      * @brief handle a SessionGet command

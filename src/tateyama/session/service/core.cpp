@@ -43,7 +43,8 @@ bool tateyama::session::service::core::operator()(const std::shared_ptr<request>
         return false;
     }
 
-    res->session_id(req->session_id());
+    auto session_id = req->session_id();
+    res->session_id(session_id);
     switch(rq.command_case()) {
     case tateyama::proto::session::request::Request::kSessionGet:
     {
@@ -63,7 +64,7 @@ bool tateyama::session::service::core::operator()(const std::shared_ptr<request>
     case tateyama::proto::session::request::Request::kSessionList:
     {
         tateyama::proto::session::response::SessionList rs{};
-        auto rv = resource_->list(rs.mutable_success());
+        auto rv = resource_->list(rs.mutable_success(), session_id);
         if (!rv) {
             res->body(rs.SerializeAsString());
         } else {
