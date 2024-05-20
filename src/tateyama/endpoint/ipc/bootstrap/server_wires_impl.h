@@ -504,9 +504,8 @@ public:
             boost::interprocess::permissions unrestricted_permissions;
             unrestricted_permissions.set_unrestricted();
 
-            std::size_t shm_size = (datachannel_buffer_size_ + data_channel_overhead) * max_datachannel_buffers + (request_buffer_size + response_buffer_size) + total_overhead;
             managed_shared_memory_ =
-                std::make_unique<boost::interprocess::managed_shared_memory>(boost::interprocess::create_only, name_.c_str(), shm_size, nullptr, unrestricted_permissions);
+                std::make_unique<boost::interprocess::managed_shared_memory>(boost::interprocess::create_only, name_.c_str(), memory_usage(datachannel_buffer_size_, max_datachannel_buffers), nullptr, unrestricted_permissions);
             auto req_wire = managed_shared_memory_->construct<tateyama::common::wire::unidirectional_message_wire>(tateyama::common::wire::request_wire_name)(managed_shared_memory_.get(), request_buffer_size);
             auto res_wire = managed_shared_memory_->construct<tateyama::common::wire::unidirectional_response_wire>(tateyama::common::wire::response_wire_name)(managed_shared_memory_.get(), response_buffer_size);
             status_provider_ = managed_shared_memory_->construct<tateyama::common::wire::status_provider>(tateyama::common::wire::status_provider_name)(managed_shared_memory_.get(), mutex_file);
@@ -557,6 +556,10 @@ public:
     void notify_shutdown() {
         request_wire_.notify();
         response_wire_.notify_shutdown();
+    }
+
+    static std::size_t memory_usage(std::size_t datachannel_buffer_size, std::size_t max_datachannel_buffers) {
+        return (datachannel_buffer_size + data_channel_overhead) * max_datachannel_buffers + (request_buffer_size + response_buffer_size) + total_overhead;
     }
 
     // for client

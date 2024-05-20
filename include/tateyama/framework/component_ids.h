@@ -29,6 +29,7 @@ constexpr inline component::id_type resource_id_status = 5;
 //constexpr inline component::id_type resource_id_mutex = 6;
 constexpr inline component::id_type resource_id_diagnostic = 7;
 constexpr inline component::id_type resource_id_remote_kvs = 8;
+constexpr inline component::id_type resource_id_metrics = 9;
 
 // service
 constexpr inline component::id_type service_id_routing = 0;
@@ -39,5 +40,6 @@ constexpr inline component::id_type service_id_fdw = 4;
 constexpr inline component::id_type service_id_remote_kvs = 5;
 constexpr inline component::id_type service_id_debug = 6;
 constexpr inline component::id_type service_id_session = 7;
+constexpr inline component::id_type service_id_metrics = 8;
 
 }

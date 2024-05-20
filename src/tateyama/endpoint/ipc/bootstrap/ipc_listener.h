@@ -37,6 +37,7 @@
 
 #include "tateyama/endpoint/common/logging.h"
 #include "tateyama/endpoint/common/pointer_comp.h"
+#include "tateyama/endpoint/ipc/metrics/ipc_metrics.h"
 #include "ipc_worker.h"
 
 namespace tateyama::endpoint::ipc::bootstrap {
@@ -50,7 +51,9 @@ public:
         : cfg_(env.configuration()),
           router_(env.service_repository().find<framework::routing_service>()),
           status_(env.resource_repository().find<status_info::resource::bridge>()),
-          session_(env.resource_repository().find<session::resource::bridge>()) {
+          session_(env.resource_repository().find<session::resource::bridge>()),
+          ipc_metrics_(env)
+        {
 
         auto endpoint_config = cfg_->get_section("ipc_endpoint");
         if (endpoint_config == nullptr) {
@@ -94,6 +97,9 @@ public:
 
         // set maximum thread size to status objects
         status_->set_maximum_sessions(threads);
+
+        // set memory usage per session to ipc_metrics
+        ipc_metrics_.memory_usage(server_wire_container_impl::memory_usage(datachannel_buffer_size_, max_datachannel_buffers_));
 
         // output configuration to be used
         LOG(INFO) << tateyama::endpoint::common::ipc_endpoint_config_prefix
@@ -141,6 +147,7 @@ public:
                     std::unique_lock<std::mutex> lock(mtx_workers_);
                     worker_entry = std::make_shared<Worker>(*router_, session_id, std::move(wire), status_->database_info(), session_);
                 }
+                ipc_metrics_.increase();
                 worker_entry->invoke([this, index, &connection_queue]{
                     auto& worker = workers_.at(index);
                     worker->register_worker_in_context(worker);
@@ -151,6 +158,7 @@ public:
                         undertakers_.emplace(std::move(worker));
                     }
                     connection_queue.disconnect(index);
+                    ipc_metrics_.decrease();
                 });
             } catch (std::exception& ex) {
                 LOG_LP(ERROR) << ex.what();
@@ -190,6 +198,7 @@ private:
     const std::shared_ptr<framework::routing_service> router_;
     const std::shared_ptr<status_info::resource::bridge> status_;
     const std::shared_ptr<session::resource::bridge> session_;
+    tateyama::endpoint::ipc::metrics::ipc_metrics ipc_metrics_;
 
     std::unique_ptr<connection_container> container_{};
     std::vector<std::shared_ptr<Worker>> workers_{};

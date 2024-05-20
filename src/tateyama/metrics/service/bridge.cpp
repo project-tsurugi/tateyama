@@ -16,7 +16,7 @@
 
 #include "bridge.h"
 
-namespace tateyama::session::service {
+namespace tateyama::metrics::service {
 
 using tateyama::api::server::request;
 using tateyama::api::server::response;
@@ -33,9 +33,9 @@ bool bridge::setup(environment& env) {
 }
 
 bool bridge::start(environment& env) {
-    auto resource = env.resource_repository().find<tateyama::session::resource::bridge>();
+    auto resource = env.resource_repository().find<tateyama::metrics::resource::bridge>();
     if (! resource) {
-        LOG(ERROR) << "session resource not found";
+        LOG(ERROR) << "metrics resource not found";
         return false;
     }
     return core_->start(resource.get());

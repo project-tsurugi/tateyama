@@ -38,6 +38,7 @@
 #include "tateyama/endpoint/stream/stream_response.h"
 #include "tateyama/endpoint/common/logging.h"
 #include "tateyama/endpoint/common/pointer_comp.h"
+#include "tateyama/endpoint/stream/metrics/stream_metrics.h"
 #include "stream_worker.h"
 
 namespace tateyama::endpoint::stream::bootstrap {
@@ -57,7 +58,9 @@ public:
         : cfg_(env.configuration()),
           router_(env.service_repository().find<framework::routing_service>()),
           status_(env.resource_repository().find<status_info::resource::bridge>()),
-          session_(env.resource_repository().find<session::resource::bridge>()) {
+          session_(env.resource_repository().find<session::resource::bridge>()),
+          stream_metrics_(env)
+        {
 
         auto endpoint_config = cfg_->get_section("stream_endpoint");
         if (endpoint_config == nullptr) {
@@ -160,6 +163,7 @@ public:
                         std::unique_lock<std::mutex> lock(mtx_workers_);
                         worker_entry = std::make_shared<stream_worker>(*router_, session_id, std::move(stream), status_->database_info(), false, session_);
                     }
+                    stream_metrics_.increase();
                     worker_entry->invoke([this, index]{
                         auto& worker = workers_.at(index);
                         worker->register_worker_in_context(worker);
@@ -169,6 +173,7 @@ public:
                             std::unique_lock<std::mutex> lock_u(mtx_undertakers_);
                             undertakers_.emplace(std::move(worker));
                         }
+                        stream_metrics_.decrease();
                     });
                     session_id++;
                 } catch (std::exception& ex) {
@@ -192,6 +197,8 @@ private:
     const std::shared_ptr<framework::routing_service> router_;
     const std::shared_ptr<status_info::resource::bridge> status_;
     const std::shared_ptr<tateyama::session::resource::bridge> session_;
+    tateyama::endpoint::stream::metrics::stream_metrics stream_metrics_;
+
     std::unique_ptr<connection_socket> connection_socket_{};
     std::vector<std::shared_ptr<stream_worker>> workers_{};  // accessed only by the listner thread, thus mutual exclusion in unnecessary.
     std::set<std::shared_ptr<stream_worker>, tateyama::endpoint::common::pointer_comp<stream_worker>> undertakers_{};

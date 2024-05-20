@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package tateyama.proto.metrics.request;
+
+option java_multiple_files = false;
+option java_package = "com.tsurugidb.metrics.proto";
+option java_outer_classname = "MetricsRequest";
+
+// the request message to metrics pseudo service.
+message Request {
+    // service message version (major)
+    uint64 service_message_version_major = 1;
+
+    // service message version (minor)
+    uint64 service_message_version_minor = 2;
+
+    // reserved for system use
+    reserved 3 to 10;
+
+    // the request command.
+    oneof command {
+        // show operation.
+        Show show = 11;
+
+        // list operation.
+        List list = 12;
+    }
+    reserved 13 to 99;
+}
+
+// show operation.
+message Show {
+    // no special properties.
+}
+
+// list operation.
+message List {
+    // no special properties.
+}
