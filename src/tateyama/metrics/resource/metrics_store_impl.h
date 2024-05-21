@@ -53,7 +53,7 @@ class metrics_store_impl {
 public:
     metrics_item_slot& register_item(const metrics_metadata& metadata);
 
-    void register_aggregation(std::unique_ptr<metrics_aggregation> aggregation);
+    void register_aggregation(const metrics_aggregation& aggregation);
 
     bool unregister_element(std::string_view key);
 
@@ -64,7 +64,7 @@ public:
 private:
     std::map<std::string, std::unique_ptr<second_map_type>> metrics_{};
     std::map<std::string, std::unique_ptr<second_map_type>> invisible_metrics_{};
-    std::map<std::string, std::unique_ptr<metrics_aggregation>> aggregations_{};
+    std::map<std::string, metrics_aggregation> aggregations_{};
 
     void set_item_description(::tateyama::proto::metrics::response::MetricsInformation& information);
 

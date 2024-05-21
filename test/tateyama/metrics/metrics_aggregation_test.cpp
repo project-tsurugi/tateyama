@@ -40,20 +40,6 @@ private:
     double value_{};
 };
 
-// example aggregation
-class aggregation_for_aggregation_test : public metrics_aggregation {
-public:
-    aggregation_for_aggregation_test(
-        const std::string& group_key,
-        const std::string& description) :
-        metrics_aggregation(group_key, description) {
-    }
-    std::unique_ptr<metrics_aggregator> create_aggregator() const noexcept override {
-        return std::make_unique<aggregator_for_aggregation_test>();
-    }
-};
-
-
 class metrics_aggregation_test :
     public ::testing::Test,
     public test::test_utils
@@ -103,7 +89,7 @@ TEST_F(metrics_aggregation_test, basic) {
     auto& slot_A1 = metrics_store_->register_item(metadata_table_A1_);
     auto& slot_A2 = metrics_store_->register_item(metadata_table_A2_);
     auto& slot_B = metrics_store_->register_item(metadata_table_B_);
-    metrics_store_->register_aggregation(std::make_unique<aggregation_for_aggregation_test>("table_count", "number of user tables"));
+    metrics_store_->register_aggregation(tateyama::metrics::metrics_aggregation{"table_count", "number of user tables", [](){return std::make_unique<aggregator_for_aggregation_test>();}});
 
     slot_A1 = 65536;
     slot_A2 = 16777216;
