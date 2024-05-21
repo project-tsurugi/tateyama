@@ -30,8 +30,6 @@ using namespace std::literals::string_literals;
 // example aggregator
 class aggregator_for_bridge_test : public metrics_aggregator {
 public:
-    aggregator_for_bridge_test(std::string_view group_key) : group_key_(group_key) {
-    }
     void add(metrics_metadata const& metadata, double value) override {
         value_ += 1.0;
     }
@@ -40,22 +38,7 @@ public:
     }
 
 private:
-    const std::string group_key_;
     double value_{};
-};
-
-// example aggregation
-class aggregation_for_bridge_test : public metrics_aggregation {
-public:
-    aggregation_for_bridge_test(
-        const std::string& group_key,
-        const std::string& description) :
-        metrics_aggregation(group_key, description) {
-    }
-
-    std::unique_ptr<metrics_aggregator> create_aggregator() const noexcept override {
-        return std::make_unique<aggregator_for_bridge_test>(group_key());
-    }
 };
 
 class metrics_bridge_test :
@@ -140,7 +123,7 @@ TEST_F(metrics_bridge_test, list) {
     auto& slot_A1 = metrics_store.register_item(metadata_table_A1_);
     auto& slot_A2 = metrics_store.register_item(metadata_table_A2_);
     auto& slot_B = metrics_store.register_item(metadata_table_B_);
-    metrics_store.register_aggregation(std::make_unique<aggregation_for_bridge_test>("table_count", "number of user tables"));
+    metrics_store.register_aggregation(tateyama::metrics::metrics_aggregation{"table_count", "number of user tables", [](){return std::make_unique<aggregator_for_bridge_test>();}});
 
     session_count = 100;
     storage_log_size = 65535;
@@ -188,7 +171,7 @@ TEST_F(metrics_bridge_test, show) {
     auto& slot_A1 = metrics_store.register_item(metadata_table_A1_);
     auto& slot_A2 = metrics_store.register_item(metadata_table_A2_);
     auto& slot_B = metrics_store.register_item(metadata_table_B_);
-    metrics_store.register_aggregation(std::make_unique<aggregation_for_bridge_test>("table_count", "number of user tables"));
+    metrics_store.register_aggregation(tateyama::metrics::metrics_aggregation{"table_count", "number of user tables", [](){return std::make_unique<aggregator_for_bridge_test>();}});
 
     session_count = 100;
     storage_log_size = 65535;

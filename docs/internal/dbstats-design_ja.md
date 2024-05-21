@@ -175,7 +175,7 @@ public:
      * @brief returns a new aggregator of this aggregation.
      * @returns the aggregation operation type
      */
-    virtual std::unique_ptr<metrics_aggregator> create_aggregator() const noexcept = 0;
+    std::unique_ptr<metrics_aggregator> create_aggregator() const noexcept;
 };
 ```
 
@@ -258,7 +258,7 @@ public:
      * @param aggregation aggregation specification to register
      * @throws std::runtime_error if another aggregation with the same key is already in this store
      */
-    void register_aggregation(std::unique_ptr<metrics_aggregation> aggregation);
+    void register_aggregation(const metrics_aggregation& aggregation);
 
     /**
      * @brief removes the previously registered metrics item or aggregation.

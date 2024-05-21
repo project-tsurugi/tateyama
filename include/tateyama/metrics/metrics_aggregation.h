@@ -17,6 +17,7 @@
 
 #include <memory>
 #include <string_view>
+#include <functional>
 
 #include <tateyama/metrics/metrics_aggregator.h>
 
@@ -32,49 +33,35 @@ public:
      * @brief returns the metrics aggregation group key.
      * @returns the metrics aggregation group key string
      */
-    [[nodiscard]] std::string_view group_key() const noexcept {
-        return group_key_;
-    }
+    [[nodiscard]] std::string_view group_key() const noexcept;
 
     /**
      * @brief returns the metrics item description.
      * @returns the metrics item description
      */
-    [[nodiscard]] std::string_view description() const noexcept {
-        return description_;
-    }
+    [[nodiscard]] std::string_view description() const noexcept;
 
     /**
      * @brief returns a new aggregator of this aggregation.
      * @returns the aggregation operation type
      */
-    [[nodiscard]] virtual std::unique_ptr<metrics_aggregator> create_aggregator() const noexcept = 0;
+    [[nodiscard]] std::unique_ptr<metrics_aggregator> create_aggregator() const;
 
     /**
      * @brief create a new object
      * @param group_key the metrics aggregation group key string
      * @param description the metrics item description
+     * @param factory a function to create the metrics_aggregator object
      */
     metrics_aggregation(
         std::string_view group_key,
-        std::string_view description) noexcept :
-        group_key_(group_key),
-        description_(description) {
-    }
-
-    /**
-     * @brief disposes this instance.
-     */
-    virtual ~metrics_aggregation() = default;
-
-    metrics_aggregation(metrics_aggregation const&) = delete;
-    metrics_aggregation(metrics_aggregation&&) = delete;
-    metrics_aggregation& operator = (metrics_aggregation const&) = delete;
-    metrics_aggregation& operator = (metrics_aggregation&&) = delete;
+        std::string_view description,
+        std::function<std::unique_ptr<metrics_aggregator>()>&& factory) noexcept;
 
 private:
-    std::string group_key_{};
-    std::string description_{};
+    const std::string group_key_{};
+    const std::string description_{};
+    const std::function<std::unique_ptr<metrics_aggregator>()> factory_;
 };
 
 }

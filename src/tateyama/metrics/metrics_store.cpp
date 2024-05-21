@@ -25,8 +25,8 @@ metrics_item_slot& metrics_store::register_item(const metrics_metadata& metadata
     return body_->register_item(metadata);
 }
 
-void metrics_store::register_aggregation(std::unique_ptr<metrics_aggregation> aggregation) {
-    return body_->register_aggregation(std::move(aggregation));
+void metrics_store::register_aggregation(const metrics_aggregation& aggregation) {
+    return body_->register_aggregation(aggregation);
 }
 
 bool metrics_store::unregister_element(std::string_view key) {

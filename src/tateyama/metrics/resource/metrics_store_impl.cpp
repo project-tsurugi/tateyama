@@ -46,12 +46,12 @@ metrics_item_slot& metrics_store_impl::register_item(const metrics_metadata& met
     return (invisible_metrics_.find(key)->second->find(metadata)->second).first;
 }
 
-void metrics_store_impl::register_aggregation(std::unique_ptr<metrics_aggregation> aggregation) {
-    const std::string key{aggregation->group_key()};
+void metrics_store_impl::register_aggregation(const metrics_aggregation& aggregation) {
+    const std::string key{aggregation.group_key()};
     if (aggregations_.find(key) != aggregations_.end()) {
         throw std::runtime_error("aggregation is already registered");
     }
-    aggregations_.emplace(key, std::move(aggregation));
+    aggregations_.emplace(key, aggregation);
 }
 
 bool metrics_store_impl::unregister_element(std::string_view key) {
@@ -90,7 +90,7 @@ void metrics_store_impl::enumerate_items(std::function<void(metrics_metadata con
 
 void metrics_store_impl::enumerate_aggregations(std::function<void(metrics_aggregation const&)> const& acceptor) const {
     for (auto&& e: aggregations_) {
-        acceptor(*(e.second));
+        acceptor(e.second);
     }
 }
 
@@ -107,7 +107,7 @@ void metrics_store_impl::set_item_description(::tateyama::proto::metrics::respon
     for (auto&& a: aggregations_) {
         auto* item = information.add_items();
         item->set_key(a.first);
-        item->set_description(std::string(a.second->description()));
+        item->set_description(std::string(a.second.description()));
     }
 }
 
@@ -161,9 +161,9 @@ void metrics_store_impl::set_item_value(::tateyama::proto::metrics::response::Me
     for (auto&& a: aggregations_) {
         auto* item = information.add_items();
         item->set_key(a.first);
-        item->set_description(std::string(a.second->description()));
+        item->set_description(std::string(a.second.description()));
         
-        auto aggregator = a.second->create_aggregator();
+        auto aggregator = a.second.create_aggregator();
         const auto aggregate_internal = [&aggregator, &a, item](std::map<std::string, std::unique_ptr<second_map_type>>& metrics) {
             for (auto&& fmap: metrics) {
                 for (auto&& e: *fmap.second) {
