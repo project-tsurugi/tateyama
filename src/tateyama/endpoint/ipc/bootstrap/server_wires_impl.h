@@ -505,7 +505,7 @@ public:
             unrestricted_permissions.set_unrestricted();
 
             managed_shared_memory_ =
-                std::make_unique<boost::interprocess::managed_shared_memory>(boost::interprocess::create_only, name_.c_str(), memory_usage(datachannel_buffer_size_, max_datachannel_buffers), nullptr, unrestricted_permissions);
+                std::make_unique<boost::interprocess::managed_shared_memory>(boost::interprocess::create_only, name_.c_str(), proportional_memory_size(datachannel_buffer_size_, max_datachannel_buffers), nullptr, unrestricted_permissions);
             auto req_wire = managed_shared_memory_->construct<tateyama::common::wire::unidirectional_message_wire>(tateyama::common::wire::request_wire_name)(managed_shared_memory_.get(), request_buffer_size);
             auto res_wire = managed_shared_memory_->construct<tateyama::common::wire::unidirectional_response_wire>(tateyama::common::wire::response_wire_name)(managed_shared_memory_.get(), response_buffer_size);
             status_provider_ = managed_shared_memory_->construct<tateyama::common::wire::status_provider>(tateyama::common::wire::status_provider_name)(managed_shared_memory_.get(), mutex_file);
@@ -558,7 +558,7 @@ public:
         response_wire_.notify_shutdown();
     }
 
-    static std::size_t memory_usage(std::size_t datachannel_buffer_size, std::size_t max_datachannel_buffers) {
+    static std::size_t proportional_memory_size(std::size_t datachannel_buffer_size, std::size_t max_datachannel_buffers) {
         return (datachannel_buffer_size + data_channel_overhead) * max_datachannel_buffers + (request_buffer_size + response_buffer_size) + total_overhead;
     }
 
@@ -599,16 +599,16 @@ inline void server_wire_container_impl::resultset_wire_container_impl::write_com
 class connection_container
 {
 public:
-    explicit connection_container(std::string_view name, std::size_t n) : name_(name) {
+    explicit connection_container(std::string_view name, std::size_t threads) : name_(name) {
         boost::interprocess::shared_memory_object::remove(name_.c_str());
         try {
             boost::interprocess::permissions  unrestricted_permissions;
             unrestricted_permissions.set_unrestricted();
 
             managed_shared_memory_ =
-                std::make_unique<boost::interprocess::managed_shared_memory>(boost::interprocess::create_only, name_.c_str(), request_queue_size(n), nullptr, unrestricted_permissions);
+                std::make_unique<boost::interprocess::managed_shared_memory>(boost::interprocess::create_only, name_.c_str(), fixed_memory_size(threads), nullptr, unrestricted_permissions);
             managed_shared_memory_->destroy<tateyama::common::wire::connection_queue>(tateyama::common::wire::connection_queue::name);
-            connection_queue_ = managed_shared_memory_->construct<tateyama::common::wire::connection_queue>(tateyama::common::wire::connection_queue::name)(n, managed_shared_memory_->get_segment_manager());
+            connection_queue_ = managed_shared_memory_->construct<tateyama::common::wire::connection_queue>(tateyama::common::wire::connection_queue::name)(threads, managed_shared_memory_->get_segment_manager());
         }
         catch(const boost::interprocess::interprocess_exception& ex) {
             using namespace std::literals::string_view_literals;
@@ -642,6 +642,12 @@ public:
         return connection_queue_->session_id_accepted();
     }
 
+    static std::size_t fixed_memory_size(std::size_t n) {
+        std::size_t size = initial_size + (n * per_size); // exact size
+        size += initial_size / 2;                         // a little bit of leeway
+        return ((size / 4096) + 1) * 4096;                // round up to the page size
+    }
+
 private:
     std::string name_;
     std::unique_ptr<boost::interprocess::managed_shared_memory> managed_shared_memory_{};
@@ -649,11 +655,6 @@ private:
 
     static constexpr std::size_t initial_size = 720;      // obtained by experiment
     static constexpr std::size_t per_size = 112;          // obtained by experiment
-    std::size_t request_queue_size(std::size_t n) {
-        std::size_t size = initial_size + (n * per_size); // exact size
-        size += initial_size / 2;                         // a little bit of leeway
-        return ((size / 4096) + 1) * 4096;                // round up to the page size
-    }
 };
 
 };  // namespace tateyama::common::wire
