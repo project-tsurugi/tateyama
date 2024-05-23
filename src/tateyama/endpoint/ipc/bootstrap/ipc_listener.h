@@ -98,8 +98,9 @@ public:
         // set maximum thread size to status objects
         status_->set_maximum_sessions(threads);
 
-        // set memory usage per session to ipc_metrics
-        ipc_metrics_.memory_usage(server_wire_container_impl::memory_usage(datachannel_buffer_size_, max_datachannel_buffers_));
+        // set memory usage parameters to ipc_metrics
+        ipc_metrics_.set_memory_parameters(connection_container::fixed_memory_size(threads),
+                                           server_wire_container_impl::proportional_memory_size(datachannel_buffer_size_, max_datachannel_buffers_));
 
         // output configuration to be used
         LOG(INFO) << tateyama::endpoint::common::ipc_endpoint_config_prefix
