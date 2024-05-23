@@ -18,6 +18,7 @@
 #include <map>
 #include <vector>
 #include <memory>
+#include <mutex>
 
 #include <tateyama/metrics/metrics_store.h>
 #include <tateyama/metrics/resource/metrics_item_slot_impl.h>
@@ -65,9 +66,11 @@ private:
     std::map<std::string, std::unique_ptr<second_map_type>> metrics_{};
     std::map<std::string, std::unique_ptr<second_map_type>> invisible_metrics_{};
     std::map<std::string, metrics_aggregation> aggregations_{};
+    mutable std::mutex mtx_metrics_{};
+    mutable std::mutex mtx_invisible_metrics_{};
+    mutable std::mutex mtx_aggregations_{};
 
     void set_item_description(::tateyama::proto::metrics::response::MetricsInformation& information);
-
     void set_item_value(::tateyama::proto::metrics::response::MetricsInformation& information);
 
     friend class core;
