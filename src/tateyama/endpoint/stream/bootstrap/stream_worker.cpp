@@ -108,14 +108,14 @@ void stream_worker::do_work()
                 break;
 
             default:
-                if (!is_shuttingdown()) {
+                if (!check_shutdown_request()) {
                     if(service_(std::dynamic_pointer_cast<tateyama::api::server::request>(request),
                                 std::dynamic_pointer_cast<tateyama::api::server::response>(response))) {
                         continue;
                     }
                     VLOG_LP(log_info) << "terminate worker because service returns an error";
                 } else {
-                    notify_client(response.get(), tateyama::proto::diagnostics::SESSION_CLOSED, "");
+                    notify_client(response.get(), tateyama::proto::diagnostics::SESSION_CLOSED, "this session is already shutdown");
                     continue;
                 }
             }
@@ -126,7 +126,7 @@ void stream_worker::do_work()
 
         case tateyama::endpoint::stream::stream_socket::await_result::timeout:
             care_reqreses();
-            if (is_shuttingdown() && is_completed()) {
+            if (check_shutdown_request() && is_completed()) {
                 VLOG_LP(log_trace) << "received and completed shutdown request: session_id = " << std::to_string(session_id_);
                 break;
             }
@@ -134,15 +134,16 @@ void stream_worker::do_work()
 
         case tateyama::endpoint::stream::stream_socket::await_result::termination_request:
             dispose_session_store();
+            request_shutdown(tateyama::session::shutdown_request_type::forceful);
             session_stream_->send_session_bye_ok();
             continue;
 
         default:  // some error
-            dispose_session_store();
             break;
         }
         break;
     }
+    dispose_session_store();
     session_stream_->close();
 
 #ifdef ENABLE_ALTIMETER

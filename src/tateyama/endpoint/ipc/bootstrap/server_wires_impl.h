@@ -438,7 +438,7 @@ public:
         }
         std::size_t read_point() override { return wire_->read_point(); }
         void dispose() override { wire_->dispose(); }
-        void notify() { wire_->notify(); }
+        void notify() override { wire_->notify(); }
 
         // for mainly client, except for terminate request from server
         void write(const char* from, const std::size_t len, tateyama::common::wire::message_header::index_type index) {
@@ -551,11 +551,6 @@ public:
     }
     garbage_collector* get_garbage_collector() override {
         return garbage_collector_impl_.get();
-    }
-
-    void notify_shutdown() {
-        request_wire_.notify();
-        response_wire_.notify_shutdown();
     }
 
     static std::size_t proportional_memory_size(std::size_t datachannel_buffer_size, std::size_t max_datachannel_buffers) {

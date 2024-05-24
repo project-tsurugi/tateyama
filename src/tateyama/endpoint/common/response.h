@@ -18,6 +18,10 @@
 #include <atomic>
 #include <memory>
 
+#include <glog/logging.h>
+#include <tateyama/logging.h>
+#include <tateyama/logging_helper.h>
+
 #include <tateyama/api/server/response.h>
 
 namespace tateyama::endpoint::common {
@@ -38,6 +42,7 @@ public:
     }
 
     void cancel() noexcept {
+        VLOG_LP(log_trace) << "set cancel flag for session " << session_id_;
         cancel_ = true;
         if (data_channel_) {
             release_channel(*data_channel_);

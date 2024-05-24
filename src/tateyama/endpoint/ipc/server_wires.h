@@ -36,6 +36,7 @@ public:
         virtual std::string_view payload() = 0;
         virtual void read(char *) = 0;
         virtual void dispose() = 0;
+        virtual void notify() = 0;
     };
     class response_wire_container {
     public:

@@ -54,10 +54,10 @@ void Worker::do_work() {
         try {
             hdr = request_wire_container_->peep();
         } catch (std::runtime_error &ex) {
+            VLOG_LP(log_trace) << "cought exception: " << ex.what();
             care_reqreses();
-            if (is_shuttingdown() && is_completed()) {
-                wire_->get_response_wire().notify_shutdown();
-                VLOG_LP(log_info) << "terminate worker because shutdown completed";
+            if (check_shutdown_request() && is_completed()) {
+                VLOG_LP(log_trace) << "terminate worker thread for session " << session_id_ << ", as it has received a shutdown request from outside the communication partner";
                 break;
             }
             continue;
@@ -67,9 +67,8 @@ void Worker::do_work() {
                 dispose_session_store();
                 request_shutdown(tateyama::session::shutdown_request_type::forceful);
                 care_reqreses();
-                if (is_shuttingdown() && is_completed()) {
-                    wire_->get_response_wire().notify_shutdown();
-                    VLOG_LP(log_info) << "terminate worker because shutdown completed";
+                if (check_shutdown_request() && is_completed()) {
+                    VLOG_LP(log_trace) << "terminate worker thread for session " << session_id_ << ", as disconnection is requested and the subsequent shutdown process is completed";
                     break;
                 }
                 continue;
@@ -105,14 +104,14 @@ void Worker::do_work() {
                 break;
 
             default:
-                if (!is_shuttingdown()) {
+                if (!check_shutdown_request()) {
                     if (!service_(std::dynamic_pointer_cast<tateyama::api::server::request>(request),
                                   std::dynamic_pointer_cast<tateyama::api::server::response>(response))) {
                         VLOG_LP(log_info) << "terminate worker because service returns an error";
                         exit_frag = true;
                     }
                 } else {
-                    notify_client(response.get(), tateyama::proto::diagnostics::SESSION_CLOSED, "");
+                    notify_client(response.get(), tateyama::proto::diagnostics::SESSION_CLOSED, "this session is already shutdown");
                 }
                 break;
 
@@ -129,6 +128,8 @@ void Worker::do_work() {
             break;
         }
     }
+    dispose_session_store();
+    wire_->get_response_wire().notify_shutdown();
     VLOG_LP(log_trace) << "destroy session wire: session_id = " << std::to_string(session_id_);
 #ifdef ENABLE_ALTIMETER
     tateyama::endpoint::altimeter::session_end(database_info_, session_info_);
@@ -136,11 +137,12 @@ void Worker::do_work() {
     VLOG(log_debug_timing_event) << "/:tateyama:timing:session:finished " << session_id_;
 }
 
+// Processes shutdown requests from outside the communication partner.
 bool Worker::terminate(tateyama::session::shutdown_request_type type) {
     VLOG_LP(log_trace) << "send terminate request: session_id = " << std::to_string(session_id_);
 
     auto rv = request_shutdown(type);
-    wire_->notify_shutdown();
+    wire_->get_request_wire()->notify();
     return rv;
 }
 

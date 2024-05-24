@@ -123,7 +123,10 @@ public:
      * @brief dispose the session_elements in the session_store.
      */
     void dispose_session_store() {
-        session_store_.dispose();
+        if (!dispose_done_) {
+            session_store_.dispose();
+            dispose_done_ = true;
+        }
     }
 
 protected:
@@ -341,7 +344,7 @@ protected:
         }
     }
 
-    bool is_shuttingdown() {
+    bool check_shutdown_request() {
         auto sr = session_context_->shutdown_request();
         if ((sr == tateyama::session::shutdown_request_type::forceful) && !cancel_requested_to_all_responses_) {
             foreach_reqreses([](tateyama::endpoint::common::response& r){ r.cancel(); });
@@ -425,6 +428,7 @@ private:
     std::map<std::size_t, std::pair<std::shared_ptr<tateyama::api::server::request>, std::shared_ptr<tateyama::endpoint::common::response>>> reqreses_{};
     std::mutex mtx_reqreses_{};
     bool cancel_requested_to_all_responses_{};
+    bool dispose_done_{};
 
     std::string_view connection_label(connection_type con) {
         switch (con) {
