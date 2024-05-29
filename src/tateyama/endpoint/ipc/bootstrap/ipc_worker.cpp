@@ -93,7 +93,8 @@ void Worker::do_work() {
 
             case tateyama::framework::service_id_routing:
                 if (routing_service_chain(std::dynamic_pointer_cast<tateyama::api::server::request>(request),
-                                          std::dynamic_pointer_cast<tateyama::api::server::response>(response))) {
+                                          std::dynamic_pointer_cast<tateyama::api::server::response>(response),
+                                          index)) {
                     break;
                 }
                 if (!service_(std::dynamic_pointer_cast<tateyama::api::server::request>(request),
@@ -128,6 +129,7 @@ void Worker::do_work() {
             break;
         }
     }
+    shutdown_complete();
     wire_->get_response_wire().notify_shutdown();
     VLOG_LP(log_trace) << "destroy session wire: session_id = " << std::to_string(session_id_);
 #ifdef ENABLE_ALTIMETER

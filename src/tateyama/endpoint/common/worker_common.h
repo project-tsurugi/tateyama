@@ -152,7 +152,7 @@ protected:
 
     bool handshake(tateyama::api::server::request* req, tateyama::api::server::response* res) {
         if (req->service_id() != tateyama::framework::service_id_endpoint_broker) {
-            LOG(INFO) << "request received is not handshake";
+            LOG_LP(INFO) << "request received is not handshake";
             std::stringstream ss;
             ss << "handshake operation is required to establish sessions (service ID=" << req->service_id() << ")." << std::endl;
             ss << "see https://github.com/project-tsurugi/tsurugidb/blob/master/docs/upgrade-guide.md#handshake-required";
@@ -163,14 +163,14 @@ protected:
         tateyama::proto::endpoint::request::Request rq{};
         if(! rq.ParseFromArray(data.data(), static_cast<int>(data.size()))) {
             std::string error_message{"request parse error"};
-            LOG(INFO) << error_message;
+            LOG_LP(INFO) << error_message;
             notify_client(res, tateyama::proto::diagnostics::Code::INVALID_REQUEST, error_message);
             return false;
         }
         if(rq.command_case() != tateyama::proto::endpoint::request::Request::kHandshake) {
             std::stringstream ss;
             ss << "bad request (handshake in endpoint): " << rq.command_case();
-            LOG(INFO) << ss.str();
+            LOG_LP(INFO) << ss.str();
             notify_client(res, tateyama::proto::diagnostics::Code::INVALID_REQUEST, ss.str());
             return false;
         }
@@ -185,7 +185,7 @@ protected:
             if(wi.wire_information_case() != tateyama::proto::endpoint::request::WireInformation::kIpcInformation) {
                 std::stringstream ss;
                 ss << "bad wire information (handshake in endpoint): " << wi.wire_information_case();
-                LOG(INFO) << ss.str();
+                LOG_LP(INFO) << ss.str();
                 notify_client(res, tateyama::proto::diagnostics::Code::INVALID_REQUEST, ss.str());
                 return false;
             }
@@ -195,7 +195,7 @@ protected:
             if(wi.wire_information_case() != tateyama::proto::endpoint::request::WireInformation::kStreamInformation) {
                 std::stringstream ss;
                 ss << "bad wire information (handshake in endpoint): " << wi.wire_information_case();
-                LOG(INFO) << ss.str();
+                LOG_LP(INFO) << ss.str();
                 notify_client(res, tateyama::proto::diagnostics::Code::INVALID_REQUEST, ss.str());
                 return false;
             }
@@ -204,7 +204,7 @@ protected:
         default:  // shouldn't happen
             std::stringstream ss;
             ss << "illegal connection type: " << static_cast<std::uint32_t>(connection_type_);
-            LOG(INFO) << ss.str();
+            LOG_LP(INFO) << ss.str();
             notify_client(res, tateyama::proto::diagnostics::Code::INVALID_REQUEST, ss.str());
             return false;
         }
@@ -235,7 +235,7 @@ protected:
         tateyama::proto::endpoint::request::Request rq{};
         if(! rq.ParseFromArray(data.data(), static_cast<int>(data.size()))) {
             std::string error_message{"request parse error"};
-            LOG(INFO) << error_message;
+            LOG_LP(INFO) << error_message;
             notify_client(res.get(), tateyama::proto::diagnostics::Code::INVALID_REQUEST, error_message);
             return false;
         }
@@ -258,7 +258,7 @@ protected:
         {
             std::stringstream ss;
             ss << "bad request for endpoint: " << rq.command_case();
-            LOG(INFO) << ss.str();
+            LOG_LP(INFO) << ss.str();
             notify_client(res.get(), tateyama::proto::diagnostics::Code::INVALID_REQUEST, ss.str());
         }
         return false;
@@ -266,12 +266,13 @@ protected:
     }
 
     bool routing_service_chain(const std::shared_ptr<tateyama::api::server::request>& req,
-                         const std::shared_ptr<tateyama::api::server::response>& res) {
+                               const std::shared_ptr<tateyama::api::server::response>& res,
+                               std::size_t index) {
         auto data = req->payload();
         tateyama::proto::core::request::Request rq{};
         if(! rq.ParseFromArray(data.data(), static_cast<int>(data.size()))) {
             std::string error_message{"request parse error"};
-            LOG(INFO) << error_message;
+            LOG_LP(INFO) << error_message;
             notify_client(res.get(), tateyama::proto::diagnostics::Code::INVALID_REQUEST, error_message);
             return false;
         }
@@ -281,29 +282,24 @@ protected:
         case tateyama::proto::core::request::Request::kShutdown:
         {
             VLOG_LP(log_trace) << "received shutdown request";  //NOLINT
-            {
-                tateyama::session::shutdown_request_type shutdown_type{};
-                switch (rq.shutdown().type()) {
-                case tateyama::proto::core::request::ShutdownType::SHUTDOWN_TYPE_NOT_SET:
-                    shutdown_type = tateyama::session::shutdown_request_type::forceful;
-                    break;
-                case tateyama::proto::core::request::ShutdownType::GRACEFUL:
-                    shutdown_type = tateyama::session::shutdown_request_type::graceful;
-                    break;
-                case tateyama::proto::core::request::ShutdownType::FORCEFUL:
-                    shutdown_type = tateyama::session::shutdown_request_type::forceful;
-                    break;
-                default: // error
-                    return false;
-                }
-                request_shutdown(shutdown_type);
 
-                // FIXME confirm when response should be sent
-                tateyama::proto::core::response::Shutdown rp{};
-                auto body = rp.SerializeAsString();
-                res->body(body);
-                return true;
+            tateyama::session::shutdown_request_type shutdown_type{};
+            switch (rq.shutdown().type()) {
+            case tateyama::proto::core::request::ShutdownType::SHUTDOWN_TYPE_NOT_SET:
+                shutdown_type = tateyama::session::shutdown_request_type::forceful;
+                break;
+            case tateyama::proto::core::request::ShutdownType::GRACEFUL:
+                shutdown_type = tateyama::session::shutdown_request_type::graceful;
+                break;
+            case tateyama::proto::core::request::ShutdownType::FORCEFUL:
+                shutdown_type = tateyama::session::shutdown_request_type::forceful;
+                break;
+            default: // error
+                return false;
             }
+            request_shutdown(shutdown_type);
+            remove_reqres(index);
+            shutdown_response_.emplace_back(res);
             return true;
         }
 
@@ -327,6 +323,15 @@ protected:
             // this request can not be handled here;
             return false;
         }
+    }
+
+    void shutdown_complete() {
+        tateyama::proto::core::response::Shutdown rp{};
+        auto body = rp.SerializeAsString();
+        for (auto&& e: shutdown_response_) {
+            e->body(body);
+        }
+        shutdown_response_.clear();
     }
 
     void register_reqres(std::size_t slot, const std::shared_ptr<tateyama::api::server::request>& request, const std::shared_ptr<tateyama::endpoint::common::response>& response) noexcept {
@@ -429,6 +434,7 @@ private:
     std::mutex mtx_reqreses_{};
     bool cancel_requested_to_all_responses_{};
     bool dispose_done_{};
+    std::vector<std::shared_ptr<tateyama::api::server::response>> shutdown_response_{};
 
     std::string_view connection_label(connection_type con) {
         switch (con) {

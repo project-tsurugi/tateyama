@@ -97,11 +97,12 @@ void stream_worker::do_work()
 
             case tateyama::framework::service_id_routing:
                 if (routing_service_chain(std::dynamic_pointer_cast<tateyama::api::server::request>(request),
-                                          std::dynamic_pointer_cast<tateyama::api::server::response>(response))) {
+                                          std::dynamic_pointer_cast<tateyama::api::server::response>(response),
+                                          slot)) {
                     continue;
                 }
                 if (service_(std::dynamic_pointer_cast<tateyama::api::server::request>(request),
-                              std::dynamic_pointer_cast<tateyama::api::server::response>(response))) {
+                             std::dynamic_pointer_cast<tateyama::api::server::response>(response))) {
                     continue;
                 }
                 VLOG_LP(log_info) << "terminate worker because service returns an error";
@@ -142,6 +143,7 @@ void stream_worker::do_work()
         }
         break;
     }
+    shutdown_complete();
     session_stream_->close();
 
 #ifdef ENABLE_ALTIMETER
