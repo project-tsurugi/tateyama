@@ -133,7 +133,6 @@ void stream_worker::do_work()
             continue;
 
         case tateyama::endpoint::stream::stream_socket::await_result::termination_request:
-            dispose_session_store();
             request_shutdown(tateyama::session::shutdown_request_type::forceful);
             session_stream_->send_session_bye_ok();
             continue;
@@ -143,7 +142,6 @@ void stream_worker::do_work()
         }
         break;
     }
-    dispose_session_store();
     session_stream_->close();
 
 #ifdef ENABLE_ALTIMETER

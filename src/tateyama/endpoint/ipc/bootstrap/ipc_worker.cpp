@@ -57,20 +57,20 @@ void Worker::do_work() {
             VLOG_LP(log_trace) << "cought exception: " << ex.what();
             care_reqreses();
             if (check_shutdown_request() && is_completed()) {
-                VLOG_LP(log_trace) << "terminate worker thread for session " << session_id_ << ", as it has received a shutdown request from outside the communication partner";
+                VLOG_LP(log_trace) << "terminate worker thread for session " << session_id_ << ", as it has received a shutdown request";
                 break;
             }
             continue;
         }
         try {
             if (hdr.get_length() == 0 && hdr.get_idx() == tateyama::common::wire::message_header::terminate_request) {
-                dispose_session_store();
                 request_shutdown(tateyama::session::shutdown_request_type::forceful);
                 care_reqreses();
                 if (check_shutdown_request() && is_completed()) {
                     VLOG_LP(log_trace) << "terminate worker thread for session " << session_id_ << ", as disconnection is requested and the subsequent shutdown process is completed";
                     break;
                 }
+                VLOG_LP(log_trace) << "shutdown for session " << session_id_ << " is to be delayed";
                 continue;
             }
 
@@ -128,7 +128,6 @@ void Worker::do_work() {
             break;
         }
     }
-    dispose_session_store();
     wire_->get_response_wire().notify_shutdown();
     VLOG_LP(log_trace) << "destroy session wire: session_id = " << std::to_string(session_id_);
 #ifdef ENABLE_ALTIMETER
