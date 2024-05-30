@@ -53,6 +53,10 @@ public:
         return completed_.load();
     }
 
+    void set_completed() noexcept {
+        completed_.store(true);
+    }
+
 protected:
     std::size_t index_; // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes,misc-non-private-member-variables-in-classes)
 
