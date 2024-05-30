@@ -81,21 +81,25 @@ void stream_worker::do_work()
         case tateyama::endpoint::stream::stream_socket::await_result::payload:
         {
             auto request = std::make_shared<stream_request>(*session_stream_, payload, database_info_, session_info_, session_store_);
-            auto response = std::make_shared<stream_response>(session_stream_, slot, [this, slot](){remove_reqres(slot);});
-            register_reqres(slot,
-                            std::dynamic_pointer_cast<tateyama::api::server::request>(request),
-                            std::dynamic_pointer_cast<tateyama::endpoint::common::response>(response));
             switch (request->service_id()) {
             case tateyama::framework::service_id_endpoint_broker:
+            {
+                auto response = std::make_shared<stream_response>(session_stream_, slot, [](){});
+                // currently cancel request only
                 if (endpoint_service(std::dynamic_pointer_cast<tateyama::api::server::request>(request),
-                                     std::dynamic_pointer_cast<tateyama::api::server::response>(response),
+                                     std::dynamic_pointer_cast<tateyama::endpoint::common::response>(response),
                                      slot)) {
                     continue;
                 }
                 VLOG_LP(log_info) << "terminate worker because endpoint service returns an error";
                 break;
-
+            }
             case tateyama::framework::service_id_routing:
+            {
+                auto response = std::make_shared<stream_response>(session_stream_, slot, [this, slot](){remove_reqres(slot);});
+                register_reqres(slot,
+                                std::dynamic_pointer_cast<tateyama::api::server::request>(request),
+                                std::dynamic_pointer_cast<tateyama::endpoint::common::response>(response));
                 if (routing_service_chain(std::dynamic_pointer_cast<tateyama::api::server::request>(request),
                                           std::dynamic_pointer_cast<tateyama::api::server::response>(response),
                                           slot)) {
@@ -107,9 +111,14 @@ void stream_worker::do_work()
                 }
                 VLOG_LP(log_info) << "terminate worker because service returns an error";
                 break;
-
+            }
             default:
+            {
+                auto response = std::make_shared<stream_response>(session_stream_, slot, [this, slot](){remove_reqres(slot);});
                 if (!check_shutdown_request()) {
+                    register_reqres(slot,
+                                    std::dynamic_pointer_cast<tateyama::api::server::request>(request),
+                                    std::dynamic_pointer_cast<tateyama::endpoint::common::response>(response));
                     if(service_(std::dynamic_pointer_cast<tateyama::api::server::request>(request),
                                 std::dynamic_pointer_cast<tateyama::api::server::response>(response))) {
                         continue;
@@ -120,8 +129,8 @@ void stream_worker::do_work()
                     continue;
                 }
             }
+            }
             request = nullptr;
-            response = nullptr;
             break;
         }
 

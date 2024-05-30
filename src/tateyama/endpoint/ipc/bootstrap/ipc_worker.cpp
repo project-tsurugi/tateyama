@@ -76,22 +76,26 @@ void Worker::do_work() {
 
             auto request = std::make_shared<ipc_request>(*wire_, hdr, database_info_, session_info_, session_store_);
             std::size_t index = hdr.get_idx();
-            auto response = std::make_shared<ipc_response>(wire_, hdr.get_idx(), [this, index](){remove_reqres(index);});
-            register_reqres(index,
-                            std::dynamic_pointer_cast<tateyama::api::server::request>(request),
-                            std::dynamic_pointer_cast<tateyama::endpoint::common::response>(response));
             bool exit_frag = false;
             switch (request->service_id()) {
             case tateyama::framework::service_id_endpoint_broker:
+            {
+                auto response = std::make_shared<ipc_response>(wire_, hdr.get_idx(), [](){});
+                // currently cancel request only
                 if (!endpoint_service(std::dynamic_pointer_cast<tateyama::api::server::request>(request),
-                                      std::dynamic_pointer_cast<tateyama::api::server::response>(response),
+                                      std::dynamic_pointer_cast<tateyama::endpoint::common::response>(response),
                                       index)) {
                     VLOG_LP(log_info) << "terminate worker because endpoint service returns an error";
                     exit_frag = true;
                 }
                 break;
-
+            }
             case tateyama::framework::service_id_routing:
+            {
+                auto response = std::make_shared<ipc_response>(wire_, hdr.get_idx(), [this, index](){remove_reqres(index);});
+                register_reqres(index,
+                                std::dynamic_pointer_cast<tateyama::api::server::request>(request),
+                                std::dynamic_pointer_cast<tateyama::endpoint::common::response>(response));
                 if (routing_service_chain(std::dynamic_pointer_cast<tateyama::api::server::request>(request),
                                           std::dynamic_pointer_cast<tateyama::api::server::response>(response),
                                           index)) {
@@ -103,9 +107,14 @@ void Worker::do_work() {
                     exit_frag = true;
                 }
                 break;
-
+            }
             default:
+            {
+                auto response = std::make_shared<ipc_response>(wire_, hdr.get_idx(), [this, index](){remove_reqres(index);});
                 if (!check_shutdown_request()) {
+                    register_reqres(index,
+                                    std::dynamic_pointer_cast<tateyama::api::server::request>(request),
+                                    std::dynamic_pointer_cast<tateyama::endpoint::common::response>(response));
                     if (!service_(std::dynamic_pointer_cast<tateyama::api::server::request>(request),
                                   std::dynamic_pointer_cast<tateyama::api::server::response>(response))) {
                         VLOG_LP(log_info) << "terminate worker because service returns an error";
@@ -115,14 +124,13 @@ void Worker::do_work() {
                     notify_client(response.get(), tateyama::proto::diagnostics::SESSION_CLOSED, "this session is already shutdown");
                 }
                 break;
-
+            }
             }
             if (exit_frag) {
                 break;
             }
             request->dispose();
             request = nullptr;
-            response = nullptr;
             wire_->get_garbage_collector()->dump();
         } catch (std::runtime_error &e) {
             LOG_LP(ERROR) << e.what();

@@ -229,7 +229,7 @@ protected:
     }
 
     bool endpoint_service(const std::shared_ptr<tateyama::api::server::request>& req,
-                          [[maybe_unused]] const std::shared_ptr<tateyama::api::server::response>& res,
+                          const std::shared_ptr<tateyama::endpoint::common::response>& res,
                           std::size_t slot) {
         auto data = req->payload();
         tateyama::proto::endpoint::request::Request rq{};
@@ -245,6 +245,7 @@ protected:
         case tateyama::proto::endpoint::request::Request::kCancel:
         {
             VLOG_LP(log_trace) << "received cancel request, slot = " << slot;  //NOLINT
+            res->set_completed();
             {
                 std::lock_guard<std::mutex> lock(mtx_reqreses_);
                 if (auto itr = reqreses_.find(slot); itr != reqreses_.end()) {
