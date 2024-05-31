@@ -210,7 +210,7 @@ private:
     bool care_undertakers() {
         std::unique_lock<std::mutex> lock(mtx_undertakers_);
         for (auto it{undertakers_.begin()}, end{undertakers_.end()}; it != end; ) {
-            if ((*it)->wait_for() == std::future_status::ready) {
+            if ((*it)->is_quiet()) {
                 it = undertakers_.erase(it);
             }
             else {
