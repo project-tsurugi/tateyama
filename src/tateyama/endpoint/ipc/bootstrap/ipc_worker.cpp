@@ -25,7 +25,7 @@
 
 namespace tateyama::endpoint::ipc::bootstrap {
 
-void Worker::do_work() {
+void ipc_worker::run() {
     tateyama::common::wire::message_header hdr{};
     while(true) {
         try {
@@ -147,7 +147,7 @@ void Worker::do_work() {
 }
 
 // Processes shutdown requests from outside the communication partner.
-bool Worker::terminate(tateyama::session::shutdown_request_type type) {
+bool ipc_worker::terminate(tateyama::session::shutdown_request_type type) {
     VLOG_LP(log_trace) << "send terminate request: session_id = " << std::to_string(session_id_);
 
     auto rv = request_shutdown(type);

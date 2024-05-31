@@ -113,7 +113,7 @@ public:
     }
 
     void wait_worker_termination() {
-        while (worker_->wait_for() != std::future_status::ready);
+        while (!worker_->is_terminated());
     }
 
     auto* worker() {
@@ -238,7 +238,7 @@ TEST_F(stream_session_test, forceful_shutdown_after_request) {
         }
 
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
-        EXPECT_NE(listener_->worker()->wait_for(), std::future_status::ready);
+        EXPECT_FALSE(listener_->worker()->is_terminated());
 
         std::this_thread::sleep_for(std::chrono::milliseconds(2000));
         EXPECT_TRUE(service_.get_response()->check_cancel());
@@ -268,7 +268,7 @@ TEST_F(stream_session_test, forceful_shutdown_after_request) {
         EXPECT_EQ(res, response_test_message);
 
         std::this_thread::sleep_for(std::chrono::milliseconds(2500));
-        EXPECT_EQ(listener_->worker()->wait_for(), std::future_status::ready);
+        EXPECT_TRUE(listener_->worker()->is_terminated());
     } catch (std::runtime_error &ex) {
         std::cout << ex.what() << std::endl;
         FAIL();
@@ -285,7 +285,7 @@ TEST_F(stream_session_test, forceful_shutdown_before_request) {
 
         // ensure shutdown request has been processed by the worker
         std::this_thread::sleep_for(std::chrono::milliseconds(2500));
-        EXPECT_EQ(listener_->worker()->wait_for(), std::future_status::ready);
+        EXPECT_TRUE(listener_->worker()->is_terminated());
 
         // client part (send request)
         EXPECT_FALSE(client_->send(service_id_of_session_service, std::string(request_test_message)));
@@ -308,7 +308,7 @@ TEST_F(stream_session_test, graceful_shutdown_after_request) {
         }
 
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
-        EXPECT_NE(listener_->worker()->wait_for(), std::future_status::ready);
+        EXPECT_FALSE(listener_->worker()->is_terminated());
 
         std::this_thread::sleep_for(std::chrono::milliseconds(2000));
         EXPECT_FALSE(service_.get_response()->check_cancel());
@@ -338,7 +338,7 @@ TEST_F(stream_session_test, graceful_shutdown_after_request) {
         EXPECT_EQ(res, response_test_message);
 
         std::this_thread::sleep_for(std::chrono::milliseconds(2500));
-        EXPECT_EQ(listener_->worker()->wait_for(), std::future_status::ready);
+        EXPECT_TRUE(listener_->worker()->is_terminated());
     } catch (std::runtime_error &ex) {
         std::cout << ex.what() << std::endl;
         FAIL();
@@ -355,7 +355,7 @@ TEST_F(stream_session_test, graceful_shutdown_before_request) {
 
         // ensure shutdown request has been processed by the worker
         std::this_thread::sleep_for(std::chrono::milliseconds(2500));
-        EXPECT_EQ(listener_->worker()->wait_for(), std::future_status::ready);
+        EXPECT_TRUE(listener_->worker()->is_terminated());
 
         // client part (send request)
         EXPECT_FALSE(client_->send(service_id_of_session_service, std::string(request_test_message)));

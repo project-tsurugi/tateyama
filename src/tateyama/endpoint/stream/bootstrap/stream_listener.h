@@ -151,7 +151,13 @@ public:
                         std::unique_lock<std::mutex> lock(mtx_undertakers_);
                         undertakers_.emplace(std::move(worker_decline));
                     }
-                    worker->invoke([worker]{worker->run();});
+                    worker->invoke([worker]{
+                        try {
+                            worker->run();
+                        } catch(std::exception &ex) {
+                            LOG(ERROR) << "ipc_endpoint worker thread got an exception: " << ex.what();
+                        }
+                    });
                     LOG_LP(INFO) << "the number of sessions exceeded the limit (" << workers_.size() << ")";
                 } catch (std::runtime_error &ex) {
                     LOG_LP(ERROR) << ex.what();
@@ -167,7 +173,12 @@ public:
                     worker_entry->invoke([this, index]{
                         auto& worker = workers_.at(index);
                         worker->register_worker_in_context(worker);
-                        worker->run();
+                        try {
+                            worker->run();
+                        } catch(std::exception &ex) {
+                            LOG(ERROR) << "ipc_endpoint worker thread got an exception: " << ex.what();
+                        }
+                        worker->dispose_session_store();
                         {
                             std::unique_lock<std::mutex> lock_w(mtx_workers_);
                             std::unique_lock<std::mutex> lock_u(mtx_undertakers_);

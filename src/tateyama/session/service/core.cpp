@@ -101,7 +101,7 @@ bool tateyama::session::service::core::operator()(const std::shared_ptr<request>
                     if (!worker) {
                         break;
                     }
-                    if (worker->terminated()) {
+                    if (worker->is_terminated()) {
                         break;
                     }
                 }

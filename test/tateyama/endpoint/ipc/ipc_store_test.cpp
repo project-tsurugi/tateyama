@@ -29,13 +29,14 @@
 namespace tateyama::server {
 class ipc_listener_for_store_test {
 public:
-    static void run(tateyama::endpoint::ipc::bootstrap::Worker& worker) {
+    static void run(tateyama::endpoint::ipc::bootstrap::ipc_worker& worker) {
         worker.invoke([&]{
             worker.run();
+            worker.dispose_session_store();
         });
     }
-    static void wait(tateyama::endpoint::ipc::bootstrap::Worker& worker) {
-        while (worker.wait_for() != std::future_status::ready);
+    static void wait(tateyama::endpoint::ipc::bootstrap::ipc_worker& worker) {
+        while (!worker.is_terminated());
     }
 };
 }  // namespace tateyama::server
@@ -85,7 +86,7 @@ class ipc_store_test : public ::testing::Test {
         session_name += std::to_string(my_session_id);
         auto wire = std::make_shared<bootstrap::server_wire_container_impl>(session_name, "dummy_mutex_file_name", datachannel_buffer_size, 16);
         session_bridge_ = std::make_shared<session::resource::bridge>();
-        worker_ = std::make_unique<tateyama::endpoint::ipc::bootstrap::Worker>(service_, my_session_id, wire, database_info_, session_bridge_);
+        worker_ = std::make_unique<tateyama::endpoint::ipc::bootstrap::ipc_worker>(service_, my_session_id, wire, database_info_, session_bridge_);
         tateyama::server::ipc_listener_for_store_test::run(*worker_);
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
         client_ = std::make_unique<ipc_client>(database_name, my_session_id);
@@ -101,7 +102,7 @@ class ipc_store_test : public ::testing::Test {
 protected:
     tateyama::status_info::resource::database_info_impl database_info_{database_name};
     store_service service_{};
-    std::unique_ptr<tateyama::endpoint::ipc::bootstrap::Worker> worker_{};
+    std::unique_ptr<tateyama::endpoint::ipc::bootstrap::ipc_worker> worker_{};
     std::shared_ptr<session::resource::bridge> session_bridge_{};
     std::unique_ptr<ipc_client> client_{};
 };

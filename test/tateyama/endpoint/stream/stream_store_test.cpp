@@ -72,6 +72,7 @@ public:
                 worker_ = std::make_unique<tateyama::endpoint::stream::bootstrap::stream_worker>(service_, my_session_id_, std::move(stream), database_info_, false);
                 worker_->invoke([&]{
                     worker_->run();
+                    worker_->dispose_session_store();
                 });
             } else {  // connect via pipe (request_terminate)
                 break;
@@ -83,7 +84,7 @@ public:
     }
 
     void wait_worker_termination() {
-        while (worker_->wait_for() != std::future_status::ready);
+        while (!worker_->is_terminated());
     }
 
 private:

@@ -25,11 +25,11 @@
 namespace tateyama::server {
 class ipc_listener_for_test {
 public:
-    static void run(tateyama::endpoint::ipc::bootstrap::Worker& worker) {
+    static void run(tateyama::endpoint::ipc::bootstrap::ipc_worker& worker) {
         worker.invoke([&]{worker.run();});
     }
-    static void wait(tateyama::endpoint::ipc::bootstrap::Worker& worker) {
-        while (worker.wait_for() != std::future_status::ready);
+    static void wait(tateyama::endpoint::ipc::bootstrap::ipc_worker& worker) {
+        while (!worker.is_terminated());
     }
 };
 }  // namespace tateyama::server
@@ -94,7 +94,7 @@ TEST_F(ipc_info_test, basic) {
     session_name += "-";
     session_name += std::to_string(my_session_id);
     auto wire = std::make_shared<bootstrap::server_wire_container_impl>(session_name, "dummy_mutex_file_name", datachannel_buffer_size, 16);
-    tateyama::endpoint::ipc::bootstrap::Worker worker(service_, my_session_id, wire, database_info_, nullptr);
+    tateyama::endpoint::ipc::bootstrap::ipc_worker worker(service_, my_session_id, wire, database_info_, nullptr);
     tateyama::server::ipc_listener_for_test::run(worker);
 
     // client part

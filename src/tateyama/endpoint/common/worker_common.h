@@ -96,16 +96,12 @@ public:
         thread_ = std::thread(std::move(task_));
     }
 
-    [[nodiscard]] auto wait_for() const {
-        return future_.wait_for(std::chrono::seconds(0));
-    }
-
-    [[nodiscard]] bool terminated() const {
-        return wait_for() == std::future_status::ready;
+    [[nodiscard]] bool is_terminated() const {
+        return future_.wait_for(std::chrono::seconds(0)) == std::future_status::ready;
     }
 
     [[nodiscard]] bool is_quiet() {
-        return !has_incomplete_response() && !has_incomplete_resultset() && terminated();
+        return !has_incomplete_response() && !has_incomplete_resultset() && is_terminated();
     }
 
     /**

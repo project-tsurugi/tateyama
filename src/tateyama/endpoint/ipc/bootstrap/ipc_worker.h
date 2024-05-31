@@ -23,9 +23,9 @@
 
 namespace tateyama::endpoint::ipc::bootstrap {
 
-class alignas(64) Worker : public tateyama::endpoint::common::worker_common {
+class alignas(64) ipc_worker : public tateyama::endpoint::common::worker_common {
  public:
-    Worker(tateyama::framework::routing_service& service,
+    ipc_worker(tateyama::framework::routing_service& service,
            std::size_t session_id,
            std::shared_ptr<server_wire_container_impl> wire,
            const tateyama::api::server::database_info& database_info,
@@ -36,15 +36,7 @@ class alignas(64) Worker : public tateyama::endpoint::common::worker_common {
           request_wire_container_(dynamic_cast<server_wire_container_impl::wire_container_impl*>(wire_->get_request_wire())),
           database_info_(database_info) {
     }
-
-    void run() {
-        try {
-            do_work();
-        } catch(std::exception &ex) {
-            LOG(ERROR) << "ipc_endpoint worker thread got an exception: " << ex.what();
-        }
-        dispose_session_store();
-    }
+    void run();
     bool terminate(tateyama::session::shutdown_request_type type = tateyama::session::shutdown_request_type::graceful);
     [[nodiscard]] std::size_t session_id() const noexcept { return session_id_; }
 
@@ -54,7 +46,6 @@ class alignas(64) Worker : public tateyama::endpoint::common::worker_common {
     server_wire_container_impl::wire_container_impl* request_wire_container_;
     const tateyama::api::server::database_info& database_info_;
 
-    void do_work();
     bool has_incomplete_resultset() override {
         return !wire_->get_garbage_collector()->dump();
     }

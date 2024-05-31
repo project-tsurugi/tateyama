@@ -23,7 +23,7 @@
 
 namespace tateyama::endpoint::stream::bootstrap {
 
-void stream_worker::do_work()
+void stream_worker::run()
 {
     while (true) {
         std::uint16_t slot{};

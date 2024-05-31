@@ -146,13 +146,18 @@ public:
                 auto& worker_entry = workers_.at(index);
                 {
                     std::unique_lock<std::mutex> lock(mtx_workers_);
-                    worker_entry = std::make_shared<Worker>(*router_, session_id, std::move(wire), status_->database_info(), session_);
+                    worker_entry = std::make_shared<ipc_worker>(*router_, session_id, std::move(wire), status_->database_info(), session_);
                 }
                 ipc_metrics_.increase();
                 worker_entry->invoke([this, index, &connection_queue]{
                     auto& worker = workers_.at(index);
                     worker->register_worker_in_context(worker);
-                    worker->run();
+                    try {
+                        worker->run();
+                    } catch(std::exception &ex) {
+                        LOG(ERROR) << "ipc_endpoint worker thread got an exception: " << ex.what();
+                    }
+                    worker->dispose_session_store();
                     {
                         std::unique_lock<std::mutex> lock_w(mtx_workers_);
                         std::unique_lock<std::mutex> lock_u(mtx_undertakers_);
@@ -184,8 +189,8 @@ public:
 
         std::unique_lock<std::mutex> lock(mtx_workers_);
         for (auto && e : workers_) {
-            if (std::shared_ptr<Worker> worker = e; worker) {
-                if (!worker->terminated()) {
+            if (std::shared_ptr<ipc_worker> worker = e; worker) {
+                if (!worker->is_terminated()) {
                     os << (cont ? "live sessions " : ", ") << worker->session_id() << std::endl;
                 }
             }
@@ -202,8 +207,8 @@ private:
     tateyama::endpoint::ipc::metrics::ipc_metrics ipc_metrics_;
 
     std::unique_ptr<connection_container> container_{};
-    std::vector<std::shared_ptr<Worker>> workers_{};
-    std::set<std::shared_ptr<Worker>, tateyama::endpoint::common::pointer_comp<Worker>> undertakers_{};
+    std::vector<std::shared_ptr<ipc_worker>> workers_{};
+    std::set<std::shared_ptr<ipc_worker>, tateyama::endpoint::common::pointer_comp<ipc_worker>> undertakers_{};
     std::string database_name_;
     std::string proc_mutex_file_;
     std::size_t datachannel_buffer_size_{};
