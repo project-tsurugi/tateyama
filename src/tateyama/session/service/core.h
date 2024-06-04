@@ -51,11 +51,12 @@ private:
     template<typename T> 
     void send_error(
         const std::shared_ptr<response>& res,
-        tateyama::proto::session::diagnostic::ErrorCode err = tateyama::proto::session::diagnostic::ErrorCode::ERROR_CODE_NOT_SPECIFIED
+        tateyama::session::resource::error_descriptor err
     ) {
         T rs{};
         auto* error = rs.mutable_error();
-        error->set_error_code(err);
+        error->set_error_code(err.first);
+        error->set_message(err.second);
         res->body(rs.SerializeAsString());
         rs.clear_error();
     }

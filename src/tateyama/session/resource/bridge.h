@@ -29,6 +29,8 @@
 
 namespace tateyama::session::resource {
 
+using error_descriptor = std::pair<tateyama::proto::session::diagnostic::ErrorCode, std::string>;
+
 /**
  * @brief session resource bridge for tateyama framework
  * @details This object bridges session as a resource component in tateyama framework.
@@ -81,27 +83,27 @@ public:
     /**
      * @brief handle a SessionList command
      */
-    std::optional<tateyama::proto::session::diagnostic::ErrorCode> list(::tateyama::proto::session::response::SessionList_Success* mutable_success, std::size_t session_id = 0);
+    std::optional<error_descriptor> list(::tateyama::proto::session::response::SessionList_Success* mutable_success, std::size_t session_id = 0);
 
     /**
      * @brief handle a SessionGet command
      */
-    std::optional<tateyama::proto::session::diagnostic::ErrorCode> get(std::string_view session_specifier, ::tateyama::proto::session::response::SessionGet_Success* mutable_success);
+    std::optional<error_descriptor> get(std::string_view session_specifier, ::tateyama::proto::session::response::SessionGet_Success* mutable_success);
     
     /**
      * @brief handle a SessionShutdown command
      */
-    std::optional<tateyama::proto::session::diagnostic::ErrorCode> session_shutdown(std::string_view session_specifier, shutdown_request_type type, std::shared_ptr<session_context>& context);
+    std::optional<error_descriptor> session_shutdown(std::string_view session_specifier, shutdown_request_type type, std::shared_ptr<session_context>& context);
 
     /**
      * @brief handle a SessionSetVariable command
      */
-    [[nodiscard]] std::optional<tateyama::proto::session::diagnostic::ErrorCode> set_valiable(std::string_view session_specifier, std::string_view name, std::string_view value);
+    [[nodiscard]] std::optional<error_descriptor> set_valiable(std::string_view session_specifier, std::string_view name, std::string_view value);
 
     /**
      * @brief handle a SessionGetVariable command
      */
-    [[nodiscard]] std::optional<tateyama::proto::session::diagnostic::ErrorCode> get_valiable(std::string_view session_specifier, std::string_view name, ::tateyama::proto::session::response::SessionGetVariable_Success* mutable_success);
+    [[nodiscard]] std::optional<error_descriptor> get_valiable(std::string_view session_specifier, std::string_view name, ::tateyama::proto::session::response::SessionGetVariable_Success* mutable_success);
 
     /**
      * @brief relays to container::register_session()
@@ -121,7 +123,7 @@ public:
 private:
     sessions_core_impl sessions_core_impl_{};
 
-    std::optional<tateyama::proto::session::diagnostic::ErrorCode> find_only_one_session(std::string_view session_specifier, session_context::numeric_id_type& numeric_id);
+    std::optional<error_descriptor> find_only_one_session(std::string_view session_specifier, session_context::numeric_id_type& numeric_id);
 };
 
 }

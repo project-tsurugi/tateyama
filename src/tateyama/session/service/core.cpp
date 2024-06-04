@@ -88,7 +88,7 @@ bool tateyama::session::service::core::operator()(const std::shared_ptr<request>
             type = tateyama::session::shutdown_request_type::forceful;
             break;
         default:
-            send_error<tateyama::proto::session::response::SessionShutdown>(res);
+            send_error<tateyama::proto::session::response::SessionShutdown>(res, std::make_pair(tateyama::proto::session::diagnostic::ErrorCode::INVALID_ARGUMENT, "invalid session shutdown type"));
             return false;
         }
         std::shared_ptr<tateyama::session::session_context> session_context{};
