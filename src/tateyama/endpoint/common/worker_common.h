@@ -171,7 +171,14 @@ protected:
             return false;
         }
         auto ci = rq.handshake().client_information();
-        session_info_.label(ci.connection_label());
+        std::string connection_label = ci.connection_label();
+        if (!connection_label.empty()) {
+            if (connection_label.at(0) == ':') {
+                notify_client(res, tateyama::proto::diagnostics::Code::INVALID_REQUEST, "invalid connection label");
+                return false;
+            }
+        }
+        session_info_.label(connection_label);
         session_info_.application_name(ci.application_name());
         // FIXME handle userName when a credential specification is fixed.
 
