@@ -96,8 +96,9 @@ public:
          * @brief try to dispose remaining resultset_wire
          * @returns true if garbage_collector has no remaining resultset_wire.
          */
-        virtual bool dump() = 0;
         virtual void put(unq_p_resultset_wires_conteiner) = 0;
+        virtual void dump() = 0;
+        virtual bool empty() = 0;
     };
 
     server_wire_container() = default;

@@ -388,8 +388,7 @@ public:
             std::lock_guard<std::mutex> lock(mtx_put_);
             resultset_wires_set_.emplace(std::move(wires));
         }
-        bool dump() override {
-            bool rv{true};
+        void dump() override {
             if (mtx_dump_.try_lock()) {
                 std::lock_guard<std::mutex> lock(mtx_put_);
 
@@ -397,14 +396,16 @@ public:
                 while (it != resultset_wires_set_.end()) {
                     if ((*it)->is_closed() && (*it)->is_disposable()) {
                         resultset_wires_set_.erase(it++);
-                        rv = false;
                     } else {
                         it++;
                     }
                 }
                 mtx_dump_.unlock();
             }
-            return rv;
+        }
+        bool empty() override {
+            std::lock_guard<std::mutex> lock(mtx_put_);
+            return resultset_wires_set_.empty();
         }
 
     private:

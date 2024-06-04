@@ -47,7 +47,9 @@ class alignas(64) ipc_worker : public tateyama::endpoint::common::worker_common 
     const tateyama::api::server::database_info& database_info_;
 
     bool has_incomplete_resultset() override {
-        return !wire_->get_garbage_collector()->dump();
+        auto* gc = wire_->get_garbage_collector();
+        gc->dump();
+        return !gc->empty();
     }
 };
 
