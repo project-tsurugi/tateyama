@@ -18,6 +18,7 @@
 #include <functional>
 #include <memory>
 #include <type_traits>
+#include <chrono>
 
 #include <tateyama/framework/environment.h>
 #include <tateyama/framework/component.h>
@@ -136,6 +137,9 @@ public:
 private:
     std::shared_ptr<environment> environment_{std::make_shared<environment>()};
     bool setup_done_{false};
+#ifdef ENABLE_ALTIMETER
+    std::chrono::time_point<std::chrono::high_resolution_clock> db_start_time_{};
+#endif
 };
 
 /**

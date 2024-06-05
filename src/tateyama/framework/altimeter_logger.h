@@ -50,7 +50,7 @@ static inline void db_start(std::string_view user, std::string_view dbname, std:
     }
 }
 
-static inline void db_stop(std::string_view user, std::string_view dbname, std::int64_t result) {
+static inline void db_stop(std::string_view user, std::string_view dbname, std::int64_t result, std::int64_t duration_time) {
     if (::altimeter::logger::is_log_on(log_category::audit,
                                      log_level::audit::info)) {
         ::altimeter::log_item log_item;
@@ -64,6 +64,7 @@ static inline void db_stop(std::string_view user, std::string_view dbname, std::
             log_item.add(log_item::audit::dbname, dbname);
         }
         log_item.add(log_item::audit::result, result);
+        log_item.add(log_item::audit::duration_time, duration_time);
         ::altimeter::logger::log(log_item);
     }
 }
