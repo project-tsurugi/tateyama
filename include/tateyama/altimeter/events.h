@@ -40,6 +40,7 @@ static constexpr std::string_view remote_host = "remote_host";
 static constexpr std::string_view application_name = "application_name";
 static constexpr std::string_view session_id = "session_id";
 static constexpr std::string_view session_label = "session_label";
+static constexpr std::string_view duration_time = "duration_time";
 }
 
 // event log level list
@@ -64,6 +65,7 @@ static constexpr std::string_view remote_host = "remote_host";
 static constexpr std::string_view application_name = "application_name";
 static constexpr std::string_view result = "result";
 static constexpr std::string_view command = "command";
+static constexpr std::string_view duration_time = "duration_time";
 }
 
 // audit log level list
