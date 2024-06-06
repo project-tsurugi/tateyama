@@ -44,16 +44,12 @@ public:
     std::string make_request(tateyama::proto::debug::request::Logging_Level level, std::string &message) {
         std::string s{};
         tateyama::proto::debug::request::Request proto_req{};
-        tateyama::proto::debug::request::Logging logging{};
-        logging.set_level(level);
-        std::string m { message };
-        logging.set_allocated_message(&m);
-        proto_req.set_allocated_logging(&logging);
+        auto* logging = proto_req.mutable_logging();
+        logging->set_level(level);
+        logging->set_message(message);
         proto_req.set_service_message_version_major(default_major);
         proto_req.set_service_message_version_minor(default_minor);
         EXPECT_TRUE(proto_req.SerializeToString(&s));
-        logging.release_message();
-        proto_req.release_logging();
         return s;
     }
 
