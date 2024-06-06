@@ -168,8 +168,7 @@ public:
                 });
             } catch (std::exception& ex) {
                 LOG_LP(ERROR) << ex.what();
-                terminate_workers();
-                break;
+                continue;
             }
         }
         confirm_workers_termination();
