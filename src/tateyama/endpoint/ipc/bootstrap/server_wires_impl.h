@@ -514,10 +514,14 @@ public:
             request_wire_.initialize(req_wire, req_wire->get_bip_address(managed_shared_memory_.get()));
             response_wire_.initialize(res_wire, res_wire->get_bip_address(managed_shared_memory_.get()));
         } catch(const boost::interprocess::interprocess_exception& ex) {
-            LOG_LP(ERROR) << ex.what() << " on server_wire_container_impl::server_wire_container_impl()";
+            std::stringstream ss{};
+            ss << ex.what() << ", as try to allocate " << datachannel_buffer_size_ << " bytes on boost managed shared memory";
+            LOG_LP(ERROR) << ss.str();
             throw std::runtime_error(ex.what());
-        } catch (std::runtime_error &ex) {
-            LOG_LP(ERROR) << "running out of boost managed shared memory";
+        } catch (const std::runtime_error &ex) {
+            std::stringstream ss{};
+            ss << ex.what() << ", as try to allocate " << datachannel_buffer_size_ << " bytes on boost managed shared memory";
+            LOG_LP(ERROR) << ss.str();
             throw ex;
         }
     }
