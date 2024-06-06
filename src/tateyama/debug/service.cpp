@@ -62,20 +62,15 @@ static void reply(google::protobuf::Message &message,
 
 static void reply_error(std::string_view error_message,
                   std::shared_ptr<tateyama::api::server::response> &res) {
-    tateyama::proto::debug::response::UnknownError error { };
     tateyama::proto::debug::response::Logging logging { };
-    error.set_message(std::string(error_message));
-    logging.set_allocated_unknown_error(&error);
+    logging.mutable_unknown_error()->set_message(std::string(error_message));
     reply(logging, res);
-    (void)logging.release_unknown_error();
 }
 
 static void success_logging(std::shared_ptr<tateyama::api::server::response> &res) {
     tateyama::proto::debug::response::Logging logging { };
-    tateyama::proto::debug::response::Void v { };
-    logging.set_allocated_success(&v);
+    (void) logging.mutable_success();
     reply(logging, res);
-    (void)logging.release_success();
 }
 
 static void command_logging(tateyama::proto::debug::request::Request &proto_req,
