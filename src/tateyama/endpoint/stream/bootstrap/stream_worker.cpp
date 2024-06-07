@@ -25,7 +25,7 @@
 
 namespace tateyama::endpoint::stream::bootstrap {
 
-void stream_worker::run()
+void stream_worker::run()  // NOLINT(readability-function-cognitive-complexity)
 {
     while (true) {
         std::uint16_t slot{};
