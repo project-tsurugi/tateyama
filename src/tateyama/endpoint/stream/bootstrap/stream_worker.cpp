@@ -106,6 +106,11 @@ void stream_worker::run()
                 if (routing_service_chain(std::dynamic_pointer_cast<tateyama::api::server::request>(request),
                                           std::dynamic_pointer_cast<tateyama::api::server::response>(response),
                                           slot)) {
+                    care_reqreses();
+                    if (check_shutdown_request() && is_completed()) {
+                        VLOG_LP(log_trace) << "received and completed shutdown request: session_id = " << std::to_string(session_id_);
+                        break;
+                    }
                     continue;
                 }
                 if (service_(std::dynamic_pointer_cast<tateyama::api::server::request>(request),
