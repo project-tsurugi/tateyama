@@ -50,7 +50,7 @@ class alignas(64) stream_worker : public tateyama::endpoint::common::worker_comm
     }
 
     void run();
-    bool terminate(tateyama::session::shutdown_request_type type = tateyama::session::shutdown_request_type::graceful);
+    bool terminate(tateyama::session::shutdown_request_type type);
     [[nodiscard]] std::size_t session_id() const noexcept { return session_id_; }
 
  private:

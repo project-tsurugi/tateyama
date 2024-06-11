@@ -56,6 +56,12 @@ enum class state : std::int64_t {
     boot_error = 10,
 };
 
+enum class shutdown_type : std::uint8_t {
+    nothing = 0,
+    graceful = 1,
+    forceful = 2,
+};
+
 /**
  * @brief status of tsurugidb, placed on boost shared memory
  */
@@ -82,17 +88,25 @@ class resource_status_memory {
 
         explicit resource_status(const void_allocator& allocator)
             : resource_status_map_(allocator), service_status_map_(allocator), endpoint_status_map_(allocator), database_name_(allocator), mutex_file_(allocator), sessions_(allocator), allocator_(allocator) {
-            shutdown_requested_.store(false, boost::memory_order_relaxed);
+            shutdown_requested_.store(shutdown_type::nothing, boost::memory_order_relaxed);
         }
     
       private:
-        [[nodiscard]] bool test_and_set_shutdown() {
-            bool expected = false;
-            return shutdown_requested_.compare_exchange_strong(expected, true, boost::memory_order_acq_rel);
+        [[nodiscard]] bool test_and_set_shutdown(shutdown_type type) {
+            auto expected = shutdown_requested_.load();
+            if (expected == shutdown_type::forceful ||
+                (expected == shutdown_type::graceful && type == shutdown_type::graceful) ||
+                type == shutdown_type::nothing) {
+                return false;
+            }
+            return shutdown_requested_.compare_exchange_strong(expected, type, boost::memory_order_acq_rel);
         }
-        [[nodiscard]] bool request_shutdown() {
+        [[nodiscard]] shutdown_type get_shutdown_request() {
+            return shutdown_requested_.load(boost::memory_order_acquire);
+        }
+        [[nodiscard]] bool request_shutdown(shutdown_type type) {
             boost::interprocess::scoped_lock lock(m_shutdown_);
-            if (!test_and_set_shutdown()) {
+            if (!test_and_set_shutdown(type)) {
                 return false;
             }
             lock.unlock();
@@ -101,7 +115,7 @@ class resource_status_memory {
         }
         void wait_for_shutdown() {
             boost::interprocess::scoped_lock lock(m_shutdown_);
-            while (!shutdown_requested_.load(boost::memory_order_acquire)) {
+            while (shutdown_requested_.load(boost::memory_order_acquire) == shutdown_type::nothing) {
                 c_shutdown_.wait(lock);
             }
             lock.unlock();
@@ -145,7 +159,7 @@ class resource_status_memory {
         shm_map endpoint_status_map_;
         state whole_{};
         pid_t pid_{};
-        boost::atomic<bool> shutdown_requested_{};
+        boost::atomic<shutdown_type> shutdown_requested_{};
         boost::interprocess::interprocess_mutex m_shutdown_{};
         boost::interprocess::interprocess_condition c_shutdown_{};
         shm_string database_name_;
@@ -197,11 +211,11 @@ class resource_status_memory {
     [[nodiscard]] bool valid() {
         return resource_status_ != nullptr;
     }
-    [[nodiscard]] bool is_shutdown_requested() {
-        return resource_status_->shutdown_requested_.load(boost::memory_order_acquire);
+    [[nodiscard]] shutdown_type get_shutdown_request() {
+        return resource_status_->get_shutdown_request();
     }
-    [[nodiscard]] bool request_shutdown() {
-        return resource_status_->request_shutdown();
+    [[nodiscard]] bool request_shutdown(shutdown_type type = shutdown_type::forceful) {
+        return resource_status_->request_shutdown(type);
     }
     void wait_for_shutdown() {
         resource_status_->wait_for_shutdown();
@@ -229,11 +243,6 @@ class resource_status_memory {
     }
     [[nodiscard]] bool alive() {
         return resource_status_->alive();
-    }
-
-    // obsolete
-    [[nodiscard]] bool shutdown() {
-        return is_shutdown_requested();
     }
 
 private:

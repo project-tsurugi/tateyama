@@ -192,7 +192,7 @@ TEST_F(ipc_store_test, basic) {
     EXPECT_EQ(store.find<element_one>(1), nullptr);
     EXPECT_EQ(store.find<element_two>(2), nullptr);
 
-    worker_->terminate();
+    worker_->terminate(tateyama::session::shutdown_request_type::forceful);
 }
 
 TEST_F(ipc_store_test, keep_and_dispose) {
@@ -236,7 +236,7 @@ TEST_F(ipc_store_test, keep_and_dispose) {
     {
         EXPECT_FALSE(e1->disposed());
         EXPECT_FALSE(e2->disposed());
-        worker_->terminate();
+        worker_->terminate(tateyama::session::shutdown_request_type::forceful);
         tateyama::server::ipc_listener_for_store_test::wait(*worker_);
         EXPECT_TRUE(e1->disposed());
         EXPECT_TRUE(e2->disposed());

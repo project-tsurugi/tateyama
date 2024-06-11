@@ -95,6 +95,13 @@ void bridge::wait_for_shutdown() {
     resource_status_memory_->wait_for_shutdown();
 }
 
+shutdown_type bridge::get_shutdown_request() {
+    if (resource_status_memory_) {
+        return resource_status_memory_->get_shutdown_request();
+    }
+    return shutdown_type::nothing;
+}
+
 void bridge::mutex_file(std::string_view file_name) {
     if (resource_status_memory_) {
         resource_status_memory_->mutex_file(file_name);

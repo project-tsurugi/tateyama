@@ -39,7 +39,7 @@ NOTE: for developers
 
 ```sh
 tgctl start [--conf </path/to/conf>] [--recovery|--no-recovery]
-tgctl shutdown [--conf </path/to/conf>] [--timeout <value>]
+tgctl shutdown [--conf </path/to/conf>] [--timeout <value>] [--forceful|--graceful]
 tgctl kill [--conf </path/to/conf>] [--timeout <value>]
 tgctl quiesce [--conf </path/to/conf>] [--label <text>]
 tgctl status [--conf </path/to/conf>]
@@ -74,10 +74,13 @@ tgctl status [--conf </path/to/conf>]
     * options
       * `--timeout` 対象データベースの安全な終了の確認を中止して、安全な終了は失敗扱いとするまでの時間（単位：秒）、defaultは300秒
       　valueに0を指定すると対象のデータベースが安全に終了するか、安全な終了に失敗するまで制御を返さない
+      * `--forceful` - 接続中のsessionに対してforceful shutdownを行う
+      * `--graceful` - 接続中のsessionに対してgraceful shutdownを行う
     * note
       * 同一の設定ファイルを参照する、稼働中のデータベースを対象にとる
       * 対象のデータベースが未稼働の状態でこのコマンドを実行した場合、コマンドは失敗する場合がある
       * 対象のデータベースが安全かつ完全に終了した場合のみ、このコマンドの exit status は 0 になる
+      * `--forceful`と`--graceful`のどちらも指定されていない場合は、接続中のsessionに対してforceful shutdownを行う。両方とも指定された場合はエラー。
     * impl memo
       * if service is ready
         * send `shutdown` to "control_service"

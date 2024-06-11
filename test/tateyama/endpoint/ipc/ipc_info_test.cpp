@@ -135,7 +135,7 @@ TEST_F(ipc_info_test, basic) {
     auto s_start = si.start_at();
     EXPECT_TRUE(std::chrono::duration_cast<std::chrono::milliseconds>(now - s_start).count() < 500);
 
-    worker.terminate();
+    worker.terminate(tateyama::session::shutdown_request_type::forceful);
     tateyama::server::ipc_listener_for_test::wait(worker);
 }
 
