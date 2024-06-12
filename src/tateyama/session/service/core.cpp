@@ -80,10 +80,10 @@ bool tateyama::session::service::core::operator()(const std::shared_ptr<request>
         auto& cmd = rq.session_shutdown();
         tateyama::session::shutdown_request_type type{};
         switch (cmd.request_type()) {
-        case tateyama::proto::session::request::SessionShutdownType::SESSION_SHUTDOWN_TYPE_NOT_SET:
         case tateyama::proto::session::request::SessionShutdownType::GRACEFUL:
             type = tateyama::session::shutdown_request_type::graceful;
             break;
+        case tateyama::proto::session::request::SessionShutdownType::SESSION_SHUTDOWN_TYPE_NOT_SET:
         case tateyama::proto::session::request::SessionShutdownType::FORCEFUL:
             type = tateyama::session::shutdown_request_type::forceful;
             break;

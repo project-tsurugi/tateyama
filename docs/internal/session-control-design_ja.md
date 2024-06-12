@@ -52,7 +52,7 @@
     * `sessions` リソース (非const)
       * `session list/show` リクエストに対し、各セッションの情報を入手する
       * `session set` リクエストに対し、セッション変数の値を書き込む
-      * `session kill` リクエストに対し、セッション終了要求を書き込む
+      * `session shutdown` リクエストに対し、セッション終了要求を書き込む
     * endpoint (非const)
       * `request` オブジェクト参照時に const参照を渡す
       * セッション終了要求が記録されていたら当該セッションをシャットダウンする
@@ -81,7 +81,7 @@
       * あるリクエストがレスポンスを返した後、 `request` や `response` オブジェクトとは無関係のリソースを時間をかけて破棄する場合
   * 本アーキテクチャは、上記を前提に構成している
     * つまり、正常な状態であれば、全てのリクエストは `session_context` が生存していることを前提にしたプログラミングができるようになっている
-    * このため、 `session kill` によって直ちに使用中のリソースが破棄されてしまうような状況を想定しない
+    * このため、 `session shutdown` によって直ちに使用中のリソースが破棄されてしまうような状況を想定しない
 * バックグラウンド実行中のリクエストの完全な終了を保証するために、「キャンセル要求」と「完全な終了の報告」を導入する
   * endpoint はセッションで実行中のリクエストを終了させるために「キャンセル要求」を送り、それを受け取ったサービスはその処理を完全に終了させたうえで「完全な終了の報告」を endpoint に通知する
   * 「完全な終了の報告」はサービスが `std::shared_ptr<{request, response}>` を破棄することで行う
@@ -101,7 +101,7 @@
 * [`session_context` オブジェクト](#session_context-オブジェクト)
   * セッションごとに作成するコンテキストオブジェクト
   * endpoint がオーナーシップを有し、 `sessions` リソース上に borrow される
-  * `session {list,show}` に必要な情報を有し、 `session {kill,set}` による状態の変更を受け入れる
+  * `session {list,show}` に必要な情報を有し、 `session {shutdown,set}` による状態の変更を受け入れる
   * `request` オブジェクトからは直接暴露させず、個々に含まれるオブジェクトのみを提供することになる
     * オーナーシップの関係で、 `request` オブジェクトは内部的に `session_context` オブジェクトを所有しておいた方がいいかもしれない
 * [`session_variable_set` オブジェクト](#session_variable_set-オブジェクト)
@@ -116,7 +116,7 @@
   * このオブジェクトから `session_variable_set` オブジェクトを新しく作成できる
 * session shutdown リクエストフラグ
   * 対象のセッションに対して終了が要求されたかどうかを表すフラグで、 `session_context` 上で管理する
-  * `session kill` 経由で値を変更でき、endpoint がこの値をポーリングして、終了リクエストが送られたら所定の方法で速やかにセッションを終了させる
+  * `session shutdown` 経由で値を変更でき、endpoint がこの値をポーリングして、終了リクエストが送られたら所定の方法で速やかにセッションを終了させる
   * フラグにはいくつか種類がある:
     * `GRACEFUL` - 新しいリクエストを閉鎖し、現状のリクエストにすべてレスポンスを返したのちにセッションを終了する
       * 新しいリクエストには、直ちに `SESSION_CLOSED` がレスポンスとして返される
@@ -737,7 +737,7 @@ message response.SessionList {
 
 ### SessionShutdown
 
-* `session kill` に対応
+* `session shutdown` に対応
 
 ```proto
 // represents kind of shutdown request.
@@ -782,9 +782,8 @@ message response.SessionShutdown {
 ```
 
 * 備考
-  * `session kill` を実行する際、 `request.SessionShutdown.request_type` は unset のまま送る
+  * `session shutdown` を実行する際、 `request.SessionShutdown.request_type` は unset のまま送る
     * サービス側で `SessionShutdownType.FORCEFUL` として処理する
-    * `session kill --{graceful,forceful}` のようなオプションを導入してもよい
 
 ### SessionSetVariable
 

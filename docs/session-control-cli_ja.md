@@ -147,17 +147,20 @@ tgctl session show <session-ref> [--conf </path/to/conf>] [-v|--verbose] [--moni
   remote       192.168.1.24:32768
   ```
 
-### session kill
+### session shutdown
 
 特定のセッションを強制的に終了させる。
 
 ```sh
-tgctl session kill <session-ref> [<session-ref> [...]] [--conf </path/to/conf>] [-v|--verbose] [--monitor </path/to/log.jsonl>]
+tgctl session shutdown <session-ref> [<session-ref> [...]] [--conf </path/to/conf>] [-v|--verbose] [--forceful|--graceful] [--monitor </path/to/log.jsonl>]
 ```
 
 * options
   * `<session-ref>` - 対象の session ID または session label
   * `--conf` - 設定ファイルのパス、未指定の場合は既定の設定パスを利用
+  * `-v,--verbose` - 無視される
+  * `--forceful` - forceful shutdownを行う
+  * `--graceful` - graceful shutdownを行う
   * `-v,--verbose` - 無視される
   * `--monitor` - 指定されたファイルにモニタリング情報を出力する
 * exit status
@@ -176,15 +179,17 @@ tgctl session kill <session-ref> [<session-ref> [...]] [--conf </path/to/conf>] 
 * example
 
   ```sh
-  $ tgctl session kill example-1 example-3
+  $ tgctl session shutdown example-1 example-3
   ```
 
 * 備考
   * `xargs` と組み合わせて利用することを想定
 
     ```sh
-    $ tgctl session list | xargs -L 1 tgctl session kill
+    $ tgctl session list | xargs -L 1 tgctl session shutdown
     ```
+
+  * `--forceful`と`--graceful`のどちらも指定されていない場合は、forceful shutdownを行う。両方とも指定された場合はエラー。
 
 ### session set
 
