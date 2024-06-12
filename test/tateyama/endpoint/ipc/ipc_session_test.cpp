@@ -161,7 +161,7 @@ TEST_F(ipc_session_test, cancel_request_reply) {
     }
     EXPECT_EQ(response.code(), tateyama::proto::diagnostics::Code::OPERATION_CANCELED);
 
-    worker_->terminate();
+    worker_->terminate(tateyama::session::shutdown_request_type::forceful);
 }
 
 TEST_F(ipc_session_test, cancel_request_noreply) {
@@ -190,7 +190,7 @@ TEST_F(ipc_session_test, cancel_request_noreply) {
     }
     EXPECT_EQ(response.code(), tateyama::proto::diagnostics::Code::UNKNOWN);
 
-    worker_->terminate();
+    worker_->terminate(tateyama::session::shutdown_request_type::forceful);
 }
 
 TEST_F(ipc_session_test, forceful_shutdown_after_request) {

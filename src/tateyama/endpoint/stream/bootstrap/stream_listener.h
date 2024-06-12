@@ -231,10 +231,15 @@ private:
         return undertakers_.empty();
     }
     void terminate_workers() {
-        std::unique_lock<std::mutex> lock(mtx_workers_);
-        for (auto&& worker : workers_) {
-            if (worker) {
-                worker->terminate();
+        tateyama::status_info::shutdown_type shutdown_type = status_->get_shutdown_request();
+        {
+            std::unique_lock<std::mutex> lock(mtx_workers_);
+            for (auto&& worker : workers_) {
+                if (worker) {
+                    worker->terminate(shutdown_type == tateyama::status_info::shutdown_type::graceful ?
+                                      tateyama::session::shutdown_request_type::graceful :
+                                      tateyama::session::shutdown_request_type::forceful);
+                }
             }
         }
     }

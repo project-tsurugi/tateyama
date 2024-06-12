@@ -37,7 +37,7 @@ class alignas(64) ipc_worker : public tateyama::endpoint::common::worker_common 
           database_info_(database_info) {
     }
     void run();
-    bool terminate(tateyama::session::shutdown_request_type type = tateyama::session::shutdown_request_type::graceful);
+    bool terminate(tateyama::session::shutdown_request_type type);
     [[nodiscard]] std::size_t session_id() const noexcept { return session_id_; }
 
  private:

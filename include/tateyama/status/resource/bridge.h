@@ -107,6 +107,12 @@ public:
     void wait_for_shutdown();
 
     /**
+     * @brief get shutdown request
+     * @return shutdown request
+     */
+    shutdown_type get_shutdown_request();
+
+    /**
      * @brief set proc_mutex file name
      */
     void mutex_file(std::string_view file_name);
@@ -133,6 +139,7 @@ public:
 
     /**
      * @brief returns a reference to the database_info
+     * @return database info
      */
     [[nodiscard]] const tateyama::api::server::database_info& database_info() const noexcept {
         return *database_info_;
@@ -140,6 +147,7 @@ public:
 
     /**
      * @brief returns the database name
+     * @return database name
      */
     [[nodiscard]] std::string_view database_name() const;
 
