@@ -329,13 +329,20 @@ protected:
         }
     }
 
+    [[nodiscard]] bool shutdown_from_client() const noexcept {
+        return complete_shutdown_from_client_;
+    }
+
     void shutdown_complete() {
-        tateyama::proto::core::response::Shutdown rp{};
-        auto body = rp.SerializeAsString();
-        for (auto&& e: shutdown_response_) {
-            e->body(body);
+        if (!shutdown_response_.empty()) {
+            tateyama::proto::core::response::Shutdown rp{};
+            auto body = rp.SerializeAsString();
+            for (auto&& e: shutdown_response_) {
+                e->body(body);
+            }
+            complete_shutdown_from_client_ = true;
+            shutdown_response_.clear();
         }
-        shutdown_response_.clear();
     }
 
     void register_reqres(std::size_t slot, const std::shared_ptr<tateyama::api::server::request>& request, const std::shared_ptr<tateyama::endpoint::common::response>& response) noexcept {
@@ -436,9 +443,10 @@ private:
     const std::shared_ptr<tateyama::session::resource::session_context_impl> session_context_;
     std::map<std::size_t, std::pair<std::shared_ptr<tateyama::api::server::request>, std::shared_ptr<tateyama::endpoint::common::response>>> reqreses_{};
     std::mutex mtx_reqreses_{};
+    std::vector<std::shared_ptr<tateyama::api::server::response>> shutdown_response_{};
     bool cancel_requested_to_all_responses_{};
     bool dispose_done_{};
-    std::vector<std::shared_ptr<tateyama::api::server::response>> shutdown_response_{};
+    bool complete_shutdown_from_client_{};
 
     std::string_view connection_label(connection_type con) {
         switch (con) {

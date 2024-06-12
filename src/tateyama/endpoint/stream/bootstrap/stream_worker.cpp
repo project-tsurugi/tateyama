@@ -108,8 +108,8 @@ void stream_worker::run()  // NOLINT(readability-function-cognitive-complexity)
                                           slot)) {
                     care_reqreses();
                     if (check_shutdown_request() && is_completed()) {
+                        shutdown_complete();
                         VLOG_LP(log_trace) << "received and completed shutdown request: session_id = " << std::to_string(session_id_);
-                        break;
                     }
                     continue;
                 }
@@ -146,11 +146,18 @@ void stream_worker::run()  // NOLINT(readability-function-cognitive-complexity)
             care_reqreses();
             if (check_shutdown_request() && is_completed()) {
                 VLOG_LP(log_trace) << "received and completed shutdown request: session_id = " << std::to_string(session_id_);
-                break;
+                shutdown_complete();
+                if (!shutdown_from_client()) {
+                    break;
+                }
             }
             continue;
 
         case tateyama::endpoint::stream::stream_socket::await_result::termination_request:
+            if (shutdown_from_client()) {
+                session_stream_->send_session_bye_ok();
+                break;
+            }
             request_shutdown(tateyama::session::shutdown_request_type::forceful);
             session_stream_->send_session_bye_ok();
             continue;
@@ -160,7 +167,6 @@ void stream_worker::run()  // NOLINT(readability-function-cognitive-complexity)
         }
         break;
     }
-    shutdown_complete();
     session_stream_->close();
 
 #ifdef ENABLE_ALTIMETER
