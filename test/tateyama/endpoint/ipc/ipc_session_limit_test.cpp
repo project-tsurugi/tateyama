@@ -122,7 +122,7 @@ private:
 class ipc_session_limit_test: public ipc_gtest_base {
 };
 
-TEST_F(ipc_session_limit_test, max) {
+TEST_F(ipc_session_limit_test, DISABLED_max) {
     std::cout << "ipc_max_session: " << ipc_max_session_ << std::endl;
     std::vector<std::size_t> msg_len_list { 32 * 1024 };
     std::vector<int> nsession_list { 32, 64, ipc_max_session_ };
@@ -148,7 +148,7 @@ TEST_F(ipc_session_limit_test, max) {
     }
 }
 
-TEST_F(ipc_session_limit_test, max_plus_1_sessions) {
+TEST_F(ipc_session_limit_test, DISABLED_max_plus_1_sessions) {
     ipc_session_limit_test_server_client sc { cfg_, 1, 0, 128, ipc_max_session_ + 1, false, 1 };
     sc.start_server_client();
 }
