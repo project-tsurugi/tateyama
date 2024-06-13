@@ -59,8 +59,9 @@ void ipc_worker::run() {
             VLOG_LP(log_trace) << "cought exception: " << ex.what();
             care_reqreses();
             if (check_shutdown_request() && is_completed()) {
+                shutdown_complete();
                 VLOG_LP(log_trace) << "terminate worker thread for session " << session_id_ << ", as it has received a shutdown request";
-                break;
+                break;  // break the while loop
             }
             continue;
         }
@@ -69,8 +70,9 @@ void ipc_worker::run() {
                 request_shutdown(tateyama::session::shutdown_request_type::forceful);
                 care_reqreses();
                 if (check_shutdown_request() && is_completed()) {
+                    shutdown_complete();
                     VLOG_LP(log_trace) << "terminate worker thread for session " << session_id_ << ", as disconnection is requested and the subsequent shutdown process is completed";
-                    break;
+                    break;  // break the while loop
                 }
                 VLOG_LP(log_trace) << "shutdown for session " << session_id_ << " is to be delayed";
                 continue;
@@ -90,7 +92,7 @@ void ipc_worker::run() {
                     VLOG_LP(log_info) << "terminate worker because endpoint service returns an error";
                     exit_frag = true;
                 }
-                break;
+                break;  // break the switch, and set exit_flag true to break the while loop
             }
             case tateyama::framework::service_id_routing:
             {
@@ -101,14 +103,20 @@ void ipc_worker::run() {
                 if (routing_service_chain(std::dynamic_pointer_cast<tateyama::api::server::request>(request),
                                           std::dynamic_pointer_cast<tateyama::api::server::response>(response),
                                           index)) {
-                    break;
+                    care_reqreses();
+                    if (check_shutdown_request() && is_completed()) {
+                        shutdown_complete();
+                        VLOG_LP(log_trace) << "received and completed shutdown request: session_id = " << std::to_string(session_id_);
+                        exit_frag = true;
+                    }
+                    break;  // break the switch, and set exit_flag true to break the while loop
                 }
                 if (!service_(std::dynamic_pointer_cast<tateyama::api::server::request>(request),
                               std::dynamic_pointer_cast<tateyama::api::server::response>(response))) {
                     VLOG_LP(log_info) << "terminate worker because service returns an error";
                     exit_frag = true;
                 }
-                break;
+                break;  // break the switch, and set exit_flag true to break the while loop
             }
             default:
             {
@@ -125,21 +133,20 @@ void ipc_worker::run() {
                 } else {
                     notify_client(response.get(), tateyama::proto::diagnostics::SESSION_CLOSED, "this session is already shutdown");
                 }
-                break;
+                break;  // break the switch, and set exit_flag true to break the while loop
             }
             }
             if (exit_frag) {
-                break;
+                break;  // break the while loop
             }
             request->dispose();
             request = nullptr;
             wire_->get_garbage_collector()->dump();
         } catch (std::runtime_error &e) {
             LOG_LP(ERROR) << e.what();
-            break;
+            break;  // break the while loop
         }
     }
-    shutdown_complete();
     wire_->get_response_wire().notify_shutdown();
     VLOG_LP(log_trace) << "destroy session wire: session_id = " << std::to_string(session_id_);
 #ifdef ENABLE_ALTIMETER
