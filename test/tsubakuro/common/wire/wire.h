@@ -23,6 +23,7 @@
 #include <vector>
 #include <string>
 #include <string_view>
+#include <cstdint>
 #include <sys/file.h>
 #include <boost/interprocess/managed_shared_memory.hpp>
 #include <boost/interprocess/sync/interprocess_condition.hpp>
@@ -974,7 +975,7 @@ public:
             flock(fd, LOCK_UN);
             close(fd);
             std::stringstream ss{};
-            ss << "the lock file (" << mutex_file_.c_str() << ") is not locked, possibly due to server crash";
+            ss << "the lock file (" << mutex_file_.c_str() << ") is not locked, possibly due to server process lost";
             return ss.str();
         }
         close(fd);
@@ -1031,8 +1032,13 @@ public:
                                          boost::get_system_time() + boost::posix_time::microseconds(u_cap(u_round(watch_interval * 1000 * 1000))),
                                          [this, &terminate](){ return (pushed_.load() > poped_.load()) || terminate.load(); });
         }
-        [[nodiscard]] std::size_t pop() {
-            return queue_.at(index(poped_.fetch_add(1)));
+        // thread unsafe (assume single listener thread)
+        void pop() {
+            poped_.fetch_add(1);
+        }
+        // thread unsafe (assume single listener thread)
+        [[nodiscard]] std::size_t front() {
+            return queue_.at(index(poped_.load()));
         }
         void notify() {
             condition_.notify_one();
@@ -1069,14 +1075,11 @@ public:
 
         void accept(std::size_t session_id) {
             session_id_ = session_id;
-            std::atomic_thread_fence(std::memory_order_acq_rel);
-            {
-                boost::interprocess::scoped_lock lock(m_accepted_);
-                c_accepted_.notify_one();
-            }
+            notify();
         }
         void reject() {
-            // FIXMEt implement
+            session_id_ = session_id_indicating_error;
+            notify();
         }
         [[nodiscard]] std::size_t wait(std::int64_t timeout = 0) {
             std::atomic_thread_fence(std::memory_order_acq_rel);
@@ -1107,9 +1110,18 @@ public:
         boost::interprocess::interprocess_mutex m_accepted_{};
         boost::interprocess::interprocess_condition c_accepted_{};
         std::size_t session_id_{};
+
+        void notify() {
+            std::atomic_thread_fence(std::memory_order_acq_rel);
+            {
+                boost::interprocess::scoped_lock lock(m_accepted_);
+                c_accepted_.notify_one();
+            }
+        }
     };
 
     using element_allocator = boost::interprocess::allocator<element, boost::interprocess::managed_shared_memory::segment_manager>;
+    constexpr static std::size_t session_id_indicating_error = UINT64_MAX;
 
     /**
      * @brief Construct a new object.
@@ -1153,14 +1165,17 @@ public:
         return 0;
     }
     std::size_t slot() {
-        std::size_t sid = q_requested_.pop();
-        return sid;
+        return q_requested_.front();
     }
+    // either accept() or reject() must be called
     void accept(std::size_t sid, std::size_t session_id) {
-        auto& request = v_requested_.at(sid);
-        request.accept(session_id);
+        q_requested_.pop();
+        v_requested_.at(sid).accept(session_id);
     }
+    // either accept() or reject() must be called
     void reject(std::size_t sid) {
+        q_requested_.pop();
+        v_requested_.at(sid).reject();
         q_free_.push(sid);
     }
     void disconnect(std::size_t rid) {
@@ -1196,4 +1211,4 @@ private:
     std::size_t session_id_{};
 };
 
-};  // namespace tateyama::common
+};  // namespace tsubakuro::common
