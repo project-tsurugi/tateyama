@@ -71,6 +71,11 @@ static constexpr std::string_view default_configuration_for_tests {  // NOLINT
         "port=12345\n"
         "threads=104\n"
 
+    "[session]\n"
+        "enable_timeout=true\n"
+        "refresh_timeout=300\n"
+        "max_refresh_timeout=86400\n"
+
     "[fdw]\n"
         "name=tsurugi\n"
         "threads=104\n"

@@ -76,6 +76,7 @@ void stream_worker::run()  // NOLINT(readability-function-cognitive-complexity)
     const std::chrono::time_point session_start_time = std::chrono::high_resolution_clock::now();
     tateyama::endpoint::altimeter::session_start(database_info_, session_info_);
 #endif
+    bool notiry_expiration_time_over{};
     while(true) {
         std::uint16_t slot{};
         std::string payload{};
@@ -150,6 +151,10 @@ void stream_worker::run()  // NOLINT(readability-function-cognitive-complexity)
                 if (!shutdown_from_client()) {
                     break;
                 }
+            }
+            if (is_expiration_time_over() && !notiry_expiration_time_over) {
+                request_shutdown(tateyama::session::shutdown_request_type::forceful);
+                notiry_expiration_time_over = true;
             }
             continue;
 

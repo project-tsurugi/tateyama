@@ -53,12 +53,15 @@ struct stream_endpoint_context {
  * @details
  */
 class stream_listener {
+    static constexpr std::size_t connection_socket_timeout = 1000;
+
 public:
     explicit stream_listener(tateyama::framework::environment& env)
         : cfg_(env.configuration()),
           router_(env.service_repository().find<framework::routing_service>()),
           status_(env.resource_repository().find<status_info::resource::bridge>()),
           session_(env.resource_repository().find<session::resource::bridge>()),
+          conf_(tateyama::endpoint::common::worker_common::connection_type::stream, session_),
           stream_metrics_(env)
         {
 
@@ -80,31 +83,51 @@ public:
         }
         auto threads = threads_opt.value();
 
-        // dev_idle_work_interval need not be provided in the default configuration.
-        std::size_t timeout = 1000;
-        auto timeout_opt = endpoint_config->get<std::size_t>("dev_idle_work_interval");
-        if (timeout_opt) {
-            timeout = timeout_opt.value();
+        // session timeout
+        auto* session_config = cfg_->get_section("session");
+        auto enable_timeout_opt = session_config->get<bool>("enable_timeout");
+        if (!enable_timeout_opt) {
+            throw std::runtime_error("cannot find enable_timeout at the session section in the configuration");
+        }
+        auto enable_timeout = enable_timeout_opt.value();
+        auto refresh_timeout_opt = session_config->get<std::size_t>("refresh_timeout");
+        if (!refresh_timeout_opt) {
+            throw std::runtime_error("cannot find thread_pool_size at the session section in the configuration");
+        }
+        auto refresh_timeout = refresh_timeout_opt.value();
+        auto max_refresh_timeout_opt = session_config->get<std::size_t>("max_refresh_timeout");
+        if (!max_refresh_timeout_opt) {
+            throw std::runtime_error("cannot find thread_pool_size at the session section in the configuration");
+        }
+        auto  max_refresh_timeout = max_refresh_timeout_opt.value();
+        if (enable_timeout) {
+            conf_.set_timeout(refresh_timeout, max_refresh_timeout);
         }
 
         // connection stream
-        connection_socket_ = std::make_unique<connection_socket>(port, timeout);
+        connection_socket_ = std::make_unique<connection_socket>(port, connection_socket_timeout);
 
         // worker objects
         workers_.resize(threads);
 
         // output configuration to be used
         LOG(INFO) << tateyama::endpoint::common::stream_endpoint_config_prefix
-                  << "port: " << port_opt.value() << ", "
+                  << "port: " << port << ", "
                   << "port number to listen for TCP/IP connections.";
         LOG(INFO) << tateyama::endpoint::common::stream_endpoint_config_prefix
-                  << "threads: " << threads_opt.value() << ", "
+                  << "threads: " << threads << ", "
                   << "the number of maximum sessions.";
-        if (timeout != 1000) {
-            LOG(INFO) << tateyama::endpoint::common::stream_endpoint_config_prefix
-                      << "dev_idle_work_interval has changed to: " << timeout_opt.value() << ", "
-                      << "the idle work interval for stream listener in millisecond.";
-        }
+
+        // timeout
+        LOG(INFO) << tateyama::endpoint::common::session_config_prefix
+                  << "enable_timeout: " << enable_timeout << ", "
+                  << "timeout is enabled.";
+        LOG(INFO) << tateyama::endpoint::common::session_config_prefix
+                  << "refresh_timeout: " << refresh_timeout << ", "
+                  << "refresh timeout in seconds.";
+        LOG(INFO) << tateyama::endpoint::common::session_config_prefix
+                  << "max_refresh_timeout: " << max_refresh_timeout << ", "
+                  << "maximum refresh timeout in seconds.";
     }
     ~stream_listener() {
         connection_socket_->close();
@@ -145,7 +168,7 @@ public:
             }
             if (!found) {
                 try {
-                    auto worker_decline = std::make_shared<stream_worker>(*router_, session_id, std::move(stream), status_->database_info(), true);
+                    auto worker_decline = std::make_shared<stream_worker>(*router_, conf_, session_id, std::move(stream), status_->database_info(), true);
                     auto* worker = worker_decline.get();
                     {
                         std::unique_lock<std::mutex> lock(mtx_undertakers_);
@@ -167,7 +190,7 @@ public:
                     auto& worker_entry = workers_.at(index);
                     {
                         std::unique_lock<std::mutex> lock(mtx_workers_);
-                        worker_entry = std::make_shared<stream_worker>(*router_, session_id, std::move(stream), status_->database_info(), false, session_);
+                        worker_entry = std::make_shared<stream_worker>(*router_, conf_, session_id, std::move(stream), status_->database_info(), false);
                     }
                     stream_metrics_.increase();
                     worker_entry->invoke([this, index]{
@@ -208,6 +231,7 @@ private:
     const std::shared_ptr<framework::routing_service> router_;
     const std::shared_ptr<status_info::resource::bridge> status_;
     const std::shared_ptr<tateyama::session::resource::bridge> session_;
+    tateyama::endpoint::common::worker_common::configuration conf_;
     tateyama::endpoint::stream::metrics::stream_metrics stream_metrics_;
 
     std::unique_ptr<connection_socket> connection_socket_{};

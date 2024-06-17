@@ -69,7 +69,8 @@ public:
             stream = connection_socket_.accept();
 
             if (stream != nullptr) {
-                worker_ = std::make_unique<tateyama::endpoint::stream::bootstrap::stream_worker>(service_, my_session_id_, std::move(stream), database_info_, false);
+                const tateyama::endpoint::common::worker_common::configuration conf(tateyama::endpoint::common::worker_common::connection_type::stream);
+                worker_ = std::make_unique<tateyama::endpoint::stream::bootstrap::stream_worker>(service_, conf, my_session_id_, std::move(stream), database_info_, false);
                 worker_->invoke([&]{
                     worker_->run();
                     worker_->dispose_session_store();

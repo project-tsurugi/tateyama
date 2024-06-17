@@ -17,6 +17,8 @@
 
 #include <string_view>
 #include <atomic>
+#include <optional>
+#include <chrono>
 
 #include <tateyama/api/server/session_info.h>
 #include <tateyama/session/variable_set.h>
@@ -35,6 +37,11 @@ public:
      * @brief the numeric session ID type.
      */
     using numeric_id_type = std::size_t;
+
+    /**
+     * @brief time type for session expiration time.
+     */
+    using expiration_time_type = std::chrono::system_clock::time_point;
 
     /**
      * @brief creates a new instance.
@@ -85,14 +92,26 @@ public:
      * @return true if request was accepted, or already requested the specified request type
      * @return false if request was rejected by conflict to other request
      */
-    bool shutdown_request(shutdown_request_type type) noexcept;
+    [[nodiscard]] bool shutdown_request(shutdown_request_type type) noexcept;
 
-    // ...
+    /**
+     * @brief sets the session expiration time.
+     * @param time the expiration time, or empty if you disable the session timeout
+     */
+    void expiration_time(std::optional<expiration_time_type> time) noexcept;
+
+    /**
+     * @brief returns the session expiration time.
+     * @return the expiration time
+     * @return empty if session expiration is disabled
+     */
+    [[nodiscard]] std::optional<expiration_time_type> expiration_time() const noexcept;
 
 private:
     session_info& info_;
     session_variable_set variables_;
     std::atomic<shutdown_request_type> shutdown_request_{shutdown_request_type::nothing};
+    std::optional<expiration_time_type> expiration_time_{};
 };
 
 }

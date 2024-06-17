@@ -26,19 +26,19 @@
 namespace tateyama::endpoint::ipc::bootstrap {
 
 class alignas(64) ipc_worker : public tateyama::endpoint::common::worker_common {
- public:
+public:
     ipc_worker(tateyama::framework::routing_service& service,
-           std::size_t session_id,
-           std::shared_ptr<server_wire_container_impl> wire,
-           const tateyama::api::server::database_info& database_info,
-           std::size_t writer_count,
-           const std::shared_ptr<tateyama::session::resource::bridge>& session)
-        : worker_common(connection_type::ipc, session_id, session),
-          service_(service),
-          wire_(std::move(wire)),
-          request_wire_container_(dynamic_cast<server_wire_container_impl::wire_container_impl*>(wire_->get_request_wire())),
-          database_info_(database_info),
-          writer_count_(writer_count) {
+               const tateyama::endpoint::common::worker_common::configuration& conf,
+               std::size_t session_id,
+               std::shared_ptr<server_wire_container_impl> wire,
+               const tateyama::api::server::database_info& database_info,
+               std::size_t writer_count) :
+        worker_common(conf, session_id, ""),
+            service_(service),
+            wire_(std::move(wire)),
+            request_wire_container_(dynamic_cast<server_wire_container_impl::wire_container_impl*>(wire_->get_request_wire())),
+            database_info_(database_info),
+            writer_count_(writer_count) {
     }
     void delete_hook() {
         shutdown_complete();
@@ -48,7 +48,7 @@ class alignas(64) ipc_worker : public tateyama::endpoint::common::worker_common 
     bool terminate(tateyama::session::shutdown_request_type type);
     [[nodiscard]] std::size_t session_id() const noexcept { return session_id_; }
 
- private:
+private:
     tateyama::framework::routing_service& service_;
     std::shared_ptr<server_wire_container_impl> wire_;
     server_wire_container_impl::wire_container_impl* request_wire_container_;

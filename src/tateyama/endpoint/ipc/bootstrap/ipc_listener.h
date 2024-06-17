@@ -52,6 +52,7 @@ public:
           router_(env.service_repository().find<framework::routing_service>()),
           status_(env.resource_repository().find<status_info::resource::bridge>()),
           session_(env.resource_repository().find<session::resource::bridge>()),
+          conf_(tateyama::endpoint::common::worker_common::connection_type::ipc, session_),
           ipc_metrics_(env)
         {
 
@@ -62,7 +63,7 @@ public:
 
         auto database_name_opt = endpoint_config->get<std::string>("database_name");
         if (!database_name_opt) {
-            throw std::runtime_error("cannot find database_name at the section in the configuration");
+            throw std::runtime_error("cannot find database_name at the ipc_endpoint section in the configuration");
         }
         database_name_ = database_name_opt.value();
         if (database_name_.empty()) {
@@ -71,27 +72,27 @@ public:
 
         auto threads_opt = endpoint_config->get<std::size_t>("threads");
         if (!threads_opt) {
-            throw std::runtime_error("cannot find thread_pool_size at the section in the configuration");
+            throw std::runtime_error("cannot find thread_pool_size at the ipc_endpoint section in the configuration");
         }
         auto threads = threads_opt.value();
 
         auto datachannel_buffer_size_opt = endpoint_config->get<std::size_t>("datachannel_buffer_size");
         if (!datachannel_buffer_size_opt) {
-            throw std::runtime_error("cannot find datachannel_buffer_size at the section in the configuration");
+            throw std::runtime_error("cannot find datachannel_buffer_size at the ipc_endpoint section in the configuration");
         }
         datachannel_buffer_size_ = datachannel_buffer_size_opt.value() * 1024;  // in KB
         VLOG_LP(log_debug) << "datachannel_buffer_size = " << datachannel_buffer_size_ << " bytes";
 
         auto max_datachannel_buffers_opt = endpoint_config->get<std::size_t>("max_datachannel_buffers");
         if (!max_datachannel_buffers_opt) {
-            throw std::runtime_error("cannot find max_datachannel_buffers at the section in the configuration");
+            throw std::runtime_error("cannot find max_datachannel_buffers at the ipc_endpoint section in the configuration");
         }
         max_datachannel_buffers_ = max_datachannel_buffers_opt.value();
         VLOG_LP(log_debug) << "max_datachannel_buffers = " << max_datachannel_buffers_;
 
         auto admin_sessions_opt = endpoint_config->get<std::size_t>("admin_sessions");
         if (!admin_sessions_opt) {
-            throw std::runtime_error("cannot find admin_sessions at the section in the configuration");
+            throw std::runtime_error("cannot find admin_sessions at the ipc_endpoint section in the configuration");
         }
         if (admin_sessions_opt.value() > UINT8_MAX) {
             throw std::runtime_error("admin_sessions should be less than or equal to UINT8_MAX");
@@ -124,22 +125,54 @@ public:
             }
         }
 
+        // session timeout
+        auto* session_config = cfg_->get_section("session");
+        auto enable_timeout_opt = session_config->get<bool>("enable_timeout");
+        if (!enable_timeout_opt) {
+            throw std::runtime_error("cannot find enable_timeout at the session section in the configuration");
+        }
+        auto enable_timeout = enable_timeout_opt.value();
+        auto refresh_timeout_opt = session_config->get<std::size_t>("refresh_timeout");
+        if (!refresh_timeout_opt) {
+            throw std::runtime_error("cannot find thread_pool_size at the session section in the configuration");
+        }
+        auto refresh_timeout = refresh_timeout_opt.value();
+        auto max_refresh_timeout_opt = session_config->get<std::size_t>("max_refresh_timeout");
+        if (!max_refresh_timeout_opt) {
+            throw std::runtime_error("cannot find thread_pool_size at the session section in the configuration");
+        }
+        auto  max_refresh_timeout = max_refresh_timeout_opt.value();
+        if (enable_timeout) {
+            conf_.set_timeout(refresh_timeout, max_refresh_timeout);
+        }
+
         // output configuration to be used
         LOG(INFO) << tateyama::endpoint::common::ipc_endpoint_config_prefix
-                  << "database_name: " << database_name_opt.value() << ", "
+                  << "database_name: " << database_name_ << ", "
                   << "database name.";
         LOG(INFO) << tateyama::endpoint::common::ipc_endpoint_config_prefix
-                  << "threads: " << threads_opt.value() << ", "
+                  << "threads: " << threads << ", "
                   << "the number of maximum sessions.";
         LOG(INFO) << tateyama::endpoint::common::ipc_endpoint_config_prefix
-                  << "datachannel_buffer_size: " << datachannel_buffer_size_opt.value() << ", "
+                  << "datachannel_buffer_size: " << datachannel_buffer_size_ << ", "
                   << "datachannel_buffer_size in KB.";
         LOG(INFO) << tateyama::endpoint::common::ipc_endpoint_config_prefix
-                  << "max_datachannel_buffers: " << max_datachannel_buffers_opt.value() << ", "
+                  << "max_datachannel_buffers: " << max_datachannel_buffers_ << ", "
                   << "the number of maximum datachannel buffers.";
         LOG(INFO) << tateyama::endpoint::common::ipc_endpoint_config_prefix
                   << "admin_sessions: " << admin_sessions << ", "
                   << "the number of maximum admin sessions.";
+
+        // timeout
+        LOG(INFO) << tateyama::endpoint::common::session_config_prefix
+                  << "enable_timeout: " << enable_timeout << ", "
+                  << "timeout is enabled.";
+        LOG(INFO) << tateyama::endpoint::common::session_config_prefix
+                  << "refresh_timeout: " << refresh_timeout << ", "
+                  << "refresh timeout in seconds.";
+        LOG(INFO) << tateyama::endpoint::common::session_config_prefix
+                  << "max_refresh_timeout: " << max_refresh_timeout << ", "
+                  << "maximum refresh timeout in seconds.";
     }
 
     void operator()() {
@@ -172,7 +205,7 @@ public:
 
                     auto& worker_entry = workers_.at(slot_index);
                     std::unique_lock<std::mutex> lock(mtx_workers_);
-                    worker_entry = std::make_shared<ipc_worker>(*router_, session_id, std::move(wire), status_->database_info(), writer_count_, session_);
+                    worker_entry = std::make_shared<ipc_worker>(*router_, conf_, session_id, std::move(wire), status_->database_info(), writer_count_);
                     connection_queue.accept(slot_id, session_id);
                     ipc_metrics_.increase();
                     worker_entry->invoke([this, slot_id, slot_index, &connection_queue]{
@@ -236,6 +269,7 @@ private:
     const std::shared_ptr<framework::routing_service> router_;
     const std::shared_ptr<status_info::resource::bridge> status_;
     const std::shared_ptr<session::resource::bridge> session_;
+    tateyama::endpoint::common::worker_common::configuration conf_;
     tateyama::endpoint::ipc::metrics::ipc_metrics ipc_metrics_;
 
     std::unique_ptr<connection_container> container_{};
