@@ -181,7 +181,6 @@ public:
                 }
                 VLOG_LP(log_trace) << "enter writer annex mode";
                 annex_mode_ = true;
-                add_deffered_count();
                 queue_.emplace(std::make_unique<annex>(datachannel_buffer_size_));
                 current_annex_ = queue_.back().get();
                 if (!thread_invoked_) {
@@ -231,7 +230,6 @@ public:
         std::size_t datachannel_buffer_size_;
         std::size_t current_record_size{};
 
-        void add_deffered_count();
         void write_complete();
     };
     static void resultset_wire_deleter_impl(resultset_wire_container* resultset_wire) {
@@ -285,6 +283,7 @@ public:
         unq_p_resultset_wire_conteiner acquire() override {
             std::lock_guard<std::mutex> lock(mtx_shm_);
             try {
+                writers_++;
                 return std::unique_ptr<resultset_wire_container_impl, resultset_wire_deleter_type>{
                     new resultset_wire_container_impl{shm_resultset_wires_->acquire(), *this, datachannel_buffer_size_}, resultset_wire_deleter_impl};
             } catch(const boost::interprocess::interprocess_exception& ex) {
@@ -296,7 +295,7 @@ public:
         }
 
         void set_eor() override {
-            if (deffered_writers_.load() == 0) {
+            if (writers_.load() == completed_writers_.load()) {
                 shm_resultset_wires_->set_eor();
             }
         }
@@ -304,7 +303,7 @@ public:
             return shm_resultset_wires_->is_closed();
         }
         bool is_disposable() override {
-            for (auto&& e : deffered_delete_) {
+            for (auto&& e : released_writers_) {
                 if (!e->is_disposable()) {
                     return false;
                 }
@@ -312,16 +311,12 @@ public:
             return true;
         }
 
-        void add_deffered_count() {
-            deffered_writers_.fetch_add(1);
-        }
-        void add_deffered_delete(unq_p_resultset_wire_conteiner resultset_wire) {
-            deffered_delete_.emplace(std::move(resultset_wire));
+        void add_released_writer(unq_p_resultset_wire_conteiner resultset_wire) {
+            released_writers_.emplace(std::move(resultset_wire));
         }
         void write_complete() {
-            if (deffered_writers_.fetch_sub(1) == 1) {  // means deffered_writers_ has become 0
-                shm_resultset_wires_->set_eor();
-            }
+            completed_writers_++;
+            set_eor();
         }
 
         // for client
@@ -357,10 +352,11 @@ public:
         tateyama::common::wire::shm_resultset_wires* shm_resultset_wires_{};
         bool server_;
         std::mutex& mtx_shm_;
-
-        std::set<unq_p_resultset_wire_conteiner> deffered_delete_{};
-        std::atomic_ulong deffered_writers_{};
         std::size_t datachannel_buffer_size_;
+
+        std::set<unq_p_resultset_wire_conteiner> released_writers_{};
+        std::atomic_ulong writers_{};
+        std::atomic_ulong completed_writers_{};
 
         //   for client
         std::string_view wrap_around_{};
@@ -584,10 +580,8 @@ private:
     std::size_t datachannel_buffer_size_;
 };
 
-inline void server_wire_container_impl::resultset_wire_container_impl::add_deffered_count() {
-    resultset_wires_container_impl_.add_deffered_count();
-}
 inline void server_wire_container_impl::resultset_wire_container_impl::release(unq_p_resultset_wire_conteiner resultset_wire_conteiner) {
+    resultset_wires_container_impl_.add_released_writer(std::move(resultset_wire_conteiner));
     if (thread_invoked_) {
         std::unique_lock<std::mutex> lock(mtx_queue_);
         released_ = true;
@@ -595,7 +589,8 @@ inline void server_wire_container_impl::resultset_wire_container_impl::release(u
         if (current_annex_) {
             current_annex_->notify();
         }
-        resultset_wires_container_impl_.add_deffered_delete(std::move(resultset_wire_conteiner));
+    } else {
+        resultset_wires_container_impl_.write_complete();
     }
 }
 inline void server_wire_container_impl::resultset_wire_container_impl::write_complete() {
