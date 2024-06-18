@@ -596,9 +596,12 @@ inline void server_wire_container_impl::resultset_wire_container_impl::release(u
             current_annex_->notify();
         }
         resultset_wires_container_impl_.add_deffered_delete(std::move(resultset_wire_conteiner));
+    } else {
+        shm_resultset_wire_->set_eor();
     }
 }
 inline void server_wire_container_impl::resultset_wire_container_impl::write_complete() {
+    shm_resultset_wire_->set_eor();
     resultset_wires_container_impl_.write_complete();
 }
 

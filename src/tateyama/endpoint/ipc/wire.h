@@ -630,6 +630,15 @@ public:
             wait_to_resultset_write(length);
             return closed_;
         }
+        /**
+         * @brief mark the end of the result set sent via the writer
+         * used by server
+         */
+        void set_eor() {
+            eor_ = true;
+            std::atomic_thread_fence(std::memory_order_acq_rel);
+            envelope_->notify_record_arrival();
+        }
 
         /**
          * @brief provide the current chunk.
@@ -727,6 +736,10 @@ public:
             }
         }
 
+        [[nodiscard]] bool is_eor() const {
+            return eor_;
+        }
+
         void set_environments(unidirectional_simple_wires* envelope, boost::interprocess::managed_shared_memory* managed_shm_ptr) noexcept {
             envelope_ = envelope;
             managed_shm_ptr_ = managed_shm_ptr;
@@ -738,6 +751,7 @@ public:
         std::atomic_ulong pushed_valid_{0};                              // used by server only
         std::atomic_bool closed_{};                                      // written by client, read by server
         bool continued_{};                                               // used by server only
+        std::atomic_bool eor_{};                                         // written by server, read by client
         unidirectional_simple_wires* envelope_{};                        // used by server only
     };
 
@@ -896,7 +910,15 @@ public:
      *  used by client
      */
     [[nodiscard]] bool is_eor() const {
-        return eor_;
+        if (!eor_) {
+            return false;
+        }
+        for (auto&& wire: unidirectional_simple_wires_) {
+            if (wire.get_handle() != 0 && !wire.is_eor()) {
+                return false;
+            }
+        }
+        return true;
     }
 
 private:
