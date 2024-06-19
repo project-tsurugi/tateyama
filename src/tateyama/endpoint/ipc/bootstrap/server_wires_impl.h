@@ -295,9 +295,8 @@ public:
         }
 
         void set_eor() override {
-            if (writers_.load() == completed_writers_.load()) {
-                shm_resultset_wires_->set_eor();
-            }
+            eor_ = true;
+            notify_eor_conditional();
         }
         bool is_closed() override {
             return shm_resultset_wires_->is_closed();
@@ -316,7 +315,7 @@ public:
         }
         void write_complete() {
             completed_writers_++;
-            set_eor();
+            notify_eor_conditional();
         }
 
         // for client
@@ -357,6 +356,13 @@ public:
         std::set<unq_p_resultset_wire_conteiner> released_writers_{};
         std::atomic_ulong writers_{};
         std::atomic_ulong completed_writers_{};
+        bool eor_{};
+
+        void notify_eor_conditional() {
+            if ((writers_.load() == completed_writers_.load()) && eor_) {
+                shm_resultset_wires_->set_eor();
+            }
+        }
 
         //   for client
         std::string_view wrap_around_{};
