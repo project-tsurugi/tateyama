@@ -59,6 +59,8 @@ static inline void db_start(std::string_view user, std::string_view dbname, std:
         if (!dbname.empty()) {
             log_item.add(::altimeter::event::item::dbname, dbname);
         }
+        log_item.add(::altimeter::event::item::current_level,
+                     ::altimeter::logger::get_level(::altimeter::event::category));
         log_item.add(::altimeter::event::item::result, result);
         ::altimeter::logger::log(log_item);
     }
