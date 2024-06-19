@@ -23,48 +23,78 @@
 #include <altimeter/log_item.h>
 #include <altimeter/logger.h>
 
-#include <tateyama/altimeter/events.h>
+#include <altimeter/event/constants.h>
+#include <altimeter/audit/constants.h>
 
 namespace tateyama::framework {
 
-using namespace tateyama::altimeter;
-    
 static constexpr std::int64_t db_start_stop_success = 1;
 static constexpr std::int64_t db_start_stop_fail = 2;
 
 static inline void db_start(std::string_view user, std::string_view dbname, std::int64_t result) {
-    if (::altimeter::logger::is_log_on(log_category::audit,
-                                     log_level::audit::info)) {
+    if (::altimeter::logger::is_log_on(::altimeter::audit::category,
+                                       ::altimeter::audit::level::info)) {  // FIXME is info OK?
         ::altimeter::log_item log_item;
-        log_item.category(log_category::audit);
-        log_item.type(log_type::audit::db_start);
-        log_item.level(log_level::audit::info);
+        log_item.category(::altimeter::audit::category);
+        log_item.type(::altimeter::audit::type::db_start);
+        log_item.level(::altimeter::audit::level::info);  // FIXME is info OK?
         if (!user.empty()) {
-            log_item.add(log_item::audit::user, user);
+            log_item.add(::altimeter::audit::item::user, user);
         }
         if (!dbname.empty()) {
-            log_item.add(log_item::audit::dbname, dbname);
+            log_item.add(::altimeter::audit::item::dbname, dbname);
         }
-        log_item.add(log_item::audit::result, result);
+        log_item.add(::altimeter::audit::item::result, result);
+        ::altimeter::logger::log(log_item);
+    }
+    if (::altimeter::logger::is_log_on(::altimeter::event::category,
+                                       ::altimeter::event::level::database)) {
+        ::altimeter::log_item log_item;
+        log_item.category(::altimeter::event::category);
+        log_item.type(::altimeter::event::type::db_start);
+        log_item.level(::altimeter::event::level::database);
+        if (!user.empty()) {
+            log_item.add(::altimeter::event::item::user, user);
+        }
+        if (!dbname.empty()) {
+            log_item.add(::altimeter::event::item::dbname, dbname);
+        }
+        log_item.add(::altimeter::event::item::result, result);
         ::altimeter::logger::log(log_item);
     }
 }
 
 static inline void db_stop(std::string_view user, std::string_view dbname, std::int64_t result, std::int64_t duration_time) {
-    if (::altimeter::logger::is_log_on(log_category::audit,
-                                     log_level::audit::info)) {
+    if (::altimeter::logger::is_log_on(::altimeter::audit::category,
+                                       ::altimeter::audit::level::info)) {  // FIXME is info OK?
         ::altimeter::log_item log_item;
-        log_item.category(log_category::audit);
-        log_item.type(log_type::audit::db_stop);
-        log_item.level(log_level::audit::info);
+        log_item.category(::altimeter::audit::category);
+        log_item.type(::altimeter::audit::type::db_stop);
+        log_item.level(::altimeter::audit::level::info);  // FIXME is info OK?
         if (!user.empty()) {
-            log_item.add(log_item::audit::user, user);
+            log_item.add(::altimeter::audit::item::user, user);
         }
         if (!dbname.empty()) {
-            log_item.add(log_item::audit::dbname, dbname);
+            log_item.add(::altimeter::audit::item::dbname, dbname);
         }
-        log_item.add(log_item::audit::result, result);
-        log_item.add(log_item::audit::duration_time, duration_time);
+        log_item.add(::altimeter::audit::item::result, result);
+        // no duration_time for audit log (by sepcification)
+        ::altimeter::logger::log(log_item);
+    }
+    if (::altimeter::logger::is_log_on(::altimeter::event::category,
+                                       ::altimeter::event::level::database)) {
+        ::altimeter::log_item log_item;
+        log_item.category(::altimeter::event::category);
+        log_item.type(::altimeter::event::type::db_stop);
+        log_item.level(::altimeter::event::level::database);
+        if (!user.empty()) {
+            log_item.add(::altimeter::event::item::user, user);
+        }
+        if (!dbname.empty()) {
+            log_item.add(::altimeter::event::item::dbname, dbname);
+        }
+        log_item.add(::altimeter::event::item::result, result);
+        log_item.add(::altimeter::event::item::duration_time, duration_time);
         ::altimeter::logger::log(log_item);
     }
 }
