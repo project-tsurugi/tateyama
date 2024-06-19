@@ -31,11 +31,12 @@ static constexpr std::int64_t backup_restore_success = 1;
 static constexpr std::int64_t backup_restore_fail = 2;
 
 static inline void backup(const std::shared_ptr<request>& req, std::string_view command, std::int64_t result) {
-    if (::altimeter::logger::is_log_on(::altimeter::audit::category, ::altimeter::audit::level::info)) {  // FIXME is info OK?
+    if (::altimeter::logger::is_log_on(::altimeter::audit::category,
+                                       ::altimeter::audit::level::info)) {
         ::altimeter::log_item log_item;
         log_item.category(::altimeter::audit::category);
         log_item.type(::altimeter::audit::type::backup);
-        log_item.level(::altimeter::audit::level::info);  // FIXME is info OK?
+        log_item.level(::altimeter::audit::level::info);
         if (auto user = req->session_info().user_name(); !user.empty()) {
             log_item.add(::altimeter::audit::item::user, user);
         }
@@ -57,11 +58,12 @@ static inline void backup(const std::shared_ptr<request>& req, std::string_view 
 }
 
 static inline void restore(const std::shared_ptr<request>& req, std::string_view command, std::int64_t result) {
-    if (::altimeter::logger::is_log_on(::altimeter::audit::category, ::altimeter::audit::level::info)) {  // FIXME is info OK?
+    if (::altimeter::logger::is_log_on(::altimeter::audit::category,
+                                       ::altimeter::audit::level::info)) {
         ::altimeter::log_item log_item;
         log_item.category(::altimeter::audit::category);
         log_item.type(::altimeter::audit::type::restore);
-        log_item.level(::altimeter::audit::level::info);  // FIXME is info OK?
+        log_item.level(::altimeter::audit::level::info);
         if (auto user = req->session_info().user_name(); !user.empty()) {
             log_item.add(::altimeter::audit::item::user, user);
         }

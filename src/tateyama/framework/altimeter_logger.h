@@ -33,11 +33,11 @@ static constexpr std::int64_t db_start_stop_fail = 2;
 
 static inline void db_start(std::string_view user, std::string_view dbname, std::int64_t result) {
     if (::altimeter::logger::is_log_on(::altimeter::audit::category,
-                                       ::altimeter::audit::level::info)) {  // FIXME is info OK?
+                                       ::altimeter::audit::level::info)) {
         ::altimeter::log_item log_item;
         log_item.category(::altimeter::audit::category);
         log_item.type(::altimeter::audit::type::db_start);
-        log_item.level(::altimeter::audit::level::info);  // FIXME is info OK?
+        log_item.level(::altimeter::audit::level::info);
         if (!user.empty()) {
             log_item.add(::altimeter::audit::item::user, user);
         }
@@ -66,11 +66,11 @@ static inline void db_start(std::string_view user, std::string_view dbname, std:
 
 static inline void db_stop(std::string_view user, std::string_view dbname, std::int64_t result, std::int64_t duration_time) {
     if (::altimeter::logger::is_log_on(::altimeter::audit::category,
-                                       ::altimeter::audit::level::info)) {  // FIXME is info OK?
+                                       ::altimeter::audit::level::info)) {
         ::altimeter::log_item log_item;
         log_item.category(::altimeter::audit::category);
         log_item.type(::altimeter::audit::type::db_stop);
-        log_item.level(::altimeter::audit::level::info);  // FIXME is info OK?
+        log_item.level(::altimeter::audit::level::info);
         if (!user.empty()) {
             log_item.add(::altimeter::audit::item::user, user);
         }
