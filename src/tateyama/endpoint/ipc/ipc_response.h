@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2023 Project Tsurugi.
+ * Copyright 2018-2024 Project Tsurugi.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -86,10 +86,13 @@ class alignas(64) ipc_response : public tateyama::endpoint::common::response {
     friend ipc_data_channel;
 
 public:
-    ipc_response(std::shared_ptr<server_wire_container> server_wire, std::size_t index, std::function<void(void)> clean_up) :
+    static constexpr std::size_t default_writer_count = 32;
+
+    ipc_response(std::shared_ptr<server_wire_container> server_wire, std::size_t index, std::size_t writer_count, std::function<void(void)> clean_up) :
         tateyama::endpoint::common::response(index),
         server_wire_(std::move(server_wire)),
         garbage_collector_(server_wire_->get_garbage_collector()),
+        writer_count_(writer_count),
         clean_up_(std::move(clean_up)) {
     }
 
@@ -102,6 +105,7 @@ public:
 private:
     std::shared_ptr<server_wire_container> server_wire_;
     garbage_collector* garbage_collector_;
+    std::size_t writer_count_;
     const std::function<void(void)> clean_up_;
 
     void server_diagnostics(std::string_view diagnostic_record);

@@ -51,6 +51,7 @@ public:
     static constexpr std::string_view resultset_wire_name_ = "resultset_1";
     static constexpr tateyama::common::wire::message_header::index_type index_ = 1;
     static constexpr std::string_view r_ = "row_data_test";  // length = 13
+    static constexpr std::size_t writer_count = 8;
 
     std::shared_ptr<bootstrap::server_wire_container_impl> wire_;
 
@@ -100,7 +101,7 @@ TEST_F(result_set_test, normal) {
     EXPECT_EQ(request_wire->payload(), request_message);
 
     auto request = std::make_shared<ipc_request>(*wire_, h, dmy_dbinfo_, dmy_ssinfo_, dmy_ssstore_);
-    auto response = std::make_shared<ipc_response>(wire_, h.get_idx(), [](){});
+    auto response = std::make_shared<ipc_response>(wire_, h.get_idx(), writer_count, [](){});
 
     test_service sv;
     sv(static_cast<std::shared_ptr<tateyama::api::server::request>>(request),
@@ -157,7 +158,7 @@ TEST_F(result_set_test, large) {
     EXPECT_EQ(request_wire->payload(), request_message);
 
     auto request = std::make_shared<ipc_request>(*wire_, h, dmy_dbinfo_, dmy_ssinfo_, dmy_ssstore_);
-    auto response = std::make_shared<ipc_response>(wire_, h.get_idx(), [](){});
+    auto response = std::make_shared<ipc_response>(wire_, h.get_idx(), writer_count, [](){});
 
 
     // server side

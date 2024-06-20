@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2023 Project Tsurugi.
+ * Copyright 2018-2024 Project Tsurugi.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -103,7 +103,7 @@ tateyama::status ipc_response::acquire_channel(std::string_view name, std::share
         return tateyama::status::unknown;
     }
     try {
-        data_channel_ = std::make_shared<ipc_data_channel>(server_wire_->create_resultset_wires(name));
+        data_channel_ = std::make_shared<ipc_data_channel>(server_wire_->create_resultset_wires(name, writer_count_));
     } catch (std::runtime_error &ex) {
         LOG_LP(INFO) << "Running out of shared memory for result set transfers. Probably due to too many result sets being opened";
 

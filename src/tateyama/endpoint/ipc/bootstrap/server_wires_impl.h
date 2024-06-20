@@ -36,7 +36,6 @@ class server_wire_container_impl : public server_wire_container
 {
     static constexpr std::size_t request_buffer_size = (1<<12);   //  4K bytes NOLINT
     static constexpr std::size_t response_buffer_size = (1<<13);  //  8K bytes NOLINT
-    static constexpr std::size_t writer_count = 32;
     static constexpr std::size_t data_channel_overhead = 7700;   //  by experiment NOLINT
     static constexpr std::size_t total_overhead = (1<<14);   //  16K bytes by experiment NOLINT
 
@@ -357,10 +356,13 @@ public:
         std::atomic_ulong writers_{};
         std::atomic_ulong completed_writers_{};
         bool eor_{};
-
+        std::atomic_flag notify_eor_{};
+        
         void notify_eor_conditional() {
             if ((writers_.load() == completed_writers_.load()) && eor_) {
-                shm_resultset_wires_->set_eor();
+                if (!notify_eor_.test_and_set()) {
+                    shm_resultset_wires_->set_eor();
+                }
             }
         }
 
@@ -557,9 +559,6 @@ public:
             LOG_LP(ERROR) << "running out of boost managed shared memory";
             throw std::runtime_error(ex.what());
         }
-    }
-    unq_p_resultset_wires_conteiner create_resultset_wires(std::string_view name) override {
-        return create_resultset_wires(name, writer_count);
     }
     garbage_collector* get_garbage_collector() override {
         return garbage_collector_impl_.get();

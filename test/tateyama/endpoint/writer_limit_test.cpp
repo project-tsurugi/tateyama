@@ -51,6 +51,7 @@ public:
     static constexpr std::size_t datachannel_buffer_size = 64 * 1024;
     static constexpr std::size_t value_size = 1024;
     static constexpr std::size_t writers = 256;
+    static constexpr std::size_t writer_count = 32;
 
     static constexpr std::string_view request_test_message_ = "abcdefgh";
     static constexpr std::string_view response_test_message_ = "opqrstuvwxyz";
@@ -91,7 +92,7 @@ TEST_F(writer_limit_test, within_writers) {
     EXPECT_EQ(request_wire->payload(), request_message);
 
     auto request = std::make_shared<ipc_request>(*wire_, h, dmy_dbinfo_, dmy_ssinfo_, dmy_ssstore_);
-    auto response = std::make_shared<ipc_response>(wire_, h.get_idx(), [](){});
+    auto response = std::make_shared<ipc_response>(wire_, h.get_idx(), writer_count, [](){});
 
     std::array<std::shared_ptr<tateyama::api::server::data_channel>, writers> dcs{};
     std::array<std::shared_ptr<tateyama::api::server::writer>, writers> ws{};
@@ -124,7 +125,7 @@ TEST_F(writer_limit_test, exceed_writers) {
     EXPECT_EQ(request_wire->payload(), request_message);
 
     auto request = std::make_shared<ipc_request>(*wire_, h, dmy_dbinfo_, dmy_ssinfo_, dmy_ssstore_);
-    auto response = std::make_shared<ipc_response>(wire_, h.get_idx(), [](){});
+    auto response = std::make_shared<ipc_response>(wire_, h.get_idx(), writer_count, [](){});
 
     std::array<std::shared_ptr<tateyama::api::server::data_channel>, writers+1> dcs{};
     std::array<std::shared_ptr<tateyama::api::server::writer>, writers+1> ws{};
