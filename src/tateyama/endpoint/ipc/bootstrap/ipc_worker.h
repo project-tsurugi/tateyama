@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2023 Project Tsurugi.
+ * Copyright 2018-2024 Project Tsurugi.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,8 @@
 #include <atomic>
 
 #include "tateyama/endpoint/common/worker_common.h"
+#include "tateyama/endpoint/ipc/ipc_request.h"
+#include "tateyama/endpoint/ipc/ipc_response.h"
 
 #include "server_wires_impl.h"
 
@@ -29,12 +31,14 @@ class alignas(64) ipc_worker : public tateyama::endpoint::common::worker_common 
            std::size_t session_id,
            std::shared_ptr<server_wire_container_impl> wire,
            const tateyama::api::server::database_info& database_info,
+           std::size_t writer_count,
            const std::shared_ptr<tateyama::session::resource::bridge>& session)
         : worker_common(connection_type::ipc, session_id, session),
           service_(service),
           wire_(std::move(wire)),
           request_wire_container_(dynamic_cast<server_wire_container_impl::wire_container_impl*>(wire_->get_request_wire())),
-          database_info_(database_info) {
+          database_info_(database_info),
+          writer_count_(writer_count) {
     }
     void run();
     bool terminate(tateyama::session::shutdown_request_type type);
@@ -45,6 +49,7 @@ class alignas(64) ipc_worker : public tateyama::endpoint::common::worker_common 
     std::shared_ptr<server_wire_container_impl> wire_;
     server_wire_container_impl::wire_container_impl* request_wire_container_;
     const tateyama::api::server::database_info& database_info_;
+    std::size_t writer_count_;
 
     bool has_incomplete_resultset() override {
         auto* gc = wire_->get_garbage_collector();

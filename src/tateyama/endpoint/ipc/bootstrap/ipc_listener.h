@@ -55,7 +55,7 @@ public:
           ipc_metrics_(env)
         {
 
-        auto endpoint_config = cfg_->get_section("ipc_endpoint");
+        auto* endpoint_config = cfg_->get_section("ipc_endpoint");
         if (endpoint_config == nullptr) {
             throw std::runtime_error("cannot find ipc_endpoint section in the configuration");
         }
@@ -102,6 +102,18 @@ public:
         ipc_metrics_.set_memory_parameters(connection_container::fixed_memory_size(threads),
                                            server_wire_container_impl::proportional_memory_size(datachannel_buffer_size_, max_datachannel_buffers_));
 
+        // set maximum writer count from sql.default_partitions
+        auto* sql_config = cfg_->get_section("sql");
+        if (sql_config == nullptr) {
+            throw std::runtime_error("cannot find sql section in the configuration");
+        }
+        auto default_partitions_opt = sql_config->get<std::size_t>("default_partitions");
+        if (default_partitions_opt) {
+            if (writer_count_ < default_partitions_opt.value()) {
+                writer_count_ = default_partitions_opt.value();
+            }
+        }
+
         // output configuration to be used
         LOG(INFO) << tateyama::endpoint::common::ipc_endpoint_config_prefix
                   << "database_name: " << database_name_opt.value() << ", "
@@ -146,7 +158,7 @@ public:
                 auto& worker_entry = workers_.at(index);
                 try {
                     std::unique_lock<std::mutex> lock(mtx_workers_);
-                    worker_entry = std::make_shared<ipc_worker>(*router_, session_id, std::move(wire), status_->database_info(), session_);
+                    worker_entry = std::make_shared<ipc_worker>(*router_, session_id, std::move(wire), status_->database_info(), writer_count_, session_);
                 } catch (std::exception& ex) {
                     LOG_LP(ERROR) << ex.what();
                     connection_queue.reject(index);
@@ -217,6 +229,7 @@ private:
     std::string proc_mutex_file_;
     std::size_t datachannel_buffer_size_{};
     std::size_t max_datachannel_buffers_{};
+    std::size_t writer_count_{ipc_response::default_writer_count};
     std::mutex mtx_workers_{};
     std::mutex mtx_undertakers_{};
 

@@ -110,7 +110,6 @@ public:
 
     virtual wire_container* get_request_wire() = 0;
     virtual response_wire_container& get_response_wire() = 0;
-    virtual unq_p_resultset_wires_conteiner create_resultset_wires(std::string_view) = 0;
     virtual unq_p_resultset_wires_conteiner create_resultset_wires(std::string_view, std::size_t count) = 0;
     virtual garbage_collector* get_garbage_collector() = 0;
 };

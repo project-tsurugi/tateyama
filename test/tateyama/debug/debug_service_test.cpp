@@ -23,6 +23,7 @@
 #include <tateyama/proto/debug/response.pb.h>
 
 #include <gtest/gtest.h>
+#include <tateyama/utils/test_utils.h>
 
 namespace tateyama::debug {
 
@@ -102,7 +103,7 @@ public:
 };
 
 TEST_F(debug_service_test, simple) {
-    auto cfg = api::configuration::create_configuration();
+    auto cfg = api::configuration::create_configuration("", tateyama::test::default_configuration_for_tests);
     tateyama::framework::server sv {tateyama::framework::boot_mode::database_server, cfg};
     sv.add_service(std::make_shared<tateyama::framework::routing_service>());
     sv.add_service(std::make_shared<tateyama::debug::service>());
