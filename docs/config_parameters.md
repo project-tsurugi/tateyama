@@ -85,6 +85,7 @@ parameter=value
 |threads | 整数 | ipc_endpointの最大同時接続数、デフォルトは104。
 |datachannel_buffer_size | 整数 | resultsetのbuffer size、単位はKB、デフォルトは64。 | ipcで扱える最大のraw sizeはdatachannel_buffer_size-4B。
 |max_datachannel_buffers | 整数 | 1セッションで同時使用可能なwriterの数。デフォルト値は256。 | このパラメータはセッションに対する上限値であり、システム（データベース・インスタンス）全体に対する上限値ではない。
+|admin_sessions | 整数 | 管理コマンド（tgctl）用のセッション数。デフォルト値は1。 | threadsで指定する通常のセッション数上限とは別に用意する管理コマンド用のセッション数、指定可能な最大値は255。
 
 ## stream_endpointセクション
 

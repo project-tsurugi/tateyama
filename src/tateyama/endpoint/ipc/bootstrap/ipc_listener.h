@@ -89,17 +89,24 @@ public:
         max_datachannel_buffers_ = max_datachannel_buffers_opt.value();
         VLOG_LP(log_debug) << "max_datachannel_buffers = " << max_datachannel_buffers_;
 
+        auto admin_sessions_opt = endpoint_config->get<std::uint8_t>("admin_sessions");
+        if (!admin_sessions_opt) {
+            throw std::runtime_error("cannot find admin_sessions at the section in the configuration");
+        }
+        auto admin_sessions = admin_sessions_opt.value();
+        VLOG_LP(log_debug) << "admin_sessions = " << admin_sessions;
+
         // connection channel
-        container_ = std::make_unique<connection_container>(database_name_, threads);
+        container_ = std::make_unique<connection_container>(database_name_, threads, admin_sessions);
 
         // worker objects
-        workers_.resize(threads);
+        workers_.resize(threads + admin_sessions);
 
         // set maximum thread size to status objects
-        status_->set_maximum_sessions(threads);
+        status_->set_maximum_sessions(threads + admin_sessions);
 
         // set memory usage parameters to ipc_metrics
-        ipc_metrics_.set_memory_parameters(connection_container::fixed_memory_size(threads),
+        ipc_metrics_.set_memory_parameters(connection_container::fixed_memory_size(threads + admin_sessions),
                                            server_wire_container_impl::proportional_memory_size(datachannel_buffer_size_, max_datachannel_buffers_));
 
         // set maximum writer count from sql.default_partitions
@@ -127,6 +134,9 @@ public:
         LOG(INFO) << tateyama::endpoint::common::ipc_endpoint_config_prefix
                   << "max_datachannel_buffers: " << max_datachannel_buffers_opt.value() << ", "
                   << "the number of maximum datachannel buffers.";
+        LOG(INFO) << tateyama::endpoint::common::ipc_endpoint_config_prefix
+                  << "admin_sessions" << admin_sessions << ", "
+                  << "the number of maximum admin sessions.";
     }
 
     void operator()() {
