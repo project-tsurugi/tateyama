@@ -605,16 +605,16 @@ inline void server_wire_container_impl::resultset_wire_container_impl::write_com
 class connection_container
 {
 public:
-    explicit connection_container(std::string_view name, std::size_t threads) : name_(name) {
+    explicit connection_container(std::string_view name, std::size_t threads, std::uint8_t admin_sessions) : name_(name) {
         boost::interprocess::shared_memory_object::remove(name_.c_str());
         try {
             boost::interprocess::permissions  unrestricted_permissions;
             unrestricted_permissions.set_unrestricted();
 
             managed_shared_memory_ =
-                std::make_unique<boost::interprocess::managed_shared_memory>(boost::interprocess::create_only, name_.c_str(), fixed_memory_size(threads), nullptr, unrestricted_permissions);
+                std::make_unique<boost::interprocess::managed_shared_memory>(boost::interprocess::create_only, name_.c_str(), fixed_memory_size(threads + admin_sessions), nullptr, unrestricted_permissions);
             managed_shared_memory_->destroy<tateyama::common::wire::connection_queue>(tateyama::common::wire::connection_queue::name);
-            connection_queue_ = managed_shared_memory_->construct<tateyama::common::wire::connection_queue>(tateyama::common::wire::connection_queue::name)(threads, managed_shared_memory_->get_segment_manager());
+            connection_queue_ = managed_shared_memory_->construct<tateyama::common::wire::connection_queue>(tateyama::common::wire::connection_queue::name)(threads, managed_shared_memory_->get_segment_manager(), admin_sessions);
         }
         catch(const boost::interprocess::interprocess_exception& ex) {
             using namespace std::literals::string_view_literals;
