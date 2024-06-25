@@ -157,42 +157,42 @@ public:
                     connection_queue.confirm_terminated();
                     break;    // shutdown the ipc_listener
                 }
-                std::string session_name = database_name_;
-                session_name += "-";
-                session_name += std::to_string(session_id);
-                auto wire = std::make_shared<server_wire_container_impl>(session_name, proc_mutex_file_, datachannel_buffer_size_, max_datachannel_buffers_);
                 std::size_t index = connection_queue.slot();
-                VLOG_LP(log_trace) << "create session wire: " << session_name << " at index " << index;
-                status_->add_shm_entry(session_id, index);
-
-                auto& worker_entry = workers_.at(index);
                 try {
+                    std::string session_name = database_name_;
+                    session_name += "-";
+                    session_name += std::to_string(session_id);
+                    auto wire = std::make_shared<server_wire_container_impl>(session_name, proc_mutex_file_, datachannel_buffer_size_, max_datachannel_buffers_);
+                    VLOG_LP(log_trace) << "create session wire: " << session_name << " at index " << index;
+                    status_->add_shm_entry(session_id, index);
+
+                    auto& worker_entry = workers_.at(index);
                     std::unique_lock<std::mutex> lock(mtx_workers_);
                     worker_entry = std::make_shared<ipc_worker>(*router_, session_id, std::move(wire), status_->database_info(), writer_count_, session_);
+                    connection_queue.accept(index, session_id);
+                    ipc_metrics_.increase();
+                    worker_entry->invoke([this, index, &connection_queue]{
+                        auto& worker = workers_.at(index);
+                        worker->register_worker_in_context(worker);
+                        try {
+                            worker->run();
+                        } catch(std::exception &ex) {
+                            LOG(ERROR) << "ipc_endpoint worker thread got an exception: " << ex.what();
+                        }
+                        worker->dispose_session_store();
+                        {
+                            std::unique_lock<std::mutex> lock_w(mtx_workers_);
+                            std::unique_lock<std::mutex> lock_u(mtx_undertakers_);
+                            undertakers_.emplace(std::move(worker));
+                        }
+                        connection_queue.disconnect(index);
+                        ipc_metrics_.decrease();
+                    });
                 } catch (std::exception& ex) {
                     LOG_LP(ERROR) << ex.what();
                     connection_queue.reject(index);
                     continue;
                 }
-                connection_queue.accept(index, session_id);
-                ipc_metrics_.increase();
-                worker_entry->invoke([this, index, &connection_queue]{
-                    auto& worker = workers_.at(index);
-                    worker->register_worker_in_context(worker);
-                    try {
-                        worker->run();
-                    } catch(std::exception &ex) {
-                        LOG(ERROR) << "ipc_endpoint worker thread got an exception: " << ex.what();
-                    }
-                    worker->dispose_session_store();
-                    {
-                        std::unique_lock<std::mutex> lock_w(mtx_workers_);
-                        std::unique_lock<std::mutex> lock_u(mtx_undertakers_);
-                        undertakers_.emplace(std::move(worker));
-                    }
-                    connection_queue.disconnect(index);
-                    ipc_metrics_.decrease();
-                });
             } catch (std::exception& ex) {
                 LOG_LP(ERROR) << ex.what();
                 continue;
