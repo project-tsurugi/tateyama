@@ -135,7 +135,7 @@ public:
                   << "max_datachannel_buffers: " << max_datachannel_buffers_opt.value() << ", "
                   << "the number of maximum datachannel buffers.";
         LOG(INFO) << tateyama::endpoint::common::ipc_endpoint_config_prefix
-                  << "admin_sessions" << admin_sessions << ", "
+                  << "admin_sessions: " << admin_sessions << ", "
                   << "the number of maximum admin sessions.";
     }
 
