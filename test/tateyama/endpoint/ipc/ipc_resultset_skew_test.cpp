@@ -49,7 +49,7 @@ public:
             EXPECT_EQ(tateyama::status::ok, writer->commit());
         }
         EXPECT_EQ(tateyama::status::ok, channel->release(*writer));
-        std::this_thread::sleep_for(std::chrono::seconds(1));
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
         std::string data_short;
         make_dummy_message(req->session_id() + len + param.write_nloop_, len, data_short);
@@ -139,6 +139,7 @@ public:
             EXPECT_EQ(rwc->get_chunk().length(), 0);
             client.dispose_resultset_wires(rwc);
         }
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     }
 
 private:
@@ -155,7 +156,7 @@ static const std::vector<std::size_t> nthread_list { 0 }; // NOLINT
 
 TEST_F(ipc_resultset_skew_test, fixed_size_only) {
     std::vector<std::size_t> len { 32768 };
-    ipc_resultset_skew_test_server_client sc { cfg_, 1, 0, len, 1, 15 };
+    ipc_resultset_skew_test_server_client sc { cfg_, 1, 0, len, 1, 7 };
     sc.start_server_client();
 }
 

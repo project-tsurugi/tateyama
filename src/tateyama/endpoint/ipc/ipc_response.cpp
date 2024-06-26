@@ -178,11 +178,11 @@ void ipc_data_channel::release() {
 
 // class writer
 tateyama::status ipc_writer::write(char const* data, std::size_t length) {
+    VLOG_LP(log_trace) << static_cast<const void*>(this);  //NOLINT
     if (released_.load()) {
         LOG_LP(INFO) << "ipc_writer (" << static_cast<const void*>(this) << ") has already been released";  //NOLINT
         return tateyama::status::unknown;
     }
-    VLOG_LP(log_trace) << static_cast<const void*>(this);  //NOLINT
 
     try {
         resultset_wire_->write(data, length);
@@ -195,6 +195,10 @@ tateyama::status ipc_writer::write(char const* data, std::size_t length) {
 
 tateyama::status ipc_writer::commit() {
     VLOG_LP(log_trace) << static_cast<const void*>(this);  //NOLINT
+    if (released_.load()) {
+        LOG_LP(INFO) << "ipc_writer (" << static_cast<const void*>(this) << ") has already been released";  //NOLINT
+        return tateyama::status::unknown;
+    }
 
     resultset_wire_->flush();
     return tateyama::status::ok;
