@@ -134,6 +134,12 @@ void bridge::add_shm_entry(std::size_t session_id, std::size_t index) {
     }
 }
 
+void bridge::remove_shm_entry(std::size_t session_id, std::size_t index) {
+    if (resource_status_memory_) {
+        return resource_status_memory_->remove_shm_entry(session_id, index);
+    }
+}
+
 void bridge::set_digest(const std::string& path_string) {
     auto hash = std::hash<std::string>{}(path_string);
     std::ostringstream sstream;

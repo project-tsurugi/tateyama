@@ -19,6 +19,7 @@
 #include <functional>
 #include <csignal>
 #include <cstdint>
+#include <mutex>
 #include <sys/types.h>
 #include <unistd.h>
 
@@ -68,6 +69,7 @@ enum class shutdown_type : std::uint8_t {
 class resource_status_memory {
   public:
     static constexpr std::string_view area_name = "status_info";
+    static constexpr std::size_t inactive_session_id = UINT64_MAX;
 
     // placed on a boost shared memory
     class resource_status {
@@ -92,19 +94,7 @@ class resource_status_memory {
         }
     
       private:
-        [[nodiscard]] bool test_and_set_shutdown(shutdown_type type) {
-            auto expected = shutdown_requested_.load();
-            if (expected == shutdown_type::forceful ||
-                (expected == shutdown_type::graceful && type == shutdown_type::graceful) ||
-                type == shutdown_type::nothing) {
-                return false;
-            }
-            return shutdown_requested_.compare_exchange_strong(expected, type, boost::memory_order_acq_rel);
-        }
-        [[nodiscard]] shutdown_type get_shutdown_request() {
-            return shutdown_requested_.load(boost::memory_order_acquire);
-        }
-        [[nodiscard]] bool request_shutdown(shutdown_type type) {
+        [[nodiscard]] bool request_shutdown(shutdown_type type) {  // used by tateyama-bootstrap
             boost::interprocess::scoped_lock lock(m_shutdown_);
             if (!test_and_set_shutdown(type)) {
                 return false;
@@ -113,35 +103,14 @@ class resource_status_memory {
             c_shutdown_.notify_one();
             return true;
         }
-        void wait_for_shutdown() {
+        void wait_for_shutdown() {  // used by tateyama-bootstrap
             boost::interprocess::scoped_lock lock(m_shutdown_);
             while (shutdown_requested_.load(boost::memory_order_acquire) == shutdown_type::nothing) {
                 c_shutdown_.wait(lock);
             }
             lock.unlock();
         }
-        [[nodiscard]] bool alive() const {
-            return kill(pid_, 0) == 0;
-        }
-        void mutex_file(std::string_view file) {
-            mutex_file_ = file;
-        }
-        [[nodiscard]] std::string_view mutex_file() const {
-            return {mutex_file_.data(), mutex_file_.size()};
-        }
-        void set_maximum_sessions(std::size_t n) {
-            sessions_.resize(n);
-        }
-        void set_database_name(std::string_view name) {
-            database_name_ = name;
-        }
-        [[nodiscard]] std::string_view get_database_name() const {
-            return database_name_;
-        }
-        void add_shm_entry(std::size_t session_id, std::size_t index) {
-            sessions_.at(index) = session_id;
-        }
-        void apply_shm_entry(std::function<void(std::string_view)>& f) {
+        void apply_shm_entry(std::function<void(std::string_view)>& f) {  // used by tateyama-bootstrap
             f(database_name_);
             std::string prefix(database_name_.data(), database_name_.length());
             prefix += "-";
@@ -152,6 +121,15 @@ class resource_status_memory {
                     f(session_name);
                 }
             }
+        }
+        [[nodiscard]] bool test_and_set_shutdown(shutdown_type type) {  // used by tateyama-bootstrap
+            auto expected = shutdown_requested_.load();
+            if (expected == shutdown_type::forceful ||
+                (expected == shutdown_type::graceful && type == shutdown_type::graceful) ||
+                type == shutdown_type::nothing) {
+                return false;
+            }
+            return shutdown_requested_.compare_exchange_strong(expected, type, boost::memory_order_acq_rel);
         }
 
         shm_map resource_status_map_;
@@ -196,59 +174,46 @@ class resource_status_memory {
     resource_status_memory(resource_status_memory&& other) noexcept = delete;
     resource_status_memory& operator=(resource_status_memory&& other) noexcept = delete;
     
-    void set_pid() {
-        resource_status_->pid_ = ::getpid();
-    }
-    [[nodiscard]] pid_t pid() const {
+    [[nodiscard]] pid_t pid() const {  // used by tateyama-bootstrap
         return resource_status_->pid_;
     }
-    void whole(state s) {
-        resource_status_->whole_ = s;
-    }
-    [[nodiscard]] state whole() const {
+    [[nodiscard]] state whole() const {  // used by tateyama-bootstrap
         return resource_status_->whole_;
     }
-    [[nodiscard]] bool valid() {
+    [[nodiscard]] bool valid() {  // used by tateyama-bootstrap
         return resource_status_ != nullptr;
     }
-    [[nodiscard]] shutdown_type get_shutdown_request() {
-        return resource_status_->get_shutdown_request();
+    [[nodiscard]] shutdown_type get_shutdown_request() {  // used by tateyama-bootstrap
+        return resource_status_->shutdown_requested_.load(boost::memory_order_acquire);
     }
-    [[nodiscard]] bool request_shutdown(shutdown_type type = shutdown_type::forceful) {
+    [[nodiscard]] bool request_shutdown(shutdown_type type = shutdown_type::forceful) {  // used by tateyama-bootstrap
         return resource_status_->request_shutdown(type);
     }
-    void wait_for_shutdown() {
+    void wait_for_shutdown() {  // used by tateyama-bootstrap
         resource_status_->wait_for_shutdown();
     }
-    void mutex_file(std::string_view file) {
-        resource_status_->mutex_file(file);
-    }
-    [[nodiscard]] std::string_view mutex_file() const {
-        return resource_status_->mutex_file();
-    }
-    void set_maximum_sessions(std::size_t n) {
-        resource_status_->set_maximum_sessions(n);
-    }
-    void set_database_name(std::string_view name) {
-        resource_status_->set_database_name(name);
-    }
-    [[nodiscard]] std::string_view get_database_name() {
-        return resource_status_->get_database_name();
-    }
-    void add_shm_entry(std::size_t session_id, std::size_t index) {
-        resource_status_->add_shm_entry(session_id, index);
-    }
-    void apply_shm_entry(std::function<void(std::string_view)> f) {
+    void apply_shm_entry(std::function<void(std::string_view)> f) {  // used by tateyama-bootstrap
         resource_status_->apply_shm_entry(f);
     }
-    [[nodiscard]] bool alive() {
-        return resource_status_->alive();
+    [[nodiscard]] bool alive() const {  // used by tateyama-bootstrap
+        return kill(resource_status_->pid_, 0) == 0;
     }
+
+    void set_pid();
+    void whole(state s);
+    void mutex_file(std::string_view file);
+    [[nodiscard]] std::string_view mutex_file() const;
+    void set_maximum_sessions(std::size_t n);
+    void set_database_name(std::string_view name);
+    [[nodiscard]] std::string_view get_database_name();
+    void add_shm_entry(std::size_t session_id, std::size_t index);
+    void remove_shm_entry(std::size_t session_id, std::size_t index);
 
 private:
     resource_status* resource_status_{};
     boost::interprocess::managed_shared_memory& mem_;
     bool owner_{};
+    std::mutex mutex_{};
 };
 
 } // namespace tateyama::status_info

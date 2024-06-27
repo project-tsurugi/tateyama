@@ -133,6 +133,11 @@ public:
     void add_shm_entry(std::size_t session_id, std::size_t index);
 
     /**
+     * @brief remove session from ipc sessions
+     */
+    void remove_shm_entry(std::size_t session_id, std::size_t index);
+
+    /**
      * @see `tateyama::framework::component::label()`
      */
     [[nodiscard]] std::string_view label() const noexcept override;

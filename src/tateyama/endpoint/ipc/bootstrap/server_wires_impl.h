@@ -23,6 +23,7 @@
 #include <thread>
 #include <sstream>
 #include <string_view>
+#include <functional>
 
 #include <glog/logging.h>
 #include <tateyama/logging.h>
@@ -509,8 +510,8 @@ public:
         std::mutex mtx_{};
     };
 
-    server_wire_container_impl(std::string_view name, std::string_view mutex_file, std::size_t datachannel_buffer_size, std::size_t max_datachannel_buffers)
-        : name_(name), garbage_collector_impl_(std::make_unique<garbage_collector_impl>()), datachannel_buffer_size_(datachannel_buffer_size) {
+    server_wire_container_impl(std::string_view name, std::string_view mutex_file, std::size_t datachannel_buffer_size, std::size_t max_datachannel_buffers, std::function<void(void)> clean_up)
+        : name_(name), garbage_collector_impl_(std::make_unique<garbage_collector_impl>()), datachannel_buffer_size_(datachannel_buffer_size), clean_up_(std::move(clean_up)) {
         boost::interprocess::shared_memory_object::remove(name_.c_str());
         try {
             boost::interprocess::permissions unrestricted_permissions;
@@ -534,6 +535,7 @@ public:
             throw std::runtime_error(ss.str());
         }
     }
+    server_wire_container_impl(std::string_view name, std::string_view mutex_file, std::size_t datachannel_buffer_size, std::size_t max_datachannel_buffers) : server_wire_container_impl(name, mutex_file, datachannel_buffer_size, max_datachannel_buffers, [](){}) {}  // for tests
 
     /**
      * @brief Copy and move constructers are deleted.
@@ -545,6 +547,7 @@ public:
 
     ~server_wire_container_impl() override {
         boost::interprocess::shared_memory_object::remove(name_.c_str());
+        clean_up_();
     }
 
     wire_container* get_request_wire() override { return &request_wire_; }
@@ -583,6 +586,7 @@ private:
     std::mutex mtx_shm_{};
 
     std::size_t datachannel_buffer_size_;
+    const std::function<void(void)> clean_up_;
 };
 
 inline void server_wire_container_impl::resultset_wire_container_impl::release(unq_p_resultset_wire_conteiner resultset_wire_conteiner) {
