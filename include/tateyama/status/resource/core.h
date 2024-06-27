@@ -70,6 +70,7 @@ class resource_status_memory {
   public:
     static constexpr std::string_view area_name = "status_info";
     static constexpr std::size_t inactive_session_id = UINT64_MAX;
+    static constexpr std::size_t mergin = 2;
 
     // placed on a boost shared memory
     class resource_status {
@@ -206,8 +207,8 @@ class resource_status_memory {
     void set_maximum_sessions(std::size_t n);
     void set_database_name(std::string_view name);
     [[nodiscard]] std::string_view get_database_name();
-    void add_shm_entry(std::size_t session_id, std::size_t index);
-    void remove_shm_entry(std::size_t session_id, std::size_t index);
+    void add_shm_entry(std::size_t session_id, std::size_t slot);
+    void remove_shm_entry(std::size_t session_id, std::size_t slot);
 
 private:
     resource_status* resource_status_{};

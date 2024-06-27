@@ -51,30 +51,47 @@ void resource_status_memory::set_maximum_sessions(std::size_t n) {
     auto& sessions = resource_status_->sessions_;
     {
         std::unique_lock<std::mutex> lock(mutex_);
-        sessions.resize(n);
+        sessions.resize(n * mergin);
         for (std::size_t& session : sessions) {
             session = inactive_session_id;
         }
     }
 }
-void resource_status_memory::add_shm_entry(std::size_t session_id, std::size_t index) {
+
+static inline std::size_t index(std::size_t n) {
+    return n * resource_status_memory::mergin;
+}
+void resource_status_memory::add_shm_entry(std::size_t session_id, std::size_t slot) {
     auto& sessions = resource_status_->sessions_;
     {
         std::unique_lock<std::mutex> lock(mutex_);
-        if (sessions.at(index) != inactive_session_id) {
-            std::stringstream ss{};
-            ss << "IPC communication channel for session " << sessions.at(index) << " remains in slot " << index << ", thus cannot create that for session " << session_id;
-            throw std::runtime_error(ss.str());
+        for (std::size_t i = 0; i < mergin; i++) {
+            auto idx = index(slot) + i;
+            if (sessions.at(idx) == inactive_session_id) {
+                sessions.at(idx) = session_id;
+                return;
+            }
         }
-        sessions.at(index) = session_id;
+        std::stringstream ss{};
+        ss << "IPC communication channel for session ";
+        for (std::size_t i = 0; i < mergin; i++) {
+            auto idx = index(slot) + i;
+            ss << sessions.at(idx) << ' ';
+        }
+        ss<< "remains in slot " << slot << ", thus cannot create that for session " << session_id;
+        throw std::runtime_error(ss.str());
     }
 }
-void resource_status_memory::remove_shm_entry(std::size_t session_id, std::size_t index) {
+void resource_status_memory::remove_shm_entry(std::size_t session_id, std::size_t slot) {
     auto& sessions = resource_status_->sessions_;
     {
         std::unique_lock<std::mutex> lock(mutex_);
-        if (sessions.at(index) == session_id) {
-            sessions.at(index) = inactive_session_id;
+        for (std::size_t i = 0; i < mergin; i++) {
+            auto idx = index(slot) + i;
+            if (sessions.at(idx) == session_id) {
+                sessions.at(idx) = inactive_session_id;
+                return;
+            }
         }
     }
 }

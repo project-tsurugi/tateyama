@@ -170,7 +170,7 @@ private:
     static constexpr std::size_t initial_size = 640;      // obtained by experiment
     static constexpr std::size_t per_size = 8;            // obtained by experiment
     std::size_t shm_size(std::size_t n) {
-        std::size_t size = initial_size + (n * per_size); // exact size
+        std::size_t size = initial_size + (n * resource_status_memory::mergin * per_size); // exact size
         size += initial_size / 2;                         // a little bit of leeway
         return ((size / 4096) + 1) * 4096;                // round up to the page size
     }
