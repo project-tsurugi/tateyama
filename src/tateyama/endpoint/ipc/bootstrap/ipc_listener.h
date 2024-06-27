@@ -89,9 +89,12 @@ public:
         max_datachannel_buffers_ = max_datachannel_buffers_opt.value();
         VLOG_LP(log_debug) << "max_datachannel_buffers = " << max_datachannel_buffers_;
 
-        auto admin_sessions_opt = endpoint_config->get<std::uint8_t>("admin_sessions");
+        auto admin_sessions_opt = endpoint_config->get<std::size_t>("admin_sessions");
         if (!admin_sessions_opt) {
             throw std::runtime_error("cannot find admin_sessions at the section in the configuration");
+        }
+        if (admin_sessions_opt.value() > UINT8_MAX) {
+            throw std::runtime_error("admin_sessions should be less than or equal to UINT8_MAX");
         }
         auto admin_sessions = admin_sessions_opt.value();
         VLOG_LP(log_debug) << "admin_sessions = " << admin_sessions;
