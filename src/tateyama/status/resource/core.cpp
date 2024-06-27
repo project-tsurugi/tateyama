@@ -52,8 +52,8 @@ void resource_status_memory::set_maximum_sessions(std::size_t n) {
     {
         std::unique_lock<std::mutex> lock(mutex_);
         sessions.resize(n);
-        for (std::size_t i = 0; i < sessions.size(); i++) {
-            sessions.at(i) = inactive_session_id;
+        for (std::size_t& session : sessions) {
+            session = inactive_session_id;
         }
     }
 }
