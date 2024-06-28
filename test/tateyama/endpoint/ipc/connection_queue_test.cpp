@@ -50,11 +50,12 @@ class connection_queue_test : public ::testing::Test {
                     break;
                 }
                 std::size_t index = connection_queue.slot();
+                auto idx = tateyama::common::wire::connection_queue::reset_admin(index);
                 if (reject_) {
                     connection_queue.reject(index);
                 } else {
-                    EXPECT_EQ(sessions_.at(index), inactive_session_id);
-                    sessions_.at(index) = session_id;
+                    EXPECT_EQ(sessions_.at(idx), inactive_session_id);
+                    sessions_.at(idx) = session_id;
                     connection_queue.accept(index, session_id);
                 }
             }
@@ -62,8 +63,9 @@ class connection_queue_test : public ::testing::Test {
         }
 
         void disconnect(std::size_t index, std::size_t session_id) {
-            EXPECT_EQ(sessions_.at(index), session_id);
-            sessions_.at(index) = inactive_session_id;
+            auto idx = tateyama::common::wire::connection_queue::reset_admin(index);
+            EXPECT_EQ(sessions_.at(idx), session_id);
+            sessions_.at(idx) = inactive_session_id;
             container_.get_connection_queue().disconnect(index);
         }
 
@@ -160,37 +162,37 @@ TEST_F(connection_queue_test, reject) {
 
 TEST_F(connection_queue_test, many) {
     std::vector<std::thread> pthreads{};
-    std::atomic_ulong exceptions{};
 
     static constexpr int loop = 512;
     for (std::size_t i = 0; i < threads; i++) {
         pthreads.emplace_back(
-            std::thread([this, &exceptions](int n){
+            std::thread([this](int n){
                 for (int i = 0; i < n; i++) {
                     try {
                         std::size_t slot{};
                         auto sid = connect(slot);
-                        std::this_thread::sleep_for(std::chrono::microseconds(20));
+                        std::this_thread::sleep_for(std::chrono::microseconds(10));
                         disconnect(slot, sid);
-                        std::this_thread::sleep_for(std::chrono::microseconds(20));
+                        std::this_thread::sleep_for(std::chrono::microseconds(10));
                     } catch (std::runtime_error &ex) {
-                        exceptions++;
+                        std::cout << ex.what() << std::endl;
+                        FAIL();
                     }
                 }
             }, loop)
         );
     }
     pthreads.emplace_back(
-        std::thread([this, &exceptions](int n){
+        std::thread([this](int n){
             for (int i = 0; i < n; i++) {
                 try {
                     std::size_t slot{};
                     auto sid = connect_admin(slot);
-                    std::this_thread::sleep_for(std::chrono::microseconds(20));
+                    std::this_thread::sleep_for(std::chrono::microseconds(10));
                     disconnect(slot, sid);
-                    std::this_thread::sleep_for(std::chrono::microseconds(20));
+                    std::this_thread::sleep_for(std::chrono::microseconds(10));
                 } catch (std::runtime_error &ex) {
-                    exceptions++;
+                    FAIL();
                 }
             }
         }, loop)
@@ -199,8 +201,6 @@ TEST_F(connection_queue_test, many) {
     for (auto& thread: pthreads) {
         thread.join();
     }
-
-    EXPECT_LT(exceptions.load(), loop);
 }
 
 }
