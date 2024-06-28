@@ -18,8 +18,6 @@
 #include <vector>
 #include <cstdint>
 #include <thread>
-#include <atomic>
-#include <chrono>
 
 #include "tateyama/endpoint/ipc/bootstrap/server_wires_impl.h"
 
@@ -171,9 +169,7 @@ TEST_F(connection_queue_test, many) {
                     try {
                         std::size_t slot{};
                         auto sid = connect(slot);
-                        std::this_thread::sleep_for(std::chrono::microseconds(10));
                         disconnect(slot, sid);
-                        std::this_thread::sleep_for(std::chrono::microseconds(10));
                     } catch (std::runtime_error &ex) {
                         std::cout << ex.what() << std::endl;
                         FAIL();
@@ -188,9 +184,7 @@ TEST_F(connection_queue_test, many) {
                 try {
                     std::size_t slot{};
                     auto sid = connect_admin(slot);
-                    std::this_thread::sleep_for(std::chrono::microseconds(10));
                     disconnect(slot, sid);
-                    std::this_thread::sleep_for(std::chrono::microseconds(10));
                 } catch (std::runtime_error &ex) {
                     FAIL();
                 }

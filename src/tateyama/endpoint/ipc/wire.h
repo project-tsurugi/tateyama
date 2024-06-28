@@ -1029,9 +1029,7 @@ public:
             while (true) {
                 auto ps = pushed_.load(std::memory_order_acquire);
                 if ((ps + admin_slots_in_use_.load()) <= current) {
-                    std::stringstream ss{};
-                    ss << "no request slot is available for normal request: " << ps << " vs. " << current;
-                    throw std::runtime_error(ss.str());
+                    throw std::runtime_error("no request slot is available for normal request");
                 }
                 if (poped_.compare_exchange_strong(current, current + 1)) {
                     return queue_.at(index(current));
@@ -1044,9 +1042,7 @@ public:
             while (true) {
                 auto ps = pushed_.load(std::memory_order_acquire);
                 if ((ps + (admin_slots - admin_slots_in_use_.load())) <= current) {
-                    std::stringstream ss{};
-                    ss << "no request slot is available for admin request: " << (ps + (admin_slots - admin_slots_in_use_.load())) << " vs. " << current;
-                    throw std::runtime_error(ss.str());
+                    throw std::runtime_error("no request slot is available for admin request");
                 }
                 if (poped_.compare_exchange_strong(current, current + 1)) {
                     admin_slots_in_use_.fetch_add(1);
