@@ -16,6 +16,10 @@
 #include "ipc_gtest_base.h"
 
 #include <vector>
+#include <cstdint>
+#include <thread>
+#include <atomic>
+#include <chrono>
 
 #include "tateyama/endpoint/ipc/bootstrap/server_wires_impl.h"
 
@@ -27,26 +31,40 @@ static constexpr std::uint8_t admin_sessions = 1;
 
 class connection_queue_test : public ::testing::Test {
     class listener {
+        static constexpr std::size_t inactive_session_id = UINT64_MAX;
+
     public:
         explicit listener(tateyama::endpoint::ipc::bootstrap::connection_container& container) : container_(container) {
+            sessions_.resize(threads + admin_sessions);
+            for (auto& s : sessions_) {
+                s = inactive_session_id;
+            }
         }
 
         void operator()() {
             auto& connection_queue = container_.get_connection_queue();
 
             while(true) {
+                std::size_t session_id = connection_queue.listen();
                 if (connection_queue.is_terminated()) {
                     break;
                 }
-                std::size_t session_id = connection_queue.listen();
                 std::size_t index = connection_queue.slot();
                 if (reject_) {
                     connection_queue.reject(index);
                 } else {
+                    EXPECT_EQ(sessions_.at(index), inactive_session_id);
+                    sessions_.at(index) = session_id;
                     connection_queue.accept(index, session_id);
                 }
             }
             connection_queue.confirm_terminated();
+        }
+
+        void disconnect(std::size_t index, std::size_t session_id) {
+            EXPECT_EQ(sessions_.at(index), session_id);
+            sessions_.at(index) = inactive_session_id;
+            container_.get_connection_queue().disconnect(index);
         }
 
         void set_reject_mode() {
@@ -55,6 +73,7 @@ class connection_queue_test : public ::testing::Test {
 
     private:
         tateyama::endpoint::ipc::bootstrap::connection_container& container_;
+        std::vector<std::size_t> sessions_{};
         bool reject_{};
     };
 
@@ -74,14 +93,29 @@ class connection_queue_test : public ::testing::Test {
     int rv_;
 
 protected:
+    std::size_t connect(std::size_t& slot) {
+        slot = container_->get_connection_queue().request();
+        return container_->get_connection_queue().wait(slot);
+    }
+
+    std::size_t connect_admin(std::size_t& slot) {
+        slot = container_->get_connection_queue().request_admin();
+        return container_->get_connection_queue().wait(slot);
+    }
+
     std::size_t connect() {
-        auto id_ = container_->get_connection_queue().request();
-        return container_->get_connection_queue().wait(id_);
+        std::size_t slot{};
+        return connect(slot);
     }
 
     std::size_t connect_admin() {
-        auto id_ = container_->get_connection_queue().request_admin();
-        return container_->get_connection_queue().wait(id_);
+        std::size_t slot{};
+        return connect_admin(slot);
+    }
+
+
+    void disconnect(std::size_t index, std::size_t session_id) {
+        listener_->disconnect(index, session_id);
     }
 
     void set_reject_mode() {
@@ -97,7 +131,7 @@ private:
 TEST_F(connection_queue_test, normal_session_limit) {
     std::vector<std::size_t> session_ids{};
 
-    for (int i = 0; i < threads; i++) {
+    for (std::size_t i = 0; i < threads; i++) {
         session_ids.emplace_back(connect());
     }
 
@@ -107,7 +141,7 @@ TEST_F(connection_queue_test, normal_session_limit) {
 TEST_F(connection_queue_test, admin_session) {
     std::vector<std::size_t> session_ids{};
 
-    for (int i = 0; i < threads; i++) {
+    for (std::size_t i = 0; i < threads; i++) {
         session_ids.emplace_back(connect());
     }
 
@@ -122,6 +156,51 @@ TEST_F(connection_queue_test, reject) {
 
     EXPECT_EQ(connect(), UINT64_MAX);
     EXPECT_EQ(connect_admin(), UINT64_MAX);
+}
+
+TEST_F(connection_queue_test, many) {
+    std::vector<std::thread> pthreads{};
+    std::atomic_ulong exceptions{};
+
+    static constexpr int loop = 512;
+    for (std::size_t i = 0; i < threads; i++) {
+        pthreads.emplace_back(
+            std::thread([this, &exceptions](int n){
+                for (int i = 0; i < n; i++) {
+                    try {
+                        std::size_t slot{};
+                        auto sid = connect(slot);
+                        std::this_thread::sleep_for(std::chrono::microseconds(20));
+                        disconnect(slot, sid);
+                        std::this_thread::sleep_for(std::chrono::microseconds(20));
+                    } catch (std::runtime_error &ex) {
+                        exceptions++;
+                    }
+                }
+            }, loop)
+        );
+    }
+    pthreads.emplace_back(
+        std::thread([this, &exceptions](int n){
+            for (int i = 0; i < n; i++) {
+                try {
+                    std::size_t slot{};
+                    auto sid = connect_admin(slot);
+                    std::this_thread::sleep_for(std::chrono::microseconds(20));
+                    disconnect(slot, sid);
+                    std::this_thread::sleep_for(std::chrono::microseconds(20));
+                } catch (std::runtime_error &ex) {
+                    exceptions++;
+                }
+            }
+        }, loop)
+    );
+
+    for (auto& thread: pthreads) {
+        thread.join();
+    }
+
+    EXPECT_LT(exceptions.load(), loop);
 }
 
 }
