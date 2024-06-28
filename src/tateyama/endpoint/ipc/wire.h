@@ -1029,9 +1029,7 @@ public:
             while (true) {
                 auto ps = pushed_.load(std::memory_order_acquire);
                 if ((ps + admin_slots_in_use_.load()) <= current) {
-                    std::stringstream ss{};
-                    ss << "no request slot is available for normal request: " << ps << " vs. " << current;
-                    throw std::runtime_error(ss.str());
+                    throw std::runtime_error("no request slot is available for normal request");
                 }
                 if (poped_.compare_exchange_strong(current, current + 1)) {
                     return queue_.at(index(current));
@@ -1044,9 +1042,7 @@ public:
             while (true) {
                 auto ps = pushed_.load(std::memory_order_acquire);
                 if ((ps + (admin_slots - admin_slots_in_use_.load())) <= current) {
-                    std::stringstream ss{};
-                    ss << "no request slot is available for admin request: " << (ps + (admin_slots - admin_slots_in_use_.load())) << " vs. " << current;
-                    throw std::runtime_error(ss.str());
+                    throw std::runtime_error("no request slot is available for admin request");
                 }
                 if (poped_.compare_exchange_strong(current, current + 1)) {
                     admin_slots_in_use_.fetch_add(1);
@@ -1079,10 +1075,10 @@ public:
         }
     private:
         boost::interprocess::vector<std::size_t, long_allocator> queue_;
-        std::size_t capacity_;
+        std::uint32_t capacity_;
+        std::atomic_uint8_t admin_slots_in_use_{0};
         boost::interprocess::interprocess_mutex mutex_{};
         boost::interprocess::interprocess_condition condition_{};
-        std::atomic_uint8_t admin_slots_in_use_{0};
 
         std::atomic_ulong pushed_{0};
         std::atomic_ulong poped_{0};
@@ -1152,7 +1148,7 @@ public:
 
     using element_allocator = boost::interprocess::allocator<element, boost::interprocess::managed_shared_memory::segment_manager>;
     constexpr static std::size_t session_id_indicating_error = UINT64_MAX;
-    constexpr static std::size_t admin_bit = 1LL << 63;
+    constexpr static std::size_t admin_bit = 1ULL << 63UL;
 
     static std::size_t set_admin(std::size_t slot) { return slot | admin_bit; }
     static std::size_t reset_admin(std::size_t slot) { return slot & ~admin_bit; }
