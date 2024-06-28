@@ -252,6 +252,7 @@ private:
         std::unique_lock<std::mutex> lock(mtx_undertakers_);
         for (auto it{undertakers_.begin()}, end{undertakers_.end()}; it != end; ) {
             if ((*it)->is_quiet()) {
+                (*it)->delete_hook();
                 it = undertakers_.erase(it);
             } else {
                 ++it;

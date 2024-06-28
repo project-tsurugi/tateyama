@@ -40,6 +40,9 @@ class alignas(64) ipc_worker : public tateyama::endpoint::common::worker_common 
           database_info_(database_info),
           writer_count_(writer_count) {
     }
+    void delete_hook() {
+        shutdown_complete();
+    }
     void run();
     bool terminate(tateyama::session::shutdown_request_type type);
     [[nodiscard]] std::size_t session_id() const noexcept { return session_id_; }

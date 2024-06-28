@@ -57,7 +57,6 @@ void ipc_worker::run() {
             VLOG_LP(log_trace) << "cought exception: " << ex.what();
             care_reqreses();
             if (check_shutdown_request() && is_completed()) {
-                shutdown_complete();
                 VLOG_LP(log_trace) << "terminate worker thread for session " << session_id_ << ", as it has received a shutdown request";
                 break;  // break the while loop
             }
@@ -68,7 +67,6 @@ void ipc_worker::run() {
                 request_shutdown(tateyama::session::shutdown_request_type::forceful);
                 care_reqreses();
                 if (check_shutdown_request() && is_completed()) {
-                    shutdown_complete();
                     VLOG_LP(log_trace) << "terminate worker thread for session " << session_id_ << ", as disconnection is requested and the subsequent shutdown process is completed";
                     break;  // break the while loop
                 }
@@ -103,7 +101,6 @@ void ipc_worker::run() {
                                           index)) {
                     care_reqreses();
                     if (check_shutdown_request() && is_completed()) {
-                        shutdown_complete();
                         VLOG_LP(log_trace) << "received and completed shutdown request: session_id = " << std::to_string(session_id_);
                         exit_frag = true;
                     }
