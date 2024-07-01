@@ -1013,11 +1013,11 @@ public:
         void push(std::size_t sid, std::size_t admin_slots = 0) {
             boost::interprocess::scoped_lock lock(mutex_);
             if (admin_slots > 0 && is_admin(sid)) {
-                queue_.at(index(pushed_.load() + admin_slots)) = reset_admin(sid);
-                admin_slots_in_use_.fetch_sub(1, std::memory_order_release);
+                queue_.at(index(pushed_count() + admin_slots)) = reset_admin(sid);
+                decl_admin_slots_in_use();
                 pushed_.fetch_add(1);
             } else {
-                queue_.at(index(pushed_.load() + admin_slots)) = sid;
+                queue_.at(index(pushed_count() + admin_slots)) = sid;
                 pushed_.fetch_add(1, std::memory_order_release);
             }
             std::atomic_thread_fence(std::memory_order_acq_rel);
@@ -1027,8 +1027,8 @@ public:
             boost::interprocess::scoped_lock lock(mutex_);  // trade off
             auto current = poped_.load();
             while (true) {
-                auto ps = pushed_.load(std::memory_order_acquire);
-                if ((ps + admin_slots_in_use_.load()) <= current) {
+                auto ps = pushed_count(std::memory_order_acquire);
+                if ((ps + admin_slots_in_use()) <= current) {
                     throw std::runtime_error("no request slot is available for normal request");
                 }
                 if (poped_.compare_exchange_strong(current, current + 1)) {
@@ -1036,16 +1036,17 @@ public:
                 }
             }
         }
+        // Used only in admin session of tgctl
         [[nodiscard]] std::size_t try_pop(std::uint8_t admin_slots) {
             boost::interprocess::scoped_lock lock(mutex_);
             auto current = poped_.load();
             while (true) {
-                auto ps = pushed_.load(std::memory_order_acquire);
-                if ((ps + (admin_slots - admin_slots_in_use_.load())) <= current) {
+                auto ps = pushed_count(std::memory_order_acquire);
+                if ((ps + (admin_slots - admin_slots_in_use())) <= current) {
                     throw std::runtime_error("no request slot is available for admin request");
                 }
                 if (poped_.compare_exchange_strong(current, current + 1)) {
-                    admin_slots_in_use_.fetch_add(1);
+                    incl_admin_slots_in_use();
                     return set_admin(queue_.at(index(current)));
                 }
             }
@@ -1055,7 +1056,7 @@ public:
             std::atomic_thread_fence(std::memory_order_acq_rel);
             return condition_.timed_wait(lock,
                                          boost::get_system_time() + boost::posix_time::microseconds(u_cap(u_round(watch_interval * 1000 * 1000))),
-                                         [this, &terminate](){ return (pushed_.load() > poped_.load()) || terminate.load(); });
+                                         [this, &terminate](){ return (pushed_count() > poped_.load()) || terminate.load(); });
         }
         // thread unsafe (assume single listener thread)
         void pop() {
@@ -1071,19 +1072,35 @@ public:
 
         // for diagnostic
         [[nodiscard]] std::size_t size() const {
-            return pushed_.load() - poped_.load();
+            return pushed_count() - poped_.load();
         }
     private:
         boost::interprocess::vector<std::size_t, long_allocator> queue_;
         std::size_t capacity_;
         boost::interprocess::interprocess_mutex mutex_{};
         boost::interprocess::interprocess_condition condition_{};
-        std::atomic_uint8_t admin_slots_in_use_{0};
 
+        // The upper 8 bits of pushed_ is the number of admin_session
         std::atomic_ulong pushed_{0};
         std::atomic_ulong poped_{0};
 
         [[nodiscard]] std::size_t index(std::size_t n) const { return n % capacity_; }
+
+        // The following methods are only used in tgctl's admin session
+        static constexpr std::size_t admin_slot_unit = 0x0100000000000000ULL;
+        static constexpr std::size_t admin_slot_mask = 0xff00000000000000ULL;
+        void incl_admin_slots_in_use() {
+            pushed_.fetch_add(admin_slot_unit);
+        }
+        void decl_admin_slots_in_use() {
+            pushed_.fetch_sub(admin_slot_unit);
+        }
+        [[nodiscard]] std::uint8_t admin_slots_in_use() const {
+            return (pushed_.load() & admin_slot_mask) >> ((sizeof(std::size_t) - 1) * 8);
+        }
+        [[nodiscard]] std::size_t pushed_count(std::memory_order order = std::memory_order_seq_cst) const {
+            return pushed_.load(order) & ~admin_slot_mask;
+        }
     };
 
     class element {
@@ -1148,7 +1165,7 @@ public:
 
     using element_allocator = boost::interprocess::allocator<element, boost::interprocess::managed_shared_memory::segment_manager>;
     constexpr static std::size_t session_id_indicating_error = UINT64_MAX;
-    constexpr static std::size_t admin_bit = 1LL << 63;
+    constexpr static std::size_t admin_bit = 1ULL << 63UL;
 
     static std::size_t set_admin(std::size_t slot) { return slot | admin_bit; }
     static std::size_t reset_admin(std::size_t slot) { return slot & ~admin_bit; }
@@ -1176,6 +1193,7 @@ public:
         q_requested_.push(sid);
         return sid;
     }
+    // Used only in admin session of tgctl
     std::size_t request_admin() {
         auto sid = q_free_.try_pop(admin_slots_);
         q_requested_.push(sid);

@@ -138,7 +138,20 @@ TEST_F(connection_queue_test, normal_session_limit) {
     EXPECT_THROW(connect(), std::runtime_error);
 }
 
-TEST_F(connection_queue_test, admin_session) {
+TEST_F(connection_queue_test, admin_session_first) {
+    std::vector<std::size_t> session_ids{};
+
+    session_ids.emplace_back(connect_admin());
+
+    for (std::size_t i = 0; i < threads; i++) {
+        session_ids.emplace_back(connect());
+    }
+
+    EXPECT_THROW(connect(), std::runtime_error);
+    EXPECT_THROW(connect_admin(), std::runtime_error);
+}
+
+TEST_F(connection_queue_test, admin_session_last) {
     std::vector<std::size_t> session_ids{};
 
     for (std::size_t i = 0; i < threads; i++) {
