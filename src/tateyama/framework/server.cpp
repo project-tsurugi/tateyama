@@ -100,7 +100,7 @@ bool server::setup() {
         LOG(ERROR) << "Server application framework setup phase failed.";
         // shutdown already setup components
 #ifdef ENABLE_ALTIMETER
-        db_start_time_ = std::chrono::high_resolution_clock::now();
+        db_start_time_ = std::chrono::steady_clock::now();
         db_start("", get_database_name(*environment_), db_start_stop_fail);
 #endif
         shutdown();
@@ -136,7 +136,7 @@ bool server::start() {
         VLOG(log_info) << "/:tateyama:lifecycle:component:start_end " << arg.label() << " success:" << utils::boolalpha(success);
     });
 #ifdef ENABLE_ALTIMETER
-    db_start_time_ = std::chrono::high_resolution_clock::now();
+    db_start_time_ = std::chrono::steady_clock::now();
     db_start("", get_database_name(*environment_), success ? db_start_stop_success : db_start_stop_fail);
 #endif
     if(! success) {
@@ -166,7 +166,7 @@ bool server::shutdown() {
         VLOG(log_info) << "/:tateyama:lifecycle:component:shutdown_end " << arg.label();
     }, true);
 #ifdef ENABLE_ALTIMETER
-    db_stop("", get_database_name(*environment_), db_start_stop_success, std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - db_start_time_).count());
+    db_stop("", get_database_name(*environment_), db_start_stop_success, std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - db_start_time_).count());
 #endif
     return success;
 }
