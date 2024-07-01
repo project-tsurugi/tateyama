@@ -33,6 +33,7 @@ public:
         worker.invoke([&]{
             worker.run();
             worker.dispose_session_store();
+            worker.delete_hook();
         });
     }
     static void wait(tateyama::endpoint::ipc::bootstrap::ipc_worker& worker) {

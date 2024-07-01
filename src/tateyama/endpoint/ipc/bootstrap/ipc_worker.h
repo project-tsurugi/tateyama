@@ -42,6 +42,7 @@ class alignas(64) ipc_worker : public tateyama::endpoint::common::worker_common 
     }
     void delete_hook() {
         shutdown_complete();
+        wire_->get_response_wire().notify_shutdown();
     }
     void run();
     bool terminate(tateyama::session::shutdown_request_type type);
