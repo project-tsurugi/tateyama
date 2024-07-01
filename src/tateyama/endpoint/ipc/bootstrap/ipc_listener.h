@@ -183,12 +183,14 @@ public:
                             LOG(ERROR) << "ipc_endpoint worker thread got an exception: " << ex.what();
                         }
                         worker->dispose_session_store();
+                        auto* wp = worker.get();
                         {
                             std::unique_lock<std::mutex> lock_w(mtx_workers_);
                             std::unique_lock<std::mutex> lock_u(mtx_undertakers_);
                             undertakers_.emplace(std::move(worker));
                         }
                         connection_queue.disconnect(index);
+                        wp->delete_hook();
                         ipc_metrics_.decrease();
                     });
                 } catch (std::exception& ex) {
@@ -252,7 +254,6 @@ private:
         std::unique_lock<std::mutex> lock(mtx_undertakers_);
         for (auto it{undertakers_.begin()}, end{undertakers_.end()}; it != end; ) {
             if ((*it)->is_quiet()) {
-                (*it)->delete_hook();
                 it = undertakers_.erase(it);
             } else {
                 ++it;

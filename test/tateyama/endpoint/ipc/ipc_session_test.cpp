@@ -31,7 +31,10 @@ namespace tateyama::server {
 class ipc_listener_for_session_test {
 public:
     static void run(tateyama::endpoint::ipc::bootstrap::ipc_worker& worker) {
-        worker.invoke([&]{worker.run();});
+        worker.invoke([&]{
+            worker.run();
+            worker.delete_hook();
+        });
     }
     static void wait(tateyama::endpoint::ipc::bootstrap::ipc_worker& worker) {
         while (!worker.is_terminated());

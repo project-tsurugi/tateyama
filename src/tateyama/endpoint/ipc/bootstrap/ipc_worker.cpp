@@ -142,7 +142,6 @@ void ipc_worker::run() {
             break;  // break the while loop
         }
     }
-    wire_->get_response_wire().notify_shutdown();
     VLOG_LP(log_trace) << "destroy session wire: session_id = " << std::to_string(session_id_);
 #ifdef ENABLE_ALTIMETER
     tateyama::endpoint::altimeter::session_end(database_info_, session_info_, std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - session_start_time).count());
