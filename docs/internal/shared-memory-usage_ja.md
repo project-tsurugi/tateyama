@@ -16,7 +16,7 @@ Tsurugidb（tateyama）では、boost managed shared memory（以下、共有メ
 *) segmentは共有メモリを確保する単位で、linuxでは/dev/shm下に作成されるファイルと1:1に対応している。
 
 ## 各共有メモリのライフサイクルと容量
-「Tsurugidbプロセスの状態通知」と「IPC endpoint接続処理」に割り当てるメモリ容量は、IPC接続可能な最大セッション数（tsurigi.iniのipc_endpoint.threadsバラメータとipc_endpoint.admin_sessionsバラメータの和）に依存する。本項では、そのパラメータをnと表記する。また、各種の固定値は共有メモリの使用量を測定して求めた値である。
+「Tsurugidbプロセスの状態通知」と「IPC endpoint接続処理」に割り当てるメモリ容量は、IPC接続可能な最大セッション数（tsurigi.iniのipc_endpoint.threadsパラメータとipc_endpoint.admin_sessionsパラメータの和）に依存する。本項では、そのパラメータをnと表記する。また、各種の固定値は共有メモリの使用量を測定して求めた値である。
 
 ###  Tsurugidbプロセスの状態通知用
 #### ライフサイクル
@@ -41,7 +41,7 @@ IPCセッション接続時にそのセッション用の共有メモリを1segm
 #### 容量
 `(datachannel_buffer_size + data_channel_overhead) * max_datachannel_buffers + (request_buffer_size + response_buffer_size) + total_overhead`
 ここで、固定値はdata_channel_overhead = 7700、request_buffer_size = 4096, response_buffer_size = 8192、total_overhead = 16384。
-configurationで設定するパラメータは、datachannel_buffer_size, max_datachannel_buffers。各々、tsurigi.iniのipc_endpoint.datachannel_buffer_sizeとipc_endpoint.max_datachannel_buffersバラメータとして設定した値。
+configurationで設定するパラメータは、datachannel_buffer_size, max_datachannel_buffers。各々、tsurigi.iniのipc_endpoint.datachannel_buffer_sizeとipc_endpoint.max_datachannel_buffersパラメータとして設定した値。
 
 #### 補足
 セッション用共有メモリを使う際は、その中に下記用途のデータ構造を作成する。このデータ構造作成および削除操作は、セッション用共有メモリ容量に影響しない（データ構造作成は、前項に記した容量を上限として行われ、それを超える場合はエラーとなる）。
