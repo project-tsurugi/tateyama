@@ -70,7 +70,7 @@ parameter=value
 |dev_try_insert_on_upserting_secondary| ブール(true/false) | INSERT OR REPLACEをセカンダリインデックスのある表に対して実行する際、INSERTを事前に実行する最適化を実施するか。デフォルトはtrue|開発用のため将来的に削除される可能性あり|
 |dev_scan_concurrent_operation_as_not_found| ブール(true/false) | スキャン操作において並列して挿入されたレコードを検知した際(WARN_CONCURRENT_INSERT)に、そのレコードが存在しないものとして取り扱うか。デフォルトはtrue|開発用のため将来的に削除される可能性あり|
 |dev_point_read_concurrent_operation_as_not_found| ブール(true/false) | ポイントリード操作において並列して挿入されたレコードを検知した際(WARN_CONCURRENT_INSERT)に、そのレコードが存在しないものとして取り扱うか。デフォルトはtrue|開発用のため将来的に削除される可能性あり|
-|dev_compiler_support| 整数 | SQLコンパイラのサポートレベル。0の場合は旧コンパイラを使用、1の場合は新コンパイラを使用する。デフォルトは0|開発用のため将来的に削除/変更される可能性あり|
+|dev_compiler_support| 整数 | SQLコンパイラのサポートレベル。0の場合は旧コンパイラを使用、1の場合は新コンパイラを使用する。デフォルトは1|開発用のため将来的に削除/変更される可能性あり|
 |dev_lowercase_regular_identifiers| ブール(true/false) | SQLコンパイラがテーブル名などのシンボルを小文字に変換して扱うか。新コンパイラのみ有効。デフォルトはfalse|開発用のため将来的に削除される可能性あり|
 
 ## ipc_endpointセクション
