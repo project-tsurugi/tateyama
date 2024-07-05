@@ -21,7 +21,6 @@ Target component
 |---:| :---: | :--- |---|
 | epoch_duration  | Integer | Length of the epoch (us). The default is 3000. |
 | waiting_resolver_threads | Integer | Number of threads that process the waiting and pre-commit of the LTXs in the waiting list. Default is 2. |
-| max_concurrent_transactions | Integer | Maximum number of active transactions that can be executed on the server side. Default is set according to the environment. |
 
 ## datastore section
 
