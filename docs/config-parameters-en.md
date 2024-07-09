@@ -69,6 +69,8 @@ Target component
 | dev_try_insert_on_upserting_secondary | Boolean (true/false) | Whether to execute INSERT before INSERT OR REPLACE for tables with secondary indexes. The default value is true. | This is for development and may be deleted in the future. |
 | dev_scan_concurrent_operation_as_not_found | Boolean (true/false) | Whether to treat records detected as concurrently inserted during scan operations (WARN_CONCURRENT_INSERT) as non-existent. The default value is true. | This is for development and may be deleted in the future. |
 | dev_point_read_concurrent_operation_as_not_found | Boolean (true/false) | Whether to treat records detected as concurrently inserted during point read operations (WARN_CONCURRENT_INSERT) as non-existent. The default value is true. | This is for development and may be deleted in the future. |
+|dev_compiler_support| Integer | The support level of SQL compiler. Use old compiler if this is set to 0 and new one if 1. The default value is 1. |This is for development and may be deleted in the future.|
+|lowercase_regular_identifiers| Boolean (true/false) | Whether to lowercase the identifiers such as table names. This configuration is available only on new SQL compiler. The default value is false.||
 
 ## ipc_endpoint section
 
