@@ -53,8 +53,7 @@ public:
           status_(env.resource_repository().find<status_info::resource::bridge>()),
           session_(env.resource_repository().find<session::resource::bridge>()),
           conf_(tateyama::endpoint::common::worker_common::connection_type::ipc, session_),
-          ipc_metrics_(env)
-        {
+          ipc_metrics_(env) {
 
         auto* endpoint_config = cfg_->get_section("ipc_endpoint");
         if (endpoint_config == nullptr) {
@@ -125,27 +124,6 @@ public:
             }
         }
 
-        // session timeout
-        auto* session_config = cfg_->get_section("session");
-        auto enable_timeout_opt = session_config->get<bool>("enable_timeout");
-        if (!enable_timeout_opt) {
-            throw std::runtime_error("cannot find enable_timeout at the session section in the configuration");
-        }
-        auto enable_timeout = enable_timeout_opt.value();
-        auto refresh_timeout_opt = session_config->get<std::size_t>("refresh_timeout");
-        if (!refresh_timeout_opt) {
-            throw std::runtime_error("cannot find thread_pool_size at the session section in the configuration");
-        }
-        auto refresh_timeout = refresh_timeout_opt.value();
-        auto max_refresh_timeout_opt = session_config->get<std::size_t>("max_refresh_timeout");
-        if (!max_refresh_timeout_opt) {
-            throw std::runtime_error("cannot find thread_pool_size at the session section in the configuration");
-        }
-        auto  max_refresh_timeout = max_refresh_timeout_opt.value();
-        if (enable_timeout) {
-            conf_.set_timeout(refresh_timeout, max_refresh_timeout);
-        }
-
         // output configuration to be used
         LOG(INFO) << tateyama::endpoint::common::ipc_endpoint_config_prefix
                   << "database_name: " << database_name_ << ", "
@@ -163,16 +141,39 @@ public:
                   << "admin_sessions: " << admin_sessions << ", "
                   << "the number of maximum admin sessions.";
 
-        // timeout
-        LOG(INFO) << tateyama::endpoint::common::session_config_prefix
-                  << "enable_timeout: " << enable_timeout << ", "
-                  << "timeout is enabled.";
-        LOG(INFO) << tateyama::endpoint::common::session_config_prefix
-                  << "refresh_timeout: " << refresh_timeout << ", "
-                  << "refresh timeout in seconds.";
-        LOG(INFO) << tateyama::endpoint::common::session_config_prefix
-                  << "max_refresh_timeout: " << max_refresh_timeout << ", "
-                  << "maximum refresh timeout in seconds.";
+        // session timeout
+        if (auto* session_config = cfg_->get_section("session"); session_config) {
+            auto enable_timeout_opt = session_config->get<bool>("enable_timeout");
+            if (!enable_timeout_opt) {
+                throw std::runtime_error("cannot find enable_timeout at the session section in the configuration");
+            }
+
+            auto enable_timeout = enable_timeout_opt.value();
+            LOG(INFO) << tateyama::endpoint::common::session_config_prefix
+                      << "enable_timeout: " << enable_timeout << ", "
+                      << "timeout is enabled.";
+
+            if (enable_timeout) {
+                auto refresh_timeout_opt = session_config->get<std::size_t>("refresh_timeout");
+                if (!refresh_timeout_opt) {
+                    throw std::runtime_error("cannot find thread_pool_size at the session section in the configuration");
+                }
+                auto refresh_timeout = refresh_timeout_opt.value();
+                auto max_refresh_timeout_opt = session_config->get<std::size_t>("max_refresh_timeout");
+                if (!max_refresh_timeout_opt) {
+                    throw std::runtime_error("cannot find thread_pool_size at the session section in the configuration");
+                }
+                auto  max_refresh_timeout = max_refresh_timeout_opt.value();
+                conf_.set_timeout(refresh_timeout, max_refresh_timeout);
+
+                LOG(INFO) << tateyama::endpoint::common::session_config_prefix
+                          << "refresh_timeout: " << refresh_timeout << ", "
+                          << "refresh timeout in seconds.";
+                LOG(INFO) << tateyama::endpoint::common::session_config_prefix
+                          << "max_refresh_timeout: " << max_refresh_timeout << ", "
+                          << "maximum refresh timeout in seconds.";
+            }
+        }
     }
 
     void operator()() {
