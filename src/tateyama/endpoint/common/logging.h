@@ -15,10 +15,16 @@
  */
 #pragma once
 
+#include <string_view>
+
 namespace tateyama::endpoint::common {
 
-static constexpr std::string_view ipc_endpoint_config_prefix = "/:tateyama:ipc_endpoint:config: ";
+using namespace std::string_view_literals;
 
-static constexpr std::string_view stream_endpoint_config_prefix = "/:tateyama:stream_endpoint:config: ";
+static constexpr std::string_view ipc_endpoint_config_prefix = "/:tateyama:ipc_endpoint:config: "sv;
+
+static constexpr std::string_view stream_endpoint_config_prefix = "/:tateyama:stream_endpoint:config: "sv;
+
+static constexpr std::string_view session_config_prefix = "/:tateyama:session:config: "sv;
 
 } // namespace

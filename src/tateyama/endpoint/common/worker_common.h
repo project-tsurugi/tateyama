@@ -23,6 +23,7 @@
 #include <utility>
 #include <vector>
 #include <mutex>
+#include <chrono>
 
 #include <tateyama/status.h>
 #include <tateyama/framework/routing_service.h>
@@ -46,7 +47,7 @@
 namespace tateyama::endpoint::common {
 
 class worker_common {
-protected:
+public:
     enum class connection_type : std::uint32_t {
         /**
          * @brief undefined type.
@@ -64,19 +65,49 @@ protected:
         stream,
     };
 
-public:
-    worker_common(connection_type con, std::size_t session_id, std::string_view conn_info, std::shared_ptr<tateyama::session::resource::bridge> session)
-        : connection_type_(con),
+    class configuration {
+    public:
+        configuration(connection_type con, std::shared_ptr<tateyama::session::resource::bridge> session) :
+            con_(con), session_(std::move(session)) {
+        }
+        explicit configuration(connection_type con) : configuration(con, nullptr) {
+        }
+        void set_timeout(std::size_t refresh_timeout, std::size_t max_refresh_timeout) {
+            if (refresh_timeout < 120) {
+                throw std::runtime_error("section.refresh_timeout should be greater than or equal to 120");
+            }
+            if (max_refresh_timeout < 120) {
+                throw std::runtime_error("section.max_refresh_timeout should be greater than or equal to 120");
+            }
+            enable_timeout_ = true;
+            refresh_timeout_ = refresh_timeout;
+            max_refresh_timeout_ = max_refresh_timeout;
+        }
+
+    private:
+        const connection_type con_;
+        const std::shared_ptr<tateyama::session::resource::bridge> session_;
+        bool enable_timeout_{};
+        std::size_t refresh_timeout_{};
+        std::size_t max_refresh_timeout_ {};
+
+        friend class worker_common;
+    };
+
+    worker_common(const configuration& config, std::size_t session_id, std::string_view conn_info)
+        : connection_type_(config.con_),
           session_id_(session_id),
-          session_info_(session_id, connection_label(con), conn_info),
-          session_(std::move(session)),
+          session_info_(session_id_, connection_label(config.con_), conn_info),
+          session_(config.session_),
           session_variable_set_(variable_declarations()),
-          session_context_(std::make_shared<tateyama::session::resource::session_context_impl>(session_info_, session_variable_set_)) {
+          session_context_(std::make_shared<tateyama::session::resource::session_context_impl>(session_info_, session_variable_set_)),
+          enable_timeout_(config.enable_timeout_),
+          refresh_timeout_(config.refresh_timeout_),
+          max_refresh_timeout_(config.max_refresh_timeout_) {
         if (session_) {
             session_->register_session(session_context_);
         }
-    }
-    worker_common(connection_type con, std::size_t id, std::shared_ptr<tateyama::session::resource::bridge> session) : worker_common(con, id, "", std::move(session)) {
+        update_expiration_time_by_request(true);
     }
     virtual ~worker_common() {
         if(thread_.joinable()) thread_.join();
@@ -309,11 +340,24 @@ protected:
 
         case tateyama::proto::core::request::Request::kUpdateExpirationTime:
         {
-            // mock impl. for UpdateExpirationTime // TODO
-            auto et = rq.update_expiration_time().expiration_time();
-            VLOG_LP(log_debug) <<
-                "UpdateExpirationTime received session_id:" << req->session_id() <<
-                " expiration_time:" << et;
+            const auto& command = rq.update_expiration_time();
+            if (command.expiration_time_opt_case() == tateyama::proto::core::request::UpdateExpirationTime::ExpirationTimeOptCase::kExpirationTime) {
+                auto et = std::chrono::milliseconds{command.expiration_time()};
+                if (refresh_timeout_ > et) {
+                    et = refresh_timeout_;
+                }
+                if (et > max_refresh_timeout_) {
+                    et = max_refresh_timeout_;
+                }
+                auto new_until_time = tateyama::session::session_context::expiration_time_type::clock::now() + et;
+                if (auto expiration_time_opt = session_context_->expiration_time(); expiration_time_opt) {
+                    if (expiration_time_opt.value() < new_until_time) {
+                        session_context_->expiration_time(new_until_time);
+                    }
+                }
+            } else {
+                update_expiration_time_by_request();
+            }
             tateyama::proto::core::response::UpdateExpirationTime rp{};
             rp.mutable_success();
             res->session_id(req->session_id());
@@ -438,9 +482,31 @@ protected:
 
     virtual bool has_incomplete_resultset() = 0;
 
+    void update_expiration_time_by_request(bool force = false) {
+        if (enable_timeout_) {
+            auto new_until_time = tateyama::session::session_context::expiration_time_type::clock::now() + refresh_timeout_;
+            if (force) {
+                session_context_->expiration_time(new_until_time);
+            } else if (auto expiration_time_opt = session_context_->expiration_time(); expiration_time_opt) {
+                if (expiration_time_opt.value() < new_until_time) {
+                    session_context_->expiration_time(new_until_time);
+                }
+            }
+        }
+    }
+    bool is_expiration_time_over() {
+        if (auto expiration_time_opt = session_context_->expiration_time(); expiration_time_opt) {
+            return tateyama::session::session_context::expiration_time_type::clock::now() > expiration_time_opt.value();
+        }
+        return false;
+    }
+
 private:
     tateyama::session::session_variable_set session_variable_set_;
     const std::shared_ptr<tateyama::session::resource::session_context_impl> session_context_;
+    bool enable_timeout_;
+    std::chrono::seconds refresh_timeout_;
+    std::chrono::seconds max_refresh_timeout_;
     std::map<std::size_t, std::pair<std::shared_ptr<tateyama::api::server::request>, std::shared_ptr<tateyama::endpoint::common::response>>> reqreses_{};
     std::mutex mtx_reqreses_{};
     std::vector<std::shared_ptr<tateyama::api::server::response>> shutdown_response_{};

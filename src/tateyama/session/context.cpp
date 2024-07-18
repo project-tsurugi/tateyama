@@ -61,4 +61,12 @@ bool session_context::shutdown_request(shutdown_request_type type) noexcept {
     }
 }
 
+void session_context::expiration_time(std::optional<expiration_time_type> time) noexcept {
+    expiration_time_ = time;
+}
+
+std::optional<session_context::expiration_time_type> session_context::expiration_time() const noexcept {
+    return expiration_time_;
+}
+
 }

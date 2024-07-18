@@ -24,7 +24,7 @@
 
 namespace tateyama::endpoint::ipc::bootstrap {
 
-void ipc_worker::run() {
+void ipc_worker::run() {  // NOLINT(readability-function-cognitive-complexity)
     tateyama::common::wire::message_header hdr{};
     while(true) {
         try {
@@ -50,6 +50,7 @@ void ipc_worker::run() {
     const std::chrono::time_point session_start_time = std::chrono::steady_clock::now();
     tateyama::endpoint::altimeter::session_start(database_info_, session_info_);
 #endif
+    bool notiry_expiration_time_over{};
     while(true) {
         try {
             hdr = request_wire_container_->peep();
@@ -59,6 +60,10 @@ void ipc_worker::run() {
             if (check_shutdown_request() && is_completed()) {
                 VLOG_LP(log_trace) << "terminate worker thread for session " << session_id_ << ", as it has received a shutdown request";
                 break;  // break the while loop
+            }
+            if (is_expiration_time_over() && !notiry_expiration_time_over) {
+                request_shutdown(tateyama::session::shutdown_request_type::forceful);
+                notiry_expiration_time_over = true;
             }
             continue;
         }
