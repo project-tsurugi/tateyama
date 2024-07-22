@@ -44,9 +44,6 @@ public:
     void cancel() noexcept {
         VLOG_LP(log_trace) << "set cancel flag for session " << session_id_;
         cancel_ = true;
-        if (data_channel_) {
-            release_channel(*data_channel_);
-        }
     }
 
     [[nodiscard]] bool is_completed() noexcept {
