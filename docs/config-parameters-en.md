@@ -100,7 +100,7 @@ Target component
 |---:| :---: | :--- |---|
 | port | Integer | Port number to connect to stream_endpoint. The default value is 12345. |
 | threads | Integer | Maximum number of simultaneous connections to stream_endpoint. The default value is 104. |
-| enabled | Boolean (true/false) | Enable or disable stream_endpoint when tsurugidb starts. The default value is true (enabled at start).
+| enabled | Boolean (true/false) | Enable or disable stream_endpoint when tsurugidb starts. The default value is false (disabled at start).
 
 ## session section
 
