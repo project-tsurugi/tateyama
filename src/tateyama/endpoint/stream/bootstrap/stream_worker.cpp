@@ -63,9 +63,21 @@ void stream_worker::run()  // NOLINT(readability-function-cognitive-complexity)
         case tateyama::endpoint::stream::stream_socket::await_result::timeout:
             continue;
 
+        case tateyama::endpoint::stream::stream_socket::await_result::socket_closed:
+            session_stream_->close();
+            VLOG_LP(log_trace) << "socket has been closed by the client: session_id = " << std::to_string(session_id_);
+            return;
+
+        case tateyama::endpoint::stream::stream_socket::await_result::termination_request:
+            VLOG_LP(log_trace) << "received shutdown request: session_id = " << std::to_string(session_id_);
+            if (shutdown_from_client()) {
+                session_stream_->send_session_bye_ok();
+            }
+            return;
+
         default:
             session_stream_->close();
-            VLOG_LP(log_trace) << "received shutdown request: session_id = " << std::to_string(session_id_);
+            VLOG_LP(log_trace) << "detects illegal state: session_id = " << std::to_string(session_id_);
             return;
         }
         break;
@@ -167,7 +179,12 @@ void stream_worker::run()  // NOLINT(readability-function-cognitive-complexity)
             session_stream_->send_session_bye_ok();
             continue;
 
+        case tateyama::endpoint::stream::stream_socket::await_result::socket_closed:
+            VLOG_LP(log_trace) << "socket has been closed by the client: session_id = " << std::to_string(session_id_);
+            break;
+
         default:  // some error
+            VLOG_LP(log_trace) << "detects illegal state: session_id = " << std::to_string(session_id_);
             break;
         }
         break;
