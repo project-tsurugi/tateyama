@@ -219,8 +219,6 @@ private:
     connection_socket* envelope_;
 
     await_result await(unsigned char& info, std::uint16_t& slot, std::string& payload) {
-        DVLOG_LP(log_trace) << "-- enter waiting REQUEST --";
-
         fds_[0].fd = socket_;               // NOLINT
         fds_[0].events = POLLIN | POLLPRI;  // NOLINT
         fds_[0].revents = 0;                // NOLINT

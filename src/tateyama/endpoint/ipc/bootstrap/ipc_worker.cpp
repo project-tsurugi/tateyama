@@ -55,7 +55,6 @@ void ipc_worker::run() {  // NOLINT(readability-function-cognitive-complexity)
         try {
             hdr = request_wire_container_->peep();
         } catch (std::runtime_error &ex) {
-            VLOG_LP(log_trace) << "cought exception: " << ex.what();
             care_reqreses();
             if (check_shutdown_request() && is_completed()) {
                 VLOG_LP(log_trace) << "terminate worker thread for session " << session_id_ << ", as it has received a shutdown request";
