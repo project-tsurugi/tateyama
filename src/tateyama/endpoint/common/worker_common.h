@@ -107,7 +107,7 @@ public:
         if (session_) {
             session_->register_session(session_context_);
         }
-        update_expiration_time_by_request(true);
+        update_expiration_time(true);
     }
     virtual ~worker_common() {
         if(thread_.joinable()) thread_.join();
@@ -356,7 +356,7 @@ protected:
                     }
                 }
             } else {
-                update_expiration_time_by_request();
+                update_expiration_time();
             }
             tateyama::proto::core::response::UpdateExpirationTime rp{};
             rp.mutable_success();
@@ -482,7 +482,7 @@ protected:
 
     virtual bool has_incomplete_resultset() = 0;
 
-    void update_expiration_time_by_request(bool force = false) {
+    void update_expiration_time(bool force = false) {
         if (enable_timeout_) {
             auto new_until_time = tateyama::session::session_context::expiration_time_type::clock::now() + refresh_timeout_;
             if (force) {
@@ -496,7 +496,11 @@ protected:
     }
     bool is_expiration_time_over() {
         if (auto expiration_time_opt = session_context_->expiration_time(); expiration_time_opt) {
-            return tateyama::session::session_context::expiration_time_type::clock::now() > expiration_time_opt.value();
+            bool rv = tateyama::session::session_context::expiration_time_type::clock::now() > expiration_time_opt.value();
+            if (rv) {
+                LOG_LP(INFO) << "expiration time over, session = " << session_id_;
+            }
+            return rv;
         }
         return false;
     }

@@ -96,6 +96,7 @@ void stream_worker::run()  // NOLINT(readability-function-cognitive-complexity)
         switch (session_stream_->await(slot, payload)) {
         case tateyama::endpoint::stream::stream_socket::await_result::payload:
         {
+            update_expiration_time();
             auto request = std::make_shared<stream_request>(*session_stream_, payload, database_info_, session_info_, session_store_);
             switch (request->service_id()) {
             case tateyama::framework::service_id_endpoint_broker:

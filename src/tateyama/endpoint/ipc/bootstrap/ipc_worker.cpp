@@ -78,6 +78,7 @@ void ipc_worker::run() {  // NOLINT(readability-function-cognitive-complexity)
                 continue;
             }
 
+            update_expiration_time();
             auto request = std::make_shared<ipc_request>(*wire_, hdr, database_info_, session_info_, session_store_);
             std::size_t index = hdr.get_idx();
             bool exit_frag = false;
