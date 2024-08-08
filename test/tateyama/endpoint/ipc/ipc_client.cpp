@@ -133,8 +133,8 @@ void ipc_client::handshake() {
     tateyama::proto::endpoint::request::Request endpoint_request{};
     endpoint_request.set_allocated_handshake(&endpoint_handshake_);
     send(tateyama::framework::service_id_endpoint_broker, endpoint_request.SerializeAsString());
-    endpoint_request.release_handshake();
-    endpoint_handshake_.release_wire_information();
+    (void) endpoint_request.release_handshake();
+    (void) endpoint_handshake_.release_wire_information();
 
     std::string res{};
     receive(res);
