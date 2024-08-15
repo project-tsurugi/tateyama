@@ -115,6 +115,8 @@ Target component
 | enable_timeout | Boolean (true/false) | Enable or disable automatic session timeout. The default value is true. |
 | refresh_timeout | Integer | Lifetime extension time (seconds) of the session by communication. The default value is 300. |
 | max_refresh_timeout | Integer | Maximum value of the lifetime extension time of the session by explicit request (seconds). The default value is 10800. |
+| zone_offset | String | An ISO8601-defined string specifying the default time zone offset for the session (in the format `±[hh]:[mm]`, `Z`, etc.) The default value is a string indicating UTC. | 
+
 
 ## system section
 
