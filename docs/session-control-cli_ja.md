@@ -25,13 +25,13 @@
 稼働中のセッション一覧を表示する。
 
 ```sh
-tgctl session list [--conf </path/to/conf>] [--id] [-v|--verbose] [--monitor </path/to/log.jsonl>]
+tgctl session list [--conf </path/to/conf>] [--id] [--verbose] [--monitor </path/to/log.jsonl>]
 ```
 
 * options
   * `--conf` - 設定ファイルのパス、未指定の場合は既定の設定パスを利用
   * `--id` - session label の代わりに常に session ID を出力する
-  * `-v,--verbose` - 全ての情報を表示する (`--id` の指定は無視される)
+  * `--verbose` - 全ての情報を表示する (`--id` の指定は無視される)
   * `--monitor` - 指定されたファイルにモニタリング情報を出力する
 * exit status
   * 対象のセッション一覧を正しく取得できた場合、 `0` (`reason`: (absent))
@@ -102,13 +102,13 @@ tgctl session list [--conf </path/to/conf>] [--id] [-v|--verbose] [--monitor </p
 特定のセッションの情報を表示する。
 
 ```sh
-tgctl session show <session-ref> [--conf </path/to/conf>] [-v|--verbose] [--monitor </path/to/log.jsonl>]
+tgctl session show <session-ref> [--conf </path/to/conf>] [--verbose] [--monitor </path/to/log.jsonl>]
 ```
 
 * options
   * `<session-ref>` - 対象の session ID または session label
   * `--conf` - 設定ファイルのパス、未指定の場合は既定の設定パスを利用
-  * `-v,--verbose` - 無視される
+  * `--verbose` - 無視される
   * `--monitor` - 指定されたファイルにモニタリング情報を出力する
 * exit status
   * 対象のセッションの情報を正しく取得できた場合、 `0` (`reason`: (absent))
@@ -152,16 +152,16 @@ tgctl session show <session-ref> [--conf </path/to/conf>] [-v|--verbose] [--moni
 特定のセッションを強制的に終了させる。
 
 ```sh
-tgctl session shutdown <session-ref> [<session-ref> [...]] [--conf </path/to/conf>] [-v|--verbose] [--forceful|--graceful] [--monitor </path/to/log.jsonl>]
+tgctl session shutdown <session-ref> [<session-ref> [...]] [--conf </path/to/conf>] [--verbose] [--forceful|--graceful] [--monitor </path/to/log.jsonl>]
 ```
 
 * options
   * `<session-ref>` - 対象の session ID または session label
   * `--conf` - 設定ファイルのパス、未指定の場合は既定の設定パスを利用
-  * `-v,--verbose` - 無視される
+  * `--verbose` - 無視される
   * `--forceful` - forceful shutdownを行う
   * `--graceful` - graceful shutdownを行う
-  * `-v,--verbose` - 無視される
+  * `--verbose` - 無視される
   * `--monitor` - 指定されたファイルにモニタリング情報を出力する
 * exit status
   * 対象のセッションに、終了要求を出せた場合 `0` (`reason`: (absent))
@@ -196,7 +196,7 @@ tgctl session shutdown <session-ref> [<session-ref> [...]] [--conf </path/to/con
 特定のセッション変数の値を変更する。
 
 ```sh
-tgctl session set <session-ref> <variable-name> <variable-value>　[--conf </path/to/conf>] [-v|--verbose] [--monitor </path/to/log.jsonl>]
+tgctl session set <session-ref> <variable-name> <variable-value>　[--conf </path/to/conf>] [--verbose] [--monitor </path/to/log.jsonl>]
 ```
 
 * options
@@ -204,7 +204,7 @@ tgctl session set <session-ref> <variable-name> <variable-value>　[--conf </pat
   * `<variable-name>` - 対象のセッション変数の名称
   * `<variable-vaule>` - 対象のセッション変数に設定する値
   * `--conf` - 設定ファイルのパス、未指定の場合は既定の設定パスを利用
-  * `-v,--verbose` - 無視される
+  * `--verbose` - 無視される
   * `--monitor` - 指定されたファイルにモニタリング情報を出力する
 * exit status
   * 対象のセッション変数を変更できた場合、 `0` (`reason`: (absent))
