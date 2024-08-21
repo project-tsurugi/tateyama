@@ -48,7 +48,7 @@ private:
     std::shared_ptr<stream_socket> stream_;
     std::uint16_t slot_;
     unsigned char writer_id_;
-    std::vector<char> buffer_;
+    std::vector<char> buffer_{};
     /**
      * @brief Buffer size for storing stream data.
      *
