@@ -164,14 +164,24 @@ tateyama::status stream_data_channel::release(tateyama::api::server::writer& wrt
 tateyama::status stream_writer::write(char const* data, std::size_t length) {
     VLOG_LP(log_trace) << static_cast<const void*>(this);  //NOLINT
 
-    stream_->send(slot_, writer_id_, std::string_view(data, length));
+    if (data != nullptr && length > 0) {
+        if (buffer_.capacity() < buffer_.size() + length) {
+            buffer_.reserve(buffer_.size() + length + buffer_size);
+        }
+        buffer_.insert(buffer_.end(), data, data + length); //NOLINT
+    }
     return tateyama::status::ok;
 }
 
 tateyama::status stream_writer::commit() {
     VLOG_LP(log_trace) << static_cast<const void*>(this);  //NOLINT
 
-    stream_->send(slot_, writer_id_, std::string_view());
+    if (!buffer_.empty()) {
+        stream_->send(slot_, writer_id_, {buffer_.data(), buffer_.size()});
+        buffer_.clear();
+    } else {
+        stream_->send(slot_, writer_id_, {});
+    }
     return tateyama::status::ok;
 }
 

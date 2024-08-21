@@ -48,6 +48,14 @@ private:
     std::shared_ptr<stream_socket> stream_;
     std::uint16_t slot_;
     unsigned char writer_id_;
+    std::vector<char> buffer_;
+    /**
+     * @brief Buffer size for storing stream data.
+     *
+     * This constant defines the buffer size of 64KB used for temporary storage
+     * of stream data before sending it.
+     */
+    static constexpr std::size_t buffer_size = 65536;
 };
 
 /**
