@@ -48,7 +48,7 @@ Target component
 | Parameter name | Type | Value | Remarks |
 |---:| :---: | :--- |---|
 | thread_pool_size | Integer | Number of threads used by the task scheduler in the SQL service. The default value is set according to the environment by the following formula. MIN( <default worker coefficient> * <number of physical cores>, <maximum default worker count> ) If the result is less than 1, it is set to 1. Here, the default worker coefficient = 0.8, and the maximum default worker count = 32. |
-| enable_index_join | Boolean (true/false) | Whether to use index-based join processing for performance improvement. The default value is false. | This is for development and may be deleted in the future. |
+| enable_index_join | Boolean (true/false) | Whether to use index-based join processing for performance improvement. The default value is true. | This is for development and may be deleted in the future. |
 | stealing_enabled | Boolean (true/false) | Whether the scheduler steals tasks to utilize idle CPU cores. The default value is true. |
 | default_partitions | Integer | Number of partitions when data is divided for parallelizable relational operators. The default value is 5. |
 | use_preferred_worker_for_current_thread | Boolean (true/false) | Whether the scheduler uses a fixed worker for each thread that submits a task. The default is true. | This is for development and may be deleted in the future. |
