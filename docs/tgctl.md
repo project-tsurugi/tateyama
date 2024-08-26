@@ -61,6 +61,7 @@ tgctlコマンドの正常時における挙動をまとめる。ここで、「
 | 動作している | 動作している | could not [shutdown\|killed] tsurugidb within `タイムアウト時間` seconds, as (理由) | non 0 |
 | 動作している | 動作状態を<br>確認できない | failed to confirm tsurugidb [shutdown\|killed] within `タイムアウト時間` seconds, as (理由) | non 0 |
 | 動作していない | 動作していない | [shutdown\|kill] was not performed, as no tsurugidb was running | 0 |
+
 他に、shutdownやkill操作を実行できなかった場合は"shutdown was not performed, as （理由）"が出力され、exit codeはnon 0となる。
 
 なお、--monitorオプションで指定するtgctl実行結果ファイル（JSON形式）については、exit codeが0のものはsuccess、non 0のものはfailureを格納する。
