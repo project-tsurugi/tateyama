@@ -37,3 +37,4 @@ altimeter関連セクションには、event_logセクションとaudit_logが�
   - altimeter（audit log）
 
 パラメータ名、型、値とも、directoryのデフォルト値（/var/log/altimeter/audit）以外はevent_logセクションと同じ。
+※stmt_duration_thresholdを除く
