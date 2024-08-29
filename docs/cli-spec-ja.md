@@ -58,7 +58,7 @@ tgctl status [--conf </path/to/conf>]
       * データベースプロセスを起動する
     * options
       * `--recovery` (default) - データベース起動時にリカバリ操作が必要であれば自動的に行う
-      * `--no-recovery` - データベース起動時にリカバリ操作が必要であれば何もせずにエラー終了する
+      * `--no-recovery` - データベース起動時にリカバリ操作が必要であれば何もせずにエラー終了する（1.0.0-GAでは未実装）
     * note
       * 同一の設定ファイルを参照するデータベースが稼働中である場合、コマンドは失敗する
       * 同一の設定ファイルを参照するデータベースが完全に終了していない場合、コマンドは失敗する場合がある
@@ -155,7 +155,7 @@ tgctl status [--conf </path/to/conf>]
 ### backup サブコマンド
 
 ```sh
-tgctl backup create </path/to/backup> [--conf </path/to/conf>] [--overwrite] [--label <text>] [-v|--verbose]
+tgctl backup create </path/to/backup> [--conf </path/to/conf>] [--overwrite] [--label <text>] [--verbose]
 tgctl backup estimate [--conf </path/to/conf>]
 ```
 
@@ -175,9 +175,9 @@ tgctl backup estimate [--conf </path/to/conf>]
       * 現在のデータベースの状態を複製し、バックアップファイルとして書き出す
     * options
       * `</path/to/backup>` - バックアップ先のディレクトリ
-      * `--overwrite` - 出力先にディレクトリが既に存在していた場合、削除してからバックアップファイルを出力する
+      * `--overwrite` - 出力先にディレクトリが既に存在していた場合、削除してからバックアップファイルを出力する（1.0.0-GAでは未実装）
       * `--label` - この操作のラベルを指定する
-      * `-v,--verbose` - 詳細情報を表示する
+      * `--verbose` - 詳細情報を表示する
     * note
       * 作成したバックアップは `tgctl restore backup` で復元できる
       * 出力先に空でないディレクトリが既に存在し、かつ `--overwrite` が指定されていない場合、コマンドは失敗する
@@ -218,7 +218,7 @@ tgctl backup estimate [--conf </path/to/conf>]
 
 ```sh
 tgctl restore backup </path/to/backup> [--conf </path/to/conf>] [--keep-backup|--no-keep-backup] [--label <text>] [--force] [--use-file-list </path/to/file-list>]
-tgctl restore tag <tag-name> [--conf </path/to/conf>] [--label <text>] [--force]
+tgctl restore tag <tag-name> [--conf </path/to/conf>] [--label <text>] [--force]（1.0.0-GAでは未実装）
 ```
 
 * overview
@@ -257,7 +257,7 @@ tgctl restore tag <tag-name> [--conf </path/to/conf>] [--label <text>] [--force]
           * wait until service is absent
       * otherwise
         * raise error
-  * `tag`
+  * `tag` （1.0.0-GAでは未実装）
     * overview
       * Point-in-Time Recovery のタグ作成時点にデータベースをリストアする
     * options
@@ -275,10 +275,10 @@ tgctl restore tag <tag-name> [--conf </path/to/conf>] [--label <text>] [--force]
       * otherwise
         * raise error
 
-### Point-in-Time Recovery
+### Point-in-Time Recovery（1.0.0-GAでは未実装）
 
 ```sh
-tgctl tag list [--conf </path/to/conf>] [-v|--verbose]
+tgctl tag list [--conf </path/to/conf>] [--verbose]
 tgctl tag show <tag-name> [--conf </path/to/conf>]
 tgctl tag add <tag-name> [--comment <message>] [--conf </path/to/conf>]
 tgctl tag remove <tag-name> [--force] [--conf </path/to/conf>]
@@ -375,29 +375,29 @@ tgctl tag remove <tag-name> [--force] [--conf </path/to/conf>]
 ### コマンドグループ
 
 ```sh
-tgctl [-h|--help]
-tgctl backup [-h|--help]
-tgctl restore [-h|--help]
-tgctl tag [-h|--help]
+tgctl [--help]
+tgctl backup [--help]（1.0.0-GAでは未実装）
+tgctl restore [--help]（1.0.0-GAでは未実装）
+tgctl tag [--help]（1.0.0-GAでは未実装）
 ```
 
 * overview
   * 各種コマンドグループのヘルプ情報を表示する
 * options
-  * `-h,--help` - ヘルプ情報を表示する
+  * `--help` - ヘルプ情報を表示する
 
 ### ヘルプ情報
 
 ```sh
-<any commands> [-h|--help]
+<any commands> [--help]（1.0.0-GAでは未実装）
 ```
 
 * overview
   * コマンドを実行する代わりに、コマンドのヘルプ情報を表示する
 * options
-  * `-h,--help` - ヘルプ情報を表示する
+  * `--help` - ヘルプ情報を表示する
 
-## 認証
+## 認証（1.0.0-GAでは未実装）
 
 * 本CLIの認証は以下の方法がある
   * (A) ユーザー名とパスワードを指定
@@ -474,7 +474,7 @@ tgctl credentials [/path/to/credentials.json] [--user <user-name>] [--overwrite|
   * if service is unknown
     * raise error
 
-## ユーザーコマンド案
+## ユーザーコマンド案（1.0.0-GAでは未実装）
 
 * コマンド体系を分ける？
   * ユーザーコマンドと管理コマンドとでルートコマンド自体を分けてもよさそう？
@@ -483,7 +483,7 @@ tgctl credentials [/path/to/credentials.json] [--user <user-name>] [--overwrite|
 ### SQL実行
 
 ```sh
-tgctl exec </path/to/statement-list> [-v|--verbose] <connection-options>
+tgctl exec </path/to/statement-list> [--verbose] <connection-options>
 tgctl shell [-e <sql-statement>] <connection-options>
 
 connection-options:
@@ -543,8 +543,8 @@ connection-options:
 ### dump/load
 
 ```sh
-tgctl data dump <table-name> </path/to/dump-target> [--fresh|--safe] [--overwrite] [-v|--verbose]
-tgctl data load <table-name> </path/to/load-source>.. [--insert|--skip|--replace|--truncate] [--transaction|--no-transaction] [--force] [-v|--verbose] <connection-options>
+tgctl data dump <table-name> </path/to/dump-target> [--fresh|--safe] [--overwrite] [--verbose]
+tgctl data load <table-name> </path/to/load-source>.. [--insert|--skip|--replace|--truncate] [--transaction|--no-transaction] [--force] [--verbose] <connection-options>
 
 connection-options:
   --conf </path/to/conf> |
