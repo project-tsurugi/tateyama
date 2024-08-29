@@ -58,7 +58,7 @@ tgctl status [--conf </path/to/conf>]
       * データベースプロセスを起動する
     * options
       * `--recovery` (default) - データベース起動時にリカバリ操作が必要であれば自動的に行う
-      * `--no-recovery` - データベース起動時にリカバリ操作が必要であれば何もせずにエラー終了する（1.0.0-GAでは未実装）
+      * `--no-recovery` - データベース起動時にリカバリ操作が必要であれば何もせずにエラー終了する（1.0.0では未実装）
     * note
       * 同一の設定ファイルを参照するデータベースが稼働中である場合、コマンドは失敗する
       * 同一の設定ファイルを参照するデータベースが完全に終了していない場合、コマンドは失敗する場合がある
@@ -175,7 +175,7 @@ tgctl backup estimate [--conf </path/to/conf>]
       * 現在のデータベースの状態を複製し、バックアップファイルとして書き出す
     * options
       * `</path/to/backup>` - バックアップ先のディレクトリ
-      * `--overwrite` - 出力先にディレクトリが既に存在していた場合、削除してからバックアップファイルを出力する（1.0.0-GAでは未実装）
+      * `--overwrite` - 出力先にディレクトリが既に存在していた場合、削除してからバックアップファイルを出力する（1.0.0では未実装）
       * `--label` - この操作のラベルを指定する
       * `--verbose` - 詳細情報を表示する
     * note
@@ -218,7 +218,7 @@ tgctl backup estimate [--conf </path/to/conf>]
 
 ```sh
 tgctl restore backup </path/to/backup> [--conf </path/to/conf>] [--keep-backup|--no-keep-backup] [--label <text>] [--force] [--use-file-list </path/to/file-list>]
-tgctl restore tag <tag-name> [--conf </path/to/conf>] [--label <text>] [--force]（1.0.0-GAでは未実装）
+tgctl restore tag <tag-name> [--conf </path/to/conf>] [--label <text>] [--force]（1.0.0では未実装）
 ```
 
 * overview
@@ -257,7 +257,7 @@ tgctl restore tag <tag-name> [--conf </path/to/conf>] [--label <text>] [--force]
           * wait until service is absent
       * otherwise
         * raise error
-  * `tag` （1.0.0-GAでは未実装）
+  * `tag` （1.0.0では未実装）
     * overview
       * Point-in-Time Recovery のタグ作成時点にデータベースをリストアする
     * options
@@ -275,7 +275,7 @@ tgctl restore tag <tag-name> [--conf </path/to/conf>] [--label <text>] [--force]
       * otherwise
         * raise error
 
-### Point-in-Time Recovery（1.0.0-GAでは未実装）
+### Point-in-Time Recovery（1.0.0では未実装）
 
 ```sh
 tgctl tag list [--conf </path/to/conf>] [--verbose]
@@ -376,9 +376,9 @@ tgctl tag remove <tag-name> [--force] [--conf </path/to/conf>]
 
 ```sh
 tgctl [--help]
-tgctl backup [--help]（1.0.0-GAでは未実装）
-tgctl restore [--help]（1.0.0-GAでは未実装）
-tgctl tag [--help]（1.0.0-GAでは未実装）
+tgctl backup [--help]（1.0.0では未実装）
+tgctl restore [--help]（1.0.0では未実装）
+tgctl tag [--help]（1.0.0では未実装）
 ```
 
 * overview
@@ -389,7 +389,7 @@ tgctl tag [--help]（1.0.0-GAでは未実装）
 ### ヘルプ情報
 
 ```sh
-<any commands> [--help]（1.0.0-GAでは未実装）
+<any commands> [--help]（1.0.0では未実装）
 ```
 
 * overview
@@ -397,7 +397,7 @@ tgctl tag [--help]（1.0.0-GAでは未実装）
 * options
   * `--help` - ヘルプ情報を表示する
 
-## 認証（1.0.0-GAでは未実装）
+## 認証（1.0.0では未実装）
 
 * 本CLIの認証は以下の方法がある
   * (A) ユーザー名とパスワードを指定
@@ -474,7 +474,7 @@ tgctl credentials [/path/to/credentials.json] [--user <user-name>] [--overwrite|
   * if service is unknown
     * raise error
 
-## ユーザーコマンド案（1.0.0-GAでは未実装）
+## ユーザーコマンド案（1.0.0では未実装）
 
 * コマンド体系を分ける？
   * ユーザーコマンドと管理コマンドとでルートコマンド自体を分けてもよさそう？
