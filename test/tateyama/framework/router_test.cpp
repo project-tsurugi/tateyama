@@ -103,6 +103,10 @@ public:
             return session_store_;
         }
 
+        tateyama::session::session_variable_set& session_variable_set() noexcept override {
+            return session_variable_set_;
+        }
+
         std::size_t session_id_{};
         std::size_t service_id_{};
         std::string payload_{};
@@ -110,6 +114,7 @@ public:
         tateyama::status_info::resource::database_info_impl database_info_{};
         tateyama::endpoint::common::session_info_impl session_info_{};
         tateyama::api::server::session_store session_store_{};
+        tateyama::session::session_variable_set session_variable_set_{};
     };
 
     class test_response : public api::server::response {

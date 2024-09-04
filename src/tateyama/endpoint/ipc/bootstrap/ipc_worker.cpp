@@ -37,7 +37,7 @@ void ipc_worker::run() {  // NOLINT(readability-function-cognitive-complexity)
             return;
         }
 
-        ipc_request request_obj{*wire_, hdr, database_info_, session_info_, session_store_};
+        ipc_request request_obj{*wire_, hdr, database_info_, session_info_, session_store_, session_variable_set_};
         ipc_response response_obj{wire_, hdr.get_idx(), writer_count_, [](){}};
         if (! handshake(static_cast<tateyama::api::server::request*>(&request_obj), static_cast<tateyama::api::server::response*>(&response_obj))) {
             return;
@@ -79,7 +79,7 @@ void ipc_worker::run() {  // NOLINT(readability-function-cognitive-complexity)
             }
 
             update_expiration_time();
-            auto request = std::make_shared<ipc_request>(*wire_, hdr, database_info_, session_info_, session_store_);
+            auto request = std::make_shared<ipc_request>(*wire_, hdr, database_info_, session_info_, session_store_, session_variable_set_);
             std::size_t index = hdr.get_idx();
             bool exit_frag = false;
             switch (request->service_id()) {
