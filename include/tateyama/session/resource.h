@@ -25,6 +25,8 @@ namespace tateyama::session {
  */
 class session_resource : public framework::resource {
 public:
+    static constexpr id_type tag = framework::resource_id_session;
+
     /**
      * @brief returns sessions_core
      */
