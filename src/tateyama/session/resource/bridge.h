@@ -18,8 +18,8 @@
 #include <optional>
 
 #include <tateyama/framework/component_ids.h>
-#include <tateyama/framework/resource.h>
 #include <tateyama/framework/environment.h>
+#include <tateyama/session/resource.h>
 
 #include "core_impl.h"
 #include "context_impl.h"
@@ -36,7 +36,7 @@ using error_descriptor = std::pair<tateyama::proto::session::diagnostic::ErrorCo
  * @details This object bridges session as a resource component in tateyama framework.
  * This object should be responsible only for life-cycle management.
  */
-class bridge : public framework::resource {
+class bridge : public tateyama::session::session_resource {
 public:
     static constexpr id_type tag = framework::resource_id_session;
 
@@ -118,7 +118,7 @@ public:
     /**
      * @brief returns sessions_core_ for test purpose
      */
-    [[nodiscard]] tateyama::session::sessions_core const& sessions_core() const noexcept;
+    [[nodiscard]] tateyama::session::sessions_core& sessions_core() noexcept override;
 
 private:
     sessions_core_impl sessions_core_impl_{};
