@@ -288,7 +288,7 @@ bool bridge::register_session(std::shared_ptr<session_context_impl> const& sessi
     return sessions_core_impl_.container_.register_session(session);
 }
 
-tateyama::session::sessions_core const& bridge::sessions_core() const noexcept {
+tateyama::session::sessions_core& bridge::sessions_core() noexcept {
     return sessions_core_impl_;
 }
 
