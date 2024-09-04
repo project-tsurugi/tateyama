@@ -177,6 +177,9 @@ protected:
     // session store
     tateyama::api::server::session_store session_store_{};  // NOLINT
 
+    // session variable set
+    tateyama::session::session_variable_set session_variable_set_;  // NOLINT
+
     bool handshake(tateyama::api::server::request* req, tateyama::api::server::response* res) {
         if (req->service_id() != tateyama::framework::service_id_endpoint_broker) {
             LOG_LP(INFO) << "request received is not handshake";
@@ -506,7 +509,6 @@ protected:
     }
 
 private:
-    tateyama::session::session_variable_set session_variable_set_;
     const std::shared_ptr<tateyama::session::resource::session_context_impl> session_context_;
     bool enable_timeout_;
     std::chrono::seconds refresh_timeout_;
