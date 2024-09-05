@@ -70,7 +70,7 @@ public:
         configuration(connection_type con, std::shared_ptr<tateyama::session::resource::bridge> session) :
             con_(con), session_(std::move(session)) {
         }
-        explicit configuration(connection_type con) : configuration(con, nullptr) {
+        explicit configuration(connection_type con) : configuration(con, nullptr) {  // for tests
         }
         void set_timeout(std::size_t refresh_timeout, std::size_t max_refresh_timeout) {
             if (refresh_timeout < 120) {
@@ -99,7 +99,7 @@ public:
           session_id_(session_id),
           session_info_(session_id_, connection_label(config.con_), conn_info),
           session_(config.session_),
-          session_variable_set_(config.session_->sessions_core().variable_declarations().make_variable_set()),
+          session_variable_set_(config.session_ ? config.session_->sessions_core().variable_declarations().make_variable_set() : tateyama::session::session_variable_set{}),  // for tests
           session_context_(std::make_shared<tateyama::session::resource::session_context_impl>(session_info_, session_variable_set_)),
           enable_timeout_(config.enable_timeout_),
           refresh_timeout_(config.refresh_timeout_),
