@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <iostream>
 #include <chrono>
 #include <boost/lexical_cast.hpp>
 
@@ -138,6 +139,21 @@ std::optional<error_descriptor> bridge::session_shutdown(std::string_view sessio
     return std::make_pair(tateyama::proto::session::diagnostic::ErrorCode::SESSION_NOT_FOUND, "cannot find session by that session specifier");
 }
 
+struct locale_bool {
+    bool data;
+    locale_bool() {}
+    locale_bool(bool data) : data(data) {}
+    operator bool() const { return data; }
+    friend std::ostream& operator<<(std::ostream& out, locale_bool b) {
+        out << std::boolalpha << b.data;
+        return out;
+    }
+    friend std::istream& operator>>(std::istream& in, locale_bool& b) {
+        in >> std::boolalpha >> b.data;
+        return in;
+    }
+};
+
 std::optional<error_descriptor> bridge::set_valiable(std::string_view session_specifier, std::string_view name, std::string_view value) {
     session_context::numeric_id_type numeric_id{};
     try {
@@ -165,13 +181,13 @@ std::optional<error_descriptor> bridge::set_valiable(std::string_view session_sp
             case session_variable_type::boolean:
             {
                 try {
-                    bool v = boost::lexical_cast<bool>(value);
+                    bool v = boost::lexical_cast<locale_bool>(value);
                     if (vs.set(name, v)) {
                         return std::nullopt;
                     }
                     break;
                 } catch (boost::bad_lexical_cast const &ex) {
-                    return std::make_pair(tateyama::proto::session::diagnostic::ErrorCode::SESSION_VARIABLE_INVALID_VALUE, "invalid value type for the session variable");
+                    return std::make_pair(tateyama::proto::session::diagnostic::ErrorCode::SESSION_VARIABLE_INVALID_VALUE, "invalid value type for the boolean session variable");
                 }
             }
             case session_variable_type::signed_integer:
@@ -183,7 +199,7 @@ std::optional<error_descriptor> bridge::set_valiable(std::string_view session_sp
                     }
                     break;
                 } catch (std::exception const &ex) {
-                    return std::make_pair(tateyama::proto::session::diagnostic::ErrorCode::SESSION_VARIABLE_INVALID_VALUE, "invalid value type for the session variable");
+                    return std::make_pair(tateyama::proto::session::diagnostic::ErrorCode::SESSION_VARIABLE_INVALID_VALUE, "invalid value type for the signed_integer session variable");
                 }
             }
             case session_variable_type::unsigned_integer:
@@ -195,7 +211,7 @@ std::optional<error_descriptor> bridge::set_valiable(std::string_view session_sp
                     }
                     break;
                 } catch (std::exception const &ex) {
-                    return std::make_pair(tateyama::proto::session::diagnostic::ErrorCode::SESSION_VARIABLE_INVALID_VALUE, "invalid value type for the session variable");
+                    return std::make_pair(tateyama::proto::session::diagnostic::ErrorCode::SESSION_VARIABLE_INVALID_VALUE, "invalid value type for the unsigned_integer session variable");
                 }
             }
             case session_variable_type::string:
