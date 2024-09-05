@@ -18,8 +18,8 @@
 
 namespace tateyama::session {
 
-session_context::session_context(session_info& info, session_variable_set variables) noexcept :
-    info_(info), variables_(std::move(variables)) {
+session_context::session_context(session_info& info, session_variable_set& variables) noexcept :
+    info_(info), variables_(variables) {
 }
 
 session_context::numeric_id_type session_context::numeric_id() const noexcept {

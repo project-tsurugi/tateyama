@@ -31,7 +31,7 @@ namespace tateyama::session::resource {
  */
 class session_context_impl : public tateyama::session::session_context {
 public:
-    session_context_impl(session_info& info, session_variable_set variables) noexcept;
+    session_context_impl(session_info& info, session_variable_set& variables) noexcept;
 
     ~session_context_impl() {
         clean_up_();

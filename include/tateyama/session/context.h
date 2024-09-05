@@ -50,7 +50,7 @@ public:
      */
     session_context(
         session_info& info,
-        session_variable_set variables) noexcept;
+        session_variable_set& variables) noexcept;
 
     /**
      * @brief returns the numeric ID of this session.
@@ -109,7 +109,7 @@ public:
 
 private:
     session_info& info_;
-    session_variable_set variables_;
+    session_variable_set& variables_;
     std::atomic<shutdown_request_type> shutdown_request_{shutdown_request_type::nothing};
     std::optional<expiration_time_type> expiration_time_{};
 };
