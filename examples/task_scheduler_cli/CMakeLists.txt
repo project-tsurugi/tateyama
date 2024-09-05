@@ -8,7 +8,8 @@ add_executable(task-scheduler-cli
 
 set_target_properties(task-scheduler-cli
         PROPERTIES
-        RUNTIME_OUTPUT_NAME "task-scheduler-cli"
+                INSTALL_RPATH "\$ORIGIN/../lib"
+                RUNTIME_OUTPUT_NAME "task-scheduler-cli"
 )
 
 target_include_directories(task-scheduler-cli

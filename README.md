@@ -32,7 +32,7 @@ optional packages:
 This requires below [tsurugidb](https://github.com/project-tsurugi/tsurugidb) modules to be installed.
 
 * [takatori](https://github.com/project-tsurugi/takatori)  (for takatori::util functionalities)
-* [sharksfin](https://github.com/project-tsurugi/sharksfin) 
+* [sharksfin](https://github.com/project-tsurugi/sharksfin)
 
 #### moodycamel::ConcurrentQueue
 
@@ -63,7 +63,6 @@ available options:
 * `-DBUILD_DOCUMENTS=OFF` - don't build documents by doxygen
 * `-DINSTALL_EXAMPLES=ON` - install example applications
 * `-DBUILD_BENCHMARK=ON` - build benchmark programs
-* `-DFORCE_INSTALL_RPATH=ON` - automatically configure `INSTALL_RPATH` for non-default library paths
 * `-DSHARKSFIN_IMPLEMENTATION=<implementation name>` - switch sharksfin implementation. Available options are `memory` and `shirakami` (default: `memory`)
 * `-DENABLE_ALTIMETER=ON` - turn on the `altimeter logging`.
 * `-DMC_QUEUE=ON` - use moody camel queue instead of tbb queue to store tasks in tateyama task scheduler.
@@ -74,7 +73,7 @@ available options:
   * `-DENABLE_COVERAGE=ON` - enable code coverage analysis (requires `-DCMAKE_BUILD_TYPE=Debug`)
   * `-DTRACY_ENABLE=ON` - enable tracy profiler for multi-thread debugging. See section below.
 
-### install 
+### install
 
 ```sh
 cmake --build . --target install
@@ -93,11 +92,11 @@ ctest -V
 cmake --build . --target doxygen
 ```
 
-### Customize logging setting 
+### Customize logging setting
 You can customize logging in the same way as sharksfin. See sharksfin [README.md](https://github.com/project-tsurugi/sharksfin/blob/master/README.md#customize-logging-setting) for more details.
 
 ```sh
-GLOG_minloglevel=0 ./group-cli --minimum 
+GLOG_minloglevel=0 ./group-cli --minimum
 ```
 
 ### Multi-thread debugging/profiling with Tracy
@@ -105,7 +104,7 @@ GLOG_minloglevel=0 ./group-cli --minimum
 You can use [Tracy Profiler](https://github.com/wolfpld/tracy) to graphically display the threads operations and improve printf debug by printing messages on the tooltips on the Tracy profiler UI.
 By setting cmake build option `-DTRACY_ENABLE=ON`, TracyClient.cpp file is added to the build and tracing macros are enabled.
 
-Prerequirement: 
+Prerequirement:
 
 1. ensure tracy code is located under `third_party/tracy` directory.
 ```
