@@ -139,11 +139,11 @@ std::optional<error_descriptor> bridge::session_shutdown(std::string_view sessio
     return std::make_pair(tateyama::proto::session::diagnostic::ErrorCode::SESSION_NOT_FOUND, "cannot find session by that session specifier");
 }
 
-struct locale_bool {
-    bool data;
-    locale_bool() {}
-    locale_bool(bool data) : data(data) {}
-    operator bool() const { return data; }
+class locale_bool {
+public:
+    locale_bool() = default;
+    explicit locale_bool(bool data) : data(data) {}
+    explicit operator bool() const { return data; }
     friend std::ostream& operator<<(std::ostream& out, locale_bool b) {
         out << std::boolalpha << b.data;
         return out;
@@ -152,6 +152,8 @@ struct locale_bool {
         in >> std::boolalpha >> b.data;
         return in;
     }
+private:
+    bool data{};
 };
 
 std::optional<error_descriptor> bridge::set_valiable(std::string_view session_specifier, std::string_view name, std::string_view value) {
@@ -181,7 +183,7 @@ std::optional<error_descriptor> bridge::set_valiable(std::string_view session_sp
             case session_variable_type::boolean:
             {
                 try {
-                    bool v = boost::lexical_cast<locale_bool>(value);
+                    bool v = static_cast<bool>(boost::lexical_cast<locale_bool>(value));
                     if (vs.set(name, v)) {
                         return std::nullopt;
                     }
