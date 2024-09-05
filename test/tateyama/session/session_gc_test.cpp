@@ -35,7 +35,7 @@ class session_gc_test :
 public:
     void SetUp() override {
         temporary_.prepare();
-        session_context_ = std::make_shared<tateyama::session::resource::session_context_impl>(session_info_for_existing_session_, tateyama::session::session_variable_set(variable_declarations_));
+        session_context_ = std::make_shared<tateyama::session::resource::session_context_impl>(session_info_for_existing_session_, session_variable_set);
     }
     void TearDown() override {
         temporary_.clean();
@@ -46,6 +46,7 @@ private:
     std::vector<std::tuple<std::string, tateyama::session::session_variable_set::variable_type, tateyama::session::session_variable_set::value_type>> variable_declarations_ {
         {"test_integer", tateyama::session::session_variable_type::signed_integer, static_cast<std::int64_t>(123)}
     };
+    tateyama::session::session_variable_set session_variable_set{variable_declarations_};
 
 protected:
     std::shared_ptr<tateyama::session::resource::session_context_impl> session_context_{};

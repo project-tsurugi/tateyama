@@ -18,8 +18,8 @@
 
 namespace tateyama::session::resource {
 
-session_context_impl::session_context_impl(session_info& info, session_variable_set variables) noexcept :
-    session_context(info, std::move(variables)) {
+session_context_impl::session_context_impl(session_info& info, session_variable_set& variables) noexcept :
+    session_context(info, variables) {
 }
 
 }
