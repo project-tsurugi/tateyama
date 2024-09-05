@@ -99,7 +99,7 @@ public:
           session_id_(session_id),
           session_info_(session_id_, connection_label(config.con_), conn_info),
           session_(config.session_),
-          session_variable_set_(variable_declarations()),
+          session_variable_set_(config.session_->sessions_core().variable_declarations().make_variable_set()),
           session_context_(std::make_shared<tateyama::session::resource::session_context_impl>(session_info_, session_variable_set_)),
           enable_timeout_(config.enable_timeout_),
           refresh_timeout_(config.refresh_timeout_),
@@ -530,13 +530,6 @@ private:
             return "";
         }
     }
-
-    [[nodiscard]] std::vector<std::tuple<std::string, tateyama::session::session_variable_set::variable_type, tateyama::session::session_variable_set::value_type>> variable_declarations() const noexcept {
-        return {
-            { "example_integer", tateyama::session::session_variable_type::signed_integer, static_cast<std::int64_t>(0) }
-        };
-    }
-
 };
 
 }  // tateyama::endpoint::common
