@@ -567,7 +567,7 @@ public:
     /**
      * @brief sets the value to the variable with the specified name.
      * @param name the variable name
-     * @param value the value to set
+     * @param value the value to set, or std::monostate to unset the variable
      * @return true if successfully set the value
      * @return false if the target variable is not declared, or the value type is not suitable for the variable
      * @see type()
