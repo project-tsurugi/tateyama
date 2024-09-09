@@ -799,8 +799,11 @@ message request.SessionSetVariable {
     // the target variable name, case insensitive.
     string name = 2;
 
-    // the text represented value to set.
-    string value = 3;
+    // the value to set, or NOT_SET to unset the variable.
+    oneof value_opt {
+        // the text represented value to set.
+        string value = 3;
+    }
 }
 
 // the results of request.SessionSetVariable.
