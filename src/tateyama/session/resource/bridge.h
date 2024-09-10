@@ -99,9 +99,14 @@ public:
     [[nodiscard]] std::optional<error_descriptor> set_valiable(std::string_view session_specifier, std::string_view name, std::string_view value);
 
     /**
+     * @brief handle a SessionSetVariable command that has not value field, means unset the session variable
+     */
+    [[nodiscard]] std::optional<error_descriptor> unset_valiable(std::string_view session_specifier, std::string_view name);
+
+    /**
      * @brief handle a SessionGetVariable command
      */
-    [[nodiscard]] std::optional<error_descriptor> get_valiable(std::string_view session_specifier, std::string_view name, ::tateyama::proto::session::response::SessionGetVariable_Success* mutable_success);
+    [[nodiscard]] std::optional<error_descriptor> get_valiable(std::string_view session_specifier, std::string_view name, ::tateyama::proto::session::response::SessionGetVariable& get_variable);
 
     /**
      * @brief relays to container::register_session()

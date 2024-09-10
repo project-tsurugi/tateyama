@@ -121,15 +121,28 @@ bool tateyama::session::service::core::operator()(const std::shared_ptr<request>
     case tateyama::proto::session::request::Request::kSessionSetVariable:
     {
         auto& cmd = rq.session_set_variable();
-        auto rv = resource_->set_valiable(cmd.session_specifier(), cmd.name(), cmd.value());
-        if (!rv) {
-            tateyama::proto::session::response::SessionSetVariable rs{};
-            rs.mutable_success();
-            res->body(rs.SerializeAsString());
-            rs.clear_success();
+        if (cmd.value_opt_case() == tateyama::proto::session::request::SessionSetVariable::ValueOptCase::kValue) {
+            auto rv = resource_->set_valiable(cmd.session_specifier(), cmd.name(), cmd.value());
+            if (!rv) {
+                tateyama::proto::session::response::SessionSetVariable rs{};
+                rs.mutable_success();
+                res->body(rs.SerializeAsString());
+                rs.clear_success();
+            } else {
+                send_error<tateyama::proto::session::response::SessionSetVariable>(res, rv.value());
+                return false;
+            }
         } else {
-            send_error<tateyama::proto::session::response::SessionSetVariable>(res, rv.value());
-            return false;
+            auto rv = resource_->unset_valiable(cmd.session_specifier(), cmd.name());
+            if (!rv) {
+                tateyama::proto::session::response::SessionSetVariable rs{};
+                rs.mutable_success();
+                res->body(rs.SerializeAsString());
+                rs.clear_success();
+            } else {
+                send_error<tateyama::proto::session::response::SessionSetVariable>(res, rv.value());
+                return false;
+            }
         }
         break;
     }
@@ -138,7 +151,7 @@ bool tateyama::session::service::core::operator()(const std::shared_ptr<request>
     {
         tateyama::proto::session::response::SessionGetVariable rs{};
         auto& cmd = rq.session_get_variable();
-        auto rv = resource_->get_valiable(cmd.session_specifier(), cmd.name(), rs.mutable_success());
+        auto rv = resource_->get_valiable(cmd.session_specifier(), cmd.name(), rs);
         if (!rv) {
             res->body(rs.SerializeAsString());
         } else {

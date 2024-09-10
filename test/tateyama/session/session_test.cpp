@@ -68,7 +68,7 @@ TEST_F(session_test, session_list) {
 
     auto ss = sv.find_resource<session::resource::bridge>();
     ss->register_session(session_context_);
-    
+
     std::string str{};
     {
         ::tateyama::proto::session::request::Request rq{};
@@ -249,7 +249,7 @@ TEST_F(session_test, session_set_variable) {
 
     auto ss = sv.find_resource<session::resource::bridge>();
     ss->register_session(session_context_);
-    
+
     {
         std::string str{};
         {
@@ -276,7 +276,7 @@ TEST_F(session_test, session_set_variable) {
         EXPECT_TRUE(svrs.has_success());
     }
 
-    {
+    {  // do get variable to check the result
         std::string str{};
         {
             ::tateyama::proto::session::request::Request rq{};
@@ -303,6 +303,73 @@ TEST_F(session_test, session_set_variable) {
         EXPECT_EQ("test_integer", success.name());
         EXPECT_EQ(success.value_case(), ::tateyama::proto::session::response::SessionGetVariable_Success::ValueCase::kSignedIntegerValue);
         EXPECT_EQ(success.signed_integer_value(), 321);
+    }
+
+    sv.shutdown();
+}
+
+TEST_F(session_test, session_unset_variable) {
+    auto cfg = api::configuration::create_configuration("", tateyama::test::default_configuration_for_tests);
+    set_dbpath(*cfg);
+    framework::server sv{framework::boot_mode::database_server, cfg};
+    add_core_components(sv);
+    sv.start();
+    auto router = sv.find_service<framework::routing_service>();
+    EXPECT_TRUE(router);
+    EXPECT_EQ(framework::routing_service::tag, router->id());
+
+    auto ss = sv.find_resource<session::resource::bridge>();
+    ss->register_session(session_context_);
+
+    {
+        std::string str{};
+        {
+            ::tateyama::proto::session::request::Request rq{};
+            rq.set_service_message_version_major(1);
+            rq.set_service_message_version_minor(0);
+            auto svrq = rq.mutable_session_set_variable();
+            svrq->set_session_specifier(":111");
+            svrq->set_name("test_integer");
+            str = rq.SerializeAsString();
+            rq.clear_session_set_variable();
+        }
+
+        auto svrreq = std::make_shared<test_request>(10, session::service::bridge::tag, str);
+        auto svrres = std::make_shared<test_response>();
+
+        (*router)(svrreq, svrres);
+        EXPECT_EQ(10, svrres->session_id_);
+        auto& body = svrres->body_;
+
+        ::tateyama::proto::session::response::SessionSetVariable svrs{};
+        EXPECT_TRUE(svrs.ParseFromString(body));
+        EXPECT_TRUE(svrs.has_success());
+    }
+
+    {  // do get variable to check the result
+        std::string str{};
+        {
+            ::tateyama::proto::session::request::Request rq{};
+            rq.set_service_message_version_major(1);
+            rq.set_service_message_version_minor(0);
+            auto gvrq = rq.mutable_session_get_variable();
+            gvrq->set_session_specifier(":111");
+            gvrq->set_name("test_integer");
+            str = rq.SerializeAsString();
+            rq.clear_session_get_variable();
+        }
+
+        auto svrreq = std::make_shared<test_request>(10, session::service::bridge::tag, str);
+        auto svrres = std::make_shared<test_response>();
+
+        (*router)(svrreq, svrres);
+        EXPECT_EQ(10, svrres->session_id_);
+        auto& body = svrres->body_;
+
+        ::tateyama::proto::session::response::SessionGetVariable gvrs{};
+        EXPECT_TRUE(gvrs.ParseFromString(body));
+        EXPECT_TRUE(gvrs.has_error());
+        EXPECT_EQ(gvrs.error().error_code(), ::tateyama::proto::session::diagnostic::ErrorCode::SESSION_VARIABLE_NOT_DECLARED);
     }
 
     sv.shutdown();

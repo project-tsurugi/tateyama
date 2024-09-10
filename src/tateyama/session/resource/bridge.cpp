@@ -234,6 +234,32 @@ std::optional<error_descriptor> bridge::set_valiable(std::string_view session_sp
     return std::make_pair(tateyama::proto::session::diagnostic::ErrorCode::SESSION_NOT_FOUND, "cannot find session by that session specifier");
 }
 
+std::optional<error_descriptor> bridge::unset_valiable(std::string_view session_specifier, std::string_view name) {
+    session_context::numeric_id_type numeric_id{};
+    try {
+        auto opt = find_only_one_session(session_specifier, numeric_id);
+        if (opt) {
+            return opt.value();
+        }
+    } catch (std::invalid_argument &ex) {
+        return std::make_pair(tateyama::proto::session::diagnostic::ErrorCode::SESSION_NOT_FOUND, ex.what());
+    }
+
+    std::shared_ptr<session_context> context{};
+    context = sessions_core_impl_.container_.find_session(numeric_id);
+    if (context) {
+        auto& vs = context->variables();
+        if (!vs.exists(name)) {
+            return std::make_pair(tateyama::proto::session::diagnostic::ErrorCode::SESSION_VARIABLE_NOT_DECLARED, "session variable by that name has not been declared");
+        }
+        if (vs.unset(name)) {
+            return std::nullopt;
+        }
+        return std::make_pair(tateyama::proto::session::diagnostic::ErrorCode::OPERATION_NOT_PERMITTED, "should not reach here");
+    }
+    return std::make_pair(tateyama::proto::session::diagnostic::ErrorCode::SESSION_NOT_FOUND, "cannot find session by that session specifier");
+}
+
 class value {
 public:
     explicit value(::tateyama::proto::session::response::SessionGetVariable_Success* mutable_success) : mutable_success_(mutable_success) {
@@ -261,7 +287,7 @@ private:
     ::tateyama::proto::session::response::SessionGetVariable_Success* mutable_success_;
 };
 
-std::optional<error_descriptor> bridge::get_valiable(std::string_view session_specifier, std::string_view name, ::tateyama::proto::session::response::SessionGetVariable_Success* mutable_success) {
+std::optional<error_descriptor> bridge::get_valiable(std::string_view session_specifier, std::string_view name, ::tateyama::proto::session::response::SessionGetVariable& get_variable) {
     session_context::numeric_id_type numeric_id{};
     try {
         auto opt = find_only_one_session(session_specifier, numeric_id);
@@ -272,15 +298,8 @@ std::optional<error_descriptor> bridge::get_valiable(std::string_view session_sp
         return std::make_pair(tateyama::proto::session::diagnostic::ErrorCode::SESSION_NOT_FOUND, "");
     }
 
-    mutable_success->set_name(std::string(name));
-    auto& vds = sessions_core_impl_.variable_declarations();
-    if (auto* vd = vds.find(name); vd) {
-        mutable_success->set_description(vd->description());
-    }
-
-    std::shared_ptr<session_context> context{};
     try {
-        context = sessions_core_impl_.container_.find_session(numeric_id);
+        auto context = sessions_core_impl_.container_.find_session(numeric_id);
         if (context) {
             auto& vs = context->variables();
             if (!vs.exists(name)) {
@@ -290,16 +309,22 @@ std::optional<error_descriptor> bridge::get_valiable(std::string_view session_sp
             if (!type) {
                 return std::make_pair(tateyama::proto::session::diagnostic::ErrorCode::SESSION_VARIABLE_NOT_DECLARED, "");
             }
+            auto* mutable_success = get_variable.mutable_success();
+            mutable_success->set_name(std::string(name));
             auto res = std::visit(value(mutable_success), vs.get(name));
             if (!res) {
+                auto& vds = sessions_core_impl_.variable_declarations();
+                if (auto* vd = vds.find(name); vd) {
+                    mutable_success->set_description(vd->description());
+                }
                 return std::nullopt;
             }
             return res.value();
         }
+        return std::make_pair(tateyama::proto::session::diagnostic::ErrorCode::SESSION_NOT_FOUND, "");
     } catch (std::invalid_argument &ex) {
         return std::make_pair(tateyama::proto::session::diagnostic::ErrorCode::SESSION_VARIABLE_INVALID_VALUE, "");
     }
-    return std::make_pair(tateyama::proto::session::diagnostic::ErrorCode::SESSION_NOT_FOUND, "");
 }
 
 bool bridge::register_session(std::shared_ptr<session_context_impl> const& session) {

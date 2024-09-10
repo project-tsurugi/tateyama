@@ -88,6 +88,14 @@ public:
      */
     bool set(std::string_view name, value_type value);
 
+    /**
+     * @brief unsets the value to the variable with the specified name.
+     * @param name the variable name
+     * @return true if successfully unset the value
+     * @return false if the target variable is not declared
+     */
+    bool unset(std::string_view name);
+
     // ...
 
 private:
