@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #include "stream_receiver.h"
 #include "tateyama/endpoint/stream/stream.h"
 #include "tateyama/endpoint/stream/stream_response.h"
@@ -47,6 +46,8 @@ protected:
 
   void SetUp() override {
     envelope_ = std::make_unique<connection_socket>(PORT_FOR_TEST);
+    receiver_ = std::make_unique<stream_receiver>(PORT_FOR_TEST);
+    receiver_thread_ = std::thread(std::ref(*receiver_));
   }
 
   void TearDown() override {
@@ -65,9 +66,6 @@ protected:
 
 TEST_F(stream_socket_test, Send_and_Close_Test) {
   std::string_view info = "abcdefgh";
-
-  receiver_ = std::make_unique<stream_receiver>(PORT_FOR_TEST);
-  receiver_thread_ = std::thread(std::ref(*receiver_));
   ss_ = envelope_->accept();
 
   std::string data = "abcdefghijklmnopqrstuvwxyz";
@@ -111,8 +109,6 @@ TEST_F(stream_socket_test, Send_and_Close_Test) {
 }
 
 TEST_F(stream_socket_test, ConnectionInfoTest) {
-  receiver_ = std::make_unique<stream_receiver>(PORT_FOR_TEST);
-  receiver_thread_ = std::thread(std::ref(*receiver_));
   ss_ = envelope_->accept();
 
   EXPECT_EQ(ss_->connection_info(), receiver_->local_addr());
