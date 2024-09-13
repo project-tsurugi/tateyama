@@ -21,6 +21,7 @@
 #include <strings.h>  // for bzero()
 #include <mutex>
 #include <condition_variable>
+#include <sstream>
 
 #include <unistd.h>
 #include <sys/fcntl.h>
@@ -29,6 +30,7 @@
 #include <netinet/in.h>
 #include <netdb.h>
 #include <arpa/inet.h>
+#include <errno.h>
 
 namespace tateyama::endpoint::stream {
 
@@ -38,7 +40,7 @@ public:
 
     explicit stream_receiver(int port) {
         if ((sockfd_ = ::socket(PF_INET, SOCK_STREAM, 0)) < 0) {
-            throw std::runtime_error("error in create socket");
+            throw_error("socket()");
         }
 
         struct sockaddr_in client_addr;
@@ -49,7 +51,7 @@ public:
 
         if (connect(sockfd_, (struct sockaddr *)&client_addr, sizeof(client_addr)) > 0) {
             ::close(sockfd_);
-            throw std::runtime_error("connect error");
+            throw_error("connect()");
         }
     }
     ~stream_receiver() {
@@ -124,29 +126,29 @@ private:
             return false;  // the server has closed the socket 
         }
         if (rv < 0) {
-            throw std::runtime_error("error in recv()");
+            throw_error("recv()");
         }
 
         if (::recv(sockfd_, data, 2, 0) < 0) {
-            throw std::runtime_error("error in recv()");
+            throw_error("recv()");
         }
         slot_ = data[0] | (data[1] << 8);
 
         if (type_ == RESPONSE_RESULT_SET_PAYLOAD) {
             if (::recv(sockfd_, &writer_, 1, 0) < 0) {
-                throw std::runtime_error("error in recv()");
+                throw_error("recv()");
             }
         }
 
         if (::recv(sockfd_, data, 4, 0) < 0) {
-            throw std::runtime_error("error in recv()");
+            throw_error("recv()");
         }
         std::size_t length = data[0] | (data[1] << 8) | (data[2] << 16) | (data[3] << 24);
 
         if (length > 0) {
             message_.resize(length);
             if (::recv(sockfd_, message_.data(), length, 0) < 0) {
-                throw std::runtime_error("error in recv()");
+                throw_error("recv()");
             }
         } else {
             message_.clear();
@@ -157,6 +159,11 @@ private:
         std::unique_lock<std::mutex> lock(mtx_);
         received_ = true;
         cnd_.notify_one();
+    }
+    void throw_error(std::string_view func) {
+        std::stringstream ss{};
+        ss << "error in " << func << ", errno = " << errno;
+        throw std::runtime_error(ss.str().c_str());
     }
 };
 
