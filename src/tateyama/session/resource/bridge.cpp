@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <iostream>
 #include <chrono>
 #include <boost/lexical_cast.hpp>
 
@@ -138,6 +139,23 @@ std::optional<error_descriptor> bridge::session_shutdown(std::string_view sessio
     return std::make_pair(tateyama::proto::session::diagnostic::ErrorCode::SESSION_NOT_FOUND, "cannot find session by that session specifier");
 }
 
+class locale_bool {
+public:
+    locale_bool() = default;
+    explicit locale_bool(bool data) : data(data) {}
+    explicit operator bool() const { return data; }
+    friend std::ostream& operator<<(std::ostream& out, locale_bool b) {
+        out << std::boolalpha << b.data;
+        return out;
+    }
+    friend std::istream& operator>>(std::istream& in, locale_bool& b) {
+        in >> std::boolalpha >> b.data;
+        return in;
+    }
+private:
+    bool data{};
+};
+
 std::optional<error_descriptor> bridge::set_valiable(std::string_view session_specifier, std::string_view name, std::string_view value) {
     session_context::numeric_id_type numeric_id{};
     try {
@@ -165,13 +183,13 @@ std::optional<error_descriptor> bridge::set_valiable(std::string_view session_sp
             case session_variable_type::boolean:
             {
                 try {
-                    bool v = boost::lexical_cast<bool>(value);
+                    bool v = static_cast<bool>(boost::lexical_cast<locale_bool>(value));
                     if (vs.set(name, v)) {
                         return std::nullopt;
                     }
                     break;
                 } catch (boost::bad_lexical_cast const &ex) {
-                    return std::make_pair(tateyama::proto::session::diagnostic::ErrorCode::SESSION_VARIABLE_INVALID_VALUE, "invalid value type for the session variable");
+                    return std::make_pair(tateyama::proto::session::diagnostic::ErrorCode::SESSION_VARIABLE_INVALID_VALUE, "invalid value type for the boolean session variable");
                 }
             }
             case session_variable_type::signed_integer:
@@ -183,7 +201,7 @@ std::optional<error_descriptor> bridge::set_valiable(std::string_view session_sp
                     }
                     break;
                 } catch (std::exception const &ex) {
-                    return std::make_pair(tateyama::proto::session::diagnostic::ErrorCode::SESSION_VARIABLE_INVALID_VALUE, "invalid value type for the session variable");
+                    return std::make_pair(tateyama::proto::session::diagnostic::ErrorCode::SESSION_VARIABLE_INVALID_VALUE, "invalid value type for the signed_integer session variable");
                 }
             }
             case session_variable_type::unsigned_integer:
@@ -195,7 +213,7 @@ std::optional<error_descriptor> bridge::set_valiable(std::string_view session_sp
                     }
                     break;
                 } catch (std::exception const &ex) {
-                    return std::make_pair(tateyama::proto::session::diagnostic::ErrorCode::SESSION_VARIABLE_INVALID_VALUE, "invalid value type for the session variable");
+                    return std::make_pair(tateyama::proto::session::diagnostic::ErrorCode::SESSION_VARIABLE_INVALID_VALUE, "invalid value type for the unsigned_integer session variable");
                 }
             }
             case session_variable_type::string:
@@ -212,6 +230,32 @@ std::optional<error_descriptor> bridge::set_valiable(std::string_view session_sp
         }
     } catch (std::invalid_argument &ex) {
         return std::make_pair(tateyama::proto::session::diagnostic::ErrorCode::SESSION_VARIABLE_INVALID_VALUE, ex.what());
+    }
+    return std::make_pair(tateyama::proto::session::diagnostic::ErrorCode::SESSION_NOT_FOUND, "cannot find session by that session specifier");
+}
+
+std::optional<error_descriptor> bridge::unset_valiable(std::string_view session_specifier, std::string_view name) {
+    session_context::numeric_id_type numeric_id{};
+    try {
+        auto opt = find_only_one_session(session_specifier, numeric_id);
+        if (opt) {
+            return opt.value();
+        }
+    } catch (std::invalid_argument &ex) {
+        return std::make_pair(tateyama::proto::session::diagnostic::ErrorCode::SESSION_NOT_FOUND, ex.what());
+    }
+
+    std::shared_ptr<session_context> context{};
+    context = sessions_core_impl_.container_.find_session(numeric_id);
+    if (context) {
+        auto& vs = context->variables();
+        if (!vs.exists(name)) {
+            return std::make_pair(tateyama::proto::session::diagnostic::ErrorCode::SESSION_VARIABLE_NOT_DECLARED, "session variable by that name has not been declared");
+        }
+        if (vs.unset(name)) {
+            return std::nullopt;
+        }
+        return std::make_pair(tateyama::proto::session::diagnostic::ErrorCode::OPERATION_NOT_PERMITTED, "should not reach here");
     }
     return std::make_pair(tateyama::proto::session::diagnostic::ErrorCode::SESSION_NOT_FOUND, "cannot find session by that session specifier");
 }
@@ -243,7 +287,7 @@ private:
     ::tateyama::proto::session::response::SessionGetVariable_Success* mutable_success_;
 };
 
-std::optional<error_descriptor> bridge::get_valiable(std::string_view session_specifier, std::string_view name, ::tateyama::proto::session::response::SessionGetVariable_Success* mutable_success) {
+std::optional<error_descriptor> bridge::get_valiable(std::string_view session_specifier, std::string_view name, ::tateyama::proto::session::response::SessionGetVariable& get_variable) {
     session_context::numeric_id_type numeric_id{};
     try {
         auto opt = find_only_one_session(session_specifier, numeric_id);
@@ -254,15 +298,8 @@ std::optional<error_descriptor> bridge::get_valiable(std::string_view session_sp
         return std::make_pair(tateyama::proto::session::diagnostic::ErrorCode::SESSION_NOT_FOUND, "");
     }
 
-    mutable_success->set_name(std::string(name));
-    auto& vds = sessions_core_impl_.variable_declarations();
-    if (auto* vd = vds.find(name); vd) {
-        mutable_success->set_description(vd->description());
-    }
-
-    std::shared_ptr<session_context> context{};
     try {
-        context = sessions_core_impl_.container_.find_session(numeric_id);
+        auto context = sessions_core_impl_.container_.find_session(numeric_id);
         if (context) {
             auto& vs = context->variables();
             if (!vs.exists(name)) {
@@ -272,23 +309,29 @@ std::optional<error_descriptor> bridge::get_valiable(std::string_view session_sp
             if (!type) {
                 return std::make_pair(tateyama::proto::session::diagnostic::ErrorCode::SESSION_VARIABLE_NOT_DECLARED, "");
             }
+            auto* mutable_success = get_variable.mutable_success();
+            mutable_success->set_name(std::string(name));
             auto res = std::visit(value(mutable_success), vs.get(name));
             if (!res) {
+                auto& vds = sessions_core_impl_.variable_declarations();
+                if (auto* vd = vds.find(name); vd) {
+                    mutable_success->set_description(vd->description());
+                }
                 return std::nullopt;
             }
             return res.value();
         }
+        return std::make_pair(tateyama::proto::session::diagnostic::ErrorCode::SESSION_NOT_FOUND, "");
     } catch (std::invalid_argument &ex) {
         return std::make_pair(tateyama::proto::session::diagnostic::ErrorCode::SESSION_VARIABLE_INVALID_VALUE, "");
     }
-    return std::make_pair(tateyama::proto::session::diagnostic::ErrorCode::SESSION_NOT_FOUND, "");
 }
 
 bool bridge::register_session(std::shared_ptr<session_context_impl> const& session) {
     return sessions_core_impl_.container_.register_session(session);
 }
 
-tateyama::session::sessions_core const& bridge::sessions_core() const noexcept {
+tateyama::session::sessions_core& bridge::sessions_core() noexcept {
     return sessions_core_impl_;
 }
 

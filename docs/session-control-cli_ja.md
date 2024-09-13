@@ -6,6 +6,8 @@
   * セッションスイッチに関するサブコマンドを追加
 * 2024-02-02 arakawa (NT)
   * セッションスイッチをセッション変数に変更
+* 2024-09-09 arakawa (NT)
+  * セッション変数の未設定化を明示的に追加
 
 ## この文書について
 
@@ -196,13 +198,13 @@ tgctl session shutdown <session-ref> [<session-ref> [...]] [--conf </path/to/con
 特定のセッション変数の値を変更する。
 
 ```sh
-tgctl session set <session-ref> <variable-name> <variable-value>　[--conf </path/to/conf>] [--verbose] [--monitor </path/to/log.jsonl>]
+tgctl session set <session-ref> <variable-name> [<variable-value>]　[--conf </path/to/conf>] [--verbose] [--monitor </path/to/log.jsonl>]
 ```
 
 * options
   * `<session-ref>` - 対象の session ID または session label
   * `<variable-name>` - 対象のセッション変数の名称
-  * `<variable-vaule>` - 対象のセッション変数に設定する値
+  * `<variable-vaule>` - 対象のセッション変数に設定する値、未指定の場合は未設定状態にする
   * `--conf` - 設定ファイルのパス、未指定の場合は既定の設定パスを利用
   * `--verbose` - 無視される
   * `--monitor` - 指定されたファイルにモニタリング情報を出力する

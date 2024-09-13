@@ -48,7 +48,7 @@ Target component
 | Parameter name | Type | Value | Remarks |
 |---:| :---: | :--- |---|
 | thread_pool_size | Integer | Number of threads used by the task scheduler in the SQL service. The default value is set according to the environment by the following formula. MIN( <default worker coefficient> * <number of physical cores>, <maximum default worker count> ) If the result is less than 1, it is set to 1. Here, the default worker coefficient = 0.8, and the maximum default worker count = 32. |
-| enable_index_join | Boolean (true/false) | Whether to use index-based join processing for performance improvement. The default value is false. | This is for development and may be deleted in the future. |
+| enable_index_join | Boolean (true/false) | Whether to use index-based join processing for performance improvement. The default value is true. | This is for development and may be deleted in the future. |
 | stealing_enabled | Boolean (true/false) | Whether the scheduler steals tasks to utilize idle CPU cores. The default value is true. |
 | default_partitions | Integer | Number of partitions when data is divided for parallelizable relational operators. The default value is 5. |
 | use_preferred_worker_for_current_thread | Boolean (true/false) | Whether the scheduler uses a fixed worker for each thread that submits a task. The default is true. | This is for development and may be deleted in the future. |
@@ -69,7 +69,6 @@ Target component
 | dev_try_insert_on_upserting_secondary | Boolean (true/false) | Whether to execute INSERT before INSERT OR REPLACE for tables with secondary indexes. The default value is true. | This is for development and may be deleted in the future. |
 | dev_scan_concurrent_operation_as_not_found | Boolean (true/false) | Whether to treat records detected as concurrently inserted during scan operations (WARN_CONCURRENT_INSERT) as non-existent. The default value is true. | This is for development and may be deleted in the future. |
 | dev_point_read_concurrent_operation_as_not_found | Boolean (true/false) | Whether to treat records detected as concurrently inserted during point read operations (WARN_CONCURRENT_INSERT) as non-existent. The default value is true. | This is for development and may be deleted in the future. |
-|dev_compiler_support| Integer | The support level of SQL compiler. Use old compiler if this is set to 0 and new one if 1. The default value is 1. |This is for development and may be deleted in the future.|
 |lowercase_regular_identifiers| Boolean (true/false) | Whether to lowercase the identifiers such as table names. This configuration is available only on new SQL compiler. The default value is false.||
 |scan_block_size| Integer | Max records processed by scan operator before yielding to other tasks. The default is 0 (unlimited). | This is for development and may be deleted in the future. |
 

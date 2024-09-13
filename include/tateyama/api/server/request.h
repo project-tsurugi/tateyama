@@ -18,6 +18,7 @@
 #include <string_view>
 #include <memory>
 
+#include <tateyama/session/variable_set.h>
 #include "database_info.h"
 #include "session_info.h"
 #include "session_store.h"
@@ -77,6 +78,12 @@ public:
      * @returns the current session store
      */
     [[nodiscard]] virtual tateyama::api::server::session_store& session_store() noexcept = 0;
+
+    /**
+     * @brief returns the current session session variable set.
+     * @returns the current session variable set
+     */
+    [[nodiscard]] virtual tateyama::session::session_variable_set& session_variable_set() noexcept = 0;
 };
 
 }

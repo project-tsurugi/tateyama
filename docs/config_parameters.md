@@ -48,7 +48,7 @@ parameter=value
 |パラメーター名 | 型 | 値 |備考|
 |---:| :---: | :--- |---|
 |thread_pool_size | 整数 | SQLサービスが使用するタスクスケジューラの使用するスレッド数。デフォルトは次式により環境に合わせて設定される。MIN( <既定ワーカー係数> * <物理コア数>, <最大既定ワーカー数> ) 結果が1未満になる場合は1とする。ここで、既定ワーカー係数 = 0.8、最大既定ワーカー数 = 32||
-|enable_index_join | ブール(true/false) | 性能向上のためインデックスを利用した結合処理を行うか。デフォルトはfalse|開発用のため将来的に削除される可能性あり|
+|enable_index_join | ブール(true/false) | 性能向上のためインデックスを利用した結合処理を行うか。デフォルトはtrue|開発用のため将来的に削除される可能性あり|
 |stealing_enabled | ブール(true/false) | 空いたCPUコアを活用するためにスケジューラーがタスクのstealingを行うか。デフォルトはtrue||
 |default_partitions | 整数 | 並列化可能な関係演算子の実行においてデータ分割を行う際のパーティション数。デフォルトは5||
 |use_preferred_worker_for_current_thread | ブール(true/false) | スケジューラーがワーカーを選択する際、タスクを提出したスレッドごとに固定的なワーカーを使うようにするか。デフォルトはtrue|開発用のため将来的に削除される可能性あり|
@@ -69,9 +69,9 @@ parameter=value
 |dev_try_insert_on_upserting_secondary| ブール(true/false) | INSERT OR REPLACEをセカンダリインデックスのある表に対して実行する際、INSERTを事前に実行する最適化を実施するか。デフォルトはtrue|開発用のため将来的に削除される可能性あり|
 |dev_scan_concurrent_operation_as_not_found| ブール(true/false) | スキャン操作において並列して挿入されたレコードを検知した際(WARN_CONCURRENT_INSERT)に、そのレコードが存在しないものとして取り扱うか。デフォルトはtrue|開発用のため将来的に削除される可能性あり|
 |dev_point_read_concurrent_operation_as_not_found| ブール(true/false) | ポイントリード操作において並列して挿入されたレコードを検知した際(WARN_CONCURRENT_INSERT)に、そのレコードが存在しないものとして取り扱うか。デフォルトはtrue|開発用のため将来的に削除される可能性あり|
-|dev_compiler_support| 整数 | SQLコンパイラのサポートレベル。0の場合は旧コンパイラを使用、1の場合は新コンパイラを使用する。デフォルトは1|開発用のため将来的に削除/変更される可能性あり|
 |lowercase_regular_identifiers| ブール(true/false) | SQLコンパイラがテーブル名などのシンボルを小文字に変換して扱うか。新コンパイラのみ有効。デフォルトはfalse||
 |scan_block_size| 整数 | スキャンが他のタスクにスレッドを譲渡する前に処理するレコードの最大数。デフォルトは0(無制限)|開発用のため将来的に削除/変更される可能性あり|
+
 ## ipc_endpointセクション
 
 セクション名

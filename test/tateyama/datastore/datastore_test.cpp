@@ -79,6 +79,10 @@ public:
             return session_store_;
         }
 
+        tateyama::session::session_variable_set& session_variable_set() noexcept override {
+            return session_variable_set_;
+        }
+
         std::size_t session_id_{};
         std::size_t service_id_{};
         std::string payload_{};
@@ -86,6 +90,7 @@ public:
         tateyama::status_info::resource::database_info_impl database_info_{};
         tateyama::endpoint::common::session_info_impl session_info_{};
         tateyama::api::server::session_store session_store_{};
+        tateyama::session::session_variable_set session_variable_set_{};
     };
 
     class test_response : public api::server::response {
@@ -143,7 +148,7 @@ TEST_F(datastore_test, basic) {
     ::tateyama::proto::datastore::response::BackupBegin bb{};
     EXPECT_TRUE(bb.ParseFromString(body));
     EXPECT_TRUE(bb.has_success());
-    EXPECT_EQ(2, bb.success().simple_source().files_size());
+    EXPECT_EQ(3, bb.success().simple_source().files_size());
     for(auto&& f : bb.success().simple_source().files()) {
         std::cout << "backup file: " << f << std::endl;
     }

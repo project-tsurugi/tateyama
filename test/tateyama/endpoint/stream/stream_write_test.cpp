@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "stream_client.h"
+#include "stream_receiver.h"
 #include "tateyama/endpoint/stream/stream.h"
 #include "tateyama/endpoint/stream/stream_response.h"
 #include "tateyama/logging_helper.h"
@@ -30,68 +30,79 @@
 #include <sys/types.h>
 #include <tateyama/logging.h>
 #include <unistd.h>
+#include <thread>
 namespace tateyama::endpoint::stream {
 
-class MockConnectionSocket : public connection_socket {
-public:
-  /*
-    MockConnectionSocket(std::uint32_t port, std::size_t timeout,
-                         std::size_t socket_limit)
-        : connection_socket(port, timeout, socket_limit) {}
-        */
-public:
-  MockConnectionSocket() : connection_socket(0, 0, 0) {}
-};
-
-class MockStreamSocket : public stream_socket {
-public:
-  MockStreamSocket(int socket, std::string_view info,
-                   connection_socket *envelope)
-      : stream_socket(socket, info, envelope) {
-    LOG(INFO) << "MockStreamSocket constructor: socket=" << socket;
-  }
-};
 class stream_write_test : public ::testing::Test {
 protected:
-  void SetUp() override {}
+  static constexpr int PORT_FOR_TEST = 12351;
+
+  void SetUp() override {
+    envelope_ = std::make_unique<connection_socket>(PORT_FOR_TEST);
+    receiver_ = std::make_unique<stream_receiver>(PORT_FOR_TEST);
+    receiver_thread_ = std::thread(std::ref(*receiver_));
+  }
 
   void TearDown() override {
-    sw.reset();
-    ss.reset();
+    envelope_->close();
+    sw_.reset();
+    ss_.reset();
     envelope_.reset();
+    if (receiver_thread_.joinable()) {
+      receiver_thread_.join();
+    }
   }
   std::unique_ptr<connection_socket> envelope_;
-  std::shared_ptr<stream_socket> ss;
-  std::shared_ptr<stream_writer> sw;
+  std::shared_ptr<stream_socket> ss_;
+  std::shared_ptr<stream_writer> sw_;
+  std::unique_ptr<stream_receiver> receiver_;
+  std::thread receiver_thread_;
 };
 
 TEST_F(stream_write_test, CommitTest) {
-  envelope_ = std::make_unique<MockConnectionSocket>();
   std::string_view info = "abcdefgh";
-  ss = std::make_unique<MockStreamSocket>(socket(AF_INET, SOCK_STREAM, 0), info,
-                                          envelope_.get());
-  sw = std::make_shared<stream_writer>(ss, 1, 2);
-  EXPECT_EQ(sw->commit(), tateyama::status::ok);
-  envelope_->close();
+  ss_ = envelope_->accept();
+  // slot = 1, writer = 2
+  sw_ = std::make_shared<stream_writer>(ss_, 1, 2);
+
+  EXPECT_EQ(sw_->commit(), tateyama::status::ok);
+  receiver_->wait();
+  EXPECT_EQ(receiver_->slot(), 1);  
+  EXPECT_EQ(receiver_->writer(), 2);  
+  EXPECT_EQ(receiver_->message(), "");  
+
+  ss_->close();
 }
 TEST_F(stream_write_test, WriteTest) {
-  envelope_ = std::make_unique<MockConnectionSocket>();
   std::string_view info = "abcdefgh";
-  ss = std::make_unique<MockStreamSocket>(socket(AF_INET, SOCK_STREAM, 0), info,
-                                          envelope_.get());
-  sw = std::make_shared<stream_writer>(ss, 1, 2);
+  ss_ = envelope_->accept();
+  // slot = 1, writer = 2
+  sw_ = std::make_shared<stream_writer>(ss_, 1, 2);
+
   std::string data = "abcdefghijklmnopqrstuvwxyz";
   std::size_t length = data.length();
-  EXPECT_EQ(sw->write(data.c_str(), length), tateyama::status::ok);
-  EXPECT_EQ(sw->write(data.c_str(), 0), tateyama::status::ok);
-  EXPECT_EQ(sw->write(nullptr, 0), tateyama::status::ok);
-  EXPECT_EQ(sw->write(nullptr, INT_MIN), tateyama::status::ok);
-  EXPECT_EQ(sw->write(nullptr, INT_MAX), tateyama::status::ok);
-  std::uint16_t sport = 1;
-  ss->send(sport, data.c_str(), false);
-  EXPECT_NO_THROW(ss->send(sport, data.c_str(), false));
-  EXPECT_NO_THROW(ss->send(sport, data.c_str(), true));
-  envelope_->close();
+  EXPECT_EQ(sw_->write(data.c_str(), length), tateyama::status::ok);
+
+  // do not invoke send()
+  EXPECT_EQ(sw_->write(data.c_str(), 0), tateyama::status::ok);
+
+  // do not invoke send()
+  EXPECT_EQ(sw_->write(nullptr, 0), tateyama::status::ok);
+  EXPECT_EQ(sw_->write(nullptr, INT_MIN), tateyama::status::ok);
+  EXPECT_EQ(sw_->write(nullptr, INT_MAX), tateyama::status::ok);
+
+  // send data given by the first write() only
+  EXPECT_EQ(sw_->commit(), tateyama::status::ok);
+  receiver_->wait();
+  EXPECT_EQ(receiver_->slot(), 1);  
+  EXPECT_EQ(receiver_->writer(), 2);  
+  EXPECT_EQ(receiver_->message(), "abcdefghijklmnopqrstuvwxyz");  
+
+  std::uint16_t slot = 1;
+  ss_->send(slot, data.c_str(), false);
+  EXPECT_NO_THROW(ss_->send(slot, data.c_str(), false));
+  EXPECT_NO_THROW(ss_->send(slot, data.c_str(), true));
+  ss_->close();
 }
 
 } // namespace tateyama::endpoint::stream

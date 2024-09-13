@@ -13,13 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#pragma once
 
-#include "context_impl.h"
+#include <tateyama/framework/resource.h>
+#include <tateyama/session/core.h>
 
-namespace tateyama::session::resource {
+namespace tateyama::session {
 
-session_context_impl::session_context_impl(session_info& info, session_variable_set& variables) noexcept :
-    session_context(info, variables) {
-}
+/**
+ * @brief the core class of `sessions` resource that provides information about living sessions.
+ */
+class session_resource : public framework::resource {
+public:
+    static constexpr id_type tag = framework::resource_id_session;
+
+    /**
+     * @brief returns sessions_core
+     */
+    virtual tateyama::session::sessions_core& sessions_core() noexcept = 0;
+};
 
 }

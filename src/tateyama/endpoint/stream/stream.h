@@ -451,7 +451,7 @@ public:
                     throw std::runtime_error("accept error");
                 }
                 std::stringstream ss{};
-                ss << inet_ntoa(address.sin_addr) << ":" << address.sin_port;
+                ss << inet_ntoa(address.sin_addr) << ":" << ntohs(address.sin_port);
                 return std::make_shared<stream_socket>(ts, ss.str(), this);
             }
             if (FD_ISSET(pair_[0], &fds_)) {  //  NOLINT

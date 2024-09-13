@@ -28,7 +28,7 @@ altimeter関連セクションには、event_logセクションとaudit_logが�
 | flush_interval | 整数 | フラッシュ間隔 (ミリ秒)。デフォルトは10000。 | ログ同期保存が false の時に利用、値が 0 の場合はバッファリングなしでログを書き込む。
 | flush_file_size | 整数 | フラッシュを行うファイルサイズ (バイト数)。デフォルトは1048576。 | ログ同期保存が false の時に利用、値が 0 の場合はバッファリングなしでログを書き込む。
 | max_file_size | 整数 | ローテートを行うファイルサイズ (バイト数)。デフォルトは1073741824。 | 値が 0 の場合はローテートを行わない。
-
+| stmt_duration_threshold | 整数 | ログ種類「stmt_end」を出力するduration_timeの閾値(ナノ秒)。デフォルトは1000000000。 | この値が1以上の値を設定した場合、stmt_endのduration_timeの値がこの閾値以上の場合のみstmt_endのイベントログを出力する。その際、ログレベルを最低値(10)に置き換えてイベントログを出力する。
 セクション名
   - audit_log
 
@@ -37,3 +37,4 @@ altimeter関連セクションには、event_logセクションとaudit_logが�
   - altimeter（audit log）
 
 パラメータ名、型、値とも、directoryのデフォルト値（/var/log/altimeter/audit）以外はevent_logセクションと同じ。
+※stmt_duration_thresholdを除く

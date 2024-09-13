@@ -30,8 +30,13 @@ namespace tateyama::endpoint::stream {
 class alignas(64) stream_request : public tateyama::endpoint::common::request {
 public:
     stream_request() = delete;
-    explicit stream_request(stream_socket& session_socket, std::string& payload, const tateyama::api::server::database_info& database_info, const tateyama::api::server::session_info& session_info, tateyama::api::server::session_store& session_store)
-        : tateyama::endpoint::common::request(database_info, session_info, session_store), session_socket_(session_socket) {
+    explicit stream_request(stream_socket& session_socket,
+                            std::string& payload,
+                            const tateyama::api::server::database_info& database_info,
+                            const tateyama::api::server::session_info& session_info,
+                            tateyama::api::server::session_store& session_store,
+                            tateyama::session::session_variable_set& session_variable_set)
+        : tateyama::endpoint::common::request(database_info, session_info, session_store, session_variable_set), session_socket_(session_socket) {
         endpoint::common::parse_result res{};
         endpoint::common::parse_header(payload, res); // TODO handle error
         payload_ = res.payload_;

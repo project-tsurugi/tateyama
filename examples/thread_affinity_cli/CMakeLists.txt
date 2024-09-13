@@ -8,7 +8,8 @@ add_executable(thread-affinity-cli
 
 set_target_properties(thread-affinity-cli
         PROPERTIES
-        RUNTIME_OUTPUT_NAME "cli"
+                INSTALL_RPATH "\$ORIGIN/../lib"
+                RUNTIME_OUTPUT_NAME "cli"
 )
 
 target_include_directories(thread-affinity-cli

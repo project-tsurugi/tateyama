@@ -34,8 +34,13 @@ class alignas(64) ipc_request : public tateyama::endpoint::common::request {
     constexpr static std::size_t SPO_SIZE = 256;
 
 public:
-    ipc_request(server_wire_container& server_wire, tateyama::common::wire::message_header& header, const tateyama::api::server::database_info& database_info, const tateyama::api::server::session_info& session_info, tateyama::api::server::session_store& session_store)
-        : tateyama::endpoint::common::request(database_info, session_info, session_store), server_wire_(server_wire), length_(header.get_length()), index_(header.get_idx()) {
+    ipc_request(server_wire_container& server_wire,
+                tateyama::common::wire::message_header& header,
+                const tateyama::api::server::database_info& database_info,
+                const tateyama::api::server::session_info& session_info,
+                tateyama::api::server::session_store& session_store,
+                tateyama::session::session_variable_set& session_variable_set)
+        : tateyama::endpoint::common::request(database_info, session_info, session_store, session_variable_set), server_wire_(server_wire), length_(header.get_length()), index_(header.get_idx()) {
         std::string_view message{};
         auto *request_wire = server_wire_.get_request_wire();
 
