@@ -38,11 +38,13 @@
 #include <tateyama/proto/endpoint/response.pb.h>
 #include <tateyama/proto/core/request.pb.h>
 #include <tateyama/proto/core/response.pb.h>
+#include <tateyama/proto/framework/response.pb.h>
 #include <tateyama/proto/diagnostics.pb.h>
 
 #include "request.h"
 #include "response.h"
 #include "session_info_impl.h"
+#include "tateyama/endpoint/common/endpoint_proto_utils.h"
 
 namespace tateyama::endpoint::common {
 
@@ -506,6 +508,15 @@ protected:
             return rv;
         }
         return false;
+    }
+
+    void set_framework_header(std::string& framework_header) const {
+        ::tateyama::proto::framework::response::Header hdr{};
+        hdr.set_session_id(session_id_);
+        hdr.set_payload_type(::tateyama::proto::framework::response::Header::SERVICE_RESULT);
+        if(auto res = hdr.SerializeToString(&framework_header); ! res) {
+            throw std::runtime_error("SerializeToString of framework header fail");
+        }
     }
 
 private:

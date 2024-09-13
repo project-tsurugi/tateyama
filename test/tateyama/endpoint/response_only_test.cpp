@@ -34,6 +34,7 @@ class response_only_test : public ::testing::Test {
     virtual void SetUp() {
         rv_ = system("if [ -f /dev/shm/tateyama-response_only_test ]; then rm -f /dev/shm/tateyama-response_only_test; fi ");
         wire_ = std::make_shared<bootstrap::server_wire_container_impl>("tateyama-response_only_test", "dummy_mutex_file_name", datachannel_buffer_size, 16);
+        set_framework_header(wire_->framework_header());
     }
     virtual void TearDown() {
         rv_ = system("if [ -f /dev/shm/tateyama-response_only_test ]; then rm -f /dev/shm/tateyama-response_only_test; fi ");
@@ -46,6 +47,7 @@ public:
     static constexpr std::string_view response_test_message_ = "opqrstuvwxyz";
     static constexpr tateyama::common::wire::message_header::index_type index_ = 1;
     static constexpr std::size_t writer_count = 8;
+    static constexpr std::size_t SESSION_ID = 10;
 
     std::shared_ptr<bootstrap::server_wire_container_impl> wire_;
 
@@ -68,12 +70,20 @@ public:
         }
     };
 
+    void set_framework_header(std::string& framework_header) const {
+        ::tateyama::proto::framework::response::Header hdr{};
+        hdr.set_session_id(SESSION_ID);
+        hdr.set_payload_type(::tateyama::proto::framework::response::Header::SERVICE_RESULT);
+        if(auto res = hdr.SerializeToString(&framework_header); ! res) {
+            throw std::runtime_error("SerializeToString of framework header fail");
+        }
+    }
 };
 
 TEST_F(response_only_test, normal) {
     auto* request_wire = static_cast<bootstrap::server_wire_container_impl::wire_container_impl*>(wire_->get_request_wire());
 
-    request_header_content hdr{10, 100};
+    request_header_content hdr{SESSION_ID, 100};
     std::stringstream ss{};
     append_request_header(ss, request_test_message_, hdr);
     auto request_message = ss.str();
@@ -86,7 +96,7 @@ TEST_F(response_only_test, normal) {
 
     auto request = std::make_shared<ipc_request>(*wire_, h, dmy_dbinfo_, dmy_ssinfo_, dmy_ssstore_, dmy_svariable_set_);
     auto response = std::make_shared<ipc_response>(wire_, h.get_idx(), writer_count, [](){});
-    EXPECT_EQ(request->session_id(), 10);
+    EXPECT_EQ(request->session_id(), SESSION_ID);
     EXPECT_EQ(request->service_id(), 100);
 
     test_service sv;
@@ -100,7 +110,7 @@ TEST_F(response_only_test, normal) {
     response_wire.read(r_msg.data());
 
     std::stringstream expected{};
-    tateyama::endpoint::common::header_content hc{10};
+    tateyama::endpoint::common::header_content hc{SESSION_ID};
     tateyama::endpoint::common::append_response_header(expected, response_test_message_, hc, ::tateyama::proto::framework::response::Header::SERVICE_RESULT);
     EXPECT_EQ(r_msg, expected.str());
 }

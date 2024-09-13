@@ -576,6 +576,10 @@ public:
         return std::make_unique<resultset_wires_container_impl>(managed_shared_memory_.get(), name, mtx_shm_);
     }
 
+    std::string& framework_header() override {
+        return framework_header_;
+    }
+
 private:
     std::string name_;
     std::unique_ptr<boost::interprocess::managed_shared_memory> managed_shared_memory_{};
@@ -587,6 +591,8 @@ private:
 
     std::size_t datachannel_buffer_size_;
     const std::function<void(void)> clean_up_;
+
+    std::string framework_header_{};
 };
 
 inline void server_wire_container_impl::resultset_wire_container_impl::release(unq_p_resultset_wire_conteiner resultset_wire_conteiner) {

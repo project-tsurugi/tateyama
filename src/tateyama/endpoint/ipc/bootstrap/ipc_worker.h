@@ -39,6 +39,7 @@ public:
             request_wire_container_(dynamic_cast<server_wire_container_impl::wire_container_impl*>(wire_->get_request_wire())),
             database_info_(database_info),
             writer_count_(writer_count) {
+            set_framework_header(wire_->framework_header());
     }
     void delete_hook() {
         shutdown_complete();

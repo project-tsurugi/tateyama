@@ -34,9 +34,11 @@ tateyama::status ipc_response::body(std::string_view body) {
         clean_up_();
 
         std::stringstream ss{};
-        endpoint::common::header_content arg{};
-        arg.session_id_ = session_id_;
-        if(auto res = endpoint::common::append_response_header(ss, body, arg, ::tateyama::proto::framework::response::Header::SERVICE_RESULT); ! res) {
+        if(auto res = utils::PutDelimitedBodyToOstream(server_wire_->framework_header(), std::addressof(ss)); ! res) {
+            LOG_LP(ERROR) << "error formatting framework header";
+            return status::unknown;
+        }
+        if(auto res = utils::PutDelimitedBodyToOstream(body, std::addressof(ss)); ! res) {
             LOG_LP(ERROR) << "error formatting response message";
             return status::unknown;
         }

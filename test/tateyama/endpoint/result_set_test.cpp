@@ -37,7 +37,7 @@ class result_set_test : public ::testing::Test {
         rv_ = system("if [ -f /dev/shm/tateyama-result_set_test ]; then rm -f /dev/shm/tateyama-result_set_test; fi ");
 
         wire_ = std::make_shared<bootstrap::server_wire_container_impl>("tateyama-result_set_test", "dummy_mutex_file_name", datachannel_buffer_size, 16);
-
+        set_framework_header(wire_->framework_header());
     }
     virtual void TearDown() {
         rv_ = system("if [ -f /dev/shm/tateyama-result_set_test ]; then rm -f /dev/shm/tateyama-result_set_test*; fi ");
@@ -52,6 +52,7 @@ public:
     static constexpr tateyama::common::wire::message_header::index_type index_ = 1;
     static constexpr std::string_view r_ = "row_data_test";  // length = 13
     static constexpr std::size_t writer_count = 8;
+    static constexpr std::size_t SESSION_ID = 0;  // do not check session id in this test.
 
     std::shared_ptr<bootstrap::server_wire_container_impl> wire_;
 
@@ -85,6 +86,16 @@ public:
             return 0;
         }
     };
+
+private:
+    void set_framework_header(std::string& framework_header) const {
+        ::tateyama::proto::framework::response::Header hdr{};
+        hdr.set_session_id(SESSION_ID);
+        hdr.set_payload_type(::tateyama::proto::framework::response::Header::SERVICE_RESULT);
+        if(auto res = hdr.SerializeToString(&framework_header); ! res) {
+            throw std::runtime_error("SerializeToString of framework header fail");
+        }
+    }
 };
 
 TEST_F(result_set_test, normal) {
