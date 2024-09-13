@@ -93,6 +93,18 @@ public:
         return rv;
     }
 
+    std::string local_addr() {
+        struct sockaddr_in sin;
+        socklen_t len = sizeof(sin);
+        if (int rc = getsockname(sockfd_, (struct sockaddr*)&sin, &len); rc != 0) {
+            // error
+            return "";
+        }
+        std::string host(inet_ntoa(sin.sin_addr));
+        int port = ntohs(sin.sin_port);
+        return host + ':' + std::to_string(port);
+    }
+
 private:
     int sockfd_{};
     std::string response_{};

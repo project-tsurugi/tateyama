@@ -115,7 +115,7 @@ TEST_F(stream_socket_test, ConnectionInfoTest) {
   receiver_thread_ = std::thread(std::ref(*receiver_));
   ss_ = envelope_->accept();
 
-  EXPECT_NE(ss_->connection_info().find("127.0.0.1:"), std::string::npos);
+  EXPECT_EQ(ss_->connection_info(), receiver_->local_addr());
   EXPECT_NO_THROW(ss_->close());
 }
 
