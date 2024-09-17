@@ -56,13 +56,4 @@ bool session_variable_set::set(std::string_view name, value_type value) {
     return false;
 }
 
-bool session_variable_set::unset(std::string_view name) {
-    auto it = variable_set_.find(std::string(name));
-    if (it != variable_set_.end()) {
-        variable_set_.erase(it);
-        return true;
-    }
-    return false;
-}
-
 }

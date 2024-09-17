@@ -541,9 +541,9 @@ public:
     explicit session_variable_set(std::vector<std::tuple<std::string, variable_type, value_type>> declarations);
 
     /**
-     * @brief returns whether or not the variable with the specified name exists.
+     * @brief returns whether or not the variable with the specified name has been declared.
      * @param name the variable name
-     * @return true the variable with the name exists
+     * @return true the variable with the name has been declared
      * @return false there are no variables with the name
      */
     [[nodiscard]] bool exists(std::string_view name) const noexcept;

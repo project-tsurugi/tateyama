@@ -252,7 +252,7 @@ std::optional<error_descriptor> bridge::unset_valiable(std::string_view session_
         if (!vs.exists(name)) {
             return std::make_pair(tateyama::proto::session::diagnostic::ErrorCode::SESSION_VARIABLE_NOT_DECLARED, "session variable by that name has not been declared");
         }
-        if (vs.unset(name)) {
+        if (vs.set(name, sessions_core_impl_.variable_declarations().make_variable_set().get(name))) {
             return std::nullopt;
         }
         return std::make_pair(tateyama::proto::session::diagnostic::ErrorCode::OPERATION_NOT_PERMITTED, "should not reach here");
@@ -265,7 +265,8 @@ public:
     explicit value(::tateyama::proto::session::response::SessionGetVariable_Success* mutable_success) : mutable_success_(mutable_success) {
     }
     std::optional<error_descriptor> operator()([[maybe_unused]] const std::monostate& data) {
-        return std::make_pair(tateyama::proto::session::diagnostic::ErrorCode::OPERATION_NOT_PERMITTED, "operation is not permitted");
+        // does not set value
+        return std::nullopt;
     }
     std::optional<error_descriptor> operator()(const bool data) {
         mutable_success_->set_bool_value(data);
