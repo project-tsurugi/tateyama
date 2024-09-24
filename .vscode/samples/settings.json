@@ -2,7 +2,7 @@
     "cmake.configureArgs": [
         "-DCMAKE_PREFIX_PATH=${env:HOME}/git/.opt",
         "-DCMAKE_CXX_COMPILER_LAUNCHER=ccache",
-        "-DCMAKE_BUILD_TYPE=${env:BUILD_TYPE}",
+        "-DCMAKE_BUILD_TYPE=${env:CAPITAL_BUILD_TYPE}",
         "-DSHARKSFIN_IMPLEMENTATION=${env:SHARKSFIN_IMPLEMENTATION}",
         "-DENABLE_ALTIMETER=ON"
     ],
