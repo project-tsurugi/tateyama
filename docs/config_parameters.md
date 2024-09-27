@@ -71,6 +71,7 @@ parameter=value
 |dev_point_read_concurrent_operation_as_not_found| ブール(true/false) | ポイントリード操作において並列して挿入されたレコードを検知した際(WARN_CONCURRENT_INSERT)に、そのレコードが存在しないものとして取り扱うか。デフォルトはtrue|開発用のため将来的に削除される可能性あり|
 |lowercase_regular_identifiers| ブール(true/false) | SQLコンパイラがテーブル名などのシンボルを小文字に変換して扱うか。新コンパイラのみ有効。デフォルトはfalse||
 |scan_block_size| 整数 | スキャンが他のタスクにスレッドを譲渡する前に処理するレコードの最大数。デフォルトは0(無制限)|開発用のため将来的に削除/変更される可能性あり|
+|dev_rtx_parallel_scan| ブール(true/false) | RTXの場合にparallel scanを有効にするか。デフォルトはfalse | 開発用のため将来的に削除/変更される可能性あり|
 
 ## ipc_endpointセクション
 
