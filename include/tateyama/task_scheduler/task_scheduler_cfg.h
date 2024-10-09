@@ -179,22 +179,6 @@ public:
         worker_suspend_timeout_ = arg;
     }
 
-    [[nodiscard]] std::size_t scan_block_size() const noexcept {
-        return scan_block_size_;
-    }
-
-    void scan_block_size(std::size_t arg) noexcept {
-        scan_block_size_ = arg;
-    }
-
-    [[nodiscard]] std::size_t scan_yield_interval() const noexcept {
-        return scan_yield_interval_;
-    }
-
-    void scan_yield_interval(std::size_t arg) noexcept {
-        scan_yield_interval_ = arg;
-    }
-
     friend inline std::ostream& operator<<(std::ostream& out, task_scheduler_cfg const& cfg) {
         return out << std::boolalpha <<
             "thread_count:" << cfg.thread_count() << " " <<
@@ -211,8 +195,6 @@ public:
             "watcher_interval:" << cfg.watcher_interval() << " " <<
             "worker_try_count:" << cfg.worker_try_count() << " " <<
             "worker_suspend_timeout:" << cfg.worker_suspend_timeout() << " " <<
-            "scan_block_size:" << cfg.scan_block_size() << " " <<
-            "scan_yield_interval:" << cfg.scan_yield_interval() << " " <<
             "";
     }
 
@@ -231,8 +213,6 @@ private:
     std::size_t watcher_interval_ = 1000;
     std::size_t worker_try_count_ = 1000;
     std::size_t worker_suspend_timeout_ = 1000000;
-    std::size_t scan_block_size_ = 100;
-    std::size_t scan_yield_interval_ = 1;
 };
 
 }
