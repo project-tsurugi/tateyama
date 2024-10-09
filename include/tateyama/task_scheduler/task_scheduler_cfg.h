@@ -222,7 +222,7 @@ private:
     std::size_t watcher_interval_ = 1000;
     std::size_t worker_try_count_ = 1000;
     std::size_t worker_suspend_timeout_ = 1000000;
-    std::size_t scan_block_size_ = 0;
+    std::size_t scan_block_size_ = 100;
 };
 
 }

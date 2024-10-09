@@ -70,7 +70,7 @@ Target component
 | dev_scan_concurrent_operation_as_not_found | Boolean (true/false) | Whether to treat records detected as concurrently inserted during scan operations (WARN_CONCURRENT_INSERT) as non-existent. The default value is true. | This is for development and may be deleted in the future. |
 | dev_point_read_concurrent_operation_as_not_found | Boolean (true/false) | Whether to treat records detected as concurrently inserted during point read operations (WARN_CONCURRENT_INSERT) as non-existent. The default value is true. | This is for development and may be deleted in the future. |
 |lowercase_regular_identifiers| Boolean (true/false) | Whether to lowercase the identifiers such as table names. This configuration is available only on new SQL compiler. The default value is false.||
-|scan_block_size| Integer | Max records processed by scan operator before yielding to other tasks. The default is 0 (unlimited). | This is for development and may be deleted in the future. |
+|scan_block_size| Integer | Max records processed by scan operator before yielding to other tasks. The default is 100. | This is for development and may be deleted in the future. |
 | dev_rtx_parallel_scan| Boolean (true/false) | Whether to enable parallel scan for RTX. The default value is false. | This is for development and may be deleted in the future. |
 
 ## ipc_endpoint section
