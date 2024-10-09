@@ -129,7 +129,7 @@ parameter=value
 
 |パラメーター名 | 型 | 値 |備考|
 |---:| :---: | :--- |---|
-|pid_directory | 文字列 | .pidファイル([プロセスの排他制御について](https://github.com/project-tsurugi/tateyama/blob/master/docs/process-mutex-ja.md)を参照)等のlockファイルを作成する一時ディレクトリを指定する、デフォルト値は/var/lock。 | 同一サーバ上で複数のtsurugidbインスタンスを稼働させる場合は、全tsurugidbインスタンスの構成ファイルについて本パラメータは同じ値に設定する必要がある。
+|pid_directory | 文字列 | .pidファイル([プロセスの排他制御について](https://github.com/project-tsurugi/tateyama/blob/master/docs/process-mutex-ja.md)を参照)等のlockファイルを作成する一時ディレクトリを指定する、デフォルト値は/var/lock。 | 同一サーバ上で複数のtsurugidbインスタンスを稼働させる場合は、全tsurugidbインスタンスの構成ファイルについて本パラメータは同じ値に設定する必要がある。なお、lockファイルはサーバ死活監視のためtsubakuroのIPC接続からも参照される。
 
 ## glogセクション
 
