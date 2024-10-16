@@ -47,6 +47,13 @@ file(GLOB SOURCES
         "tateyama/metrics/resource/*.cpp"
 )
 
+if (ENABLE_ALTIMETER)
+    file(GLOB ALTIMETER_SOURCES
+        "tateyama/altimeter/service/*.cpp"
+    )
+    list(APPEND SOURCES ${ALTIMETER_SOURCES})
+endif()
+
 if(TRACY_ENABLE)
     file(GLOB TRACY_CLIENT
             "../third_party/tracy/public/TracyClient.cpp"
