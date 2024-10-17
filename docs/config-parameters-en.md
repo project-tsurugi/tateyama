@@ -73,6 +73,8 @@ Target component
 |scan_block_size| Integer | Max records processed by scan operator before yielding to other tasks. The default is 100. | This is for development and may be deleted in the future. |
 |scan_yield_interval| Integer | Max time (ms) processed by scan operator before yielding to other tasks. The default is 1. | This is for development and may be deleted in the future. |
 | dev_rtx_parallel_scan| Boolean (true/false) | Whether to enable parallel scan for RTX. The default value is false. | This is for development and may be deleted in the future. |
+|dev_thousandths_ratio_check_local_first| Integer | This parameter defines whether the worker of the task scheduler gives priority to dequeue the local task queue or the sticky task queue. Specify the number of times (greater than or equal to 1 and less than 1000) to give priority to the local task queue out of 1000 dequeue executions. The default is 100. |This is for development and may be deleted in the future. |
+
 
 ## ipc_endpoint section
 
