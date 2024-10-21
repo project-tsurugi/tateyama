@@ -27,7 +27,7 @@ message LogSettings {
 
     // the reporting threshold of statement duration, or keep the current settings.
     oneof statement_duration_opt {
-            
+
         // the reporting threshold of statement duration, by nanoseconds.
         uint64 statement_duration = 3;
     }

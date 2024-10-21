@@ -33,6 +33,10 @@ using tateyama::api::server::response;
 
 class altimeter_helper_direct : public altimeter_helper {
 public:
+    void enable(std::string_view) override {
+    }
+    void disable(std::string_view) override {
+    }
     void set_level(std::string_view t, std::uint64_t v) override {
         ::altimeter::logger::set_level(t, v);
     }
@@ -53,15 +57,20 @@ bool tateyama::altimeter::service::core::operator()(const std::shared_ptr<reques
         return false;
     }
 
+    res->session_id(req->session_id());
     switch(rq.command_case()) {
     case tateyama::proto::altimeter::request::Request::kConfigure:
     {
         auto configure = rq.configure();
         if (configure.has_event_log()) {
             auto log_settings = configure.event_log();
-//            if (log_settings.enabled_opt_case() == tateyama::proto::altimeter::request::LogSettings::EnabledOptCase::kEnabled) {
-//                auto v = log_settings.enabled();
-//            }
+            if (log_settings.enabled_opt_case() == tateyama::proto::altimeter::request::LogSettings::EnabledOptCase::kEnabled) {
+                if (log_settings.enabled()) {
+                    helper_->enable("event");
+                } else {
+                    helper_->disable("event");
+                }
+            }
             if (log_settings.level_opt_case() == tateyama::proto::altimeter::request::LogSettings::LevelOptCase::kLevel) {
                 auto v = log_settings.level();
                 helper_->set_level("event", v);
@@ -73,9 +82,13 @@ bool tateyama::altimeter::service::core::operator()(const std::shared_ptr<reques
         }
         if (configure.has_audit_log()) {
             auto log_settings = configure.audit_log();
-//            if (log_settings.enabled_opt_case() == tateyama::proto::altimeter::request::LogSettings::EnabledOptCase::kEnabled) {
-//                auto v = log_settings.enabled();
-//            }
+            if (log_settings.enabled_opt_case() == tateyama::proto::altimeter::request::LogSettings::EnabledOptCase::kEnabled) {
+                if (log_settings.enabled()) {
+                    helper_->enable("audit");
+                } else {
+                    helper_->disable("audit");
+                }
+            }
             if (log_settings.level_opt_case() == tateyama::proto::altimeter::request::LogSettings::LevelOptCase::kLevel) {
                 auto v = log_settings.level();
                 helper_->set_level("audit", v);

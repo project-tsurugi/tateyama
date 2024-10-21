@@ -31,6 +31,8 @@ using tateyama::api::server::response;
  */
 class altimeter_helper {
 public:
+    virtual void enable(std::string_view) = 0;
+    virtual void disable(std::string_view) = 0;
     virtual void set_level(std::string_view, std::uint64_t) = 0;
     virtual void set_stmt_duration_threshold(std::uint64_t) = 0;
     virtual void rotate_all(std::string_view) = 0;
@@ -55,7 +57,7 @@ private:
         helper_ = helper;
     }
 
-    template<typename T> 
+    template<typename T>
     void send_error(
         const std::shared_ptr<response>& res,
         tateyama::proto::altimeter::response::ErrorKind error_kind,
