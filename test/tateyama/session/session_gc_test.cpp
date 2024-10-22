@@ -13,8 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "session_test_common.h"
-
 #include <tateyama/session/service/bridge.h>
 
 #include <tateyama/framework/server.h>
@@ -75,8 +73,8 @@ TEST_F(session_gc_test, session_list) {
             rq.clear_session_list();
         }
 
-        auto svrreq = std::make_shared<test_request>(10, session::service::bridge::tag, str);
-        auto svrres = std::make_shared<test_response>();
+        auto svrreq = std::make_shared<tateyama::utils::test_request>(10, session::service::bridge::tag, str);
+        auto svrres = std::make_shared<tateyama::utils::test_response>();
 
         (*router)(svrreq, svrres);
         EXPECT_EQ(10, svrres->session_id_);
@@ -101,8 +99,8 @@ TEST_F(session_gc_test, session_list) {
             rq.clear_session_list();
         }
 
-        auto svrreq = std::make_shared<test_request>(10, session::service::bridge::tag, str);
-        auto svrres = std::make_shared<test_response>();
+        auto svrreq = std::make_shared<tateyama::utils::test_request>(10, session::service::bridge::tag, str);
+        auto svrres = std::make_shared<tateyama::utils::test_response>();
 
         (*router)(svrreq, svrres);
         EXPECT_EQ(10, svrres->session_id_);
@@ -127,8 +125,8 @@ TEST_F(session_gc_test, session_list) {
             rq.clear_session_list();
         }
 
-        auto svrreq = std::make_shared<test_request>(10, session::service::bridge::tag, str);
-        auto svrres = std::make_shared<test_response>();
+        auto svrreq = std::make_shared<tateyama::utils::test_request>(10, session::service::bridge::tag, str);
+        auto svrres = std::make_shared<tateyama::utils::test_response>();
 
         (*router)(svrreq, svrres);
         EXPECT_EQ(10, svrres->session_id_);

@@ -13,8 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "session_test_common.h"
-
 #include <tateyama/session/service/bridge.h>
 
 #include <tateyama/framework/server.h>
@@ -80,8 +78,8 @@ TEST_F(session_test, session_list) {
         rq.clear_session_list();
     }
 
-    auto svrreq = std::make_shared<test_request>(10, session::service::bridge::tag, str);
-    auto svrres = std::make_shared<test_response>();
+    auto svrreq = std::make_shared<tateyama::utils::test_request>(10, session::service::bridge::tag, str);
+    auto svrres = std::make_shared<tateyama::utils::test_response>();
 
     (*router)(svrreq, svrres);
     EXPECT_EQ(10, svrres->session_id_);
@@ -127,8 +125,8 @@ TEST_F(session_test, session_get_by_id) {
         rq.clear_session_get();
     }
 
-    auto svrreq = std::make_shared<test_request>(10, session::service::bridge::tag, str);
-    auto svrres = std::make_shared<test_response>();
+    auto svrreq = std::make_shared<tateyama::utils::test_request>(10, session::service::bridge::tag, str);
+    auto svrres = std::make_shared<tateyama::utils::test_response>();
 
     (*router)(svrreq, svrres);
     EXPECT_EQ(10, svrres->session_id_);
@@ -173,8 +171,8 @@ TEST_F(session_test, session_get_by_label) {
         rq.clear_session_get();
     }
 
-    auto svrreq = std::make_shared<test_request>(10, session::service::bridge::tag, str);
-    auto svrres = std::make_shared<test_response>();
+    auto svrreq = std::make_shared<tateyama::utils::test_request>(10, session::service::bridge::tag, str);
+    auto svrres = std::make_shared<tateyama::utils::test_response>();
 
     (*router)(svrreq, svrres);
     EXPECT_EQ(10, svrres->session_id_);
@@ -220,8 +218,8 @@ TEST_F(session_test, session_get_variable) {
         rq.clear_session_get_variable();
     }
 
-    auto svrreq = std::make_shared<test_request>(10, session::service::bridge::tag, str);
-    auto svrres = std::make_shared<test_response>();
+    auto svrreq = std::make_shared<tateyama::utils::test_request>(10, session::service::bridge::tag, str);
+    auto svrres = std::make_shared<tateyama::utils::test_response>();
 
     (*router)(svrreq, svrres);
     EXPECT_EQ(10, svrres->session_id_);
@@ -265,8 +263,8 @@ TEST_F(session_test, session_set_variable) {
             rq.clear_session_set_variable();
         }
 
-        auto svrreq = std::make_shared<test_request>(10, session::service::bridge::tag, str);
-        auto svrres = std::make_shared<test_response>();
+        auto svrreq = std::make_shared<tateyama::utils::test_request>(10, session::service::bridge::tag, str);
+        auto svrres = std::make_shared<tateyama::utils::test_response>();
 
         (*router)(svrreq, svrres);
         EXPECT_EQ(10, svrres->session_id_);
@@ -290,8 +288,8 @@ TEST_F(session_test, session_set_variable) {
             rq.clear_session_get_variable();
         }
 
-        auto svrreq = std::make_shared<test_request>(10, session::service::bridge::tag, str);
-        auto svrres = std::make_shared<test_response>();
+        auto svrreq = std::make_shared<tateyama::utils::test_request>(10, session::service::bridge::tag, str);
+        auto svrres = std::make_shared<tateyama::utils::test_response>();
 
         (*router)(svrreq, svrres);
         EXPECT_EQ(10, svrres->session_id_);
@@ -337,8 +335,8 @@ TEST_F(session_test, session_unset_variable_monostate) {
             rq.clear_session_set_variable();
         }
 
-        auto svrreq = std::make_shared<test_request>(10, session::service::bridge::tag, str);
-        auto svrres = std::make_shared<test_response>();
+        auto svrreq = std::make_shared<tateyama::utils::test_request>(10, session::service::bridge::tag, str);
+        auto svrres = std::make_shared<tateyama::utils::test_response>();
 
         (*router)(svrreq, svrres);
         EXPECT_EQ(10, svrres->session_id_);
@@ -363,8 +361,8 @@ TEST_F(session_test, session_unset_variable_monostate) {
             rq.clear_session_set_variable();
         }
 
-        auto svrreq = std::make_shared<test_request>(10, session::service::bridge::tag, str);
-        auto svrres = std::make_shared<test_response>();
+        auto svrreq = std::make_shared<tateyama::utils::test_request>(10, session::service::bridge::tag, str);
+        auto svrres = std::make_shared<tateyama::utils::test_response>();
 
         (*router)(svrreq, svrres);
         EXPECT_EQ(10, svrres->session_id_);
@@ -388,8 +386,8 @@ TEST_F(session_test, session_unset_variable_monostate) {
             rq.clear_session_get_variable();
         }
 
-        auto svrreq = std::make_shared<test_request>(10, session::service::bridge::tag, str);
-        auto svrres = std::make_shared<test_response>();
+        auto svrreq = std::make_shared<tateyama::utils::test_request>(10, session::service::bridge::tag, str);
+        auto svrres = std::make_shared<tateyama::utils::test_response>();
 
         (*router)(svrreq, svrres);
         EXPECT_EQ(10, svrres->session_id_);
@@ -432,8 +430,8 @@ TEST_F(session_test, session_unset_variable_value) {
             rq.clear_session_set_variable();
         }
 
-        auto svrreq = std::make_shared<test_request>(10, session::service::bridge::tag, str);
-        auto svrres = std::make_shared<test_response>();
+        auto svrreq = std::make_shared<tateyama::utils::test_request>(10, session::service::bridge::tag, str);
+        auto svrres = std::make_shared<tateyama::utils::test_response>();
 
         (*router)(svrreq, svrres);
         EXPECT_EQ(10, svrres->session_id_);
@@ -458,8 +456,8 @@ TEST_F(session_test, session_unset_variable_value) {
             rq.clear_session_set_variable();
         }
 
-        auto svrreq = std::make_shared<test_request>(10, session::service::bridge::tag, str);
-        auto svrres = std::make_shared<test_response>();
+        auto svrreq = std::make_shared<tateyama::utils::test_request>(10, session::service::bridge::tag, str);
+        auto svrres = std::make_shared<tateyama::utils::test_response>();
 
         (*router)(svrreq, svrres);
         EXPECT_EQ(10, svrres->session_id_);
@@ -483,8 +481,8 @@ TEST_F(session_test, session_unset_variable_value) {
             rq.clear_session_get_variable();
         }
 
-        auto svrreq = std::make_shared<test_request>(10, session::service::bridge::tag, str);
-        auto svrres = std::make_shared<test_response>();
+        auto svrreq = std::make_shared<tateyama::utils::test_request>(10, session::service::bridge::tag, str);
+        auto svrres = std::make_shared<tateyama::utils::test_response>();
 
         (*router)(svrreq, svrres);
         EXPECT_EQ(10, svrres->session_id_);
@@ -528,8 +526,8 @@ TEST_F(session_test, session_shutdown) {
         rq.clear_session_shutdown();
     }
 
-    auto svrreq = std::make_shared<test_request>(10, session::service::bridge::tag, str);
-    auto svrres = std::make_shared<test_response>();
+    auto svrreq = std::make_shared<tateyama::utils::test_request>(10, session::service::bridge::tag, str);
+    auto svrres = std::make_shared<tateyama::utils::test_response>();
 
     (*router)(svrreq, svrres);
     EXPECT_EQ(10, svrres->session_id_);

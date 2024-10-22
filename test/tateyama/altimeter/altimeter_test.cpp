@@ -13,8 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "altimeter_test_common.h"
-
 #include <tateyama/altimeter/service/bridge.h>
 
 #include <tateyama/framework/server.h>
@@ -43,23 +41,28 @@ public:
     };
 
     void enable(std::string_view type) override {
+        EXPECT_EQ(call_type_, call_type::none);
         call_type_ = enable_call;
         log_type_ = type;
     }
     void disable(std::string_view type) override {
+        EXPECT_EQ(call_type_, call_type::none);
         call_type_ = disable_call;
         log_type_ = type;
     }
     void set_level(std::string_view type, std::uint64_t level) override {
+        EXPECT_EQ(call_type_, call_type::none);
         call_type_ = set_level_call;
         log_type_ = type;
         level_ = level;
     }
     void set_stmt_duration_threshold(std::uint64_t duration) override {
+        EXPECT_EQ(call_type_, call_type::none);
         call_type_ = set_stmt_duration_threshold_call;
         duration_ = duration;
     };
     void rotate_all(std::string_view type) override {
+        EXPECT_EQ(call_type_, call_type::none);
         call_type_ = rotate_all_call;
         log_type_ = type;
     };
@@ -117,6 +120,7 @@ protected:
 };
 
 
+// enable
 TEST_F(altimeter_test, enable_event) {
     std::string str{};
     {
@@ -129,8 +133,8 @@ TEST_F(altimeter_test, enable_event) {
         rq.clear_configure();
     }
 
-    auto svrreq = std::make_shared<test_request>(11, altimeter::service::bridge::tag, str);
-    auto svrres = std::make_shared<test_response>();
+    auto svrreq = std::make_shared<tateyama::utils::test_request>(11, altimeter::service::bridge::tag, str);
+    auto svrres = std::make_shared<tateyama::utils::test_response>();
 
     (*router_)(svrreq, svrres);
     EXPECT_EQ(11, svrres->session_id_);
@@ -139,6 +143,74 @@ TEST_F(altimeter_test, enable_event) {
     EXPECT_EQ(helper_->log(), "event");
 }
 
+TEST_F(altimeter_test, enable_audit) {
+    std::string str{};
+    {
+        ::tateyama::proto::altimeter::request::Request rq{};
+        rq.set_service_message_version_major(1);
+        rq.set_service_message_version_minor(0);
+        auto* mutable_configure = rq.mutable_configure();
+        mutable_configure->mutable_audit_log()->set_enabled(true);
+        str = rq.SerializeAsString();
+        rq.clear_configure();
+    }
+
+    auto svrreq = std::make_shared<tateyama::utils::test_request>(11, altimeter::service::bridge::tag, str);
+    auto svrres = std::make_shared<tateyama::utils::test_response>();
+
+    (*router_)(svrreq, svrres);
+    EXPECT_EQ(11, svrres->session_id_);
+
+    EXPECT_EQ(helper_->call(), altimeter_helper_test::call_type::enable_call);
+    EXPECT_EQ(helper_->log(), "audit");
+}
+
+// disable
+TEST_F(altimeter_test, disable_event) {
+    std::string str{};
+    {
+        ::tateyama::proto::altimeter::request::Request rq{};
+        rq.set_service_message_version_major(1);
+        rq.set_service_message_version_minor(0);
+        auto* mutable_configure = rq.mutable_configure();
+        mutable_configure->mutable_event_log()->set_enabled(false);
+        str = rq.SerializeAsString();
+        rq.clear_configure();
+    }
+
+    auto svrreq = std::make_shared<tateyama::utils::test_request>(11, altimeter::service::bridge::tag, str);
+    auto svrres = std::make_shared<tateyama::utils::test_response>();
+
+    (*router_)(svrreq, svrres);
+    EXPECT_EQ(11, svrres->session_id_);
+
+    EXPECT_EQ(helper_->call(), altimeter_helper_test::call_type::disable_call);
+    EXPECT_EQ(helper_->log(), "event");
+}
+
+TEST_F(altimeter_test, disable_audit) {
+    std::string str{};
+    {
+        ::tateyama::proto::altimeter::request::Request rq{};
+        rq.set_service_message_version_major(1);
+        rq.set_service_message_version_minor(0);
+        auto* mutable_configure = rq.mutable_configure();
+        mutable_configure->mutable_audit_log()->set_enabled(false);
+        str = rq.SerializeAsString();
+        rq.clear_configure();
+    }
+
+    auto svrreq = std::make_shared<tateyama::utils::test_request>(11, altimeter::service::bridge::tag, str);
+    auto svrres = std::make_shared<tateyama::utils::test_response>();
+
+    (*router_)(svrreq, svrres);
+    EXPECT_EQ(11, svrres->session_id_);
+
+    EXPECT_EQ(helper_->call(), altimeter_helper_test::call_type::disable_call);
+    EXPECT_EQ(helper_->log(), "audit");
+}
+
+// set level
 TEST_F(altimeter_test, level_event) {
     std::string str{};
     {
@@ -151,14 +223,106 @@ TEST_F(altimeter_test, level_event) {
         rq.clear_configure();
     }
 
-    auto svrreq = std::make_shared<test_request>(11, altimeter::service::bridge::tag, str);
-    auto svrres = std::make_shared<test_response>();
+    auto svrreq = std::make_shared<tateyama::utils::test_request>(11, altimeter::service::bridge::tag, str);
+    auto svrres = std::make_shared<tateyama::utils::test_response>();
 
     (*router_)(svrreq, svrres);
     EXPECT_EQ(11, svrres->session_id_);
 
     EXPECT_EQ(helper_->call(), altimeter_helper_test::call_type::set_level_call);
+    EXPECT_EQ(helper_->log(), "event");
     EXPECT_EQ(helper_->level(), 12);
+}
+
+TEST_F(altimeter_test, level_audit) {
+    std::string str{};
+    {
+        ::tateyama::proto::altimeter::request::Request rq{};
+        rq.set_service_message_version_major(1);
+        rq.set_service_message_version_minor(0);
+        auto* mutable_configure = rq.mutable_configure();
+        mutable_configure->mutable_audit_log()->set_level(12);
+        str = rq.SerializeAsString();
+        rq.clear_configure();
+    }
+
+    auto svrreq = std::make_shared<tateyama::utils::test_request>(11, altimeter::service::bridge::tag, str);
+    auto svrres = std::make_shared<tateyama::utils::test_response>();
+
+    (*router_)(svrreq, svrres);
+    EXPECT_EQ(11, svrres->session_id_);
+
+    EXPECT_EQ(helper_->call(), altimeter_helper_test::call_type::set_level_call);
+    EXPECT_EQ(helper_->log(), "audit");
+    EXPECT_EQ(helper_->level(), 12);
+}
+
+// set statement_duration
+TEST_F(altimeter_test, statement_duration) {
+    std::string str{};
+    {
+        ::tateyama::proto::altimeter::request::Request rq{};
+        rq.set_service_message_version_major(1);
+        rq.set_service_message_version_minor(0);
+        auto* mutable_configure = rq.mutable_configure();
+        mutable_configure->mutable_event_log()->set_statement_duration(12345);
+        str = rq.SerializeAsString();
+        rq.clear_configure();
+    }
+
+    auto svrreq = std::make_shared<tateyama::utils::test_request>(11, altimeter::service::bridge::tag, str);
+    auto svrres = std::make_shared<tateyama::utils::test_response>();
+
+    (*router_)(svrreq, svrres);
+    EXPECT_EQ(11, svrres->session_id_);
+
+    EXPECT_EQ(helper_->call(), altimeter_helper_test::call_type::set_stmt_duration_threshold_call);
+    EXPECT_EQ(helper_->duration(), 12345);
+}
+
+// rotate
+TEST_F(altimeter_test, rotete_event) {
+    std::string str{};
+    {
+        ::tateyama::proto::altimeter::request::Request rq{};
+        rq.set_service_message_version_major(1);
+        rq.set_service_message_version_minor(0);
+        auto* mutable_log_rotate = rq.mutable_log_rotate();
+        mutable_log_rotate->set_category(::tateyama::proto::altimeter::common::LogCategory::EVENT);
+        str = rq.SerializeAsString();
+        rq.clear_log_rotate();
+    }
+
+    auto svrreq = std::make_shared<tateyama::utils::test_request>(11, altimeter::service::bridge::tag, str);
+    auto svrres = std::make_shared<tateyama::utils::test_response>();
+
+    (*router_)(svrreq, svrres);
+    EXPECT_EQ(11, svrres->session_id_);
+
+    EXPECT_EQ(helper_->call(), altimeter_helper_test::call_type::rotate_all_call);
+    EXPECT_EQ(helper_->log(), "event");
+}
+
+TEST_F(altimeter_test, rotete_audit) {
+    std::string str{};
+    {
+        ::tateyama::proto::altimeter::request::Request rq{};
+        rq.set_service_message_version_major(1);
+        rq.set_service_message_version_minor(0);
+        auto* mutable_log_rotate = rq.mutable_log_rotate();
+        mutable_log_rotate->set_category(::tateyama::proto::altimeter::common::LogCategory::AUDIT);
+        str = rq.SerializeAsString();
+        rq.clear_log_rotate();
+    }
+
+    auto svrreq = std::make_shared<tateyama::utils::test_request>(11, altimeter::service::bridge::tag, str);
+    auto svrres = std::make_shared<tateyama::utils::test_response>();
+
+    (*router_)(svrreq, svrres);
+    EXPECT_EQ(11, svrres->session_id_);
+
+    EXPECT_EQ(helper_->call(), altimeter_helper_test::call_type::rotate_all_call);
+    EXPECT_EQ(helper_->log(), "audit");
 }
 
 }
