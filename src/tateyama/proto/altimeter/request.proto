@@ -37,13 +37,6 @@ message LogSettings {
 message Configure {
 
     // configure event log, or keep the current settings.
-////    oneof log_opt {
-////        // configuration for event log.
-////        LogSettings event_log = 1;
-////
-////        // configuration for audit log.
-////        LogSettings audit_log = 2;
-////    }
     oneof event_log_opt {
 
         // configuration for event log.

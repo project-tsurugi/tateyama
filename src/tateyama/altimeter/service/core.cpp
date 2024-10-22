@@ -34,8 +34,12 @@ using tateyama::api::server::response;
 class altimeter_helper_direct : public altimeter_helper {
 public:
     void enable(std::string_view) override {
+        // FIXME not implemented in altimeter
+        // ::altimeter::logger::enable(t);
     }
     void disable(std::string_view) override {
+        // FIXME not implemented in altimeter
+        // ::altimeter::logger::disable(t);
     }
     void set_level(std::string_view t, std::uint64_t v) override {
         ::altimeter::logger::set_level(t, v);
@@ -53,8 +57,8 @@ bool tateyama::altimeter::service::core::operator()(const std::shared_ptr<reques
 
     auto data = req->payload();
     if(!rq.ParseFromArray(data.data(), static_cast<int>(data.size()))) {
-        LOG(ERROR) << "request parse error";
-        return false;
+        LOG(INFO) << "request parse error";
+        return true;  // It indicates a possible malfunction in the communication system, but let's continue the operation.
     }
 
     res->session_id(req->session_id());
@@ -70,6 +74,8 @@ bool tateyama::altimeter::service::core::operator()(const std::shared_ptr<reques
                 } else {
                     helper_->disable("event");
                 }
+                send_error<tateyama::proto::altimeter::response::Configure>(res, tateyama::proto::altimeter::response::ErrorKind::UNKNOWN, "event log [enable|disable] is not implemented");  // FIXME remove this and the following lines
+                return true;  // Error notification is treated as normal termination.
             }
             if (log_settings.level_opt_case() == tateyama::proto::altimeter::request::LogSettings::LevelOptCase::kLevel) {
                 auto v = log_settings.level();
@@ -88,6 +94,8 @@ bool tateyama::altimeter::service::core::operator()(const std::shared_ptr<reques
                 } else {
                     helper_->disable("audit");
                 }
+                send_error<tateyama::proto::altimeter::response::Configure>(res, tateyama::proto::altimeter::response::ErrorKind::UNKNOWN, "audit log [enable|disable] is not implemented");  // FIXME remove this and the following lines
+                return true;  // Error notification is treated as normal termination.
             }
             if (log_settings.level_opt_case() == tateyama::proto::altimeter::request::LogSettings::LevelOptCase::kLevel) {
                 auto v = log_settings.level();
@@ -113,7 +121,7 @@ bool tateyama::altimeter::service::core::operator()(const std::shared_ptr<reques
             break;
         default:
             send_error<tateyama::proto::altimeter::response::LogRotate>(res, tateyama::proto::altimeter::response::ErrorKind::UNKNOWN, "log type for LogRotate is invalid");
-            return false;
+            return true;  // Error notification is treated as normal termination.
         }
         tateyama::proto::altimeter::response::LogRotate rs{};
         (void) rs.mutable_success();
