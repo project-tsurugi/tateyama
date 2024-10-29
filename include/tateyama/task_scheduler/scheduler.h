@@ -156,14 +156,19 @@ public:
         std::size_t index{};
         bool found = false;
         if (opt.policy() == schedule_policy_kind::suspended_worker) {
-            auto base = preferred_worker_for_current_thread();
-            for(auto cur = increment(base, size_); cur != base; increment(cur, size_)) {
+            // preferred worker is likely to be heavily used, so find beginning from the next
+            auto base = next(preferred_worker_for_current_thread(), size_);
+            auto cur = base;
+            // using do-while with base as the sentinel
+            // because index wraps arounds at its size and first loop is exceptional (cur == base)
+            do {
                 if(! threads_[cur].active()) {
                     index = cur;
                     found = true;
                     break;
                 }
-            }
+                cur = next(cur, size_);
+            } while(cur != base);
         }
         if (! found || opt.policy() == schedule_policy_kind::undefined) {
             if (cfg_.use_preferred_worker_for_current_thread()) {
@@ -350,7 +355,8 @@ public:
     }
 
     std::size_t next_worker() {
-        return increment(current_index_, size_);
+        auto n = next_worker_index_before_modulo_++;
+        return n % size_;
     }
 
     /**
@@ -389,7 +395,7 @@ private:
     std::vector<impl::thread_control> threads_{};
     std::vector<impl::worker_stat> worker_stats_{};
     std::vector<context> contexts_{};
-    std::atomic_size_t current_index_{};
+    std::atomic_size_t next_worker_index_before_modulo_{};
     std::vector<std::vector<task>> initial_tasks_{};
     std::atomic_bool started_{false};
     bool empty_thread_{false};
@@ -434,10 +440,11 @@ private:
         }
     }
 
-    template<class E>
-    std::size_t increment(E& index, std::size_t mod) {
-        auto ret = index++;
-        return ret % mod;
+    std::size_t next(std::size_t index, std::size_t mod) {
+        if (index == mod - 1) {
+            return 0;
+        }
+        return index + 1;
     }
 
     /**
