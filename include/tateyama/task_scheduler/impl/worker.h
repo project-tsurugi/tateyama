@@ -229,7 +229,9 @@ private:
     bool steal_and_execute(context& ctx) {
         std::size_t last = ctx.last_steal_from();
         task t{};
-        for(auto idx = next(last); idx != last; idx = next(idx)) {
+        auto end = next(last);
+        auto idx = next(last);
+        do {
             auto& tgt = (*queues_)[idx];
             if(tgt.active() && tgt.try_pop(t)) {
                 ctx.last_steal_from(idx);
@@ -238,7 +240,8 @@ private:
                 ctx.task_is_stolen(false);
                 return true;
             }
-        }
+            idx = next(idx);
+        } while(idx != end);
         return false;
     }
 
