@@ -179,6 +179,23 @@ public:
         worker_suspend_timeout_ = arg;
     }
 
+    /**
+     * @brief accessor for empty thread flag
+     * @return whether thread_control has no physical thread in testcases
+     * @note this is for testing purpose only
+     */
+    [[nodiscard]] bool empty_thread() const noexcept {
+        return empty_thread_;
+    }
+
+    /**
+     * @brief setter for empty thread flag
+     * @note this is for testing purpose only
+     */
+    void empty_thread(bool arg) noexcept {
+        empty_thread_ = arg;
+    }
+
     friend inline std::ostream& operator<<(std::ostream& out, task_scheduler_cfg const& cfg) {
         return out << std::boolalpha <<
             "thread_count:" << cfg.thread_count() << " " <<
@@ -195,6 +212,7 @@ public:
             "watcher_interval:" << cfg.watcher_interval() << " " <<
             "worker_try_count:" << cfg.worker_try_count() << " " <<
             "worker_suspend_timeout:" << cfg.worker_suspend_timeout() << " " <<
+            "empty_thread:" << cfg.empty_thread() << " " <<
             "";
     }
 
@@ -213,6 +231,7 @@ private:
     std::size_t watcher_interval_ = 1000;
     std::size_t worker_try_count_ = 1000;
     std::size_t worker_suspend_timeout_ = 1000000;
+    bool empty_thread_ = false;
 };
 
 }

@@ -120,6 +120,14 @@ public:
         *active_ = true;
     }
 
+    /**
+     * @brief forcibly set the active flag for testing
+     * @param arg the new value for active flag
+     */
+    void set_active(bool arg) noexcept {
+        *active_ = arg;
+    }
+
     void print_diagnostic(std::ostream& os) {
         os << "      physical_id: " << utils::hex(origin_.get_id()) << std::endl;
     }

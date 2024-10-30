@@ -100,7 +100,8 @@ TEST_F(conditional_schedule_test, step_by_step) {
     task_scheduler_cfg cfg{};
     cfg.thread_count(0);
     cfg.busy_worker(false);
-    scheduler<task, conditional_task> sched{cfg, true};
+    cfg.empty_thread(true);
+    scheduler<task, conditional_task> sched{cfg};
     std::atomic_bool executed1 = false;
     std::atomic_size_t cnt1 = 0;
     std::atomic_bool executed2 = false;

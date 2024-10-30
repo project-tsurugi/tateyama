@@ -105,12 +105,10 @@ public:
     /**
      * @brief construct new object
      * @param cfg the configuration for this task scheduler
-     * @param empty_thread true avoids creating threads and scheduler is driven by process_next() calls for testing.
      */
-    explicit scheduler(task_scheduler_cfg cfg = {}, bool empty_thread = false) :
+    explicit scheduler(task_scheduler_cfg cfg = {}) :
         cfg_(cfg),
-        size_(cfg_.thread_count()),
-        empty_thread_(empty_thread)
+        size_(cfg_.thread_count())
     {
         prepare();
     }
@@ -153,30 +151,7 @@ public:
      * @note this function is thread-safe. Multiple threads can safely call this function concurrently.
      */
     void schedule(task&& t, schedule_option opt = {}) {
-        std::size_t index{};
-        bool found = false;
-        if (opt.policy() == schedule_policy_kind::suspended_worker) {
-            // preferred worker is likely to be heavily used, so find beginning from the next
-            auto base = next(preferred_worker_for_current_thread(), size_);
-            auto cur = base;
-            // using do-while with base as the sentinel
-            // because index wraps arounds at its size and first loop is exceptional (cur == base)
-            do {
-                if(! threads_[cur].active()) {
-                    index = cur;
-                    found = true;
-                    break;
-                }
-                cur = next(cur, size_);
-            } while(cur != base);
-        }
-        if (! found || opt.policy() == schedule_policy_kind::undefined) {
-            if (cfg_.use_preferred_worker_for_current_thread()) {
-                index = preferred_worker_for_current_thread();
-            } else {
-                index = next_worker();
-            }
-        }
+        auto index = select_worker(opt);
         schedule_at(std::move(t), index);
     }
 
@@ -326,6 +301,13 @@ public:
     }
 
     /**
+     * @brief accessor to the threads for testing purpose
+     */
+    [[nodiscard]] std::vector<impl::thread_control>& threads() noexcept {
+        return threads_;
+    }
+
+    /**
      * @brief print diagnostics
      */
     void print_diagnostic(std::ostream& os) {
@@ -354,9 +336,64 @@ public:
         print_queue_diagnostic(conditional_queue_, os);
     }
 
+    /**
+     * @brief select the worker to schedule the task
+     * @note this function should be private, but kept public for testing purpose
+     */
+    std::size_t select_worker(schedule_option const& opt) {
+        std::size_t index =
+            cfg_.use_preferred_worker_for_current_thread() ? preferred_worker_for_current_thread() : next_worker();
+        if (opt.policy() == schedule_policy_kind::undefined) {
+            return index;
+        }
+
+        // opt.policy() == schedule_policy_kind::suspended_worker
+
+        // candidate worker is likely to be heavily used (esp. when preferred for current thread),
+        // so find beginning from the next
+        auto base = next(index, size_);
+        auto cur = base;
+        do {
+            if(! threads_[cur].active()) {
+                break;
+            }
+            cur = next(cur, size_);
+        } while(cur != base);
+        return cur;
+    }
+
+    /**
+     * @brief retrieve the candidate index for next worker (round-robbin) and atomically increment for later use
+     */
     std::size_t next_worker() {
         auto n = next_worker_index_before_modulo_++;
         return n % size_;
+    }
+
+    /**
+     * @brief setter for the next worker index for testing purpose
+     */
+    void next_worker(std::size_t arg) {
+        next_worker_index_before_modulo_ = arg;
+    }
+
+    constexpr static auto undefined = static_cast<std::size_t>(-1);
+
+    /**
+     * @brief setter for the preferred worker index for testing purpose
+     */
+    std::size_t set_preferred_worker_for_current_thread(std::size_t index = undefined) {
+        thread_local std::size_t index_for_this_thread = undefined;
+        if (index != undefined) {
+            index_for_this_thread = index;
+            return index_for_this_thread;
+        }
+        if (index_for_this_thread == undefined) {
+            index_for_this_thread = next_worker();
+            // using VLOG since caller threads are frequently re-created and this message is displayed often
+            VLOG_LP(log_debug) << "worker " << index_for_this_thread << " assigned for thread on core " << sched_getcpu();
+        }
+        return index_for_this_thread;
     }
 
     /**
@@ -398,7 +435,6 @@ private:
     std::atomic_size_t next_worker_index_before_modulo_{};
     std::vector<std::vector<task>> initial_tasks_{};
     std::atomic_bool started_{false};
-    bool empty_thread_{false};
     conditional_task_queue conditional_queue_{};
     // use unique_ptr to avoid default constructor to spawn new thread
     std::unique_ptr<impl::thread_control> watcher_thread_{};
@@ -425,12 +461,14 @@ private:
                 queues_, sticky_task_queues_, initial_tasks_, worker_stats_[i], cfg_, [this](std::size_t index) {
                         this->initialize_preferred_worker_for_current_thread(index);
                 });
-            if (! empty_thread_) {
+            if (cfg_.empty_thread()) {
+                threads_.emplace_back(); // for testing
+            } else {
                 threads_.emplace_back(i, std::addressof(cfg_), worker, ctx);
             }
         }
         conditional_worker_ = conditional_worker{conditional_queue_, cfg_};
-        if (! empty_thread_) {
+        if (! cfg_.empty_thread()) {
             watcher_thread_ = std::make_unique<impl::thread_control>(
                 impl::thread_control::undefined_thread_id,
                 std::addressof(cfg_),
@@ -466,22 +504,6 @@ private:
         while(backup.try_pop(t)) {
             q.push(std::move(t));
         }
-    }
-
-    constexpr static auto undefined = static_cast<std::size_t>(-1);
-
-    std::size_t set_preferred_worker_for_current_thread(std::size_t index = undefined) {
-        thread_local std::size_t index_for_this_thread = undefined;
-        if (index != undefined) {
-            index_for_this_thread = index;
-            return index_for_this_thread;
-        }
-        if (index_for_this_thread == undefined) {
-            index_for_this_thread = next_worker();
-            // using VLOG since caller threads are frequently re-created and this message is displayed often
-            VLOG_LP(log_debug) << "worker " << index_for_this_thread << " assigned for thread on core " << sched_getcpu();
-        }
-        return index_for_this_thread;
     }
 
     void ensure_stopping_thread(impl::thread_control& th) {
