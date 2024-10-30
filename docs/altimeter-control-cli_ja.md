@@ -38,6 +38,11 @@ tgctl altimeter {enable|disable} {event|audit} [--conf </path/to/conf>] [--monit
   * 非 `0` の exit status を返す場合、エラーの内容を表示
 * monitor
   * 固有の出力は存在しない
+  * reason code
+    * 操作を正しく実施できた場合：（absent）
+    * 操作を正しく実施できなかった場合
+      * 対象のデータベースに接続できなかった場合:`connection`
+      * サーバ側で処理中にエラーとなった場合：`server`
 * example
 
   ```sh
@@ -65,6 +70,11 @@ tgctl altimeter set {event_level|audit_level} <level-value> [--conf </path/to/co
   * 非 `0` の exit status を返す場合、エラーの内容を表示
 * monitor
   * 固有の出力は存在しない
+  * reason code
+    * 操作を正しく実施できた場合：（absent）
+    * 操作を正しく実施できなかった場合
+      * 対象のデータベースに接続できなかった場合:`connection`
+      * サーバ側で処理中にエラーとなった場合：`server`
 * example
 
   ```sh
@@ -91,6 +101,11 @@ tgctl altimeter set statement_duration <duration-nanos> [--conf </path/to/conf>]
   * 非 `0` の exit status を返す場合、エラーの内容を表示
 * monitor
   * 固有の出力は存在しない
+  * reason code
+    * 操作を正しく実施できた場合：（absent）
+    * 操作を正しく実施できなかった場合
+      * 対象のデータベースに接続できなかった場合:`connection`
+      * サーバ側で処理中にエラーとなった場合：`server`
 * example
 
   ```sh
@@ -117,6 +132,11 @@ tgctl altimeter rotate {event|audit} [--conf </path/to/conf>] [--monitor </path/
   * 非 `0` の exit status を返す場合、エラーの内容を表示
 * monitor
   * 固有の出力は存在しない
+  * reason code
+    * 操作を正しく実施できた場合：（absent）
+    * 操作を正しく実施できなかった場合
+      * 対象のデータベースに接続できなかった場合:`connection`
+      * サーバ側で処理中にエラーとなった場合：`server`
 * example
 
   ```sh
