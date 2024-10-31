@@ -76,8 +76,8 @@ Target component
 |dev_thousandths_ratio_check_local_first| Integer | This parameter defines whether the worker of the task scheduler gives priority to dequeue the local task queue or the sticky task queue. Specify the number of times (greater than or equal to 1 and less than 1000) to give priority to the local task queue out of 1000 dequeue executions. The default is 100. |This is for development and may be deleted in the future. |
 |dev_direct_commit_callback| Boolean (true/false) | Whether commit processing thread in shirakami directly notifies client of commit result. Effective only when `commit_response` is either `ACCEPTED` or `AVAILABLE`. The default value is false. | This is for development and may be deleted in the future. |
 |scan_default_parallel| Integer | Maximum Degree of Parallelism for Scan Tasks. The default is 1. | This is for development and may be deleted in the future. |
-|dev_inplace_teardown| Boolean (true/false) | Whether to process job completion (teardown) on current thread without creating new task. The default value is false. | This is for development and may be deleted in the future. |
-|dev_inplace_dag_schedule| Boolean (true/false) | Whether to process state management by plan scheduler (dag controller) on current thread without creating new task. The default value is false. | This is for development and may be deleted in the future. |
+|dev_inplace_teardown| Boolean (true/false) | Whether to process job completion (teardown) on current thread without creating new task. The default value is true. | This is for development and may be deleted in the future. |
+|dev_inplace_dag_schedule| Boolean (true/false) | Whether to process state management by plan scheduler (dag controller) on current thread without creating new task. The default value is true. | This is for development and may be deleted in the future. |
 
 ## ipc_endpoint section
 
