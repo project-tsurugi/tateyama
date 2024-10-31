@@ -77,6 +77,7 @@ parameter=value
 |dev_direct_commit_callback| ブール(true/false) | shirakamiのコミット処理を行うスレッドが直接クラインアント通知までおこなうか。`commit_response` が `ACCEPTED` または `AVAILABLE` の場合のみ有効。デフォルトはfalse | 開発用のため将来的に削除/変更される可能性あり|
 |scan_default_parallel| 整数 | スキャンタスクの最大並列実行数。デフォルトは1|開発用のため将来的に削除/変更される可能性あり|
 |dev_inplace_teardown| ブール(true/false) | ジョブの終了処理(teardown)を現在のスレッドで行いタスクの作成をバイパスするか。デフォルトはfalse | 開発用のため将来的に削除/変更される可能性あり|
+|dev_inplace_dag_schedule| ブール(true/false) | プランスケジューラ(dag controller)の状態遷移を現在のスレッドで行いタスクの作成をバイパスするか。デフォルトはfalse | 開発用のため将来的に削除/変更される可能性あり|
 
 ## ipc_endpointセクション
 
