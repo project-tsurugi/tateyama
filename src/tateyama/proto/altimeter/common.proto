@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package tateyama.proto.altimeter.common;
+
+option java_multiple_files = false;
+option java_package = "com.tsurugidb.altimeter.proto";
+option java_outer_classname = "AltimeterCommon";
+
+// represents log category.
+enum LogCategory {
+
+    // log category is not set.
+    LOG_CATEGORY_NOT_SET = 0;
+
+    // event log category.
+    EVENT = 1;
+
+    // audit log category.
+    AUDIT = 2;
+}

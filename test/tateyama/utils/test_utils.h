@@ -19,6 +19,7 @@
 #include <unistd.h>
 
 #include "temporary_folder.h"
+#include "request_response.h"
 
 namespace tateyama::test {
 

@@ -41,5 +41,8 @@ constexpr inline component::id_type service_id_remote_kvs = 5;
 constexpr inline component::id_type service_id_debug = 6;
 constexpr inline component::id_type service_id_session = 7;
 constexpr inline component::id_type service_id_metrics = 8;
+#ifdef ENABLE_ALTIMETER
+constexpr inline component::id_type service_id_altimeter = 9;
+#endif
 
 }

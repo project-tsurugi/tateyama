@@ -1,0 +1,56 @@
+syntax = "proto3";
+
+package tateyama.proto.altimeter.response;
+
+option java_multiple_files = false;
+option java_package = "com.tsurugidb.altimeter.proto";
+option java_outer_classname = "AltimeterResponse";
+
+// empty message
+message Void {}
+
+// represents kind of errors.
+enum ErrorKind {
+
+    // error kind is not set.
+    ERROR_KIND_NOT_SET = 0;
+
+    // unknown error type.
+    UNKNOWN = 1;
+}
+
+// represents an error message.
+message Error {
+
+    // the occurred error kind.
+    ErrorKind kind = 1;
+
+    // the error message.
+    string message = 2;
+}
+
+// response message for "Configure".
+message Configure {
+
+    // the response body.
+    oneof result {
+        // request is successfully completed.
+        Void success = 1;
+
+        // request was failed by error.
+        Error error = 2;
+    }
+}
+
+// response message for "LogRotate".
+message LogRotate {
+
+    // the response body.
+    oneof result {
+        // request is successfully completed.
+        Void success = 1;
+
+        // request was failed by error.
+        Error error = 2;
+    }
+}

@@ -1,0 +1,80 @@
+syntax = "proto3";
+
+package tateyama.proto.altimeter.request;
+
+option java_multiple_files = false;
+option java_package = "com.tsurugidb.altimeter.proto";
+option java_outer_classname = "AltimeterRequest";
+
+import "tateyama/proto/altimeter/common.proto";
+
+// configuration for logging settings
+message LogSettings {
+
+    // whether or not enable logging, or keep the current settings.
+    oneof enabled_opt {
+
+        // whether or not enable logging.
+        bool enabled = 1;
+    }
+
+    // the threshold of log-level, or keep the current settings.
+    oneof level_opt {
+
+        // the threshold of log-level, by numeric value.
+        uint64 level = 2;
+    }
+
+    // the reporting threshold of statement duration, or keep the current settings.
+    oneof statement_duration_opt {
+
+        // the reporting threshold of statement duration, by nanoseconds.
+        uint64 statement_duration = 3;
+    }
+}
+
+// request message to configure the current log settings.
+message Configure {
+
+    // configure event log, or keep the current settings.
+    oneof event_log_opt {
+
+        // configuration for event log.
+        LogSettings event_log = 1;
+    }
+
+    // configure audit log, or keep the current settings.
+    oneof audit_log_opt {
+
+        // configuration for audit log.
+        LogSettings audit_log = 2;
+    }
+}
+
+// request message to rotate log files.
+message LogRotate {
+
+    // the target log category to rotate.
+    common.LogCategory category = 1;
+}
+
+// the request message to altimeter logger service.
+message Request {
+    // service message version (major)
+    uint64 service_message_version_major = 1;
+
+    // service message version (minor)
+    uint64 service_message_version_minor = 2;
+
+    // reserved for system use
+    reserved 3 to 10;
+
+    // the request command.
+    oneof command {
+        // configure the log settings.
+        Configure configure = 11;
+
+        // rotate the log files.
+        LogRotate log_rotate = 12;
+    }
+}

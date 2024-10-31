@@ -24,7 +24,7 @@
 #include "tateyama/status/resource/database_info_impl.h"
 #include "tateyama/endpoint/common/session_info_impl.h"
 
-namespace tateyama::session {
+namespace tateyama::utils {
 
 class test_request : public api::server::request {
 public:
@@ -37,31 +37,31 @@ public:
         service_id_(service_id),
         payload_(payload)
         {}
-    
+
     [[nodiscard]] std::size_t session_id() const override {
         return session_id_;
     }
-    
+
     [[nodiscard]] std::size_t service_id() const override {
         return service_id_;
     }
-    
+
     [[nodiscard]] std::string_view payload() const override {
         return payload_;
     }
-    
+
     tateyama::api::server::database_info const& database_info() const noexcept override {
         return database_info_;
     }
-    
+
     tateyama::api::server::session_info const& session_info() const noexcept override {
         return session_info_;
     }
-    
+
     tateyama::api::server::session_store& session_store() noexcept override {
         return session_store_;
     }
-    
+
     tateyama::session::session_variable_set& session_variable_set() noexcept override {
         return session_variable_set_;
     }
@@ -69,7 +69,7 @@ public:
     std::size_t session_id_{};
     std::size_t service_id_{};
     std::string payload_{};
-    
+
     tateyama::status_info::resource::database_info_impl database_info_{};
     tateyama::endpoint::common::session_info_impl session_info_{};
     tateyama::api::server::session_store session_store_{};
@@ -79,7 +79,7 @@ public:
 class test_response : public api::server::response {
 public:
     test_response() = default;
-    
+
     void session_id(std::size_t id) override {
         session_id_ = id;
     };
@@ -95,7 +95,7 @@ public:
         }
         return body_;
     }
-    
+
     std::size_t session_id_{};
     std::string body_{};
 private:
