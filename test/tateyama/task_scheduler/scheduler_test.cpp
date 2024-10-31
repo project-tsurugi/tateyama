@@ -396,4 +396,26 @@ TEST_F(scheduler_test, select_suspended_worker) {
     }
 }
 
+TEST_F(scheduler_test, thread_initializer) {
+    task_scheduler_cfg cfg{};
+    cfg.thread_count(3);
+    std::vector<std::size_t> indices{};
+    bool executed = false;
+    scheduler<test_task> sched{cfg, [&](std::size_t index) {
+        executed = true;
+        indices.emplace_back(index);
+    }};
+
+    // start/stop to ensure all threads initializer
+    sched.start();
+    sched.stop();
+    EXPECT_EQ(3, indices.size());
+    std::sort(indices.begin(), indices.end());
+    EXPECT_EQ(0, indices[0]);
+    EXPECT_EQ(1, indices[1]);
+    EXPECT_EQ(2, indices[2]);
+    EXPECT_TRUE(executed);
+}
+
+
 }

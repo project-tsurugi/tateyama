@@ -78,6 +78,11 @@ public:
     using conditional_worker = tateyama::task_scheduler::impl::conditional_worker<conditional_task>;
 
     /**
+     * @brief queue type
+     */
+    using thread_initializer = std::function<void(std::size_t)>;
+
+    /**
      * @brief copy construct
      */
     scheduler(scheduler const&) = delete;
@@ -106,11 +111,11 @@ public:
      * @brief construct new object
      * @param cfg the configuration for this task scheduler
      */
-    explicit scheduler(task_scheduler_cfg cfg = {}) :
+    explicit scheduler(task_scheduler_cfg cfg = {}, thread_initializer initializer = {}) :
         cfg_(cfg),
         size_(cfg_.thread_count())
     {
-        prepare();
+        prepare(std::move(initializer));
     }
 
     /**
@@ -442,7 +447,7 @@ private:
     conditional_worker conditional_worker_{}; // stored for testing
     clock::time_point started_at_{};
 
-    void prepare() {
+    void prepare(thread_initializer init) {
         auto sz = cfg_.thread_count();
         queues_.resize(sz);
         sticky_task_queues_.resize(sz);
@@ -458,8 +463,11 @@ private:
                 static_cast<std::size_t>(cfg_.ratio_check_local_first().denominator())
             );
             auto& worker = workers_.emplace_back(
-                queues_, sticky_task_queues_, initial_tasks_, worker_stats_[i], cfg_, [this](std::size_t index) {
+                queues_, sticky_task_queues_, initial_tasks_, worker_stats_[i], cfg_, [this, init](std::size_t index) {
                         this->initialize_preferred_worker_for_current_thread(index);
+                        if(init) {
+                            init(index);
+                        }
                 });
             if (cfg_.empty_thread()) {
                 threads_.emplace_back(); // for testing
