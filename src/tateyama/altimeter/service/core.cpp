@@ -33,13 +33,8 @@ using tateyama::api::server::response;
 
 class altimeter_helper_direct : public altimeter_helper {
 public:
-    void enable(std::string_view) override {
-        // FIXME not implemented in altimeter
-        // ::altimeter::logger::enable(t);
-    }
-    void disable(std::string_view) override {
-        // FIXME not implemented in altimeter
-        // ::altimeter::logger::disable(t);
+    void set_enabled(std::string_view t, const bool& v) override {
+        ::altimeter::logger::set_level(t, v);
     }
     void set_level(std::string_view t, std::uint64_t v) override {
         ::altimeter::logger::set_level(t, v);
@@ -69,13 +64,7 @@ bool tateyama::altimeter::service::core::operator()(const std::shared_ptr<reques
         if (configure.has_event_log()) {
             auto log_settings = configure.event_log();
             if (log_settings.enabled_opt_case() == tateyama::proto::altimeter::request::LogSettings::EnabledOptCase::kEnabled) {
-                if (log_settings.enabled()) {
-                    helper_->enable("event");
-                } else {
-                    helper_->disable("event");
-                }
-                send_error<tateyama::proto::altimeter::response::Configure>(res, tateyama::proto::altimeter::response::ErrorKind::UNKNOWN, "event log [enable|disable] is not implemented");  // FIXME remove this and the following lines
-                return true;  // Error notification is treated as normal termination.
+                helper_->set_enabled("event", log_settings.enabled());
             }
             if (log_settings.level_opt_case() == tateyama::proto::altimeter::request::LogSettings::LevelOptCase::kLevel) {
                 auto v = log_settings.level();
@@ -89,13 +78,7 @@ bool tateyama::altimeter::service::core::operator()(const std::shared_ptr<reques
         if (configure.has_audit_log()) {
             auto log_settings = configure.audit_log();
             if (log_settings.enabled_opt_case() == tateyama::proto::altimeter::request::LogSettings::EnabledOptCase::kEnabled) {
-                if (log_settings.enabled()) {
-                    helper_->enable("audit");
-                } else {
-                    helper_->disable("audit");
-                }
-                send_error<tateyama::proto::altimeter::response::Configure>(res, tateyama::proto::altimeter::response::ErrorKind::UNKNOWN, "audit log [enable|disable] is not implemented");  // FIXME remove this and the following lines
-                return true;  // Error notification is treated as normal termination.
+                helper_->set_enabled("audit", log_settings.enabled());
             }
             if (log_settings.level_opt_case() == tateyama::proto::altimeter::request::LogSettings::LevelOptCase::kLevel) {
                 auto v = log_settings.level();
