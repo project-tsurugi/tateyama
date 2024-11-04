@@ -33,22 +33,17 @@ class altimeter_helper_test : public tateyama::altimeter::service::altimeter_hel
 public:
     enum call_type {
         none = 0,
-        enable_call,
-        disable_call,
+        set_enabled_call,
         set_level_call,
         set_stmt_duration_threshold_call,
         rotate_all_call
     };
 
-    void enable(std::string_view type) override {
+    void set_enabled(std::string_view type, const bool& enabled) override {
         EXPECT_EQ(call_type_, call_type::none);
-        call_type_ = enable_call;
+        call_type_ = set_enabled_call;
         log_type_ = type;
-    }
-    void disable(std::string_view type) override {
-        EXPECT_EQ(call_type_, call_type::none);
-        call_type_ = disable_call;
-        log_type_ = type;
+        enabled_ = enabled;
     }
     void set_level(std::string_view type, std::uint64_t level) override {
         EXPECT_EQ(call_type_, call_type::none);
@@ -71,12 +66,14 @@ public:
     std::string& log() { return log_type_; }
     std::uint64_t level() {return level_; };
     std::uint64_t duration() {return duration_; };
+    bool enabled() {return enabled_; };
 
 private:
     call_type call_type_{};
     std::string log_type_{};
     std::uint64_t level_{};
     std::uint64_t duration_{};
+    bool enabled_{};
 };
 
 class altimeter_test :
@@ -139,8 +136,9 @@ TEST_F(altimeter_test, enable_event) {
     (*router_)(svrreq, svrres);
     EXPECT_EQ(11, svrres->session_id_);
 
-    EXPECT_EQ(helper_->call(), altimeter_helper_test::call_type::enable_call);
+    EXPECT_EQ(helper_->call(), altimeter_helper_test::call_type::set_enabled_call);
     EXPECT_EQ(helper_->log(), "event");
+    EXPECT_EQ(helper_->enabled(), true);
 }
 
 TEST_F(altimeter_test, enable_audit) {
@@ -161,8 +159,9 @@ TEST_F(altimeter_test, enable_audit) {
     (*router_)(svrreq, svrres);
     EXPECT_EQ(11, svrres->session_id_);
 
-    EXPECT_EQ(helper_->call(), altimeter_helper_test::call_type::enable_call);
+    EXPECT_EQ(helper_->call(), altimeter_helper_test::call_type::set_enabled_call);
     EXPECT_EQ(helper_->log(), "audit");
+    EXPECT_EQ(helper_->enabled(), true);
 }
 
 // disable
@@ -184,8 +183,9 @@ TEST_F(altimeter_test, disable_event) {
     (*router_)(svrreq, svrres);
     EXPECT_EQ(11, svrres->session_id_);
 
-    EXPECT_EQ(helper_->call(), altimeter_helper_test::call_type::disable_call);
+    EXPECT_EQ(helper_->call(), altimeter_helper_test::call_type::set_enabled_call);
     EXPECT_EQ(helper_->log(), "event");
+    EXPECT_EQ(helper_->enabled(), false);
 }
 
 TEST_F(altimeter_test, disable_audit) {
@@ -206,8 +206,9 @@ TEST_F(altimeter_test, disable_audit) {
     (*router_)(svrreq, svrres);
     EXPECT_EQ(11, svrres->session_id_);
 
-    EXPECT_EQ(helper_->call(), altimeter_helper_test::call_type::disable_call);
+    EXPECT_EQ(helper_->call(), altimeter_helper_test::call_type::set_enabled_call);
     EXPECT_EQ(helper_->log(), "audit");
+    EXPECT_EQ(helper_->enabled(), false);
 }
 
 // set level
