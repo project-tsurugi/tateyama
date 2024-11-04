@@ -53,7 +53,7 @@ private:
     std::shared_ptr<altimeter_helper> helper_;
 
     void replace_helper(std::shared_ptr<altimeter_helper> helper) {
-        helper_ = helper;
+        helper_ = std::move(helper);
     }
 
     template<typename T>

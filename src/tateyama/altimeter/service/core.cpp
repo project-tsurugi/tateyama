@@ -34,13 +34,13 @@ using tateyama::api::server::response;
 class altimeter_helper_direct : public altimeter_helper {
 public:
     void set_enabled(std::string_view t, const bool& v) override {
-        ::altimeter::logger::set_level(t, v);
+        ::altimeter::logger::set_enabled(t, v);
     }
     void set_level(std::string_view t, std::uint64_t v) override {
-        ::altimeter::logger::set_level(t, v);
+        ::altimeter::logger::set_level(t, static_cast<std::int32_t>(v));
     }
     void set_stmt_duration_threshold(std::uint64_t v) override {
-        ::altimeter::event::event_logger::set_stmt_duration_threshold(v);
+        ::altimeter::event::event_logger::set_stmt_duration_threshold(static_cast<std::int64_t>(v));
     }
     void rotate_all(std::string_view t) override {
         ::altimeter::logger::rotate_all(t);
@@ -60,9 +60,9 @@ bool tateyama::altimeter::service::core::operator()(const std::shared_ptr<reques
     switch(rq.command_case()) {
     case tateyama::proto::altimeter::request::Request::kConfigure:
     {
-        auto configure = rq.configure();
+        const auto& configure = rq.configure();
         if (configure.has_event_log()) {
-            auto log_settings = configure.event_log();
+            const auto& log_settings = configure.event_log();
             if (log_settings.enabled_opt_case() == tateyama::proto::altimeter::request::LogSettings::EnabledOptCase::kEnabled) {
                 helper_->set_enabled("event", log_settings.enabled());
             }
@@ -76,7 +76,7 @@ bool tateyama::altimeter::service::core::operator()(const std::shared_ptr<reques
             }
         }
         if (configure.has_audit_log()) {
-            auto log_settings = configure.audit_log();
+            const auto& log_settings = configure.audit_log();
             if (log_settings.enabled_opt_case() == tateyama::proto::altimeter::request::LogSettings::EnabledOptCase::kEnabled) {
                 helper_->set_enabled("audit", log_settings.enabled());
             }
@@ -94,7 +94,7 @@ bool tateyama::altimeter::service::core::operator()(const std::shared_ptr<reques
 
     case tateyama::proto::altimeter::request::Request::kLogRotate:
     {
-        auto log_lotate = rq.log_rotate();
+        const auto& log_lotate = rq.log_rotate();
         switch(log_lotate.category()) {
         case tateyama::proto::altimeter::common::LogCategory::EVENT:
             helper_->rotate_all("event");
