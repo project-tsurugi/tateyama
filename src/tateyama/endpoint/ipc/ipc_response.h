@@ -60,18 +60,32 @@ class alignas(64) ipc_data_channel : public tateyama::api::server::data_channel 
     friend ipc_response;
 
 public:
-    explicit ipc_data_channel(server_wire_container::unq_p_resultset_wires_conteiner data_channel)
-        : data_channel_(std::move(data_channel)) {
+    explicit ipc_data_channel(server_wire_container::unq_p_resultset_wires_conteiner resultset_wires)
+        : resultset_wires_(std::move(resultset_wires)) {
     }
+    ~ipc_data_channel() override {
+        std::unique_lock lock{mutex_};
+        resultset_wires_ = nullptr;
+    }
+
+    ipc_data_channel(ipc_data_channel const&) = delete;
+    ipc_data_channel(ipc_data_channel&&) = delete;
+    ipc_data_channel& operator = (ipc_data_channel const&) = delete;
+    ipc_data_channel& operator = (ipc_data_channel&&) = delete;
 
     tateyama::status acquire(std::shared_ptr<tateyama::api::server::writer>& wrt) override;
     tateyama::status release(tateyama::api::server::writer& wrt) override;
-    void set_eor() { return data_channel_->set_eor(); }
-    bool is_closed() { return data_channel_->is_closed(); }
-    server_wire_container::unq_p_resultset_wires_conteiner get_resultset_wires() { return std::move(data_channel_); }
+    void set_eor() { return resultset_wires_->set_eor(); }
+    bool is_closed() { return resultset_wires_->is_closed(); }
+    void defer_resultset_delete(garbage_collector& gc) {
+        std::unique_lock lock{mutex_};
+        if (resultset_wires_) {
+            gc.put(std::move(resultset_wires_));
+        }
+    }
 
 private:
-    server_wire_container::unq_p_resultset_wires_conteiner data_channel_;
+    server_wire_container::unq_p_resultset_wires_conteiner resultset_wires_;
 
     std::set<std::shared_ptr<ipc_writer>, tateyama::endpoint::common::pointer_comp<ipc_writer>> data_writers_{};
     std::mutex mutex_{};
@@ -91,7 +105,7 @@ public:
     ipc_response(std::shared_ptr<server_wire_container> server_wire, std::size_t index, std::size_t writer_count, std::function<void(void)> clean_up) :
         tateyama::endpoint::common::response(index),
         server_wire_(std::move(server_wire)),
-        garbage_collector_(server_wire_->get_garbage_collector()),
+        garbage_collector_(*server_wire_->get_garbage_collector()),
         writer_count_(writer_count),
         clean_up_(std::move(clean_up)) {
     }
@@ -104,7 +118,7 @@ public:
 
 private:
     std::shared_ptr<server_wire_container> server_wire_;
-    garbage_collector* garbage_collector_;
+    garbage_collector& garbage_collector_;
     std::size_t writer_count_;
     const std::function<void(void)> clean_up_;
 

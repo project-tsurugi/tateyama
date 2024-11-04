@@ -122,11 +122,11 @@ tateyama::status ipc_response::release_channel(tateyama::api::server::data_chann
     VLOG_LP(log_trace) << static_cast<const void*>(server_wire_.get()) << " data_channel_ = " << static_cast<const void*>(data_channel_.get());  //NOLINT
 
     if (data_channel_.get() == &ch) {
-        auto *data_channel = dynamic_cast<ipc_data_channel*>(data_channel_.get());
-        data_channel->set_eor();
-        data_channel->release();
-        if (!data_channel->is_closed()) {
-            garbage_collector_->put(data_channel->get_resultset_wires());
+        auto *ipc_data_channel_ptr = dynamic_cast<ipc_data_channel*>(data_channel_.get());
+        ipc_data_channel_ptr->set_eor();
+        ipc_data_channel_ptr->release();
+        if (!ipc_data_channel_ptr->is_closed()) {
+            ipc_data_channel_ptr->defer_resultset_delete(garbage_collector_);
         }
         data_channel_ = nullptr;
         return tateyama::status::ok;
@@ -137,7 +137,7 @@ tateyama::status ipc_response::release_channel(tateyama::api::server::data_chann
 // class ipc_data_channel
 tateyama::status ipc_data_channel::acquire(std::shared_ptr<tateyama::api::server::writer>& wrt) {
     try {
-        if (auto ipc_wrt = std::make_shared<ipc_writer>(data_channel_->acquire()); ipc_wrt != nullptr) {
+        if (auto ipc_wrt = std::make_shared<ipc_writer>(resultset_wires_->acquire()); ipc_wrt != nullptr) {
             wrt = ipc_wrt;
             VLOG_LP(log_trace) << " data_channel_ = " << static_cast<const void*>(this) << " writer = " << static_cast<const void*>(wrt.get());  //NOLINT
             {
