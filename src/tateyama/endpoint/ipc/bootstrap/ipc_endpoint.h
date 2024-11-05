@@ -58,7 +58,7 @@ public:
             // create listener object
             listener_ = std::make_unique<tateyama::endpoint::ipc::bootstrap::ipc_listener>(env);
             return true;
-        } catch (std::runtime_error &ex) {
+        } catch (std::exception &ex) {
             LOG_LP(ERROR) << ex.what();
             return false;
         }

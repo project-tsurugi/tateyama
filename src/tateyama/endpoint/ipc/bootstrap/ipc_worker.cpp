@@ -29,7 +29,7 @@ void ipc_worker::run() {  // NOLINT(readability-function-cognitive-complexity)
     while(true) {
         try {
             hdr = request_wire_container_->peep();
-        } catch (std::runtime_error &ex) {
+        } catch (std::exception &ex) {
             continue;
         }
         if (hdr.get_length() == 0 && hdr.get_idx() == tateyama::common::wire::message_header::terminate_request) {
@@ -54,7 +54,7 @@ void ipc_worker::run() {  // NOLINT(readability-function-cognitive-complexity)
     while(true) {
         try {
             hdr = request_wire_container_->peep();
-        } catch (std::runtime_error &ex) {
+        } catch (std::exception &ex) {
             care_reqreses();
             if (check_shutdown_request() && is_completed()) {
                 VLOG_LP(log_trace) << "terminate worker thread for session " << session_id_ << ", as it has received a shutdown request";
@@ -142,7 +142,7 @@ void ipc_worker::run() {  // NOLINT(readability-function-cognitive-complexity)
             request->dispose();
             request = nullptr;
             wire_->get_garbage_collector()->dump();
-        } catch (std::runtime_error &e) {
+        } catch (std::exception &e) {
             LOG_LP(ERROR) << e.what();
             break;  // break the while loop
         }

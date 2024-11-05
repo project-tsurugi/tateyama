@@ -19,7 +19,7 @@
 #include <memory>
 #include <exception>
 #include <atomic>
-#include <stdexcept> // std::runtime_error
+#include <stdexcept>
 #include <vector>
 #include <string>
 #include <string_view>
@@ -1191,7 +1191,7 @@ public:
             auto rtnv = entry.wait(timeout);
             entry.reuse();
             return rtnv;
-        } catch (std::runtime_error &ex) {
+        } catch (std::exception &ex) {
             entry.reuse();
             throw ex;
         }

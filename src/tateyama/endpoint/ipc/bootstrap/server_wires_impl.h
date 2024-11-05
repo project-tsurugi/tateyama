@@ -248,7 +248,7 @@ public:
                 shm_resultset_wires_ = managed_shm_ptr_->construct<tateyama::common::wire::shm_resultset_wires>(rsw_name_.c_str())(managed_shm_ptr_, count, datachannel_buffer_size_);
             } catch(const boost::interprocess::interprocess_exception& ex) {
                 throw std::runtime_error(ex.what());
-            } catch (std::runtime_error &ex) {
+            } catch (std::exception &ex) {
                 LOG_LP(ERROR) << "running out of boost managed shared memory";
                 throw ex;
             }
@@ -288,7 +288,7 @@ public:
                     new resultset_wire_container_impl{shm_resultset_wires_->acquire(), *this, datachannel_buffer_size_}, resultset_wire_deleter_impl};
             } catch(const boost::interprocess::interprocess_exception& ex) {
                 throw std::runtime_error(ex.what());
-            } catch (std::runtime_error &ex) {
+            } catch (std::exception &ex) {
                 LOG_LP(ERROR) << "running out of boost managed shared memory";
                 throw ex;
             }
@@ -529,7 +529,7 @@ public:
             std::stringstream ss{};
             ss << "failed to allocate shared memory in IPC endpoint: " << ex.what();
             throw std::runtime_error(ss.str());
-        } catch (const std::runtime_error &ex) {
+        } catch (const std::exception &ex) {
             std::stringstream ss{};
             ss << "failed to allocate shared memory in IPC endpoint: " << ex.what();
             throw std::runtime_error(ss.str());
