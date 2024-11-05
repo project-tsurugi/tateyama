@@ -104,7 +104,7 @@ tateyama::status ipc_response::acquire_channel(std::string_view name, std::share
     }
     try {
         data_channel_ = std::make_shared<ipc_data_channel>(server_wire_->create_resultset_wires(name, writer_count_));
-    } catch (std::runtime_error &ex) {
+    } catch (std::exception &ex) {
         LOG_LP(INFO) << "Running out of shared memory for result set transfers. Probably due to too many result sets being opened";
 
         ch = nullptr;
@@ -147,7 +147,7 @@ tateyama::status ipc_data_channel::acquire(std::shared_ptr<tateyama::api::server
             return tateyama::status::ok;
         }
         throw std::runtime_error("error in create ipc_writer");
-    } catch (std::runtime_error &ex) {
+    } catch (std::exception &ex) {
         LOG_LP(INFO) << "Running out of shared memory for result set transfers. Probably due to too many result sets being opened";
 
         wrt = nullptr;
@@ -187,7 +187,7 @@ tateyama::status ipc_writer::write(char const* data, std::size_t length) {
     try {
         resultset_wire_->write(data, length);
         return tateyama::status::ok;
-    } catch (std::runtime_error &ex) {
+    } catch (std::exception &ex) {
         LOG_LP(ERROR) << ex.what();
     }
     return tateyama::status::unknown;
