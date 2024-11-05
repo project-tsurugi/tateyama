@@ -20,6 +20,8 @@
 
 namespace tateyama::endpoint::ipc {
 
+class ipc_data_channel;
+
 class server_wire_container
 {
 public:
@@ -96,7 +98,7 @@ public:
          * @brief try to dispose remaining resultset_wire
          * @returns true if garbage_collector has no remaining resultset_wire.
          */
-        virtual void put(unq_p_resultset_wires_conteiner) = 0;
+        virtual void put(std::shared_ptr<ipc_data_channel>) = 0;
         virtual void dump() = 0;
         virtual bool empty() = 0;
     };

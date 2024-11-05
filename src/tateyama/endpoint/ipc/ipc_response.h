@@ -77,11 +77,8 @@ public:
     tateyama::status release(tateyama::api::server::writer& wrt) override;
     void set_eor() { return resultset_wires_->set_eor(); }
     bool is_closed() { return resultset_wires_->is_closed(); }
-    void defer_resultset_delete(garbage_collector& gc) {
-        std::unique_lock lock{mutex_};
-        if (resultset_wires_) {
-            gc.put(std::move(resultset_wires_));
-        }
+    server_wire_container::unq_p_resultset_wires_conteiner::pointer resultset_wires_conteiner() {
+        return resultset_wires_.get();
     }
 
 private:
