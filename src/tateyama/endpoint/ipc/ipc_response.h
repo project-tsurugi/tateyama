@@ -106,6 +106,17 @@ public:
         writer_count_(writer_count),
         clean_up_(std::move(clean_up)) {
     }
+    ~ipc_response() override {
+        data_channel_ = nullptr;
+    }
+
+    /**
+     * @brief Copy and move constructers are delete.
+     */
+    ipc_response(ipc_response const&) = delete;
+    ipc_response(ipc_response&&) = delete;
+    ipc_response& operator = (ipc_response const&) = delete;
+    ipc_response& operator = (ipc_response&&) = delete;
 
     tateyama::status body(std::string_view body) override;
     tateyama::status body_head(std::string_view body_head) override;

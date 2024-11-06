@@ -128,6 +128,7 @@ tateyama::status ipc_response::release_channel(tateyama::api::server::data_chann
         if (!ipc_data_channel_ptr->is_closed()) {
             garbage_collector_.put(std::move(ipc_data_channel_ptr));
         }
+        data_channel_ = nullptr;  // Seems unnecessary, but do it just in case.
         return tateyama::status::ok;
     }
     return tateyama::status::unknown;
