@@ -105,9 +105,9 @@ tateyama::status ipc_response::acquire_channel(std::string_view name, std::share
     try {
         data_channel_ = std::make_shared<ipc_data_channel>(server_wire_->create_resultset_wires(name, writer_count_));
     } catch (std::exception &ex) {
-        LOG_LP(INFO) << "Running out of shared memory for result set transfers. Probably due to too many result sets being opened";
-
         ch = nullptr;
+
+        LOG_LP(INFO) << "Running out of shared memory for result set transfers. Probably due to too many result sets being opened";
         return tateyama::status::unknown;
     }
     VLOG_LP(log_trace) << static_cast<const void*>(server_wire_.get()) << " data_channel_ = " << static_cast<const void*>(data_channel_.get());  //NOLINT
@@ -115,6 +115,7 @@ tateyama::status ipc_response::acquire_channel(std::string_view name, std::share
     if (ch = data_channel_; ch != nullptr) {
         return tateyama::status::ok;
     }
+    LOG_LP(ERROR) << "cannot aquire a channel for unknown reason";
     return tateyama::status::unknown;
 }
 
@@ -131,6 +132,7 @@ tateyama::status ipc_response::release_channel(tateyama::api::server::data_chann
         data_channel_ = nullptr;  // Seems unnecessary, but do it just in case.
         return tateyama::status::ok;
     }
+    LOG_LP(ERROR) << "the parameter given (tateyama::api::server::data_channel& ch) does not match the data_channel_ this object has";
     return tateyama::status::unknown;
 }
 
@@ -148,9 +150,9 @@ tateyama::status ipc_data_channel::acquire(std::shared_ptr<tateyama::api::server
         }
         throw std::runtime_error("error in create ipc_writer");
     } catch (std::exception &ex) {
-        LOG_LP(INFO) << "Running out of shared memory for result set transfers. Probably due to too many result sets being opened";
-
         wrt = nullptr;
+
+        LOG_LP(INFO) << "Running out of shared memory for result set transfers. Probably due to too many result sets being opened";
         return tateyama::status::unknown;
     }
 }
@@ -165,6 +167,7 @@ tateyama::status ipc_data_channel::release(tateyama::api::server::writer& wrt) {
             return tateyama::status::ok;
         }
     }
+    LOG_LP(ERROR) << "cannot find the writer to be released";
     return tateyama::status::unknown;
 }
 
