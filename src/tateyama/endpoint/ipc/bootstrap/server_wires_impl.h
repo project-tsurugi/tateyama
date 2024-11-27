@@ -30,7 +30,6 @@
 
 #include "tateyama/endpoint/ipc/wire.h"
 #include "tateyama/endpoint/ipc/server_wires.h"
-#include "tateyama/endpoint/ipc/ipc_response.h"
 
 namespace tateyama::endpoint::ipc::bootstrap {
 
@@ -404,7 +403,7 @@ public:
         garbage_collector_impl() = default;
         ~garbage_collector_impl() override {
             std::lock_guard<std::mutex> lock(mtx_put_);
-            data_channel_set_.clear();
+            resultset_wires_set_.clear();
         }
 
         /**
@@ -415,19 +414,18 @@ public:
         garbage_collector_impl& operator = (garbage_collector_impl const&) = delete;
         garbage_collector_impl& operator = (garbage_collector_impl&&) = delete;
 
-        void put(std::shared_ptr<ipc_data_channel> ch) override {
+        void put(unq_p_resultset_wires_conteiner wires) override {
             std::lock_guard<std::mutex> lock(mtx_put_);
-            data_channel_set_.emplace(std::move(ch));
+            resultset_wires_set_.emplace(std::move(wires));
         }
         void dump() override {
             if (mtx_dump_.try_lock()) {
                 std::lock_guard<std::mutex> lock(mtx_put_);
 
-                auto it = data_channel_set_.begin();
-                while (it != data_channel_set_.end()) {
-                    auto* wc = (*it)->resultset_wires_conteiner();
-                    if (wc->is_closed() && wc->is_disposable()) {
-                        data_channel_set_.erase(it++);
+                auto it = resultset_wires_set_.begin();
+                while (it != resultset_wires_set_.end()) {
+                    if ((*it)->is_closed() && (*it)->is_disposable()) {
+                        resultset_wires_set_.erase(it++);
                     } else {
                         it++;
                     }
@@ -437,11 +435,11 @@ public:
         }
         bool empty() override {
             std::lock_guard<std::mutex> lock(mtx_put_);
-            return data_channel_set_.empty();
+            return resultset_wires_set_.empty();
         }
 
     private:
-        std::set<std::shared_ptr<ipc_data_channel>> data_channel_set_{};
+        std::set<unq_p_resultset_wires_conteiner> resultset_wires_set_{};
         std::mutex mtx_put_{};
         std::mutex mtx_dump_{};
     };
