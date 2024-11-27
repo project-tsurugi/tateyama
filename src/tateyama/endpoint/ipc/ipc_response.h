@@ -46,11 +46,12 @@ public:
 
     tateyama::status write(char const* data, std::size_t length) override;
     tateyama::status commit() override;
-    void release();
 
 private:
     server_wire_container::unq_p_resultset_wire_conteiner resultset_wire_;
     std::atomic_bool released_{};
+
+    void release();
 };
 
 /**
@@ -60,12 +61,11 @@ class alignas(64) ipc_data_channel : public tateyama::api::server::data_channel 
     friend ipc_response;
 
 public:
-    explicit ipc_data_channel(server_wire_container::unq_p_resultset_wires_conteiner resultset_wires)
-        : resultset_wires_(std::move(resultset_wires)) {
+    explicit ipc_data_channel(server_wire_container::unq_p_resultset_wires_conteiner resultset_wires, garbage_collector& gc)
+        : resultset_wires_(std::move(resultset_wires)), garbage_collector_(gc) {
     }
     ~ipc_data_channel() override {
-        std::unique_lock lock{mutex_};
-        resultset_wires_ = nullptr;
+        shutdown();
     }
 
     ipc_data_channel(ipc_data_channel const&) = delete;
@@ -75,19 +75,15 @@ public:
 
     tateyama::status acquire(std::shared_ptr<tateyama::api::server::writer>& wrt) override;
     tateyama::status release(tateyama::api::server::writer& wrt) override;
-    void set_eor() { return resultset_wires_->set_eor(); }
-    bool is_closed() { return resultset_wires_->is_closed(); }
-    server_wire_container::unq_p_resultset_wires_conteiner::pointer resultset_wires_conteiner() {
-        return resultset_wires_.get();
-    }
 
 private:
     server_wire_container::unq_p_resultset_wires_conteiner resultset_wires_;
+    garbage_collector& garbage_collector_;
 
     std::set<std::shared_ptr<ipc_writer>, tateyama::endpoint::common::pointer_comp<ipc_writer>> data_writers_{};
     std::mutex mutex_{};
 
-    void release();
+    void shutdown();
 };
 
 /**

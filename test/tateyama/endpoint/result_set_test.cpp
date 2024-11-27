@@ -78,9 +78,9 @@ public:
             w->write(r_.data(), r_.length());
             w->commit();
 
-            res->body(response_test_message_);
             EXPECT_EQ(dc->release(*w), tateyama::status::ok);
             EXPECT_EQ(res->release_channel(*dc), tateyama::status::ok);
+            res->body(response_test_message_);
 
             return 0;
         }
@@ -180,9 +180,9 @@ TEST_F(result_set_test, large) {
         w->commit();
     }
 
-    res->body(response_test_message_);
     EXPECT_EQ(dc->release(*w), tateyama::status::ok);
     EXPECT_EQ(res->release_channel(*dc), tateyama::status::ok);
+    res->body(response_test_message_);
 
 
     // client side
