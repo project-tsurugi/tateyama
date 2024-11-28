@@ -101,7 +101,7 @@ TEST_F(result_set_test, normal) {
     EXPECT_EQ(index_, h.get_idx());
     EXPECT_EQ(request_wire->payload(), request_message);
 
-    auto request = std::make_shared<ipc_request>(*wire_, h, dmy_dbinfo_, dmy_ssinfo_, dmy_ssstore_, dmy_svariable_set_);
+    auto request = std::make_shared<ipc_request>(*wire_, h, dmy_dbinfo_, dmy_ssinfo_, dmy_ssstore_, dmy_svariable_set_, 0);
     auto response = std::make_shared<ipc_response>(wire_, h.get_idx(), writer_count, [](){});
 
     test_service sv;
@@ -158,7 +158,7 @@ TEST_F(result_set_test, large) {
     EXPECT_EQ(index_, h.get_idx());
     EXPECT_EQ(request_wire->payload(), request_message);
 
-    auto request = std::make_shared<ipc_request>(*wire_, h, dmy_dbinfo_, dmy_ssinfo_, dmy_ssstore_, dmy_svariable_set_);
+    auto request = std::make_shared<ipc_request>(*wire_, h, dmy_dbinfo_, dmy_ssinfo_, dmy_ssstore_, dmy_svariable_set_, 0);
     auto response = std::make_shared<ipc_response>(wire_, h.get_idx(), writer_count, [](){});
 
 

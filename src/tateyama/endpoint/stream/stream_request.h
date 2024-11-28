@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2023 Project Tsurugi.
+ * Copyright 2018-2024 Project Tsurugi.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,8 +35,9 @@ public:
                             const tateyama::api::server::database_info& database_info,
                             const tateyama::api::server::session_info& session_info,
                             tateyama::api::server::session_store& session_store,
-                            tateyama::session::session_variable_set& session_variable_set)
-        : tateyama::endpoint::common::request(database_info, session_info, session_store, session_variable_set), session_socket_(session_socket) {
+                            tateyama::session::session_variable_set& session_variable_set,
+                            std::size_t local_id)
+        : tateyama::endpoint::common::request(database_info, session_info, session_store, session_variable_set, local_id), session_socket_(session_socket) {
         endpoint::common::parse_result res{};
         endpoint::common::parse_header(payload, res); // TODO handle error
         payload_ = res.payload_;

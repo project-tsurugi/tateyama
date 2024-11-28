@@ -63,6 +63,10 @@ public:
             return service_id_;
         }
 
+        [[nodiscard]] std::size_t local_id() const override {
+            return 0;
+        }
+
         [[nodiscard]] std::string_view payload() const override {
             return payload_;
         }

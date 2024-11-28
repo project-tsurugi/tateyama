@@ -34,7 +34,7 @@ void stream_worker::run()  // NOLINT(readability-function-cognitive-complexity)
 
         case tateyama::endpoint::stream::stream_socket::await_result::payload:
         {
-            stream_request request_obj{*session_stream_, payload, database_info_, session_info_, session_store_, session_variable_set_};
+            stream_request request_obj{*session_stream_, payload, database_info_, session_info_, session_store_, session_variable_set_, local_id_++};
             stream_response response_obj{session_stream_, slot, [](){}};
 
             if (decline_) {
@@ -97,7 +97,7 @@ void stream_worker::run()  // NOLINT(readability-function-cognitive-complexity)
         case tateyama::endpoint::stream::stream_socket::await_result::payload:
         {
             update_expiration_time();
-            auto request = std::make_shared<stream_request>(*session_stream_, payload, database_info_, session_info_, session_store_, session_variable_set_);
+            auto request = std::make_shared<stream_request>(*session_stream_, payload, database_info_, session_info_, session_store_, session_variable_set_, local_id_++);
             switch (request->service_id()) {
             case tateyama::framework::service_id_endpoint_broker:
             {

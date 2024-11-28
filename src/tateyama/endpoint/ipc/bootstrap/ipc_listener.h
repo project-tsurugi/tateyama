@@ -249,19 +249,24 @@ public:
         sync.wait();
     }
 
+    /**
+     * @brief print diagnostics
+     */
     void print_diagnostic(std::ostream& os) {
         os << "/:tateyama:ipc_endpoint print diagnostics start" << std::endl;
-        bool cont{};
 
         std::unique_lock<std::mutex> lock(mtx_workers_);
+        os << "  live sessions" << std::endl;
         for (auto && e : workers_) {
             if (std::shared_ptr<ipc_worker> worker = e; worker) {
                 if (!worker->is_terminated()) {
-                    os << (cont ? "live sessions " : ", ") << worker->session_id() << std::endl;
+                    worker->print_diagnostic(os);
                 }
             }
         }
-        os << "session_id accepted = " << container_->session_id_accepted() <<", pending requests = " << container_->pending_requests() << std::endl;
+        os << "  connection queue status" << std::endl;
+        os << "    session_id accepted = " << container_->session_id_accepted() << std::endl;
+        os << "    pending requests = " << container_->pending_requests() << std::endl;
         os << "/:tateyama:ipc_endpoint print diagnostics end" << std::endl;
     }
 
