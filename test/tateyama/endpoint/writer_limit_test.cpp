@@ -92,7 +92,7 @@ TEST_F(writer_limit_test, within_writers) {
     EXPECT_EQ(index_, h.get_idx());
     EXPECT_EQ(request_wire->payload(), request_message);
 
-    auto request = std::make_shared<ipc_request>(*wire_, h, dmy_dbinfo_, dmy_ssinfo_, dmy_ssstore_, dmy_svariable_set_);
+    auto request = std::make_shared<ipc_request>(*wire_, h, dmy_dbinfo_, dmy_ssinfo_, dmy_ssstore_, dmy_svariable_set_, 0);
     auto response = std::make_shared<ipc_response>(wire_, h.get_idx(), writer_count, [](){});
 
     std::array<std::shared_ptr<tateyama::api::server::data_channel>, writers> dcs{};
@@ -125,7 +125,7 @@ TEST_F(writer_limit_test, exceed_writers) {
     EXPECT_EQ(index_, h.get_idx());
     EXPECT_EQ(request_wire->payload(), request_message);
 
-    auto request = std::make_shared<ipc_request>(*wire_, h, dmy_dbinfo_, dmy_ssinfo_, dmy_ssstore_, dmy_svariable_set_);
+    auto request = std::make_shared<ipc_request>(*wire_, h, dmy_dbinfo_, dmy_ssinfo_, dmy_ssstore_, dmy_svariable_set_, 0);
     auto response = std::make_shared<ipc_response>(wire_, h.get_idx(), writer_count, [](){});
 
     std::array<std::shared_ptr<tateyama::api::server::data_channel>, writers+1> dcs{};

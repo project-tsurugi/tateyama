@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2023 Project Tsurugi.
+ * Copyright 2018-2024 Project Tsurugi.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,8 +26,12 @@ namespace tateyama::endpoint::common {
  */
 class request : public tateyama::api::server::request {
 public:
-    explicit request(const tateyama::api::server::database_info& database_info, const tateyama::api::server::session_info& session_info, tateyama::api::server::session_store& session_store, tateyama::session::session_variable_set& session_variable_set) :
-        database_info_(database_info), session_info_(session_info), session_store_(session_store), session_variable_set_(session_variable_set) {
+    explicit request(const tateyama::api::server::database_info& database_info,
+                     const tateyama::api::server::session_info& session_info,
+                     tateyama::api::server::session_store& session_store,
+                     tateyama::session::session_variable_set& session_variable_set,
+                     std::size_t local_id) :
+        database_info_(database_info), session_info_(session_info), session_store_(session_store), session_variable_set_(session_variable_set), local_id_(local_id) {
     }
 
     [[nodiscard]] tateyama::api::server::database_info const& database_info() const noexcept override {
@@ -46,6 +50,10 @@ public:
         return session_variable_set_;
     }
 
+    [[nodiscard]] std::size_t local_id() const noexcept override {
+        return local_id_;
+    }
+
 protected:
     const tateyama::api::server::database_info& database_info_;  // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes,misc-non-private-member-variables-in-classes)
 
@@ -54,6 +62,9 @@ protected:
     tateyama::api::server::session_store& session_store_;  // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes,misc-non-private-member-variables-in-classes)
 
     tateyama::session::session_variable_set& session_variable_set_;  // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes,misc-non-private-member-variables-in-classes)
+
+private:
+    std::size_t local_id_{};
 };
 
 }  // tateyama::endpoint::common

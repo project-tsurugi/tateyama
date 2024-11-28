@@ -56,6 +56,13 @@ public:
     }
 
     /**
+     * @brief accessor to local identifier (dummy)
+     */
+    [[nodiscard]] std::size_t local_id() const override {
+        return 0;
+    }
+
+    /**
      * @brief accessor to the payload binary data
      * @return the view to the payload
      */

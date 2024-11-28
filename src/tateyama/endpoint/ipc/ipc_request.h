@@ -39,8 +39,9 @@ public:
                 const tateyama::api::server::database_info& database_info,
                 const tateyama::api::server::session_info& session_info,
                 tateyama::api::server::session_store& session_store,
-                tateyama::session::session_variable_set& session_variable_set)
-        : tateyama::endpoint::common::request(database_info, session_info, session_store, session_variable_set), server_wire_(server_wire), length_(header.get_length()), index_(header.get_idx()) {
+                tateyama::session::session_variable_set& session_variable_set,
+                std::size_t local_id)
+        : tateyama::endpoint::common::request(database_info, session_info, session_store, session_variable_set, local_id), server_wire_(server_wire), length_(header.get_length()), index_(header.get_idx()) {
         std::string_view message{};
         auto *request_wire = server_wire_.get_request_wire();
 
