@@ -63,6 +63,7 @@ public:
                      std::shared_ptr<tateyama::api::server::response> res) override {
         req_ = req;
         res_ = res;
+        EXPECT_EQ(local_id_++, req_->local_id());
         // do not respond to the request message here in this test
         {
             std::unique_lock<std::mutex> lock(mtx_);
@@ -104,6 +105,7 @@ private:
     std::atomic_bool requested_{};
     std::mutex mtx_{};
     std::condition_variable condition_{};
+    std::size_t local_id_{1};  // taking account of handshake request which consumes one local_id.
 };
 
 class ipc_session_test : public ::testing::Test {

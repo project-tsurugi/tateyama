@@ -56,6 +56,11 @@ public:
     [[nodiscard]] virtual std::size_t service_id() const = 0;
 
     /**
+     * @brief accessor to local identifier
+     */
+    [[nodiscard]] virtual std::size_t local_id() const = 0;
+
+    /**
      * @brief accessor to the payload binary data
      * @return the view to the payload
      */

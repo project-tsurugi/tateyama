@@ -156,6 +156,22 @@ public:
         }
     }
 
+    /**
+     * @brief print diagnostics
+     */
+    void print_diagnostic(std::ostream& os) {
+        os << "    session id = " << session_id_ << std::endl;
+        os << "    processing requests" << std::endl;
+        std::lock_guard<std::mutex> lock(mtx_reqreses_);
+        for (auto itr{reqreses_.begin()}, end{reqreses_.end()}; itr != end; ++itr) {
+            os << "     slot " << std::dec << itr->first << std::endl;
+            os << "       service id = " << itr->second.first->service_id() << std::endl;
+            os << "       local id = " << itr->second.first->local_id() << std::endl;
+            os << "       request message = ";
+            dump_message(os, itr->second.first->payload());
+        }
+    }
+
 protected:
     const connection_type connection_type_; // NOLINT
     const std::size_t session_id_;          // NOLINT
@@ -179,6 +195,9 @@ protected:
 
     // session variable set
     tateyama::session::session_variable_set session_variable_set_;  // NOLINT
+
+    // local_id
+    std::size_t local_id_{};  // NOLINT
 
     bool handshake(tateyama::api::server::request* req, tateyama::api::server::response* res) {
         if (req->service_id() != tateyama::framework::service_id_endpoint_broker) {
@@ -528,6 +547,12 @@ private:
             return "tcp";
         default:
             return "";
+        }
+    }
+
+    void dump_message(std::ostream& os, std::string_view message) {
+        for (auto&& c: message) {
+            os << std::hex << std::setw(3) << std::setfill('0') << static_cast<std::uint32_t>(c);
         }
     }
 };
