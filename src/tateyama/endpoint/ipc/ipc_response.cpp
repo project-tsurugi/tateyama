@@ -67,6 +67,7 @@ tateyama::status ipc_response::body_head(std::string_view body_head) {
     }
     auto s = ss.str();
     server_wire_->get_response_wire().write(s.data(), tateyama::common::wire::response_header(index_, s.length(), RESPONSE_BODYHEAD));
+    set_state(state::to_be_used);
     return tateyama::status::ok;
 }
 
@@ -106,6 +107,7 @@ void ipc_response::server_diagnostics(std::string_view diagnostic_record) {
 tateyama::status ipc_response::acquire_channel(std::string_view name, std::shared_ptr<tateyama::api::server::data_channel>& ch) {
     if (completed_.load()) {
         LOG_LP(ERROR) << "response is already completed";
+        set_state(state::acquire_failed);
         return tateyama::status::unknown;
     }
     try {
@@ -114,14 +116,17 @@ tateyama::status ipc_response::acquire_channel(std::string_view name, std::share
         ch = nullptr;
 
         LOG_LP(INFO) << "Running out of shared memory for result set transfers. Probably due to too many result sets being opened";
+        set_state(state::acquire_failed);
         return tateyama::status::unknown;
     }
     VLOG_LP(log_trace) << static_cast<const void*>(server_wire_.get()) << " data_channel_ = " << static_cast<const void*>(data_channel_.get());  //NOLINT
 
     if (ch = data_channel_; ch != nullptr) {
+        set_state(state::acquired);
         return tateyama::status::ok;
     }
     LOG_LP(ERROR) << "cannot aquire a channel for unknown reason";
+    set_state(state::acquire_failed);
     return tateyama::status::unknown;
 }
 
@@ -131,9 +136,11 @@ tateyama::status ipc_response::release_channel(tateyama::api::server::data_chann
     if (data_channel_.get() == &ch) {
         std::dynamic_pointer_cast<ipc_data_channel>(data_channel_)->shutdown();
         data_channel_ = nullptr;
+        set_state(state::released);
         return tateyama::status::ok;
     }
     LOG_LP(ERROR) << "the parameter given (tateyama::api::server::data_channel& ch) does not match the data_channel_ this object has";
+    set_state(state::release_failed);
     return tateyama::status::unknown;
 }
 

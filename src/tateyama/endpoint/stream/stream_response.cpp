@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2023 Project Tsurugi.
+ * Copyright 2018-2024 Project Tsurugi.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,6 +63,7 @@ tateyama::status stream_response::body_head(std::string_view body_head) {
     }
     auto s = ss.str();
     stream_->send(index_, s, false);
+    set_state(state::to_be_used);
     return tateyama::status::ok;
 }
 
@@ -104,13 +105,16 @@ tateyama::status stream_response::acquire_channel(std::string_view name, std::sh
 
         if (ch = data_channel_; ch != nullptr) {
             stream_->send_result_set_hello(slot, name);
+            set_state(state::acquired);
             return tateyama::status::ok;
         }
+        set_state(state::acquire_failed);
         return tateyama::status::unknown;
     } catch (std::exception &ex) {
         LOG_LP(INFO) << "too many result sets being opened";
         ch = nullptr;
     }
+    set_state(state::acquire_failed);
     return tateyama::status::unknown;
 }
 
@@ -121,8 +125,10 @@ tateyama::status stream_response::release_channel(tateyama::api::server::data_ch
         auto slot = dc->get_slot();
         stream_->send_result_set_bye(slot);
         data_channel_ = nullptr;
+        set_state(state::released);
         return tateyama::status::ok;
     }
+    set_state(state::release_failed);
     return tateyama::status::unknown;
 }
 

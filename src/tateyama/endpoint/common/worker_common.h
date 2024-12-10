@@ -161,14 +161,16 @@ public:
      */
     void print_diagnostic(std::ostream& os) {
         os << "    session id = " << session_id_ << std::endl;
-        os << "    processing requests" << std::endl;
+        os << "      processing requests" << std::endl;
         std::lock_guard<std::mutex> lock(mtx_reqreses_);
         for (auto itr{reqreses_.begin()}, end{reqreses_.end()}; itr != end; ++itr) {
-            os << "     slot " << std::dec << itr->first << std::endl;
-            os << "       service id = " << itr->second.first->service_id() << std::endl;
-            os << "       local id = " << itr->second.first->local_id() << std::endl;
-            os << "       request message = ";
+            os << "       slot " << std::dec << itr->first << std::endl;
+            os << "         service id = " << itr->second.first->service_id() << std::endl;
+            os << "         local id = " << itr->second.first->local_id() << std::endl;
+            os << "         request message = ";
             dump_message(os, itr->second.first->payload());
+            os << std::endl;
+            os << "         data channel status = '" << itr->second.second->state_label() << "'" << std::endl;
         }
     }
 
@@ -552,7 +554,7 @@ private:
 
     void dump_message(std::ostream& os, std::string_view message) {
         for (auto&& c: message) {
-            os << std::hex << std::setw(3) << std::setfill('0') << static_cast<std::uint32_t>(c);
+            os << std::hex << std::setw(2) << std::setfill('0') << (static_cast<std::uint32_t>(c) & 0xffU) << " ";
         }
     }
 };
