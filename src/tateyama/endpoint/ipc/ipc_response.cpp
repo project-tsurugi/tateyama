@@ -147,16 +147,14 @@ tateyama::status ipc_response::release_channel(tateyama::api::server::data_chann
 // class ipc_data_channel
 tateyama::status ipc_data_channel::acquire(std::shared_ptr<tateyama::api::server::writer>& wrt) {
     try {
-        if (auto ipc_wrt = std::make_shared<ipc_writer>(resultset_wires_->acquire()); ipc_wrt != nullptr) {
-            wrt = ipc_wrt;
-            VLOG_LP(log_trace) << " data_channel_ = " << static_cast<const void*>(this) << " writer = " << static_cast<const void*>(wrt.get());  //NOLINT
-            {
-                std::unique_lock lock{mutex_};
-                data_writers_.emplace(std::move(ipc_wrt));
-            }
-            return tateyama::status::ok;
+        auto ipc_wrt = std::make_shared<ipc_writer>(resultset_wires_->acquire());
+        wrt = std::dynamic_pointer_cast<tateyama::api::server::writer>(ipc_wrt);
+        VLOG_LP(log_trace) << " data_channel_ = " << static_cast<const void*>(this) << " writer = " << static_cast<const void*>(wrt.get());  //NOLINT
+        {
+            std::unique_lock lock{mutex_};
+            data_writers_.emplace(std::move(ipc_wrt));
         }
-        throw std::runtime_error("error in create ipc_writer");
+        return tateyama::status::ok;
     } catch(const std::runtime_error& ex) {
         wrt = nullptr;
 
