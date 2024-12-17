@@ -306,8 +306,10 @@ public:
                     new resultset_wire_container_impl{shm_resultset_wires_->acquire(), *this, datachannel_buffer_size_}, resultset_wire_deleter_impl};
             } catch(const boost::interprocess::interprocess_exception& ex) {
                 throw std::runtime_error(ex.what());
-            } catch (std::exception &ex) {
-                LOG_LP(ERROR) << "running out of boost managed shared memory";
+            } catch(const std::runtime_error& ex) {
+                throw ex;
+            } catch (const std::exception &ex) {
+                LOG_LP(ERROR) << "unknown error in resultset_wires_container_impl::acquire: " << ex.what();
                 throw ex;
             }
         }

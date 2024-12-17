@@ -157,10 +157,15 @@ tateyama::status ipc_data_channel::acquire(std::shared_ptr<tateyama::api::server
             return tateyama::status::ok;
         }
         throw std::runtime_error("error in create ipc_writer");
-    } catch (std::exception &ex) {
+    } catch(const std::runtime_error& ex) {
         wrt = nullptr;
 
-        LOG_LP(INFO) << "Running out of shared memory for result set transfers. Probably due to too many result sets being opened";
+        LOG_LP(INFO) << ex.what();
+        return tateyama::status::unknown;
+    } catch (const std::exception &ex) {
+        wrt = nullptr;
+
+        LOG_LP(ERROR) << "unknown error ipc_data_channel::acquire: " << ex.what();
         return tateyama::status::unknown;
     }
 }
