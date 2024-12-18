@@ -44,5 +44,6 @@ constexpr inline component::id_type service_id_metrics = 8;
 #ifdef ENABLE_ALTIMETER
 constexpr inline component::id_type service_id_altimeter = 9;
 #endif
+constexpr inline component::id_type service_id_request = 10;
 
 }
