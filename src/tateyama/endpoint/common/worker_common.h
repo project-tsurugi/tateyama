@@ -42,6 +42,7 @@
 
 #include "request.h"
 #include "response.h"
+#include "listener_common.h"
 #include "session_info_impl.h"
 
 namespace tateyama::endpoint::common {
@@ -171,6 +172,26 @@ public:
             dump_message(os, itr->second.first->payload());
             os << std::endl;
             os << "         data channel status = '" << itr->second.second->state_label() << "'" << std::endl;
+        }
+    }
+
+    /**
+     * @brief apply callback function to ongoing request
+     * @param func the callback function
+     */
+    void foreach_request(const listener_common::callback& func) {
+        std::vector<std::shared_ptr<tateyama::endpoint::common::request>> targets{};
+        {
+            std::lock_guard<std::mutex> lock(mtx_reqreses_);
+            for (auto itr{reqreses_.begin()}, end{reqreses_.end()}; itr != end; itr++) {
+                auto& ptr = itr->second.first;
+                if (ptr.use_count() > 1) {
+                    targets.emplace_back(ptr);
+                }
+            }
+        }
+        for (auto&& e: targets) {
+            func(std::dynamic_pointer_cast<tateyama::api::server::request>(e), e->start_at());
         }
     }
 
@@ -413,12 +434,12 @@ protected:
         }
     }
 
-    void register_reqres(std::size_t slot, const std::shared_ptr<tateyama::api::server::request>& request, const std::shared_ptr<tateyama::endpoint::common::response>& response) noexcept {
+    void register_reqres(std::size_t slot, const std::shared_ptr<tateyama::endpoint::common::request>& request, const std::shared_ptr<tateyama::endpoint::common::response>& response) noexcept {
         std::lock_guard<std::mutex> lock(mtx_reqreses_);
         if (auto itr = reqreses_.find(slot); itr != reqreses_.end()) {
             reqreses_.erase(itr);
         }
-        reqreses_.emplace(slot, std::pair<std::shared_ptr<tateyama::api::server::request>, std::shared_ptr<tateyama::endpoint::common::response>>(request, response));
+        reqreses_.emplace(slot, std::pair<std::shared_ptr<tateyama::endpoint::common::request>, std::shared_ptr<tateyama::endpoint::common::response>>(request, response));
     }
 
     void remove_reqres(std::size_t slot) noexcept {
@@ -534,7 +555,7 @@ private:
     bool enable_timeout_;
     std::chrono::seconds refresh_timeout_;
     std::chrono::seconds max_refresh_timeout_;
-    std::map<std::size_t, std::pair<std::shared_ptr<tateyama::api::server::request>, std::shared_ptr<tateyama::endpoint::common::response>>> reqreses_{};
+    std::map<std::size_t, std::pair<std::shared_ptr<tateyama::endpoint::common::request>, std::shared_ptr<tateyama::endpoint::common::response>>> reqreses_{};
     std::mutex mtx_reqreses_{};
     std::vector<std::shared_ptr<tateyama::api::server::response>> shutdown_response_{};
     bool cancel_requested_to_all_responses_{};

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2023 Project Tsurugi.
+ * Copyright 2018-2024 Project Tsurugi.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,9 +15,13 @@
  */
 #pragma once
 
+#include <memory>
+
+#include <tateyama/api/configuration.h>
 #include <tateyama/framework/environment.h>
 #include <tateyama/framework/endpoint.h>
 #include <tateyama/status/resource/bridge.h>
+#include <tateyama/request/service/bridge.h>
 #include <tateyama/diagnostic/resource/diagnostic_resource.h>
 
 #include "ipc_listener.h"
@@ -56,7 +60,7 @@ public:
     bool setup(environment& env) override {
         try {
             // create listener object
-            listener_ = std::make_unique<tateyama::endpoint::ipc::bootstrap::ipc_listener>(env);
+            listener_ = std::make_shared<tateyama::endpoint::ipc::bootstrap::ipc_listener>(env);
             return true;
         } catch (std::exception &ex) {
             LOG_LP(ERROR) << ex.what();
@@ -70,6 +74,8 @@ public:
     bool start(environment& env) override {
         listener_thread_ = std::thread(std::ref(*listener_));
         listener_->arrive_and_wait();
+        auto request_service = env.service_repository().find<tateyama::request::service::bridge>();
+        request_service->register_endpoint_listener(listener_);
         auto diagnostic_resource = env.resource_repository().find<tateyama::diagnostic::resource::diagnostic_resource>();
         diagnostic_resource->add_print_callback("tateyama_ipc_endpoint", [this](std::ostream& os) {
             listener_->print_diagnostic(os);
@@ -102,7 +108,7 @@ public:
     }
 
 private:
-    std::unique_ptr<tateyama::endpoint::ipc::bootstrap::ipc_listener> listener_;
+    std::shared_ptr<tateyama::endpoint::ipc::bootstrap::ipc_listener> listener_;
     std::thread listener_thread_;
 };
 

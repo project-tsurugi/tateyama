@@ -35,9 +35,10 @@
 #include <tateyama/api/configuration.h>
 #include <tateyama/session/resource/bridge.h>
 
-#include "tateyama/endpoint/stream/stream_response.h"
+#include "tateyama/endpoint/common/listener_common.h"
 #include "tateyama/endpoint/common/logging.h"
 #include "tateyama/endpoint/common/pointer_comp.h"
+#include "tateyama/endpoint/stream/stream_response.h"
 #include "tateyama/endpoint/stream/metrics/stream_metrics.h"
 #include "stream_worker.h"
 
@@ -52,7 +53,7 @@ struct stream_endpoint_context {
  * @brief stream endpoint provider
  * @details
  */
-class stream_listener {
+class stream_listener : public tateyama::endpoint::common::listener_common {
     static constexpr std::size_t connection_socket_timeout = 1000;
 
 public:
@@ -131,7 +132,7 @@ public:
         }
     }
 
-    ~stream_listener() {
+    ~stream_listener() override {
         connection_socket_->close();
     }
 
@@ -140,8 +141,8 @@ public:
     stream_listener(stream_listener&& other) noexcept = delete;
     stream_listener& operator=(stream_listener&& other) noexcept = delete;
 
-    void operator()() {
-        std::size_t session_id = 0x1000000000000000LL;
+    void operator()() override {
+        session_id_ = 0x1000000000000000LL;  // initial value
 
         arrive_and_wait();
         while(true) {
@@ -158,7 +159,7 @@ public:
                 continue;
             }
 
-            DVLOG_LP(log_trace) << "created session stream: " << session_id;
+            DVLOG_LP(log_trace) << "created session stream: " << session_id_;
             std::size_t index = 0;
             bool found = false;
             for (; index < workers_.size() ; index++) {
@@ -170,7 +171,7 @@ public:
             }
             if (!found) {
                 try {
-                    auto worker_decline = std::make_shared<stream_worker>(*router_, conf_, session_id, std::move(stream), status_->database_info(), true);
+                    auto worker_decline = std::make_shared<stream_worker>(*router_, conf_, session_id_, std::move(stream), status_->database_info(), true);
                     auto* worker = worker_decline.get();
                     {
                         std::unique_lock<std::mutex> lock(mtx_undertakers_);
@@ -192,7 +193,7 @@ public:
                     auto& worker_entry = workers_.at(index);
                     {
                         std::unique_lock<std::mutex> lock(mtx_workers_);
-                        worker_entry = std::make_shared<stream_worker>(*router_, conf_, session_id, std::move(stream), status_->database_info(), false);
+                        worker_entry = std::make_shared<stream_worker>(*router_, conf_, session_id_, std::move(stream), status_->database_info(), false);
                     }
                     stream_metrics_.increase();
                     worker_entry->invoke([this, index]{
@@ -211,7 +212,7 @@ public:
                         }
                         stream_metrics_.decrease();
                     });
-                    session_id++;
+                    session_id_++;
                 } catch (std::exception& ex) {
                     LOG_LP(ERROR) << ex.what();
                 }
@@ -220,12 +221,40 @@ public:
         confirm_workers_termination();
     }
 
-    void arrive_and_wait() {
+    void arrive_and_wait() override {
         sync.wait();
     }
 
-    void terminate() {
+    void terminate() override {
         connection_socket_->request_terminate();
+    }
+
+    void print_diagnostic(std::ostream& os) override {
+        os << "/:tateyama:stream_endpoint print diagnostics start" << std::endl;
+
+        std::unique_lock<std::mutex> lock(mtx_workers_);
+        os << "  live sessions" << std::endl;
+        for (auto && e : workers_) {
+            if (std::shared_ptr<stream_worker> worker = e; worker) {
+                if (!worker->is_terminated()) {
+                    worker->print_diagnostic(os);
+                }
+            }
+        }
+        os << "  connection status" << std::endl;
+        os << "    session_id accepted = " << session_id_ << std::endl;
+        os << "/:tateyama:stream_endpoint print diagnostics end" << std::endl;
+    }
+
+    void foreach_request(const callback& func) override {
+        std::unique_lock<std::mutex> lock(mtx_workers_);
+        for (auto && e : workers_) {
+            if (std::shared_ptr<stream_worker> worker = e; worker) {
+                if (!worker->is_terminated()) {
+                    worker->foreach_request(func);
+                }
+            }
+        }
     }
 
 private:
@@ -236,6 +265,7 @@ private:
     tateyama::endpoint::common::worker_common::configuration conf_;
     tateyama::endpoint::stream::metrics::stream_metrics stream_metrics_;
 
+    std::size_t session_id_{};
     std::unique_ptr<connection_socket> connection_socket_{};
     std::vector<std::shared_ptr<stream_worker>> workers_{};  // accessed only by the listner thread, thus mutual exclusion in unnecessary.
     std::set<std::shared_ptr<stream_worker>, tateyama::endpoint::common::pointer_comp<stream_worker>> undertakers_{};

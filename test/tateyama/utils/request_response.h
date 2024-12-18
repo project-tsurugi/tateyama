@@ -31,12 +31,19 @@ public:
     test_request(
         std::size_t session_id,
         std::size_t service_id,
+        std::size_t local_id,
         std::string_view payload
     ) :
         session_id_(session_id),
         service_id_(service_id),
-        payload_(payload)
-        {}
+        local_id_(local_id),
+        payload_(payload) {}
+
+    test_request(
+        std::size_t session_id,
+        std::size_t service_id,
+        std::string_view payload
+    ) : test_request(session_id, service_id, 0, payload) {}
 
     [[nodiscard]] std::size_t session_id() const override {
         return session_id_;
@@ -47,7 +54,7 @@ public:
     }
 
     [[nodiscard]] std::size_t local_id() const override {
-        return 0;
+        return local_id_;
     }
 
     [[nodiscard]] std::string_view payload() const override {
@@ -72,6 +79,7 @@ public:
 
     std::size_t session_id_{};
     std::size_t service_id_{};
+    std::size_t local_id_{};
     std::string payload_{};
 
     tateyama::status_info::resource::database_info_impl database_info_{};

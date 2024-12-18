@@ -1,0 +1,45 @@
+syntax = "proto3";
+
+package tateyama.proto.request.diagnostics;
+
+// the error code.
+enum Code {
+    // the error code is not set.
+    ERROR_CODE_NOT_SPECIFIED = 0;
+
+    // the unknown error was occurred.
+    UNKNOWN = 1;
+
+	// データベース接続時に認証エラーが発生した
+    AUTHENTICATION_FAILURE = 2;
+
+    // 対象のデータベースへの接続要求がタイムアウトした
+    CONNECTION_TIMEOUT = 3;
+
+    // 対象のデータベースへの接続に失敗した
+    CONNECTION_FAILURE = 4;
+
+    // ハンドルできないI/Oエラーが発生した
+    IO = 5;
+
+    // ハンドルできないサーバーエラーが発生した
+    SERVER = 6;
+
+    // 割り込みが発生した  
+    INTERRUPTED = 7;
+
+    // アプリケーション側の問題による内部エラー
+    INTERNAL = 8;
+
+    // 指定したセッションまたはリクエストが存在しない
+    REQUEST_MISSING = 9;
+
+    // 指定されたペイロードの形式・または内容が正しくない
+    PAYLOAD_BROKEN = 10;
+
+    // SQL 文字列が存在しない種類のリクエスト
+    SQL_MISSING	= 11;
+
+    // 利用不可能な prepared statement が含まれていた
+    SQL_UNRESOLVED = 12;
+}

@@ -35,6 +35,7 @@
 #include <tateyama/api/configuration.h>
 #include <tateyama/session/resource/bridge.h>
 
+#include "tateyama/endpoint/common/listener_common.h"
 #include "tateyama/endpoint/common/logging.h"
 #include "tateyama/endpoint/common/pointer_comp.h"
 #include "tateyama/endpoint/ipc/metrics/ipc_metrics.h"
@@ -45,7 +46,7 @@ namespace tateyama::endpoint::ipc::bootstrap {
 /**
  * @brief ipc listener
  */
-class ipc_listener {
+class ipc_listener : public tateyama::endpoint::common::listener_common {
 public:
     explicit ipc_listener(tateyama::framework::environment& env)
         : cfg_(env.configuration()),
@@ -176,7 +177,7 @@ public:
         }
     }
 
-    void operator()() {
+    void operator()()  override {
         auto& connection_queue = container_->get_connection_queue();
         proc_mutex_file_ = status_->mutex_file();
         arrive_and_wait();
@@ -241,18 +242,15 @@ public:
         confirm_workers_termination();
     }
 
-    void terminate() {
-        container_->get_connection_queue().request_terminate();
-    }
-
-    void arrive_and_wait() {
+    void arrive_and_wait() override {
         sync.wait();
     }
 
-    /**
-     * @brief print diagnostics
-     */
-    void print_diagnostic(std::ostream& os) {
+    void terminate() override {
+        container_->get_connection_queue().request_terminate();
+    }
+
+    void print_diagnostic(std::ostream& os) override {
         os << "/:tateyama:ipc_endpoint print diagnostics start" << std::endl;
 
         std::unique_lock<std::mutex> lock(mtx_workers_);
@@ -268,6 +266,17 @@ public:
         os << "    session_id accepted = " << container_->session_id_accepted() << std::endl;
         os << "    pending requests = " << container_->pending_requests() << std::endl;
         os << "/:tateyama:ipc_endpoint print diagnostics end" << std::endl;
+    }
+
+    void foreach_request(const callback& func) override {
+        std::unique_lock<std::mutex> lock(mtx_workers_);
+        for (auto && e : workers_) {
+            if (std::shared_ptr<ipc_worker> worker = e; worker) {
+                if (!worker->is_terminated()) {
+                    worker->foreach_request(func);
+                }
+            }
+        }
     }
 
 private:

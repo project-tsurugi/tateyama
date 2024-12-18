@@ -115,7 +115,7 @@ void stream_worker::run()  // NOLINT(readability-function-cognitive-complexity)
             {
                 auto response = std::make_shared<stream_response>(session_stream_, slot, [this, slot](){remove_reqres(slot);});
                 register_reqres(slot,
-                                std::dynamic_pointer_cast<tateyama::api::server::request>(request),
+                                std::dynamic_pointer_cast<tateyama::endpoint::common::request>(request),
                                 std::dynamic_pointer_cast<tateyama::endpoint::common::response>(response));
                 if (routing_service_chain(std::dynamic_pointer_cast<tateyama::api::server::request>(request),
                                           std::dynamic_pointer_cast<tateyama::api::server::response>(response),
@@ -139,7 +139,7 @@ void stream_worker::run()  // NOLINT(readability-function-cognitive-complexity)
                 auto response = std::make_shared<stream_response>(session_stream_, slot, [this, slot](){remove_reqres(slot);});
                 if (!check_shutdown_request()) {
                     register_reqres(slot,
-                                    std::dynamic_pointer_cast<tateyama::api::server::request>(request),
+                                    std::dynamic_pointer_cast<tateyama::endpoint::common::request>(request),
                                     std::dynamic_pointer_cast<tateyama::endpoint::common::response>(response));
                     if(service_(std::dynamic_pointer_cast<tateyama::api::server::request>(request),
                                 std::dynamic_pointer_cast<tateyama::api::server::response>(response))) {

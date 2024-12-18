@@ -100,7 +100,7 @@ void ipc_worker::run() {  // NOLINT(readability-function-cognitive-complexity)
             {
                 auto response = std::make_shared<ipc_response>(wire_, hdr.get_idx(), writer_count_, [this, index](){remove_reqres(index);});
                 register_reqres(index,
-                                std::dynamic_pointer_cast<tateyama::api::server::request>(request),
+                                std::dynamic_pointer_cast<tateyama::endpoint::common::request>(request),
                                 std::dynamic_pointer_cast<tateyama::endpoint::common::response>(response));
                 if (routing_service_chain(std::dynamic_pointer_cast<tateyama::api::server::request>(request),
                                           std::dynamic_pointer_cast<tateyama::api::server::response>(response),
@@ -124,7 +124,7 @@ void ipc_worker::run() {  // NOLINT(readability-function-cognitive-complexity)
                 auto response = std::make_shared<ipc_response>(wire_, hdr.get_idx(), writer_count_, [this, index](){remove_reqres(index);});
                 if (!check_shutdown_request()) {
                     register_reqres(index,
-                                    std::dynamic_pointer_cast<tateyama::api::server::request>(request),
+                                    std::dynamic_pointer_cast<tateyama::endpoint::common::request>(request),
                                     std::dynamic_pointer_cast<tateyama::endpoint::common::response>(response));
                     if (!service_(std::dynamic_pointer_cast<tateyama::api::server::request>(request),
                                   std::dynamic_pointer_cast<tateyama::api::server::response>(response))) {

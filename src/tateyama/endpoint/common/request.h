@@ -15,6 +15,8 @@
  */
 #pragma once
 
+#include <chrono>
+
 #include <tateyama/api/server/request.h>
 
 #include "tateyama/status/resource/database_info_impl.h"
@@ -31,7 +33,8 @@ public:
                      tateyama::api::server::session_store& session_store,
                      tateyama::session::session_variable_set& session_variable_set,
                      std::size_t local_id) :
-        database_info_(database_info), session_info_(session_info), session_store_(session_store), session_variable_set_(session_variable_set), local_id_(local_id) {
+        database_info_(database_info), session_info_(session_info), session_store_(session_store), session_variable_set_(session_variable_set),
+        local_id_(local_id), start_at_(std::chrono::system_clock::now()) {
     }
 
     [[nodiscard]] tateyama::api::server::database_info const& database_info() const noexcept override {
@@ -54,6 +57,10 @@ public:
         return local_id_;
     }
 
+    [[nodiscard]] std::chrono::system_clock::time_point start_at() const noexcept {
+        return start_at_;
+    }
+
 protected:
     const tateyama::api::server::database_info& database_info_;  // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes,misc-non-private-member-variables-in-classes)
 
@@ -64,7 +71,9 @@ protected:
     tateyama::session::session_variable_set& session_variable_set_;  // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes,misc-non-private-member-variables-in-classes)
 
 private:
-    std::size_t local_id_{};
+    std::size_t local_id_;
+
+    std::chrono::system_clock::time_point start_at_;
 };
 
 }  // tateyama::endpoint::common
