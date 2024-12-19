@@ -93,7 +93,7 @@ class alignas(64) ipc_response : public tateyama::endpoint::common::response {
     friend ipc_data_channel;
 
 public:
-    static constexpr std::size_t default_writer_count = 128;
+    static constexpr std::size_t default_writer_count = 32;
 
     ipc_response(std::shared_ptr<server_wire_container> server_wire, std::size_t index, std::size_t writer_count, std::function<void(void)> clean_up) :
         tateyama::endpoint::common::response(index),
