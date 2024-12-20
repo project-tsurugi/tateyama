@@ -79,7 +79,7 @@ Target component
 |dev_inplace_teardown| Boolean (true/false) | Whether to process job completion (teardown) on current thread without creating new task. The default value is true. | This is for development and may be deleted in the future. |
 |dev_inplace_dag_schedule| Boolean (true/false) | Whether to process state management by plan scheduler (dag controller) on current thread without creating new task. The default value is true. | This is for development and may be deleted in the future. |
 |enable_join_scan| Boolean (true/false) | Whether to enable `join_scan`, an operator that scans and searches for candidates using a portion (prefix) of the data in an index-join process, when the data for the whole key columns are not available. Effective only if `enable_index_join=true`. The default value is true. | This is for development and may be deleted in the future. |
-| commit_response | String | Specifies the method used to split key range used by RTX parallel scan. Choose one of the following `simple`, `uniform`, or `sampling`. Valid only if `dev_rtx_parallel_scan=true`. Default is `simple` | This is for development and may be deleted in the future. |
+|dev_rtx_key_distribution| String | Specifies the method used to split key range used by RTX parallel scan. Choose one of the following `simple`, `uniform`, or `sampling`. Valid only if `dev_rtx_parallel_scan=true`. Default is `uniform` | This is for development and may be deleted in the future. |
 
 ## ipc_endpoint section
 
