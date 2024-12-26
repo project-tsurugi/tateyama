@@ -281,7 +281,7 @@ public:
         }
         ~resultset_wires_container_impl() override {
             try {
-                if (server_) {
+                if (server_ && !expiration_time_over_) {
                     std::lock_guard<std::mutex> lock(mtx_shm_);
                     managed_shm_ptr_->destroy<tateyama::common::wire::shm_resultset_wires>(rsw_name_.c_str());
                 }
@@ -329,6 +329,11 @@ public:
             }
             return true;
         }
+        // in case lost client
+        void expiration_time_over() override {
+            shm_resultset_wires_->set_closed();
+            expiration_time_over_ = true;
+        }
 
         void add_released_writer(unq_p_resultset_wire_conteiner resultset_wire) {
             released_writers_.emplace(std::move(resultset_wire));
@@ -370,6 +375,7 @@ public:
         std::string rsw_name_;
         tateyama::common::wire::shm_resultset_wires* shm_resultset_wires_{};
         bool server_;
+        bool expiration_time_over_{};
         std::mutex& mtx_shm_;
         std::size_t datachannel_buffer_size_;
 
@@ -418,30 +424,43 @@ public:
 
         void put(unq_p_resultset_wires_conteiner wires) override {
             std::lock_guard<std::mutex> lock(mtx_put_);
+            if (expiration_time_over_) {
+                wires->expiration_time_over();
+            }
             resultset_wires_set_.emplace(std::move(wires));
         }
         void dump() override {
-            if (mtx_dump_.try_lock()) {
-                std::lock_guard<std::mutex> lock(mtx_put_);
+            if (!expiration_time_over_) {
+                if (mtx_dump_.try_lock()) {
+                    std::lock_guard<std::mutex> lock(mtx_put_);
 
-                auto it = resultset_wires_set_.begin();
-                while (it != resultset_wires_set_.end()) {
-                    if ((*it)->is_closed() && (*it)->is_disposable()) {
-                        resultset_wires_set_.erase(it++);
-                    } else {
-                        it++;
+                    auto it = resultset_wires_set_.begin();
+                    while (it != resultset_wires_set_.end()) {
+                        if ((*it)->is_closed() && (*it)->is_disposable()) {
+                            resultset_wires_set_.erase(it++);
+                        } else {
+                            it++;
+                        }
                     }
+                    mtx_dump_.unlock();
                 }
-                mtx_dump_.unlock();
             }
         }
         bool empty() override {
             std::lock_guard<std::mutex> lock(mtx_put_);
-            return resultset_wires_set_.empty();
+            return resultset_wires_set_.empty() || expiration_time_over_;
+        }
+        void expiration_time_over() override {
+            std::lock_guard<std::mutex> lock(mtx_put_);
+            for (const auto& it : resultset_wires_set_) {
+                it->expiration_time_over();
+            }
+            expiration_time_over_ = true;
         }
 
     private:
         std::set<unq_p_resultset_wires_conteiner> resultset_wires_set_{};
+        bool expiration_time_over_{};
         std::mutex mtx_put_{};
         std::mutex mtx_dump_{};
     };
@@ -589,6 +608,10 @@ public:
 
     static std::size_t proportional_memory_size(std::size_t datachannel_buffer_size, std::size_t max_datachannel_buffers) {
         return (datachannel_buffer_size + data_channel_overhead) * max_datachannel_buffers + (request_buffer_size + response_buffer_size) + total_overhead;
+    }
+
+    void expiration_time_over() override {
+        garbage_collector_impl_->expiration_time_over();
     }
 
     // for client

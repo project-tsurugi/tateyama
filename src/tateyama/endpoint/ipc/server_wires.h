@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2023 Project Tsurugi.
+ * Copyright 2018-2024 Project Tsurugi.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -80,6 +80,7 @@ public:
         virtual void set_eor() = 0;
         virtual bool is_closed() = 0;
         virtual bool is_disposable() = 0;
+        virtual void expiration_time_over() = 0;
     };
     using resultset_deleter_type = void(*)(resultset_wires_container*);
     using unq_p_resultset_wires_conteiner = std::unique_ptr<resultset_wires_container, resultset_deleter_type>;
@@ -99,6 +100,7 @@ public:
         virtual void put(unq_p_resultset_wires_conteiner) = 0;
         virtual void dump() = 0;
         virtual bool empty() = 0;
+        virtual void expiration_time_over() = 0;
     };
 
     server_wire_container() = default;
@@ -112,6 +114,7 @@ public:
     virtual response_wire_container& get_response_wire() = 0;
     virtual unq_p_resultset_wires_conteiner create_resultset_wires(std::string_view, std::size_t count) = 0;
     virtual garbage_collector* get_garbage_collector() = 0;
+    virtual void expiration_time_over() = 0;
 };
 inline server_wire_container::~server_wire_container() = default;
 inline server_wire_container::wire_container::~wire_container() = default;
