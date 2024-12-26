@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2023 Project Tsurugi.
+ * Copyright 2018-2024 Project Tsurugi.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,9 +15,14 @@
  */
 #pragma once
 
+#include <memory>
+
 #include <tateyama/api/configuration.h>
-#include <tateyama/framework/endpoint.h>
 #include <tateyama/framework/environment.h>
+#include <tateyama/framework/endpoint.h>
+#include <tateyama/request/service/bridge.h>
+#include <tateyama/diagnostic/resource/diagnostic_resource.h>
+
 #include "stream_listener.h"
 
 namespace tateyama::framework {
@@ -58,7 +63,7 @@ public:
             }
             if (enabled_) {
                 // create listener object
-                listener_ = std::make_unique<tateyama::endpoint::stream::bootstrap::stream_listener>(env);
+                listener_ = std::make_shared<tateyama::endpoint::stream::bootstrap::stream_listener>(env);
             }
             return true;
         } catch (std::exception &ex) {
@@ -70,10 +75,16 @@ public:
     /**
      * @brief start the component (the state will be `activated`)
      */
-    bool start(environment&) override {
+    bool start(environment& env) override {
         if (enabled_) {
             listener_thread_ = std::thread(std::ref(*listener_));
             listener_->arrive_and_wait();
+            auto request_service = env.service_repository().find<tateyama::request::service::bridge>();
+            request_service->register_endpoint_listener(listener_);
+            auto diagnostic_resource = env.resource_repository().find<tateyama::diagnostic::resource::diagnostic_resource>();
+            diagnostic_resource->add_print_callback("tateyama_stream_endpoint", [this](std::ostream& os) {
+                listener_->print_diagnostic(os);
+            });
         }
         return true;
     }
@@ -103,7 +114,7 @@ public:
     }
 
 private:
-    std::unique_ptr<tateyama::endpoint::stream::bootstrap::stream_listener> listener_;
+    std::shared_ptr<tateyama::endpoint::stream::bootstrap::stream_listener> listener_;
     std::thread listener_thread_;
     bool enabled_{true};
 };

@@ -1,0 +1,55 @@
+syntax = "proto3";
+
+package tateyama.proto.request.request;
+
+option java_multiple_files = false;
+option java_package = "com.tsurugidb.request.proto";
+option java_outer_classname = "RequestRequest";
+
+// Request to retrieve a list of ongoing requests.
+message ListRequest {
+
+    // retrieves requests in order of uptime, or all requests if not specified
+    oneof top_opt {
+        // only retrieves top-N uptime requests
+        uint32 top = 1;
+    }
+
+    // optional filter by service ID
+    oneof service_filter {
+        // the service ID of requests to be retrieved
+        uint32 service_id = 2;
+    }
+}
+
+// Request to retrieve payload data.
+message GetPayload {
+
+    // session ID
+    uint64 session_id = 1;
+
+    // request local ID
+    uint64 request_id = 2;
+}
+
+// the request message to request pseudo service.
+message Request {
+    // service message version (major)
+    uint64 service_message_version_major = 1;
+
+    // service message version (minor)
+    uint64 service_message_version_minor = 2;
+
+    // reserved for system use
+    reserved 3 to 10;
+
+    // the request command.
+    oneof command {
+        // Request to retrieve a list of ongoing requests.
+        ListRequest list_request = 11;
+
+        // Request to retrieve payload data.
+        GetPayload get_payload = 12;
+    }
+    reserved 13 to 99;
+}

@@ -1,0 +1,84 @@
+syntax = "proto3";
+
+package tateyama.proto.request.response;
+
+option java_multiple_files = false;
+option java_package = "com.tsurugidb.request.proto";
+option java_outer_classname = "RequestResponse";
+
+import "tateyama/proto/request/diagnostics.proto";
+
+// unknown error was occurred.
+message Error {
+    // the error message.
+    string message = 1;
+
+    // error code
+    diagnostics.Code code = 2;
+
+    // supplemental text for debug purpose
+    string supplemental_text = 4;
+}
+
+// Represents individual requests in the request list.
+message RequestInfo {
+
+    // session ID
+    uint64 session_id = 1;
+
+    // request local ID (unique within a session)
+    uint64 request_id = 2;
+
+    // destination service ID
+    uint64 service_id = 3;
+
+    // payload size in bytes
+    uint64 payload_size = 4;
+
+    // the request started time since UNIX epoch in milliseconds.
+    uint64 started_time = 5;
+}
+
+// Response of ListRequest.
+message ListRequest {
+
+    reserved 1 to 10;
+
+    // the response body.
+    oneof result {
+        // request is successfully completed.
+        Success success = 11;
+
+        // error was occurred.
+        Error error = 12;
+    }
+
+    // request is successfully completed.
+    message Success {
+
+        // list of retrieved requests.
+        repeated response.RequestInfo requests = 1;
+    }
+}
+
+// Response of GetPayload.
+message GetPayload {
+
+    reserved 1 to 10;
+
+    // the response body.
+    oneof result {
+        // request is successfully completed.
+        Success success = 11;
+
+        // error was occurred.
+        Error error = 12;
+    }
+
+    // request is successfully completed.
+    message Success {
+
+        // payload data as plain byte array.
+        bytes data = 1;
+    }
+}
