@@ -23,6 +23,7 @@
 #include <tateyama/framework/endpoint.h>
 #include <tateyama/proto/request/request.pb.h>
 #include <tateyama/proto/request/response.pb.h>
+#include <tateyama/proto/diagnostics.pb.h>
 
 #include "tateyama/endpoint/common/listener_common.h"
 #include "bridge.h"
@@ -116,18 +117,26 @@ bool bridge::operator()(std::shared_ptr<request> req, std::shared_ptr<response> 
         auto& gp = rq.get_payload();
         std::size_t session_id = gp.session_id();
         std::size_t request_id = gp.request_id();
-        auto* success = rs.mutable_success();
-        foreach_endpoint([session_id, request_id, success](const std::shared_ptr<tateyama::api::server::request>& request, std::chrono::system_clock::time_point) {
+        foreach_endpoint([session_id, request_id, &rs](const std::shared_ptr<tateyama::api::server::request>& request, std::chrono::system_clock::time_point) {
             if (session_id == request->session_id() && request_id == request->local_id()) {
-                success->set_data(std::string(request->payload()));
+                rs.mutable_success()->set_data(std::string(request->payload()));
             }
         });
+        if (!rs.has_success()) {
+            auto* error = rs.mutable_error();
+            error->set_code(tateyama::proto::request::diagnostics::Code::REQUEST_MISSING);
+        }
         res->body(rs.SerializeAsString());
         return true;
     }
     case tateyama::proto::request::request::Request::CommandCase::COMMAND_NOT_SET:
     default:
+    {
+        tateyama::proto::diagnostics::Record record{};
+        record.set_code(tateyama::proto::diagnostics::Code::INVALID_REQUEST);
+        res->error(record);
         break;
+    }
     }
     return false;
 }
