@@ -324,4 +324,31 @@ TEST_F(request_bridge_test, get_payload) {
     EXPECT_EQ("abcdef", success.data());
 }
 
+TEST_F(request_bridge_test, get_payload_fail) {
+    std::string str{};
+    {
+        ::tateyama::proto::request::request::Request rq{};
+        rq.set_service_message_version_major(1);
+        rq.set_service_message_version_minor(0);
+        auto* gvrq = rq.mutable_get_payload();
+        gvrq->set_session_id(999);  // not found
+        gvrq->set_request_id(999);  // not found
+        str = rq.SerializeAsString();
+        rq.clear_get_payload();
+    }
+
+    auto svrreq = std::make_shared<tateyama::utils::test_request>(11, request::service::bridge::tag, str);
+    auto svrres = std::make_shared<tateyama::utils::test_response>();
+
+    (*router_)(svrreq, svrres);
+    EXPECT_EQ(11, svrres->session_id_);
+    auto& body = svrres->body_;
+
+    ::tateyama::proto::request::response::GetPayload gvrs{};
+    EXPECT_TRUE(gvrs.ParseFromString(body));
+    EXPECT_TRUE(gvrs.has_error());
+    auto& error = gvrs.error();
+    EXPECT_EQ(tateyama::proto::request::diagnostics::Code::REQUEST_MISSING, error.code());
+}
+
 }
