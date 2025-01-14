@@ -113,18 +113,6 @@ public:
         ipc_metrics_.set_memory_parameters(connection_container::fixed_memory_size(threads + admin_sessions),
                                            server_wire_container_impl::proportional_memory_size(datachannel_buffer_size_, max_datachannel_buffers_));
 
-        // set maximum writer count from sql.default_partitions
-        auto* sql_config = cfg_->get_section("sql");
-        if (sql_config == nullptr) {
-            throw std::runtime_error("cannot find sql section in the configuration");
-        }
-        auto default_partitions_opt = sql_config->get<std::size_t>("default_partitions");
-        if (default_partitions_opt) {
-            if (writer_count_ < default_partitions_opt.value()) {
-                writer_count_ = default_partitions_opt.value();
-            }
-        }
-
         // output configuration to be used
         LOG(INFO) << tateyama::endpoint::common::ipc_endpoint_config_prefix
                   << "database_name: " << database_name_ << ", "
@@ -207,7 +195,7 @@ public:
 
                     auto& worker_entry = workers_.at(slot_index);
                     std::unique_lock<std::mutex> lock(mtx_workers_);
-                    worker_entry = std::make_shared<ipc_worker>(*router_, conf_, session_id, std::move(wire), status_->database_info(), writer_count_);
+                    worker_entry = std::make_shared<ipc_worker>(*router_, conf_, session_id, std::move(wire), status_->database_info());
                     connection_queue.accept(slot_id, session_id);
                     ipc_metrics_.increase();
                     worker_entry->invoke([this, slot_id, slot_index, &connection_queue]{
@@ -294,7 +282,6 @@ private:
     std::string proc_mutex_file_;
     std::size_t datachannel_buffer_size_{};
     std::size_t max_datachannel_buffers_{};
-    std::size_t writer_count_{ipc_response::default_writer_count};
     std::mutex mtx_workers_{};
     std::mutex mtx_undertakers_{};
 

@@ -19,7 +19,8 @@
 namespace tateyama::endpoint::loopback {
 
 tateyama::status loopback_response::acquire_channel(std::string_view name,
-        std::shared_ptr<tateyama::api::server::data_channel> &ch) {
+                                                    std::shared_ptr<tateyama::api::server::data_channel> &ch,
+                                                    [[maybe_unused]] std::size_t writer_count) {
     std::unique_lock<std::mutex> lock(mtx_channel_map_);
     if (channel_map_.find(name) != channel_map_.cend()) {
         // already acquired the same name channel

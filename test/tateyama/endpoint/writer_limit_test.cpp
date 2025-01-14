@@ -93,7 +93,7 @@ TEST_F(writer_limit_test, within_writers) {
     EXPECT_EQ(request_wire->payload(), request_message);
 
     auto request = std::make_shared<ipc_request>(*wire_, h, dmy_dbinfo_, dmy_ssinfo_, dmy_ssstore_, dmy_svariable_set_, 0);
-    auto response = std::make_shared<ipc_response>(wire_, h.get_idx(), writer_count, [](){});
+    auto response = std::make_shared<ipc_response>(wire_, h.get_idx(), [](){});
 
     std::array<std::shared_ptr<tateyama::api::server::data_channel>, writers> dcs{};
     std::array<std::shared_ptr<tateyama::api::server::writer>, writers> ws{};
@@ -102,7 +102,7 @@ TEST_F(writer_limit_test, within_writers) {
         std::shared_ptr<tateyama::api::server::data_channel> dc;
         std::string rn{resultset_wire_name_};
         rn += std::to_string(i);
-        EXPECT_EQ(response->acquire_channel(rn, dc), tateyama::status::ok);
+        EXPECT_EQ(response->acquire_channel(rn, dc, writer_count), tateyama::status::ok);
         dcs.at(i) = std::move(dc);
 
         std::shared_ptr<tateyama::api::server::writer> w;
@@ -126,7 +126,7 @@ TEST_F(writer_limit_test, exceed_writers) {
     EXPECT_EQ(request_wire->payload(), request_message);
 
     auto request = std::make_shared<ipc_request>(*wire_, h, dmy_dbinfo_, dmy_ssinfo_, dmy_ssstore_, dmy_svariable_set_, 0);
-    auto response = std::make_shared<ipc_response>(wire_, h.get_idx(), writer_count, [](){});
+    auto response = std::make_shared<ipc_response>(wire_, h.get_idx(), [](){});
 
     std::array<std::shared_ptr<tateyama::api::server::data_channel>, writers+1> dcs{};
     std::array<std::shared_ptr<tateyama::api::server::writer>, writers+1> ws{};
@@ -135,7 +135,7 @@ TEST_F(writer_limit_test, exceed_writers) {
         std::shared_ptr<tateyama::api::server::data_channel> dc;
         std::string rn{resultset_wire_name_};
         rn += std::to_string(i);
-        EXPECT_EQ(response->acquire_channel(rn, dc), tateyama::status::ok);
+        EXPECT_EQ(response->acquire_channel(rn, dc, writer_count), tateyama::status::ok);
         dcs.at(i) = std::move(dc);
 
         std::shared_ptr<tateyama::api::server::writer> w;
@@ -147,7 +147,7 @@ TEST_F(writer_limit_test, exceed_writers) {
     std::shared_ptr<tateyama::api::server::data_channel> dc;
     std::string rn{resultset_wire_name_};
     rn += std::to_string(i);
-    if (response->acquire_channel(rn, dc) != tateyama::status::ok) {
+    if (response->acquire_channel(rn, dc, writer_count) != tateyama::status::ok) {
         return;  // test success
     }
     dcs.at(i) = std::move(dc);

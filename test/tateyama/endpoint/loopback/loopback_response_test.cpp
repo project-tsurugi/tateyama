@@ -22,6 +22,8 @@
 namespace tateyama::api::endpoint::loopback {
 
 class loopback_response_test: public loopback_test_base {
+protected:
+    constexpr static std::size_t writer_count = 32; 
 };
 
 TEST_F(loopback_response_test, empty) {
@@ -70,7 +72,7 @@ TEST_F(loopback_response_test, single) {
     EXPECT_EQ(response.body_head(body_head), tateyama::status::ok);
     //
     std::shared_ptr<tateyama::api::server::data_channel> channel;
-    EXPECT_EQ(response.acquire_channel(name, channel), tateyama::status::ok);
+    EXPECT_EQ(response.acquire_channel(name, channel, writer_count), tateyama::status::ok);
     //
     std::shared_ptr<tateyama::api::server::writer> writer;
     EXPECT_EQ(channel->acquire(writer), tateyama::status::ok);
@@ -103,9 +105,9 @@ TEST_F(loopback_response_test, dual_acqurie_channel) {
     const std::string name { "channelA" };
     tateyama::endpoint::loopback::loopback_response response { };
     std::shared_ptr<tateyama::api::server::data_channel> channel;
-    EXPECT_EQ(response.acquire_channel(name, channel), tateyama::status::ok);
+    EXPECT_EQ(response.acquire_channel(name, channel, writer_count), tateyama::status::ok);
     // re-acquire of acquired channel is prohibited
-    EXPECT_EQ(response.acquire_channel(name, channel), tateyama::status::not_found);
+    EXPECT_EQ(response.acquire_channel(name, channel, writer_count), tateyama::status::not_found);
     EXPECT_EQ(response.release_channel(*channel), tateyama::status::ok);
 }
 
@@ -113,7 +115,7 @@ TEST_F(loopback_response_test, dual_release_channel) {
     const std::string name { "channelA" };
     tateyama::endpoint::loopback::loopback_response response { };
     std::shared_ptr<tateyama::api::server::data_channel> channel;
-    EXPECT_EQ(response.acquire_channel(name, channel), tateyama::status::ok);
+    EXPECT_EQ(response.acquire_channel(name, channel, writer_count), tateyama::status::ok);
     EXPECT_EQ(response.release_channel(*channel), tateyama::status::ok);
     // re-release of release channel is prohibited
     EXPECT_EQ(response.release_channel(*channel), tateyama::status::not_found);
@@ -123,11 +125,11 @@ TEST_F(loopback_response_test, release_from_another_channel) {
     const std::string name { "channelA" };
     tateyama::endpoint::loopback::loopback_response response { };
     std::shared_ptr<tateyama::api::server::data_channel> channel;
-    EXPECT_EQ(response.acquire_channel(name, channel), tateyama::status::ok);
+    EXPECT_EQ(response.acquire_channel(name, channel, writer_count), tateyama::status::ok);
     {
         tateyama::endpoint::loopback::loopback_response response2 { };
         std::shared_ptr<tateyama::api::server::data_channel> channel2;
-        EXPECT_EQ(response2.acquire_channel(name, channel2), tateyama::status::ok);
+        EXPECT_EQ(response2.acquire_channel(name, channel2, writer_count), tateyama::status::ok);
         // release from another response's channel
         EXPECT_EQ(response.release_channel(*channel2), tateyama::status::not_found);
         // release from correct channel
@@ -146,7 +148,7 @@ TEST_F(loopback_response_test, dual_channel) {
     tateyama::endpoint::loopback::loopback_response response { };
     for (const auto &name : names) {
         std::shared_ptr<tateyama::api::server::data_channel> channel;
-        EXPECT_EQ(response.acquire_channel(name, channel), tateyama::status::ok);
+        EXPECT_EQ(response.acquire_channel(name, channel, writer_count), tateyama::status::ok);
         channels.emplace_back(std::move(channel));
     }
     for (auto &channel : channels) {
@@ -181,7 +183,7 @@ TEST_F(loopback_response_test, empty_channel_name) {
     //
     tateyama::endpoint::loopback::loopback_response response { };
     std::shared_ptr<tateyama::api::server::data_channel> channel;
-    EXPECT_EQ(response.acquire_channel(name, channel), tateyama::status::ok);
+    EXPECT_EQ(response.acquire_channel(name, channel, writer_count), tateyama::status::ok);
     std::shared_ptr<tateyama::api::server::writer> writer;
     EXPECT_EQ(channel->acquire(writer), tateyama::status::ok);
     for (const auto &s : test_data) {
@@ -214,7 +216,7 @@ TEST_F(loopback_response_test, parallel_writer) {
     threads.reserve(nwriter);
 
     std::shared_ptr<tateyama::api::server::data_channel> channel;
-    EXPECT_EQ(response.acquire_channel(name, channel), tateyama::status::ok);
+    EXPECT_EQ(response.acquire_channel(name, channel, writer_count), tateyama::status::ok);
     for (int i = 0; i < nwriter; i++) {
         threads.emplace_back([this, i, &channel] {
             std::string s { };
@@ -267,7 +269,7 @@ TEST_F(loopback_response_test, parallel_channel) {
         threads.emplace_back([this, i, &response] {
             std::string name { std::to_string(i) };
             std::shared_ptr<tateyama::api::server::data_channel> channel;
-            EXPECT_EQ(response.acquire_channel(name, channel), tateyama::status::ok);
+            EXPECT_EQ(response.acquire_channel(name, channel, writer_count), tateyama::status::ok);
             std::string s { };
             std::shared_ptr<tateyama::api::server::writer> wrt;
             EXPECT_EQ(tateyama::status::ok, channel->acquire(wrt));
@@ -326,7 +328,7 @@ TEST_F(loopback_response_test, parallel_channel_and_wrier) {
     for (int i = 0; i < nchannel; i++) {
         std::string name { std::to_string(i) };
         std::shared_ptr<tateyama::api::server::data_channel> channel;
-        EXPECT_EQ(response.acquire_channel(name, channel), tateyama::status::ok);
+        EXPECT_EQ(response.acquire_channel(name, channel, writer_count), tateyama::status::ok);
         channels.emplace_back(channel);
         writers_map.emplace_back(std::vector<std::shared_ptr<tateyama::api::server::writer>>());
         for (int j = 0; j < nwriter; j++) {

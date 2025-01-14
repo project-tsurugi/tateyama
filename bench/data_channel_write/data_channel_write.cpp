@@ -34,7 +34,7 @@ public:
         std::string payload { req->payload() };
         //
         std::shared_ptr<tateyama::api::server::data_channel> channel;
-        ASSERT_OK(res->acquire_channel(payload, channel));
+        ASSERT_OK(res->acquire_channel(payload, channel, default_writer_count));
         std::shared_ptr<tateyama::api::server::writer> writer;
         ASSERT_OK(channel->acquire(writer));
         //

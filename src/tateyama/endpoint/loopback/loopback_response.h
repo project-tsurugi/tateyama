@@ -76,7 +76,7 @@ public:
     /**
      * @see tateyama::server::response::acquire_channel()
      */
-    tateyama::status acquire_channel(std::string_view name, std::shared_ptr<tateyama::api::server::data_channel> &ch)
+    tateyama::status acquire_channel(std::string_view name, std::shared_ptr<tateyama::api::server::data_channel> &ch, std::size_t writer_count)
             override;
 
     /**

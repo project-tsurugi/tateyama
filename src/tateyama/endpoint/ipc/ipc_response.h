@@ -93,13 +93,10 @@ class alignas(64) ipc_response : public tateyama::endpoint::common::response {
     friend ipc_data_channel;
 
 public:
-    static constexpr std::size_t default_writer_count = 32;
-
-    ipc_response(std::shared_ptr<server_wire_container> server_wire, std::size_t index, std::size_t writer_count, std::function<void(void)> clean_up) :
+  ipc_response(std::shared_ptr<server_wire_container> server_wire, std::size_t index, std::function<void(void)> clean_up) :
         tateyama::endpoint::common::response(index),
         server_wire_(std::move(server_wire)),
         garbage_collector_(*server_wire_->get_garbage_collector()),
-        writer_count_(writer_count),
         clean_up_(std::move(clean_up)) {
     }
     ~ipc_response() override {
@@ -117,13 +114,12 @@ public:
     tateyama::status body(std::string_view body) override;
     tateyama::status body_head(std::string_view body_head) override;
     void error(proto::diagnostics::Record const& record) override;
-    tateyama::status acquire_channel(std::string_view name, std::shared_ptr<tateyama::api::server::data_channel>& ch) override;
+    tateyama::status acquire_channel(std::string_view name, std::shared_ptr<tateyama::api::server::data_channel>& ch, std::size_t writer_count) override;
     tateyama::status release_channel(tateyama::api::server::data_channel& ch) override;
 
 private:
     std::shared_ptr<server_wire_container> server_wire_;
     garbage_collector& garbage_collector_;
-    std::size_t writer_count_;
     const std::function<void(void)> clean_up_;
 
     void server_diagnostics(std::string_view diagnostic_record);

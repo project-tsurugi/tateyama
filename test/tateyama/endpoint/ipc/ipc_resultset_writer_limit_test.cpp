@@ -31,7 +31,7 @@ public:
         const int nwriter = param.value_; // use as number of writers
         //
         std::shared_ptr<tateyama::api::server::data_channel> channel;
-        EXPECT_EQ(tateyama::status::ok, res->acquire_channel(param.name_, channel));
+        EXPECT_EQ(tateyama::status::ok, res->acquire_channel(param.name_, channel, default_writer_count));
         EXPECT_NE(channel.get(), nullptr);
         std::vector<std::shared_ptr<tateyama::api::server::writer>> writer_list { };
         for (int i = 0; i < nwriter; i++) {

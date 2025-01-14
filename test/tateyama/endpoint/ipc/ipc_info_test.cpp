@@ -100,7 +100,7 @@ TEST_F(ipc_info_test, basic) {
     session_name += std::to_string(my_session_id);
     auto wire = std::make_shared<bootstrap::server_wire_container_impl>(session_name, "dummy_mutex_file_name", datachannel_buffer_size, 16);
     const tateyama::endpoint::common::worker_common::configuration conf(tateyama::endpoint::common::worker_common::connection_type::ipc);
-    tateyama::endpoint::ipc::bootstrap::ipc_worker worker(service_, conf, my_session_id, wire, database_info_, writer_count);
+    tateyama::endpoint::ipc::bootstrap::ipc_worker worker(service_, conf, my_session_id, wire, database_info_);
     tateyama::server::ipc_listener_for_test::run(worker);
 
     // client part

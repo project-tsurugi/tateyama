@@ -32,7 +32,7 @@ public:
         auto len = param.write_lens_.at(0);
         //
         std::shared_ptr<tateyama::api::server::data_channel> channel;
-        EXPECT_EQ(tateyama::status::ok, res->acquire_channel(param.name_, channel));
+        EXPECT_EQ(tateyama::status::ok, res->acquire_channel(param.name_, channel, default_writer_count));
         EXPECT_NE(channel.get(), nullptr);
         std::shared_ptr<tateyama::api::server::writer> writer;
         EXPECT_EQ(tateyama::status::ok, channel->acquire(writer));

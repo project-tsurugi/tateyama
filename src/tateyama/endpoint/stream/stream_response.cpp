@@ -97,7 +97,7 @@ void stream_response::server_diagnostics(std::string_view diagnostic_record) {
     stream_->send(index_, s, true);
 }
 
-tateyama::status stream_response::acquire_channel(std::string_view name, std::shared_ptr<tateyama::api::server::data_channel>& ch) {
+tateyama::status stream_response::acquire_channel(std::string_view name, std::shared_ptr<tateyama::api::server::data_channel>& ch, [[maybe_unused]] std::size_t writer_count) {
     try {
         auto slot = stream_->look_for_slot();
         data_channel_ = std::make_unique<stream_data_channel>(stream_, slot);
