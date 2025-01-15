@@ -2,9 +2,9 @@
 
 /.github/ @project-tsurugi/ci-maintainers
 
-/include/tateyama/task_scheduler
-/include/tateyama/task_scheduler @kuron99
-/test/tateyama/task_scheduler
-/test/tateyama/task_scheduler @kuron99
-/examples/task_scheduler_cli
-/examples/task_scheduler_cli @kuron99
+/include/tateyama/task_scheduler/
+/include/tateyama/task_scheduler/ @kuron99
+/test/tateyama/task_scheduler/
+/test/tateyama/task_scheduler/ @kuron99
+/examples/task_scheduler_cli/
+/examples/task_scheduler_cli/ @kuron99
