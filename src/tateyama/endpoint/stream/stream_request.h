@@ -52,7 +52,7 @@ public:
 private:
     stream_socket& session_socket_;
 
-    std::string_view payload_{};
+    std::string payload_{};
     std::size_t session_id_{};
     std::size_t service_id_{};
 };
