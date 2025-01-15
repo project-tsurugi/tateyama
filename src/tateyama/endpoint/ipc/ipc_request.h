@@ -22,7 +22,6 @@
 #include <tateyama/endpoint/common/request.h>
 
 #include "server_wires.h"
-#include "tateyama/endpoint/common/endpoint_proto_utils.h"
 #include "tateyama/logging_helper.h"
 
 namespace tateyama::endpoint::ipc {
@@ -54,31 +53,22 @@ public:
             message = std::string_view(long_payload_.data(), length_);
         }
         endpoint::common::parse_result res{};
-        if (endpoint::common::parse_header(message, res)) {
-            payload_ = res.payload_;
-            session_id_ = res.session_id_;
-            service_id_ = res.service_id_;
-            request_wire->dispose();
-            return;
-        }
-        throw std::runtime_error("error in parse framework header");
+        parse_framework_header(message, res);
+        payload_ = res.payload_;
+        request_wire->dispose();
     }
 
     ipc_request() = delete;
 
     [[nodiscard]] std::string_view payload() const override;
     void dispose();
-    [[nodiscard]] std::size_t session_id() const override;
-    [[nodiscard]] std::size_t service_id() const override;
 
 private:
     server_wire_container& server_wire_;
     const std::size_t length_;
     const std::size_t index_;
 
-    std::size_t session_id_{};
-    std::size_t service_id_{};
-    std::string_view payload_{};
+    std::string payload_{};
     std::array<char, SPO_SIZE> spo_{};
     std::string long_payload_{};
 };

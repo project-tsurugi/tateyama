@@ -77,6 +77,14 @@ public:
         return session_variable_set_;
     }
 
+    bool has_blob(std::string_view) const noexcept override {
+        return false;
+    }
+
+    tateyama::api::server::blob_info const& get_blob(std::string_view) const override {
+        throw std::runtime_error("blob is not supported with loopback endpoint");
+    }
+
     std::size_t session_id_{};
     std::size_t service_id_{};
     std::size_t local_id_{};
@@ -101,6 +109,8 @@ public:
     status acquire_channel(std::string_view name, std::shared_ptr<api::server::data_channel>& ch) override { return status::ok; }
     status release_channel(api::server::data_channel& ch) override { return status::ok; }
     bool check_cancel() const override { return false; }
+    status add_blob(std::unique_ptr<tateyama::api::server::blob_info> blob) override { return status::ok; }
+
     std::string& wait_and_get_body() {
         while (!body_arrived_) {
             std::this_thread::sleep_for(std::chrono::milliseconds(10));

@@ -86,6 +86,14 @@ public:
         return session_variable_set_;
     }
 
+    [[nodiscard]] bool has_blob(std::string_view) const noexcept override {
+        return false;
+    }
+
+    [[nodiscard]] tateyama::api::server::blob_info const& get_blob(std::string_view) const override {
+        throw std::runtime_error("blob is not supported with loopback endpoint");
+    }
+
 private:
     const std::size_t session_id_;
     const std::size_t service_id_;

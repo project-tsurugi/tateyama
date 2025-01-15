@@ -27,12 +27,4 @@ stream_request::payload() const {
     return payload_;
 }
 
-std::size_t stream_request::session_id() const {
-    return session_id_;
-}
-
-std::size_t stream_request::service_id() const {
-    return service_id_;
-}
-
 }
