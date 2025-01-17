@@ -15,7 +15,7 @@
  */
 
 #include <glog/logging.h>
-#include <tateyama/tateyama/logging_helper.h>
+#include <tateyama/logging_helper.h>
 
 #include "loopback_response.h"
 
