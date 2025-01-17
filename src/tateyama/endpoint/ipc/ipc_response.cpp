@@ -39,6 +39,7 @@ tateyama::status ipc_response::body(std::string_view body) {
         std::stringstream ss{};
         endpoint::common::header_content arg{};
         arg.session_id_ = session_id_;
+        arg.blobs_ = &blobs_;
         if(auto res = endpoint::common::append_response_header(ss, body, arg, ::tateyama::proto::framework::response::Header::SERVICE_RESULT); ! res) {
             LOG_LP(ERROR) << "error formatting response message";
             return status::unknown;

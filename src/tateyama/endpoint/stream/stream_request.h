@@ -20,7 +20,6 @@
 #include <tateyama/endpoint/common/request.h>
 
 #include "stream.h"
-#include "tateyama/endpoint/common/endpoint_proto_utils.h"
 
 namespace tateyama::endpoint::stream {
 
@@ -39,22 +38,16 @@ public:
                             std::size_t local_id)
         : tateyama::endpoint::common::request(database_info, session_info, session_store, session_variable_set, local_id), session_socket_(session_socket) {
         endpoint::common::parse_result res{};
-        endpoint::common::parse_header(payload, res); // TODO handle error
+        parse_framework_header(payload, res);
         payload_ = res.payload_;
-        session_id_ = res.session_id_;
-        service_id_ = res.service_id_;
     }
 
     [[nodiscard]] std::string_view payload() const override;
-    [[nodiscard]] std::size_t session_id() const override;
-    [[nodiscard]] std::size_t service_id() const override;
 
 private:
     stream_socket& session_socket_;
 
     std::string payload_{};
-    std::size_t session_id_{};
-    std::size_t service_id_{};
 };
 
 }

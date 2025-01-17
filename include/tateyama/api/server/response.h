@@ -16,6 +16,7 @@
 #pragma once
 
 #include <tateyama/proto/diagnostics.pb.h>
+#include <tateyama/api/server/blob_info.h>
 
 #include "data_channel.h"
 
@@ -121,6 +122,16 @@ public:
      * @see error()
      */
     [[nodiscard]] virtual bool check_cancel() const = 0;
+
+    /**
+     * @brief Pass the BLOB data as the response.
+     * @pre body_head() and body() function of this object is not yet called
+     * @param blob the BLOB data to pass
+     * @return status::ok if the BLOB data was successfully registered
+     * @return status::not_found if contents is not found in this BLOB data
+     * @return status::already_exists if another BLOB data with the same channel name is already added
+     */
+    [[nodiscard]] virtual status add_blob(std::unique_ptr<blob_info> blob) = 0;
 
 };
 

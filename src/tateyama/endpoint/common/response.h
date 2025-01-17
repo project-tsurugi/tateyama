@@ -18,12 +18,14 @@
 #include <atomic>
 #include <memory>
 #include <string_view>
+#include <exception>
 
 #include <glog/logging.h>
 #include <tateyama/logging.h>
 #include <tateyama/logging_helper.h>
 
 #include <tateyama/api/server/response.h>
+#include "pointer_comp.h"
 
 namespace tateyama::endpoint::common {
 /**
@@ -34,12 +36,21 @@ public:
     explicit response(std::size_t index) : index_(index) {
     }
 
+    void session_id(std::size_t id) override {
+        session_id_ = id;
+    }
+
     [[nodiscard]] bool check_cancel() const override {
         return cancel_;
     }
 
-    void session_id(std::size_t id) override {
-        session_id_ = id;
+    tateyama::status add_blob(std::unique_ptr<tateyama::api::server::blob_info> blob) override {
+        try {
+            blobs_.emplace(std::move(blob));
+            return tateyama::status::ok;
+        } catch (std::exception &ex) {
+            return tateyama::status::unknown;
+        }
     }
 
     void cancel() noexcept {
@@ -109,6 +120,8 @@ protected:
     std::shared_ptr<tateyama::api::server::data_channel> data_channel_{};  // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes,misc-non-private-member-variables-in-classes)
 
     std::atomic_bool completed_{};  // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes,misc-non-private-member-variables-in-classes)
+
+    std::set<std::unique_ptr<tateyama::api::server::blob_info>, pointer_comp<tateyama::api::server::blob_info>> blobs_{};  // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes,misc-non-private-member-variables-in-classes)
 
     void set_state(state s) {
         state_ = s;

@@ -91,6 +91,13 @@ public:
         return false;
     }
 
+    /**
+     * @see tateyama::server::response::add_blob()
+     */
+    tateyama::status add_blob([[maybe_unused]] std::unique_ptr<tateyama::api::server::blob_info> blob) override {
+        return tateyama::status::ok;
+    }
+
     // just for unit test
     [[nodiscard]] std::map<std::string, std::vector<std::string>, std::less<>> const& all_committed_data() const noexcept {
         return committed_data_map_;

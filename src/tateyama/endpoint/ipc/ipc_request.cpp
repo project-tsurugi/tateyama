@@ -32,12 +32,4 @@ ipc_request::dispose() {
     VLOG_LP(log_trace) << static_cast<const void*>(&server_wire_) << " slot = " << index_;  //NOLINT
 }
 
-std::size_t ipc_request::session_id() const {
-    return session_id_;
-}
-
-std::size_t ipc_request::service_id() const {
-    return service_id_;
-}
-
 }

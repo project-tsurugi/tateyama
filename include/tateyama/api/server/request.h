@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2023 Project Tsurugi.
+ * Copyright 2018-2025 Project Tsurugi.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@
 #include "database_info.h"
 #include "session_info.h"
 #include "session_store.h"
+#include "blob_info.h"
 
 namespace tateyama::api::server {
 
@@ -89,6 +90,22 @@ public:
      * @returns the current session variable set
      */
     [[nodiscard]] virtual tateyama::session::session_variable_set& session_variable_set() noexcept = 0;
+
+    /**
+     * @brief returns whether the request has a BLOB data with the specified channel name.
+     * @param channel_name the channel name
+     * @return true if the request has the BLOB data
+     * @return false otherwise
+     */
+    [[nodiscard]] virtual bool has_blob(std::string_view channel_name) const noexcept = 0;
+
+    /**
+     * @brief returns the BLOB data with the specified channel name.
+     * @param name the channel name
+     * @return the BLOB data
+     * @throws if there is no such the BLOB data
+     */
+    [[nodiscard]] virtual blob_info const& get_blob(std::string_view name) const = 0;
 };
 
 }
