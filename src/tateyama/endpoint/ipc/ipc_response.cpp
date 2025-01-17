@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2024 Project Tsurugi.
+ * Copyright 2018-2025 Project Tsurugi.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -107,6 +107,11 @@ void ipc_response::server_diagnostics(std::string_view diagnostic_record) {
 tateyama::status ipc_response::acquire_channel(std::string_view name, std::shared_ptr<tateyama::api::server::data_channel>& ch, std::size_t writer_count) {
     if (completed_.load()) {
         LOG_LP(ERROR) << "response is already completed";
+        set_state(state::acquire_failed);
+        return tateyama::status::unknown;
+    }
+    if (writer_count > (UINT8_MAX + 1)) {
+        LOG_LP(ERROR) << "too large writer count (" << writer_count << ") given";
         set_state(state::acquire_failed);
         return tateyama::status::unknown;
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2024 Project Tsurugi.
+ * Copyright 2018-2025 Project Tsurugi.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -97,7 +97,12 @@ void stream_response::server_diagnostics(std::string_view diagnostic_record) {
     stream_->send(index_, s, true);
 }
 
-tateyama::status stream_response::acquire_channel(std::string_view name, std::shared_ptr<tateyama::api::server::data_channel>& ch, [[maybe_unused]] std::size_t writer_count) {
+tateyama::status stream_response::acquire_channel(std::string_view name, std::shared_ptr<tateyama::api::server::data_channel>& ch, std::size_t writer_count) {
+    if (writer_count > (UINT8_MAX + 1)) {
+        LOG_LP(ERROR) << "too large writer count (" << writer_count << ") given";
+        set_state(state::acquire_failed);
+        return tateyama::status::unknown;
+    }
     try {
         auto slot = stream_->look_for_slot();
         data_channel_ = std::make_unique<stream_data_channel>(stream_, slot);
