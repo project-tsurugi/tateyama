@@ -97,9 +97,9 @@ void stream_response::server_diagnostics(std::string_view diagnostic_record) {
     stream_->send(index_, s, true);
 }
 
-tateyama::status stream_response::acquire_channel(std::string_view name, std::shared_ptr<tateyama::api::server::data_channel>& ch, std::size_t writer_count) {
-    if (writer_count > (UINT8_MAX + 1)) {
-        LOG_LP(ERROR) << "too large writer count (" << writer_count << ") given";
+tateyama::status stream_response::acquire_channel(std::string_view name, std::shared_ptr<tateyama::api::server::data_channel>& ch, std::size_t max_writer_count) {
+    if (max_writer_count > (UINT8_MAX + 1)) {
+        LOG_LP(ERROR) << "too large writer count (" << max_writer_count << ") given";
         set_state(state::acquire_failed);
         return tateyama::status::unknown;
     }

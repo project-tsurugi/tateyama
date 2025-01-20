@@ -95,7 +95,7 @@ public:
      * @return status::ok when successful
      * @return other code when error occurs
      */
-    virtual status acquire_channel(std::string_view name, std::shared_ptr<data_channel>& ch, std::size_t writer_count) = 0;
+    virtual status acquire_channel(std::string_view name, std::shared_ptr<data_channel>& ch, std::size_t max_writer_count) = 0;
 
     /**
      * @brief release the data channel
