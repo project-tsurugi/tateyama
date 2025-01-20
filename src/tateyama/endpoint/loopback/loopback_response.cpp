@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2023 Project Tsurugi.
+ * Copyright 2018-2025 Project Tsurugi.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,21 @@
  * limitations under the License.
  */
 
+#include <glog/logging.h>
+#include <tateyama/logging_helper.h>
+
 #include "loopback_response.h"
 
 namespace tateyama::endpoint::loopback {
 
 tateyama::status loopback_response::acquire_channel(std::string_view name,
-        std::shared_ptr<tateyama::api::server::data_channel> &ch) {
+                                                    std::shared_ptr<tateyama::api::server::data_channel> &ch,
+                                                    std::size_t max_writer_count) {
+    if (max_writer_count > (UINT8_MAX + 1)) {
+        LOG_LP(ERROR) << "too large writer count (" << max_writer_count << ") given";
+        return tateyama::status::unknown;
+    }
+
     std::unique_lock<std::mutex> lock(mtx_channel_map_);
     if (channel_map_.find(name) != channel_map_.cend()) {
         // already acquired the same name channel

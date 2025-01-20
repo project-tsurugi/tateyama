@@ -106,7 +106,7 @@ public:
     status body_head(std::string_view body_head) override { return status::ok; }
     status body(std::string_view body) override { body_ = body; body_arrived_ = true; return status::ok; }
     void error(proto::diagnostics::Record const& record) override {}
-    status acquire_channel(std::string_view name, std::shared_ptr<api::server::data_channel>& ch) override { return status::ok; }
+    status acquire_channel(std::string_view name, std::shared_ptr<api::server::data_channel>& ch, std::size_t writer_count) override { return status::ok; }
     status release_channel(api::server::data_channel& ch) override { return status::ok; }
     bool check_cancel() const override { return false; }
     status add_blob(std::unique_ptr<tateyama::api::server::blob_info> blob) override { return status::ok; }

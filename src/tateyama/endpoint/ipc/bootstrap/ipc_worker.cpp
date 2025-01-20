@@ -38,7 +38,7 @@ void ipc_worker::run() {  // NOLINT(readability-function-cognitive-complexity)
         }
 
         ipc_request request_obj{*wire_, hdr, database_info_, session_info_, session_store_, session_variable_set_, local_id_++};
-        ipc_response response_obj{wire_, hdr.get_idx(), writer_count_, [](){}};
+        ipc_response response_obj{wire_, hdr.get_idx(), [](){}};
         if (! handshake(static_cast<tateyama::api::server::request*>(&request_obj), static_cast<tateyama::api::server::response*>(&response_obj))) {
             return;
         }
@@ -86,7 +86,7 @@ void ipc_worker::run() {  // NOLINT(readability-function-cognitive-complexity)
             switch (request->service_id()) {
             case tateyama::framework::service_id_endpoint_broker:
             {
-                auto response = std::make_shared<ipc_response>(wire_, hdr.get_idx(), writer_count_, [](){});
+                auto response = std::make_shared<ipc_response>(wire_, hdr.get_idx(), [](){});
                 // currently cancel request only
                 if (!endpoint_service(std::dynamic_pointer_cast<tateyama::api::server::request>(request),
                                       std::dynamic_pointer_cast<tateyama::endpoint::common::response>(response),
@@ -98,7 +98,7 @@ void ipc_worker::run() {  // NOLINT(readability-function-cognitive-complexity)
             }
             case tateyama::framework::service_id_routing:
             {
-                auto response = std::make_shared<ipc_response>(wire_, hdr.get_idx(), writer_count_, [this, index](){remove_reqres(index);});
+                auto response = std::make_shared<ipc_response>(wire_, hdr.get_idx(), [this, index](){remove_reqres(index);});
                 register_reqres(index,
                                 std::dynamic_pointer_cast<tateyama::endpoint::common::request>(request),
                                 std::dynamic_pointer_cast<tateyama::endpoint::common::response>(response));
@@ -121,7 +121,7 @@ void ipc_worker::run() {  // NOLINT(readability-function-cognitive-complexity)
             }
             default:
             {
-                auto response = std::make_shared<ipc_response>(wire_, hdr.get_idx(), writer_count_, [this, index](){remove_reqres(index);});
+                auto response = std::make_shared<ipc_response>(wire_, hdr.get_idx(), [this, index](){remove_reqres(index);});
                 if (!check_shutdown_request()) {
                     register_reqres(index,
                                     std::dynamic_pointer_cast<tateyama::endpoint::common::request>(request),

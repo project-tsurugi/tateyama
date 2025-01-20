@@ -90,12 +90,13 @@ public:
      * @brief retrieve output data channel
      * @param name the name of the output
      * @param ch [out] the data channel for the given name
+     * @param writer_count the numver of the writers used in the output
      * @detail this function provides the named data channel for the application output
      * @note this function is thread-safe and multiple threads can invoke simultaneously.
      * @return status::ok when successful
      * @return other code when error occurs
      */
-    virtual status acquire_channel(std::string_view name, std::shared_ptr<data_channel>& ch) = 0;
+    virtual status acquire_channel(std::string_view name, std::shared_ptr<data_channel>& ch, std::size_t max_writer_count) = 0;
 
     /**
      * @brief release the data channel

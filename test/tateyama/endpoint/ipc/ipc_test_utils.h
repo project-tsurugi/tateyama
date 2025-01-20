@@ -137,6 +137,9 @@ public:
     [[nodiscard]] std::string_view label() const noexcept override {
         return "server_service_base";
     }
+
+protected:
+    static constexpr std::size_t default_writer_count = 32;
 };
 
 class resultset_param {

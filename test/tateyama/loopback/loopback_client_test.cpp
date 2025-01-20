@@ -39,6 +39,8 @@ public:
 };
 
 class data_channel_service: public tateyama::framework::service {
+    static constexpr std::size_t default_writer_count = 32;
+
 public:
     data_channel_service(int nchannel, int nwrite, int nloop) :
             nchannel_(nchannel), nwrite_(nwrite), nloop_(nloop) {
@@ -81,7 +83,7 @@ public:
         for (int ch = 0; ch < nchannel_; ch++) {
             std::shared_ptr<tateyama::api::server::data_channel> channel;
             std::string name { channel_name(ch) };
-            EXPECT_EQ(tateyama::status::ok, res->acquire_channel(name, channel));
+            EXPECT_EQ(tateyama::status::ok, res->acquire_channel(name, channel, default_writer_count));
             for (int w = 0; w < nwrite_; w++) {
                 std::shared_ptr<tateyama::api::server::writer> writer;
                 EXPECT_EQ(tateyama::status::ok, channel->acquire(writer));

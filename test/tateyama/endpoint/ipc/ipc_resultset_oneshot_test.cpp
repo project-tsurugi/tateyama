@@ -26,7 +26,7 @@ public:
         std::string payload { req->payload() };
         std::size_t datalen = std::stoul(payload);
         std::shared_ptr<tateyama::api::server::data_channel> channel;
-        EXPECT_EQ(tateyama::status::ok, res->acquire_channel(resultset_name, channel));
+        EXPECT_EQ(tateyama::status::ok, res->acquire_channel(resultset_name, channel, default_writer_count));
         EXPECT_NE(channel.get(), nullptr);
         std::shared_ptr<tateyama::api::server::writer> writer;
         EXPECT_EQ(tateyama::status::ok, channel->acquire(writer));

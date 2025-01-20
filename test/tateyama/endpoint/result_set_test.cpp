@@ -70,7 +70,7 @@ public:
             EXPECT_EQ(request_test_message_, payload);
 
             std::shared_ptr<tateyama::api::server::data_channel> dc;
-            EXPECT_EQ(res->acquire_channel(resultset_wire_name_, dc), tateyama::status::ok);
+            EXPECT_EQ(res->acquire_channel(resultset_wire_name_, dc, writer_count), tateyama::status::ok);
             res->body_head(resultset_wire_name_);
 
             std::shared_ptr<tateyama::api::server::writer> w;
@@ -102,7 +102,7 @@ TEST_F(result_set_test, normal) {
     EXPECT_EQ(request_wire->payload(), request_message);
 
     auto request = std::make_shared<ipc_request>(*wire_, h, dmy_dbinfo_, dmy_ssinfo_, dmy_ssstore_, dmy_svariable_set_, 0);
-    auto response = std::make_shared<ipc_response>(wire_, h.get_idx(), writer_count, [](){});
+    auto response = std::make_shared<ipc_response>(wire_, h.get_idx(), [](){});
 
     test_service sv;
     sv(static_cast<std::shared_ptr<tateyama::api::server::request>>(request),
@@ -159,7 +159,7 @@ TEST_F(result_set_test, large) {
     EXPECT_EQ(request_wire->payload(), request_message);
 
     auto request = std::make_shared<ipc_request>(*wire_, h, dmy_dbinfo_, dmy_ssinfo_, dmy_ssstore_, dmy_svariable_set_, 0);
-    auto response = std::make_shared<ipc_response>(wire_, h.get_idx(), writer_count, [](){});
+    auto response = std::make_shared<ipc_response>(wire_, h.get_idx(), [](){});
 
 
     // server side
@@ -170,7 +170,7 @@ TEST_F(result_set_test, large) {
     EXPECT_EQ(request_test_message_, payload);
 
     std::shared_ptr<tateyama::api::server::data_channel> dc;
-    EXPECT_EQ(res->acquire_channel(resultset_wire_name_, dc), tateyama::status::ok);
+    EXPECT_EQ(res->acquire_channel(resultset_wire_name_, dc, writer_count), tateyama::status::ok);
     res->body_head(resultset_wire_name_);
 
     std::shared_ptr<tateyama::api::server::writer> w;

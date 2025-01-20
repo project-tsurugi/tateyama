@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2024 Project Tsurugi.
+ * Copyright 2018-2025 Project Tsurugi.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -105,14 +105,19 @@ void ipc_response::server_diagnostics(std::string_view diagnostic_record) {
     server_wire_->get_response_wire().write(s.data(), tateyama::common::wire::response_header(index_, s.length(), RESPONSE_BODY));
 }
 
-tateyama::status ipc_response::acquire_channel(std::string_view name, std::shared_ptr<tateyama::api::server::data_channel>& ch) {
+tateyama::status ipc_response::acquire_channel(std::string_view name, std::shared_ptr<tateyama::api::server::data_channel>& ch, std::size_t max_writer_count) {
     if (completed_.load()) {
         LOG_LP(ERROR) << "response is already completed";
         set_state(state::acquire_failed);
         return tateyama::status::unknown;
     }
+    if (max_writer_count > (UINT8_MAX + 1)) {
+        LOG_LP(ERROR) << "too large writer count (" << max_writer_count << ") given";
+        set_state(state::acquire_failed);
+        return tateyama::status::unknown;
+    }
     try {
-        data_channel_ = std::make_shared<ipc_data_channel>(server_wire_->create_resultset_wires(name, writer_count_), garbage_collector_);
+        data_channel_ = std::make_shared<ipc_data_channel>(server_wire_->create_resultset_wires(name, max_writer_count), garbage_collector_);
     } catch (std::exception &ex) {
         ch = nullptr;
 

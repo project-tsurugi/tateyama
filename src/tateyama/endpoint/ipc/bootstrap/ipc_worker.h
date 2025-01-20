@@ -31,14 +31,12 @@ public:
                const tateyama::endpoint::common::worker_common::configuration& conf,
                std::size_t session_id,
                std::shared_ptr<server_wire_container_impl> wire,
-               const tateyama::api::server::database_info& database_info,
-               std::size_t writer_count) :
+               const tateyama::api::server::database_info& database_info) :
         worker_common(conf, session_id, ""),
             service_(service),
             wire_(std::move(wire)),
             request_wire_container_(dynamic_cast<server_wire_container_impl::wire_container_impl*>(wire_->get_request_wire())),
-            database_info_(database_info),
-            writer_count_(writer_count) {
+            database_info_(database_info) {
     }
     void delete_hook() {
         shutdown_complete();
@@ -53,7 +51,6 @@ private:
     std::shared_ptr<server_wire_container_impl> wire_;
     server_wire_container_impl::wire_container_impl* request_wire_container_;
     const tateyama::api::server::database_info& database_info_;
-    std::size_t writer_count_;
 
     bool has_incomplete_resultset() override {
         auto* gc = wire_->get_garbage_collector();

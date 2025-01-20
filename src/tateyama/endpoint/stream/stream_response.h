@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2023 Project Tsurugi.
+ * Copyright 2018-2025 Project Tsurugi.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -94,7 +94,7 @@ public:
     tateyama::status body(std::string_view body) override;
     tateyama::status body_head(std::string_view body_head) override;
     void error(proto::diagnostics::Record const& record) override;
-    tateyama::status acquire_channel(std::string_view name, std::shared_ptr<tateyama::api::server::data_channel>& ch) override;
+    tateyama::status acquire_channel(std::string_view name, std::shared_ptr<tateyama::api::server::data_channel>& ch, std::size_t max_writer_count) override;
     tateyama::status release_channel(tateyama::api::server::data_channel& ch) override;
 
 private:
