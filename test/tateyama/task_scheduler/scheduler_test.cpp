@@ -57,7 +57,7 @@ TEST_F(scheduler_test, basic) {
     task_scheduler_cfg cfg{};
     cfg.thread_count(1);
     scheduler<test_task> sched{cfg};
-    bool executed = false;
+    std::atomic_bool executed = false;
     test_task t{[&](context& t) {
         executed = true;
     }};
@@ -88,8 +88,8 @@ TEST_F(scheduler_test, multiple_task_impls) {
     task_scheduler_cfg cfg{};
     cfg.thread_count(1);
     scheduler<task> sched{cfg};
-    bool executed = false;
-    bool executed2 = false;
+    std::atomic_bool executed = false;
+    std::atomic_bool executed2 = false;
     test_task t{[&](context& t) {
         executed = true;
     }};
@@ -132,10 +132,10 @@ TEST_F(scheduler_test, sticky_task_simple) {
     auto& w0 = sched.workers()[0];
     auto& lq0 = sched.queues()[0];
     auto& sq0 = sched.sticky_task_queues()[0];
-    bool executed00 = false;
-    bool executed01 = false;
-    bool executed02 = false;
-    bool executed03 = false;
+    std::atomic_bool executed00 = false;
+    std::atomic_bool executed01 = false;
+    std::atomic_bool executed02 = false;
+    std::atomic_bool executed03 = false;
     sched.schedule_at(task{test_task{[&](context& t) {
         executed01 = true;
     }}}, 0);
@@ -174,9 +174,9 @@ TEST_F(scheduler_test, sticky_task_stealing) {
     auto& lq1 = sched.queues()[1];
     auto& sq0 = sched.sticky_task_queues()[0];
     auto& sq1 = sched.sticky_task_queues()[1];
-    bool executed00 = false;
-    bool executed10 = false;
-    bool executed11 = false;
+    std::atomic_bool executed00 = false;
+    std::atomic_bool executed10 = false;
+    std::atomic_bool executed11 = false;
     sched.schedule_at(task{test_task{[&](context& t) {
         executed00 = true;
     }}}, 0);
@@ -211,12 +211,12 @@ TEST_F(scheduler_test, sticky_tasks) {
     auto& w0 = sched.workers()[0];
     auto& lq0 = sched.queues()[0];
     auto& sq0 = sched.sticky_task_queues()[0];
-    bool executed00 = false;
-    bool executed01 = false;
-    bool executed02 = false;
-    bool executed03 = false;
-    bool executed04 = false;
-    bool executed05 = false;
+    std::atomic_bool executed00 = false;
+    std::atomic_bool executed01 = false;
+    std::atomic_bool executed02 = false;
+    std::atomic_bool executed03 = false;
+    std::atomic_bool executed04 = false;
+    std::atomic_bool executed05 = false;
     sched.schedule_at(task{test_task{[&](context& t) {
         executed01 = true;
     }}}, 0);
@@ -269,10 +269,10 @@ TEST_F(scheduler_test, stealing_from_last_worker) {
     auto& w4 = sched.workers()[4];
     auto& lq0 = sched.queues()[0];
     auto& sq0 = sched.sticky_task_queues()[0];
-    bool executed01 = false;
-    bool executed02 = false;
-    bool executed03 = false;
-    bool executed04 = false;
+    std::atomic_bool executed01 = false;
+    std::atomic_bool executed02 = false;
+    std::atomic_bool executed03 = false;
+    std::atomic_bool executed04 = false;
     sched.schedule_at(task{test_task{[&](context& t) {
         executed01 = true;
     }}}, 1);
@@ -400,9 +400,11 @@ TEST_F(scheduler_test, thread_initializer) {
     task_scheduler_cfg cfg{};
     cfg.thread_count(3);
     std::vector<std::size_t> indices{};
-    bool executed = false;
+    std::atomic_bool executed = false;
+    std::mutex mutex{};
     scheduler<test_task> sched{cfg, [&](std::size_t index) {
         executed = true;
+        std::unique_lock lk{mutex};
         indices.emplace_back(index);
     }};
 
