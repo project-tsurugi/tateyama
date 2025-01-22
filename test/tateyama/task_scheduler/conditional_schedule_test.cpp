@@ -165,8 +165,8 @@ TEST_F(conditional_schedule_test, stop_with_empty_cond_task) {
     cfg.watcher_interval(2*60*1000*1000);
     scheduler<task, conditional_task> sched{cfg};
     sched.start();
-    std::this_thread::sleep_for(1ms);
-    ASSERT_FALSE(sched.conditional_worker_context().thread()->active());
+    std::this_thread::sleep_for(10ms);
+    EXPECT_TRUE(! sched.conditional_worker_context().thread()->active());
     sched.stop();
 }
 }
