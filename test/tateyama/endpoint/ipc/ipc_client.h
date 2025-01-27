@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2023 Project Tsurugi.
+ * Copyright 2018-2025 Project Tsurugi.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 #pragma once
+
+#include <set>
 
 #include "ipc_test_utils.h"
 
@@ -41,6 +43,7 @@ public:
     ~ipc_client() { disconnect(); }
 
     void send(const std::size_t tag, const std::string &message, std::size_t index_offset = 0);
+    void send(const std::size_t tag, const std::string &message, std::set<std::tuple<std::string, std::string, bool>>& blobs, std::size_t index_offset = 0);
     void receive(std::string &message);
     void receive(std::string &message, tateyama::proto::framework::response::Header::PayloadType& type);
     void disconnect() {
@@ -51,13 +54,15 @@ public:
     }
     resultset_wires_container* create_resultset_wires();
     void dispose_resultset_wires(resultset_wires_container *rwc);
-
     std::size_t session_id() const noexcept {
         return session_id_;
     }
 
     std::string session_name() const noexcept {
         return session_name_;
+    }
+    tateyama::proto::framework::response::Header& framework_response_header() {
+        return hdr_;
     }
 
     // tateyama/src/tateyama/endpoint/ipc/bootstrap/server_wires_impl.h
@@ -79,6 +84,7 @@ private:
     tsubakuro::common::wire::session_wire_container::wire_container *request_wire_ { };
     tsubakuro::common::wire::session_wire_container::response_wire_container *response_wire_ { };
     tateyama::proto::endpoint::request::Handshake default_endpoint_handshake_{ };
+    tateyama::proto::framework::response::Header hdr_ { };
     bool disconnected_{ };
 
     void handshake();
