@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2024 Project Tsurugi.
+ * Copyright 2018-2025 Project Tsurugi.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,25 +55,22 @@ void ipc_client::send(const std::size_t tag, const std::string &message, std::si
                          ipc_test_index + index_offset);
 }
 
-/*
- *  see parse_header() in tateyama/endpoint/common/endpoint_proto_utils.h
- */
-struct parse_response_result {
-    std::size_t session_id_ { };
-    tateyama::proto::framework::response::Header::PayloadType payload_type_{};
-    std::string_view payload_ { };
-};
+void ipc_client::send(const std::size_t tag, const std::string &message, std::set<std::tuple<std::string, std::string, bool>>& blobs, std::size_t index_offset) {
+    request_header_content hdr { session_id_, tag, &blobs };
+    std::stringstream ss { };
+    append_request_header(ss, message, hdr);
+    auto request_message = ss.str();
+    request_wire_->write(reinterpret_cast<const signed char*>(request_message.data()),
+                         request_message.length(),
+                         ipc_test_index + index_offset);
+}
 
-bool parse_response_header(std::string_view input, parse_response_result &result) {
-    result = { };
-    ::tateyama::proto::framework::response::Header hdr { };
+bool parse_response_header(std::string_view input, tateyama::proto::framework::response::Header& hdr, std::string_view &payload) {
     google::protobuf::io::ArrayInputStream in { input.data(), static_cast<int>(input.size()) };
     if (auto res = utils::ParseDelimitedFromZeroCopyStream(std::addressof(hdr), std::addressof(in), nullptr); !res) {
         return false;
     }
-    result.session_id_ = hdr.session_id();
-    result.payload_type_ = hdr.payload_type();
-    return utils::GetDelimitedBodyFromZeroCopyStream(std::addressof(in), nullptr, result.payload_);
+    return utils::GetDelimitedBodyFromZeroCopyStream(std::addressof(in), nullptr, payload);
 }
 
 void ipc_client::receive(std::string &message) {
@@ -110,12 +107,12 @@ void ipc_client::receive(std::string &message, tateyama::proto::framework::respo
     r_msg.resize(header.get_length());
     response_wire_->read(reinterpret_cast<signed char*>(r_msg.data()));
     //
-    parse_response_result result;
-    parse_response_header(r_msg, result);
+    std::string_view payload{};
+    parse_response_header(r_msg, hdr_, payload);
     // ASSERT_TRUE(parse_response_header(r_msg, result));
     // EXPECT_EQ(session_id_, result.session_id_);
-    message = result.payload_;
-    type = result.payload_type_;
+    message = payload;
+    type = hdr_.payload_type();
 }
 
 resultset_wires_container* ipc_client::create_resultset_wires() {

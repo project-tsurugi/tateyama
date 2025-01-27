@@ -65,13 +65,13 @@ inline bool append_response_header(std::stringstream& ss, std::string_view body,
     hdr.set_payload_type(type);
     if(input.blobs_ && type == ::tateyama::proto::framework::response::Header::SERVICE_RESULT) {
         if (!(input.blobs_)->empty()) {
-            auto* blobs = hdr.mutable_blobs();
+            auto* mutable_blobs = hdr.mutable_blobs();
             for(auto&& e: *input.blobs_) {
-                auto* blob = blobs->add_blobs();
+                auto* mutable_blob = mutable_blobs->add_blobs();
                 auto cn = e->channel_name();
-                blob->set_channel_name(cn.data(), cn.length());
-                blob->set_path((e->path()).string());
-                blob->set_temporary(e->is_temporary());
+                mutable_blob->set_channel_name(cn.data(), cn.length());
+                mutable_blob->set_path((e->path()).string());
+                mutable_blob->set_temporary(e->is_temporary());
             }
         }
     }
