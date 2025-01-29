@@ -84,7 +84,11 @@ void mock_service::execute_prepared_statement(request* req, response* res) {
     jogasaki::proto::sql::request::Request request_message{};
     request_message.ParseFromString(std::string(req->payload()));
     auto& parameters = request_message.execute_prepared_statement().parameters();
+    bool need_line_break{};
     for (auto&& e: parameters) {
+        if (need_line_break) {
+            std::cout << "========" << std::endl;
+        }
         auto value_case = e.value_case();
         if (value_case == jogasaki::proto::sql::request::Parameter::ValueCase::kBlob) {
             auto value = e.blob();
@@ -94,6 +98,7 @@ void mock_service::execute_prepared_statement(request* req, response* res) {
             auto value = e.clob();
             dump_lob(req, value.channel_name(), value.data_case() == jogasaki::proto::sql::common::Clob::DataCase::kLocalPath ? value.local_path() : "");
         }
+        need_line_break = true;
     }
         
     jogasaki::proto::sql::response::Response response_message{};
