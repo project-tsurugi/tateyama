@@ -178,13 +178,12 @@ public:
             initialize(stream, default_property);
         } else {
             vlog_info_ << "cannot find " << file_name << ", thus we use default property only." << std::endl;
-            property_file_exist_ = false;
             std::stringstream empty_ss{};
             initialize(empty_ss, default_property);
         }
     }
     // this constructor works as if property file exists and its content is provided as istream
-    whole(std::istream& content, std::string_view default_property) : property_file_exist_(false) {
+    whole(std::istream& content, std::string_view default_property) {
         initialize(content, default_property);
     }
     // default_property can be empty only for test purpose
