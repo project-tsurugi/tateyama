@@ -107,7 +107,7 @@ public:
             auto enable_timeout = enable_timeout_opt.value();
             LOG(INFO) << tateyama::endpoint::common::session_config_prefix
                       << "enable_timeout: " << enable_timeout << ", "
-                      << "timeout is enabled.";
+                      << "whether timeout is enabled or not.";
 
             if (enable_timeout) {
                 auto refresh_timeout_opt = session_config->get<std::size_t>("refresh_timeout");

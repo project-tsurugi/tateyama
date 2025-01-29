@@ -79,12 +79,14 @@ public:
         if (enabled_) {
             listener_thread_ = std::thread(std::ref(*listener_));
             listener_->arrive_and_wait();
-            auto request_service = env.service_repository().find<tateyama::request::service::bridge>();
-            request_service->register_endpoint_listener(listener_);
-            auto diagnostic_resource = env.resource_repository().find<tateyama::diagnostic::resource::diagnostic_resource>();
-            diagnostic_resource->add_print_callback("tateyama_stream_endpoint", [this](std::ostream& os) {
-                listener_->print_diagnostic(os);
-            });
+            if (auto request_service = env.service_repository().find<tateyama::request::service::bridge>(); request_service) {
+                request_service->register_endpoint_listener(listener_);
+            }
+            if (auto diagnostic_resource = env.resource_repository().find<tateyama::diagnostic::resource::diagnostic_resource>(); diagnostic_resource) {
+                diagnostic_resource->add_print_callback("tateyama_stream_endpoint", [this](std::ostream& os) {
+                    listener_->print_diagnostic(os);
+                });
+            }
         }
         return true;
     }
@@ -92,7 +94,7 @@ public:
     /**
      * @brief shutdown the component (the state will be `deactivated`)
      */
-    bool shutdown(environment&) override {
+    bool shutdown(environment& env) override {
         if (enabled_) {
             // For clean up, shutdown can be called multiple times with/without setup()/start().
             if(listener_thread_.joinable()) {
@@ -102,6 +104,9 @@ public:
                 listener_thread_.join();
             }
             listener_.reset();
+            if (auto diagnostic_resource = env.resource_repository().find<tateyama::diagnostic::resource::diagnostic_resource>(); diagnostic_resource) {
+                diagnostic_resource->remove_print_callback("tateyama_stream_endpoint");
+            }
         }
         return true;
     }

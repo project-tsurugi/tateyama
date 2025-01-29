@@ -60,9 +60,10 @@ available options:
 * `-DCMAKE_IGNORE_PATH="/usr/local/include;/usr/local/lib/"` - specify the libraries search paths to ignore. This is convenient if the environment has conflicting version installed on system default search paths. (e.g. gflags in /usr/local)
 * `-DBUILD_SHARED_LIBS=OFF` - create static libraries instead of shared libraries
 * `-DBUILD_TESTS=OFF` - don't build test programs
+* `-DBUILD_EXAMPLES=OFF` - don't build example programs
+* `-DBUILD_BENCHMARK=OFF` - don't build benchmark programs
 * `-DBUILD_DOCUMENTS=OFF` - don't build documents by doxygen
 * `-DINSTALL_EXAMPLES=ON` - install example applications
-* `-DBUILD_BENCHMARK=ON` - build benchmark programs
 * `-DSHARKSFIN_IMPLEMENTATION=<implementation name>` - switch sharksfin implementation. Available options are `memory` and `shirakami` (default: `memory`)
 * `-DENABLE_ALTIMETER=ON` - turn on the `altimeter logging`.
 * `-DMC_QUEUE=ON` - use moody camel queue instead of tbb queue to store tasks in tateyama task scheduler.
@@ -72,6 +73,8 @@ available options:
   * `-DENABLE_UB_SANITIZER=ON` - enable undefined behavior sanitizer (requires `-DENABLE_SANITIZER=ON`)
   * `-DENABLE_COVERAGE=ON` - enable code coverage analysis (requires `-DCMAKE_BUILD_TYPE=Debug`)
   * `-DTRACY_ENABLE=ON` - enable tracy profiler for multi-thread debugging. See section below.
+* for developper only
+  * `-DBUILD_MOCK=ON` - build a mock server
 
 ### install
 

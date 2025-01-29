@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2023 Project Tsurugi.
+ * Copyright 2018-2025 Project Tsurugi.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -183,7 +183,7 @@ public:
         }
     }
     // this constructor works as if property file exists and its content is provided as istream
-    whole(std::istream& content, std::string_view default_property) : property_file_exist_(true) {
+    whole(std::istream& content, std::string_view default_property) {
         initialize(content, default_property);
     }
     // default_property can be empty only for test purpose
@@ -335,15 +335,11 @@ private:
             BOOST_FOREACH(const boost::property_tree::ptree::value_type &v, default_tree_) {
                 auto& dt = default_tree_.get_child(v.first);
                 bool default_required = (v.first != "glog");
-                if (property_file_exist_) {
-                    try {
-                        auto& pt = property_tree_.get_child(v.first);
-                        map_.emplace(v.first, std::make_unique<section>(pt, dt, this, default_required));
-                    } catch (boost::property_tree::ptree_error &e) {
-                        vlog_info_ << "cannot find " << v.first << " section in the input, thus we use default property only." << std::endl;
-                        map_.emplace(v.first, std::make_unique<section>(dt, this, default_required));
-                    }
-                } else {
+                try {
+                    auto& pt = property_tree_.get_child(v.first);
+                    map_.emplace(v.first, std::make_unique<section>(pt, dt, this, default_required));
+                } catch (boost::property_tree::ptree_error &e) {
+                    vlog_info_ << "cannot find " << v.first << " section in the input, thus we use default property only." << std::endl;
                     map_.emplace(v.first, std::make_unique<section>(dt, this, default_required));
                 }
             }
