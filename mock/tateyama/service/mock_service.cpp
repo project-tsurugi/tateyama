@@ -59,67 +59,67 @@ bool mock_service::operator()(std::shared_ptr<request> req, [[maybe_unused]] std
     }
     switch (proto_req.request_case()) {
     case jogasaki::proto::sql::request::Request::kBegin:
-        begin(req.get(), res.get());
+        begin(req, res);
         break;
     case jogasaki::proto::sql::request::Request::kPrepare:
-        prepare(req.get(), res.get());
+        prepare(req, res);
         break;
     case jogasaki::proto::sql::request::Request::kExecuteStatement:
-        execute_statement(req.get(), res.get());
+        execute_statement(req, res);
         break;
     case jogasaki::proto::sql::request::Request::kExecuteQuery:
-        execute_query(req.get(), res.get());
+        execute_query(req, res);
         break;
     case jogasaki::proto::sql::request::Request::kExecutePreparedStatement:
-        execute_prepared_statement(req.get(), res.get());
+        execute_prepared_statement(req, res);
         break;
     case jogasaki::proto::sql::request::Request::kExecutePreparedQuery:
-        execute_prepared_query(req.get(), res.get());
+        execute_prepared_query(req, res);
         break;
     case jogasaki::proto::sql::request::Request::kCommit:
-        commit(req.get(), res.get());
+        commit(req, res);
         break;
     case jogasaki::proto::sql::request::Request::kRollback:
-        rollback(req.get(), res.get());
+        rollback(req, res);
         break;
     case jogasaki::proto::sql::request::Request::kDisposePreparedStatement:
-        dispose_prepared_statement(req.get(), res.get());
+        dispose_prepared_statement(req, res);
         break;
     case jogasaki::proto::sql::request::Request::kExplain:
-        explain(req.get(), res.get());
+        explain(req, res);
         break;
     case jogasaki::proto::sql::request::Request::kExecuteDump:
-        execute_dump(req.get(), res.get());
+        execute_dump(req, res);
         break;
     case jogasaki::proto::sql::request::Request::kExecuteLoad:
-        execute_load(req.get(), res.get());
+        execute_load(req, res);
         break;
     case jogasaki::proto::sql::request::Request::kDescribeTable:
-        describe_table(req.get(), res.get());
+        describe_table(req, res);
         break;
     case jogasaki::proto::sql::request::Request::kBatch:
-        batch(req.get(), res.get());
+        batch(req, res);
         break;
     case jogasaki::proto::sql::request::Request::kListTables:
-        list_tables(req.get(), res.get());
+        list_tables(req, res);
         break;
     case jogasaki::proto::sql::request::Request::kGetSearchPath:
-        get_search_path(req.get(), res.get());
+        get_search_path(req, res);
         break;
     case jogasaki::proto::sql::request::Request::kGetErrorInfo:
-        get_error_info(req.get(), res.get());
+        get_error_info(req, res);
         break;
     case jogasaki::proto::sql::request::Request::kDisposeTransaction:
-        dispose_transaction(req.get(), res.get());
+        dispose_transaction(req, res);
         break;
     case jogasaki::proto::sql::request::Request::kExplainByText:
-        explain_by_text(req.get(), res.get());
+        explain_by_text(req, res);
         break;
     case jogasaki::proto::sql::request::Request::kExtractStatementInfo:
-        extract_statement_info(req.get(), res.get());
+        extract_statement_info(req, res);
         break;
     case jogasaki::proto::sql::request::Request::kGetLargeObjectData:
-        get_large_object_data(req.get(), res.get());
+        get_large_object_data(req, res);
         break;
     default:
         throw_exception(std::logic_error{"illegal command_case"});

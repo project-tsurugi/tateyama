@@ -81,27 +81,27 @@ public:
      */
     [[nodiscard]] std::string_view label() const noexcept override;
 
-    void begin(request* req, response* res);
-    void prepare(request* req, response* res);
-    void execute_statement(request* req, response* res);
-    void execute_query(request* req, response* res);
-    void execute_prepared_statement(request* req, response* res);
-    void execute_prepared_query(request* req, response* res);
-    void commit(request* req, response* res);
-    void rollback(request* req, response* res);
-    void dispose_prepared_statement(request* req, response* res);
-    void explain(request* req, response* res);
-    void execute_dump(request* req, response* res);
-    void execute_load(request* req, response* res);
-    void describe_table(request* req, response* res);
-    void batch(request* req, response* res);
-    void list_tables(request* req, response* res);
-    void get_search_path(request* req, response* res);
-    void get_error_info(request* req, response* res);
-    void dispose_transaction(request* req, response* res);
-    void explain_by_text(request* req, response* res);
-    void extract_statement_info(request* req, response* res);
-    void get_large_object_data(request* req, response* res);
+    void begin(std::shared_ptr<request> req, std::shared_ptr<response> res);
+    void prepare(std::shared_ptr<request> req, std::shared_ptr<response> res);
+    void execute_statement(std::shared_ptr<request> req, std::shared_ptr<response> res);
+    void execute_query(std::shared_ptr<request> req, std::shared_ptr<response> res);
+    void execute_prepared_statement(std::shared_ptr<request> req, std::shared_ptr<response> res);
+    void execute_prepared_query(std::shared_ptr<request> req, std::shared_ptr<response> res);
+    void commit(std::shared_ptr<request> req, std::shared_ptr<response> res);
+    void rollback(std::shared_ptr<request> req, std::shared_ptr<response> res);
+    void dispose_prepared_statement(std::shared_ptr<request> req, std::shared_ptr<response> res);
+    void explain(std::shared_ptr<request> req, std::shared_ptr<response> res);
+    void execute_dump(std::shared_ptr<request> req, std::shared_ptr<response> res);
+    void execute_load(std::shared_ptr<request> req, std::shared_ptr<response> res);
+    void describe_table(std::shared_ptr<request> req, std::shared_ptr<response> res);
+    void batch(std::shared_ptr<request> req, std::shared_ptr<response> res);
+    void list_tables(std::shared_ptr<request> req, std::shared_ptr<response> res);
+    void get_search_path(std::shared_ptr<request> req, std::shared_ptr<response> res);
+    void get_error_info(std::shared_ptr<request> req, std::shared_ptr<response> res);
+    void dispose_transaction(std::shared_ptr<request> req, std::shared_ptr<response> res);
+    void explain_by_text(std::shared_ptr<request> req, std::shared_ptr<response> res);
+    void extract_statement_info(std::shared_ptr<request> req, std::shared_ptr<response> res);
+    void get_large_object_data(std::shared_ptr<request> req, std::shared_ptr<response> res);
 };
 
 class blob_info_for_test : public tateyama::api::server::blob_info {

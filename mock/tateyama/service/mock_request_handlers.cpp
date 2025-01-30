@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 #include <iostream>
+#include <thread>
+#include <chrono>
 
 #include <jogasaki/proto/sql/request.pb.h>
 #include <jogasaki/proto/sql/response.pb.h>
@@ -58,7 +60,7 @@ using tateyama::api::server::data_channel;
 using tateyama::api::server::writer;
 
 // request handlers
-void mock_service::begin(request*, response* res) {
+void mock_service::begin(std::shared_ptr<request>, std::shared_ptr<response> res) {
     std::cout << "======== " << __func__ << " ========" << std::endl;
     jogasaki::proto::sql::response::Response response_message{};
     auto *rmsg = response_message.mutable_begin();
@@ -69,7 +71,7 @@ void mock_service::begin(request*, response* res) {
     res->body(response_message.SerializeAsString());
 }
 
-void mock_service::prepare(request*, response* res) {
+void mock_service::prepare(std::shared_ptr<request>, std::shared_ptr<response> res) {
     std::cout << "======== " << __func__ << " ========" << std::endl;
     jogasaki::proto::sql::response::Response response_message{};
     auto *rmsg = response_message.mutable_prepare();
@@ -79,7 +81,7 @@ void mock_service::prepare(request*, response* res) {
     res->body(response_message.SerializeAsString());
 }
 
-void mock_service::execute_prepared_statement(request* req, response* res) {
+void mock_service::execute_prepared_statement(std::shared_ptr<request> req, std::shared_ptr<response> res) {
     std::cout << "======== " << __func__ << " ========" << std::endl;
     jogasaki::proto::sql::request::Request request_message{};
     request_message.ParseFromString(std::string(req->payload()));
@@ -92,11 +94,11 @@ void mock_service::execute_prepared_statement(request* req, response* res) {
         auto value_case = e.value_case();
         if (value_case == jogasaki::proto::sql::request::Parameter::ValueCase::kBlob) {
             auto value = e.blob();
-            dump_lob(req, value.channel_name(), value.data_case() == jogasaki::proto::sql::common::Blob::DataCase::kLocalPath ? value.local_path() : "");
+            dump_lob(req.get(), value.channel_name(), value.data_case() == jogasaki::proto::sql::common::Blob::DataCase::kLocalPath ? value.local_path() : "");
         }
         if (value_case == jogasaki::proto::sql::request::Parameter::ValueCase::kClob) {
             auto value = e.clob();
-            dump_lob(req, value.channel_name(), value.data_case() == jogasaki::proto::sql::common::Clob::DataCase::kLocalPath ? value.local_path() : "");
+            dump_lob(req.get(), value.channel_name(), value.data_case() == jogasaki::proto::sql::common::Clob::DataCase::kLocalPath ? value.local_path() : "");
         }
         need_line_break = true;
     }
@@ -111,7 +113,7 @@ void mock_service::execute_prepared_statement(request* req, response* res) {
     res->body(response_message.SerializeAsString());
 }
 
-void mock_service::execute_prepared_query(request*, response* res) {
+void mock_service::execute_prepared_query(std::shared_ptr<request>, std::shared_ptr<response> res) {
     std::cout << "======== " << __func__ << " ========" << std::endl;
 
     std::shared_ptr<data_channel> ch;
@@ -157,13 +159,19 @@ void mock_service::execute_prepared_query(request*, response* res) {
         res->add_blob(std::make_unique<blob_info_for_test>(clob_channel, std::filesystem::path(file_name), false));
     });
 
-    jogasaki::proto::sql::response::Response response_message{};
-    auto *rmsg = response_message.mutable_result_only();
-    (void) rmsg->mutable_success();
-    res->body(response_message.SerializeAsString());
+    std::thread th([res]{
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+
+        jogasaki::proto::sql::response::Response response_message{};
+        auto *rmsg = response_message.mutable_result_only();
+        (void) rmsg->mutable_success();
+
+        res->body(response_message.SerializeAsString());
+    });
+    th.detach();
 }
 
-void mock_service::get_large_object_data(request* req, response* res) {
+void mock_service::get_large_object_data(std::shared_ptr<request> req, std::shared_ptr<response> res) {
     std::cout << "======== " << __func__ << " ========" << std::endl;
 
     jogasaki::proto::sql::request::Request request_message{};
@@ -184,21 +192,21 @@ void mock_service::get_large_object_data(request* req, response* res) {
     res->body(response_message.SerializeAsString());
 }
 
-void mock_service::commit(request*, response* res) {
+void mock_service::commit(std::shared_ptr<request>, std::shared_ptr<response> res) {
     std::cout << "======== " << __func__ << " ========" << std::endl;
-    reply_ok(res);
+    reply_ok(res.get());
 }
-void mock_service::rollback(request*, response* res) {
+void mock_service::rollback(std::shared_ptr<request>, std::shared_ptr<response> res) {
     std::cout << "======== " << __func__ << " ========" << std::endl;
-    reply_ok(res);
+    reply_ok(res.get());
 }
-void mock_service::dispose_prepared_statement(request*, response* res) {
+void mock_service::dispose_prepared_statement(std::shared_ptr<request>, std::shared_ptr<response> res) {
     std::cout << "======== " << __func__ << " ========" << std::endl;
-    reply_ok(res);
+    reply_ok(res.get());
 }
-void mock_service::dispose_transaction(request*, response* res) {
+void mock_service::dispose_transaction(std::shared_ptr<request>, std::shared_ptr<response> res) {
     std::cout << "======== " << __func__ << " ========" << std::endl;
-    reply_ok(res);
+    reply_ok(res.get());
 }
 
 // does not support with the mock server
@@ -207,7 +215,7 @@ std::string does_not_support(const std::string& name) {
     return name + " is not supported with the mock server"s;
 }
 
-void mock_service::execute_statement(request*, response* res) {
+void mock_service::execute_statement(std::shared_ptr<request>, std::shared_ptr<response> res) {
     jogasaki::proto::sql::response::Response response_message{};
     auto *rmsg = response_message.mutable_prepare();
     auto* error = rmsg->mutable_error();
@@ -216,7 +224,7 @@ void mock_service::execute_statement(request*, response* res) {
 
     res->body(response_message.SerializeAsString());
 }
-void mock_service::execute_query(request*, response* res) {
+void mock_service::execute_query(std::shared_ptr<request>, std::shared_ptr<response> res) {
     jogasaki::proto::sql::response::Response response_message{};
     auto *rmsg = response_message.mutable_execute_result();
     auto* error = rmsg->mutable_error();
@@ -225,7 +233,7 @@ void mock_service::execute_query(request*, response* res) {
 
     res->body(response_message.SerializeAsString());
 }
-void mock_service::explain(request*, response* res) {
+void mock_service::explain(std::shared_ptr<request>, std::shared_ptr<response> res) {
     jogasaki::proto::sql::response::Response response_message{};
     auto *rmsg = response_message.mutable_explain();
     auto* error = rmsg->mutable_error();
@@ -234,7 +242,7 @@ void mock_service::explain(request*, response* res) {
 
     res->body(response_message.SerializeAsString());
 }
-void mock_service::execute_dump(request*, response* res) {
+void mock_service::execute_dump(std::shared_ptr<request>, std::shared_ptr<response> res) {
     jogasaki::proto::sql::response::Response response_message{};
     auto *rmsg = response_message.mutable_result_only();
     auto* error = rmsg->mutable_error();
@@ -243,7 +251,7 @@ void mock_service::execute_dump(request*, response* res) {
 
     res->body(response_message.SerializeAsString());
 }
-void mock_service::execute_load(request*, response* res) {
+void mock_service::execute_load(std::shared_ptr<request>, std::shared_ptr<response> res) {
     jogasaki::proto::sql::response::Response response_message{};
     auto *rmsg = response_message.mutable_execute_result();
     auto* error = rmsg->mutable_error();
@@ -252,7 +260,7 @@ void mock_service::execute_load(request*, response* res) {
 
     res->body(response_message.SerializeAsString());
 }
-void mock_service::describe_table(request*, response* res) {
+void mock_service::describe_table(std::shared_ptr<request>, std::shared_ptr<response> res) {
     jogasaki::proto::sql::response::Response response_message{};
     auto *rmsg = response_message.mutable_describe_table();
     auto* error = rmsg->mutable_error();
@@ -261,7 +269,7 @@ void mock_service::describe_table(request*, response* res) {
 
     res->body(response_message.SerializeAsString());
 }
-void mock_service::batch(request*, response* res) {
+void mock_service::batch(std::shared_ptr<request>, std::shared_ptr<response> res) {
     jogasaki::proto::sql::response::Response response_message{};
     auto *rmsg = response_message.mutable_execute_result();
     auto* error = rmsg->mutable_error();
@@ -270,7 +278,7 @@ void mock_service::batch(request*, response* res) {
 
     res->body(response_message.SerializeAsString());
 }
-void mock_service::list_tables(request*, response* res) {
+void mock_service::list_tables(std::shared_ptr<request>, std::shared_ptr<response> res) {
     jogasaki::proto::sql::response::Response response_message{};
     auto *rmsg = response_message.mutable_list_tables();
     auto* error = rmsg->mutable_error();
@@ -279,7 +287,7 @@ void mock_service::list_tables(request*, response* res) {
 
     res->body(response_message.SerializeAsString());
 }
-void mock_service::get_search_path(request*, response* res) {
+void mock_service::get_search_path(std::shared_ptr<request>, std::shared_ptr<response> res) {
     jogasaki::proto::sql::response::Response response_message{};
     auto *rmsg = response_message.mutable_get_search_path();
     auto* error = rmsg->mutable_error();
@@ -288,7 +296,7 @@ void mock_service::get_search_path(request*, response* res) {
 
     res->body(response_message.SerializeAsString());
 }
-void mock_service::get_error_info(request*, response* res) {
+void mock_service::get_error_info(std::shared_ptr<request>, std::shared_ptr<response> res) {
     jogasaki::proto::sql::response::Response response_message{};
     auto *rmsg = response_message.mutable_get_error_info();
     auto* error = rmsg->mutable_error();
@@ -297,7 +305,7 @@ void mock_service::get_error_info(request*, response* res) {
 
     res->body(response_message.SerializeAsString());
 }
-void mock_service::explain_by_text(request*, response* res) {
+void mock_service::explain_by_text(std::shared_ptr<request>, std::shared_ptr<response> res) {
     jogasaki::proto::sql::response::Response response_message{};
     auto *rmsg = response_message.mutable_explain();
     auto* error = rmsg->mutable_error();
@@ -306,7 +314,7 @@ void mock_service::explain_by_text(request*, response* res) {
 
     res->body(response_message.SerializeAsString());
 }
-void mock_service::extract_statement_info(request*, response* res) {
+void mock_service::extract_statement_info(std::shared_ptr<request>, std::shared_ptr<response> res) {
     jogasaki::proto::sql::response::Response response_message{};
     auto *rmsg = response_message.mutable_extract_statement_info();
     auto* error = rmsg->mutable_error();
