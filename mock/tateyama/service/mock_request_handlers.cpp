@@ -150,15 +150,16 @@ void mock_service::execute_prepared_query(request*, response* res) {
     });
     res->body_head(head.SerializeAsString());
 
-    jogasaki::proto::sql::response::Response response_message{};
-    auto *rmsg = response_message.mutable_result_only();
-    (void) rmsg->mutable_success();
     pattern.foreach_blob([res](std::size_t, std::string&, std::string& blob_channel, std::string& file_name){
         res->add_blob(std::make_unique<blob_info_for_test>(blob_channel, std::filesystem::path(file_name), false));
     });
     pattern.foreach_clob([res](std::size_t, std::string&, std::string& clob_channel, std::string& file_name){
         res->add_blob(std::make_unique<blob_info_for_test>(clob_channel, std::filesystem::path(file_name), false));
     });
+
+    jogasaki::proto::sql::response::Response response_message{};
+    auto *rmsg = response_message.mutable_result_only();
+    (void) rmsg->mutable_success();
     res->body(response_message.SerializeAsString());
 }
 
