@@ -152,13 +152,6 @@ void mock_service::execute_prepared_query(std::shared_ptr<request>, std::shared_
     });
     res->body_head(head.SerializeAsString());
 
-    pattern.foreach_blob([res](std::size_t, std::string&, std::string& blob_channel, std::string& file_name){
-        res->add_blob(std::make_unique<blob_info_for_test>(blob_channel, std::filesystem::path(file_name), false));
-    });
-    pattern.foreach_clob([res](std::size_t, std::string&, std::string& clob_channel, std::string& file_name){
-        res->add_blob(std::make_unique<blob_info_for_test>(clob_channel, std::filesystem::path(file_name), false));
-    });
-
     std::thread th([res]{
         std::this_thread::sleep_for(std::chrono::seconds(1));
 
@@ -177,7 +170,19 @@ void mock_service::get_large_object_data(std::shared_ptr<request> req, std::shar
     jogasaki::proto::sql::request::Request request_message{};
     request_message.ParseFromString(std::string(req->payload()));
     auto& ref = request_message.get_large_object_data().reference();
-    std::cout << "reference = " << ref.provider() << ":" << ref.object_id() << std::endl;
+
+    pattern.foreach_blob([res, &ref](std::size_t object_id, std::string& column, std::string& blob_channel, std::string& file_name){
+        if (ref.object_id() == object_id) {
+            std::cout << "set blob reference for column " << column << ": id = " << ref.provider() << ":" << ref.object_id() << ": filename = " << file_name << std::endl;
+            res->add_blob(std::make_unique<blob_info_for_test>(blob_channel, std::filesystem::path(file_name), false));
+        }
+    });
+    pattern.foreach_clob([res, &ref](std::size_t object_id, std::string& column, std::string& clob_channel, std::string& file_name){
+        if (ref.object_id() == object_id) {
+            std::cout << "set clob reference for column " << column << ": id = " << ref.provider() << ":" << ref.object_id() << ": filename = " << file_name << std::endl;
+            res->add_blob(std::make_unique<blob_info_for_test>(clob_channel, std::filesystem::path(file_name), false));
+        }
+    });
 
     jogasaki::proto::sql::response::Response response_message{};
     auto *rmsg = response_message.mutable_get_large_object_data();
