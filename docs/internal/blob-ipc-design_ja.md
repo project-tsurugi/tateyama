@@ -39,7 +39,7 @@ public interface Session {
      * @return the future of response
      * @throws IOException if I/O error was occurred while requesting
      */
-    <R> send FutureResponse<R> send(
+    <R> FutureResponse<R> send(
         int serviceId,
         @Nonnull byte[] payload,
         @Nonnull List<? extends BlobInfo> blobs,
@@ -273,7 +273,7 @@ PreparedStatement ps = sql.prepare(
 Transaction tx = ...;
 tx.executeStatement(
         ps,
-        Parameters.blobOf("bd", Path.get("/path/to/object.bin"))).await();
+        Parameters.blobOf("bd", Paths.get("/path/to/object.bin"))).await();
 ```
 
 現状では、 `common.proto` の `Clob`, `Blob` は空の状態だが、以下のようにファイルパスを渡せるように変更する。
@@ -489,14 +489,37 @@ Note:
 ----
 Note:
 
-上記のほかに、必要であれば以下のようなメソッドの追加を検討する:
+上記のほかに、ファイルとして受け渡されるBLOB/CLOBの扱いを高速に行うため、以下のクラスを追加する。
 
-* `copyLargeObjectTo(LargeObjectReference blob, Path destination) -> void`
-  * BLOB/CLOB データを指定のファイルにコピーする
-* `getReadonlyLargeObjectCopy() -> Playground<Path>`
-  * BLOB/CLOB データを読み取り専用で保存するための一時ファイルを取得する
-  * `Playground.close()` が呼び出されると一時ファイルを削除する
-  * 特権モードにおいては、 **元ファイルを直接触れる**
+```java
+/**
+ * Represents large object cache.
+ */
+public interface LargeObjectCache extends AutoCloseable {
+
+    /**
+     * Returns the path of the file that represents the large object, only if it exists.
+     * The returned Path is available until close() of this object is invoked.
+     * @return the path of the file, or empty if it does not exist
+     */
+    Optional<Path> find();
+
+    /**
+     * Copy the large object to the file indicated by the given path.
+     * Files created by this method are not affected by close() of this object.
+     * @param destination the path of the destination file
+     * @throws IOException if I/O error was occurred while copying the large object to the file
+     *                     or it encounters a situation where find() returns an empty Optional
+     */
+    void copyTo(Path destination) throws IOException;
+
+    /**
+     * Closes the object cache. The file whose Path has been returned by find() may be deleted.
+     */
+    @Override
+    void close();
+}
+```
 
 ----
 TBD:
