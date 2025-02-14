@@ -35,7 +35,7 @@ add_dependencies(mock_server
 
 set_target_properties(mock_server
         PROPERTIES
-                INSTALL_RPATH "\$ORIGIN"
+                INSTALL_RPATH "\$ORIGIN/../${CMAKE_INSTALL_LIBDIR}"
                 RUNTIME_OUTPUT_NAME "mock_server"
         )
 
