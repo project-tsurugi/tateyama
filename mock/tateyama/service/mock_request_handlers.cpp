@@ -39,11 +39,8 @@ static void reply_ok(response* res) {
     res->body(response_message.SerializeAsString());
 }
 
-static void dump_lob(request* req, const std::string& name, const std::string& local_path) {
-    std::cout << "req->has_blob(\"" << name << "\") = " << req->has_blob(name) << std::endl;
-    if (!local_path.empty()) {
-        std::cout << "local_path =" << local_path << std::endl;
-    }
+static void dump_lob(request* req, const std::string& name) {
+    std::cout << "req->has_blob(\"" << name << "\") = " << std::boolalpha << req->has_blob(name) << std::noboolalpha << std::endl;
     try {
         auto& blob_info = req->get_blob(name);
         std::cout << "blob_info for " << name
@@ -94,11 +91,19 @@ void mock_service::execute_prepared_statement(std::shared_ptr<request> req, std:
         auto value_case = e.value_case();
         if (value_case == jogasaki::proto::sql::request::Parameter::ValueCase::kBlob) {
             auto value = e.blob();
-            dump_lob(req.get(), value.channel_name(), value.data_case() == jogasaki::proto::sql::common::Blob::DataCase::kLocalPath ? value.local_path() : "");
+            if (value.data_case() == jogasaki::proto::sql::common::Blob::DataCase::kChannelName) {
+                dump_lob(req.get(), value.channel_name());
+            } else {
+                std::cout << "**** illegal jogasaki::proto::sql::common::Blob::DataCase ***" << std::endl;
+            }
         }
         if (value_case == jogasaki::proto::sql::request::Parameter::ValueCase::kClob) {
             auto value = e.clob();
-            dump_lob(req.get(), value.channel_name(), value.data_case() == jogasaki::proto::sql::common::Clob::DataCase::kLocalPath ? value.local_path() : "");
+            if (value.data_case() == jogasaki::proto::sql::common::Clob::DataCase::kChannelName) {
+                dump_lob(req.get(), value.channel_name());
+            } else {
+                std::cout << "**** illegal jogasaki::proto::sql::common::Clob::DataCase ***" << std::endl;
+            }
         }
         need_line_break = true;
     }
