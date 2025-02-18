@@ -85,7 +85,7 @@ add_dependencies(${ENGINE}
 
 set_target_properties(${ENGINE}
         PROPERTIES
-                INSTALL_RPATH "\$ORIGIN/../lib"
+                INSTALL_RPATH "\$ORIGIN"
                 OUTPUT_NAME ${export_name}
 )
 

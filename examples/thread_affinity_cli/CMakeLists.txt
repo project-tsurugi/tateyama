@@ -8,7 +8,7 @@ add_executable(thread-affinity-cli
 
 set_target_properties(thread-affinity-cli
         PROPERTIES
-                INSTALL_RPATH "\$ORIGIN/../lib"
+                INSTALL_RPATH "\$ORIGIN/../${CMAKE_INSTALL_LIBDIR}"
                 RUNTIME_OUTPUT_NAME "cli"
 )
 
