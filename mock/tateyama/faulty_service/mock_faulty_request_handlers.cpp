@@ -89,8 +89,6 @@ void mock_faulty_service::query(std::shared_ptr<request>, std::shared_ptr<respon
 
     (void) ch->release(*wrt);
     (void) res->release_channel(*ch);
-// #else
-//    (void) vw->write_int(100);
 #endif
 
     jogasaki::proto::sql::response::Response head{};
@@ -104,6 +102,7 @@ void mock_faulty_service::query(std::shared_ptr<request>, std::shared_ptr<respon
     }
     res->body_head(head.SerializeAsString());
 
+#if 0
     std::thread th([res]{
         std::this_thread::sleep_for(std::chrono::seconds(10));
 
@@ -114,6 +113,10 @@ void mock_faulty_service::query(std::shared_ptr<request>, std::shared_ptr<respon
         res->body(response_message.SerializeAsString());
     });
     th.detach();
+#else
+    std::this_thread::sleep_for(std::chrono::seconds(10));
+    std::cout << " ---- finish ----" << std::endl;
+#endif
 }
 
 void mock_faulty_service::commit(std::shared_ptr<request>, std::shared_ptr<response> res) {

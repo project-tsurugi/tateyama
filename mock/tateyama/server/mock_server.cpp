@@ -112,6 +112,9 @@ mock_server_main(int argc, char **argv) {
     std::stringstream ss{};
     ss << "[ipc_endpoint]\n";
     ss << "database_name=mock\n";
+    ss << "[session]\n";
+    ss << "enable_timeout=true\n";
+    ss << "refresh_timeout=121\n";
     ss << "[glog]\n";
     ss << "logtostderr=false\n";
     auto conf = std::make_shared<tateyama::api::configuration::whole>(ss, default_configuration_for_mock_server);
