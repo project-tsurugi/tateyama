@@ -13,6 +13,7 @@ add_custom_target(build_protos_for_mock DEPENDS ${GENERATED_PROTO_SRCS})
 file(GLOB SOURCES
         "tateyama/server/*.cpp"
         "tateyama/service/*.cpp"
+        "tateyama/faulty_service/*.cpp"
         "jogasaki/api/impl/*.cpp"
         "jogasaki/serializer/*.cpp"
 )
@@ -55,6 +56,7 @@ target_link_libraries(mock_server
         PRIVATE Boost::thread
         PRIVATE Boost::container
         PRIVATE glog::glog
+        PRIVATE gflags::gflags
         PRIVATE protobuf::libprotobuf
         )
 

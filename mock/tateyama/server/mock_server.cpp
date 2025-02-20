@@ -26,13 +26,18 @@
 
 #include <tateyama/status/resource/bridge.h>
 #include <tateyama/framework/routing_service.h>
+#include <tateyama/session/service/bridge.h>
+#include <tateyama/session/resource/bridge.h>
 #include <tateyama/metrics/service/bridge.h>
 #include <tateyama/metrics/resource/bridge.h>
 #include <tateyama/endpoint/ipc/bootstrap/ipc_endpoint.h>
 #include <tateyama/service/mock_service.h>
+#include <tateyama/faulty_service/mock_faulty_service.h>
 
 #include "glog_helper.h"
 #include "mock_server.h"
+
+DEFINE_bool(fault, false, "fault injection");
 
 namespace tateyama::server {
 
@@ -89,7 +94,11 @@ static void signal_handler([[maybe_unused]] int sig) {
 }
 
 int
-mock_server_main() {
+mock_server_main(int argc, char **argv) {
+    // command arguments
+    gflags::SetUsageMessage("tateyama mock server");
+    gflags::ParseCommandLineFlags(&argc, &argv, true);
+
     if (signal(SIGINT, signal_handler) == SIG_ERR) {  // NOLINT  #define SIG_ERR  ((__sighandler_t) -1) in a system header file
         std::cerr << "cannot register signal handler" << std::endl;
         return 1;
@@ -113,11 +122,22 @@ mock_server_main() {
     
     // status_info
     auto status_info = tgsv.find_resource<tateyama::status_info::resource::bridge>();
+    if (auto fd = open("/tmp/mock_server", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH); fd >= 0) {
+        if (flock(fd, LOCK_EX | LOCK_NB) != 0) {
+            std::cerr << "can't lock the lock_file" << std::endl;
+            return 1;
+        }
+    } else {
+        std::cerr << "can't create the lock_file" << std::endl;
+        return 1;
+    }
 
     if (!tgsv.setup()) {
         status_info->whole(tateyama::status_info::state::boot_error);
         return 1;
     }
+    // should do after setup()
+    status_info->mutex_file("/tmp/mock_server");
 
     status_info->whole(tateyama::status_info::state::ready);
 
@@ -140,6 +160,7 @@ mock_server_main() {
     status_info->whole(tateyama::status_info::state::deactivating);
     tgsv.shutdown();
 
+    std::remove("/tmp/mock_server");
     return 0;
 }
 
@@ -230,11 +251,19 @@ mock_server::mock_server(framework::boot_mode mode, std::shared_ptr<api::configu
 void add_core_components(mock_server& svr) {
     svr.add_resource(std::make_shared<metrics::resource::bridge>());
     svr.add_resource(std::make_shared<status_info::resource::bridge>());
+    svr.add_resource(std::make_shared<session::resource::bridge>());
 
     svr.add_service(std::make_shared<framework::routing_service>());
     svr.add_service(std::make_shared<metrics::service::bridge>());
+    if (FLAGS_fault) {
+        std::cout << "mock_server with fault injection" << std::endl;
+        svr.add_service(std::make_shared<::tateyama::service::mock_faulty_service>());
+    } else {
+        std::cout << "mock_server for blob/clob test" << std::endl;
+        svr.add_service(std::make_shared<::tateyama::service::mock_service>());
+    }
+    svr.add_service(std::make_shared<session::service::bridge>());
 
-    svr.add_service(std::make_shared<::tateyama::service::mock_service>());
     svr.add_endpoint(std::make_shared<framework::ipc_endpoint>());
 }
 
@@ -242,6 +271,6 @@ void add_core_components(mock_server& svr) {
 
 
 int
-main() {
-    return tateyama::server::mock_server_main();
+main(int argc, char **argv) {
+    return tateyama::server::mock_server_main(argc, argv);
 }
