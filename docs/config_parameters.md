@@ -75,7 +75,7 @@ parameter=value
 |dev_rtx_parallel_scan| ブール(true/false) | RTXの場合にparallel scanを有効にするか。デフォルトはfalse | 開発用のため将来的に削除/変更される可能性あり|
 |dev_thousandths_ratio_check_local_first| 整数 | タスクスケジューラのワーカーがローカルタスクキューとstickyタスクキューのどちらを優先的にデキューするかを決めるパラメータ。デキューの実行1000回のうちローカルタスクキューを優先する回数(1以上1000未満)を指定する。デフォルトは100|開発用のため将来的に削除/変更される可能性あり|
 |dev_direct_commit_callback| ブール(true/false) | shirakamiのコミット処理を行うスレッドが直接クラインアント通知までおこなうか。`commit_response` が `ACCEPTED` または `AVAILABLE` の場合のみ有効。デフォルトはfalse | 開発用のため将来的に削除/変更される可能性あり|
-|scan_default_parallel| 整数 | スキャンタスクの最大並列実行数。デフォルトは4。|この値はdefault_partitions及びmax_result_set_writers 以下でなければならない。開発用のため将来的に削除/変更される可能性あり|
+|scan_default_parallel| 整数 | スキャンタスクの最大並列実行数。デフォルトは4。|この値はmax_result_set_writers 以下でなければならない。開発用のため将来的に削除/変更される可能性あり|
 |dev_inplace_teardown| ブール(true/false) | ジョブの終了処理(teardown)を現在のスレッドで行いタスクの作成をバイパスするか。デフォルトはtrue | 開発用のため将来的に削除/変更される可能性あり|
 |dev_inplace_dag_schedule| ブール(true/false) | プランスケジューラ(dag controller)の状態遷移を現在のスレッドで行いタスクの作成をバイパスするか。デフォルトはtrue | 開発用のため将来的に削除/変更される可能性あり|
 |enable_join_scan| ブール(true/false) | インデックスを用いた結合処理において、全キー列のデータが利用可能でない場合に、その一部(プレフィックス)を利用して候補をスキャンして探索する演算子`join_scan` を使用可能にするか。`enable_index_join=true` の場合のみ有効。デフォルトはtrue | 開発用のため将来的に削除/変更される可能性あり|
