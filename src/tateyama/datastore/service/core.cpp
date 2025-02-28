@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2024 Project Tsurugi.
+ * Copyright 2018-2025 Project Tsurugi.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,6 @@
 #ifdef ENABLE_ALTIMETER
 #include "altimeter_logger.h"
 #endif
-
 
 namespace tateyama::datastore::service {
 
@@ -105,13 +104,21 @@ bool tateyama::datastore::service::core::operator()(const std::shared_ptr<reques
         }
         case ns::Request::kBackupEnd: {
             tateyama::proto::datastore::response::BackupEnd rp{};
+            resource_->end_backup();
             if (backup_ || backup_detail_) {
+                if (backup_) {
+                    backup_->backup().notify_end_backup();
+                }
+                if (backup_detail_) {
+                    backup_detail_->notify_end_backup();
+                }
                 rp.mutable_success();
                 res->session_id(req->session_id());
                 auto body = rp.SerializeAsString();
                 res->body(body);
                 rp.clear_success();
                 backup_ = nullptr;
+                backup_detail_ = nullptr;
             } else {
                 rp.mutable_expired();
             }
