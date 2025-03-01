@@ -21,7 +21,7 @@
 #include <tateyama/proto/metrics/response.pb.h>
 
 #include <gtest/gtest.h>
-#include <tateyama/utils/test_utils.h>
+#include <tateyama/test_utils/utility.h>
 
 namespace tateyama::metrics {
 
@@ -43,14 +43,14 @@ private:
 
 class metrics_bridge_test :
         public ::testing::Test,
-        public test::test_utils {
+        public test_utils::utility {
 public:
     void SetUp() override {
         temporary_.prepare();
-        auto cfg = tateyama::api::configuration::create_configuration("", tateyama::test::default_configuration_for_tests);
+        auto cfg = tateyama::api::configuration::create_configuration("", tateyama::test_utils::default_configuration_for_tests);
         set_dbpath(*cfg);
         sv_ = std::make_unique<framework::server>(tateyama::framework::boot_mode::database_server, cfg);
-        add_core_components(*sv_);
+        tateyama::test_utils::add_core_components_for_test(*sv_);
         sv_->start();
         bridge_ = sv_->find_resource<tateyama::metrics::resource::bridge>();
     }

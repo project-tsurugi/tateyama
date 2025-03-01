@@ -34,7 +34,7 @@
 #include <tateyama/proto/endpoint/response.pb.h>
 
 #include <tateyama/endpoint/header_utils.h>
-#include <tateyama/utils/test_utils.h>
+#include <tateyama/test_utils/utility.h>
 
 #include <tateyama/endpoint/common/endpoint_proto_utils.h>
 #include <tateyama/endpoint/ipc/ipc_request.h>

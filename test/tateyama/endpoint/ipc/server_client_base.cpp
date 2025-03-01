@@ -49,8 +49,9 @@ void server_client_base::wait_client_exit() {
 
 void server_client_base::server() {
     tateyama::framework::server sv { tateyama::framework::boot_mode::database_server, cfg_ };
-    add_core_components(sv);
+    tateyama::test_utils::add_core_components_for_test(sv);
     sv.add_service(create_server_service());
+    assert_true(sv.setup());
     assert_true(sv.start());
     server_startup_end();
     server_elapse_.start();
