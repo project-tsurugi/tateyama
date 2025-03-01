@@ -101,7 +101,7 @@ TEST_F(framework_test, resource_setup_failure) {
     // verify other components are shutdown when final resource failed to setup
     auto cfg = api::configuration::create_configuration("", tateyama::test::default_configuration_for_tests);
     server sv{boot_mode::database_server, cfg};
-    add_core_components(sv);
+    tateyama::test::add_core_components_for_test(sv);
     auto res = std::make_shared<test_resource>();
     res->set_setup_success(false);
     sv.add_resource(res);
@@ -116,7 +116,7 @@ TEST_F(framework_test, resource_start_failure) {
     // verify other components are shutdown when final resource failed to start
     auto cfg = api::configuration::create_configuration("", tateyama::test::default_configuration_for_tests);
     server sv{boot_mode::database_server, cfg};
-    add_core_components(sv);
+    tateyama::test::add_core_components_for_test(sv);
     auto res = std::make_shared<test_resource>();
     res->set_start_success(false);
     sv.add_resource(res);
@@ -131,7 +131,7 @@ TEST_F(framework_test, server_setup_failure) {
     // verify other components are shutdown when final service failed to setup
     auto cfg = api::configuration::create_configuration("", tateyama::test::default_configuration_for_tests);
     server sv{boot_mode::database_server, cfg};
-    add_core_components(sv);
+    tateyama::test::add_core_components_for_test(sv);
     sv.add_resource(std::make_shared<test_resource>());
     auto svc = std::make_shared<test_service>();
     svc->set_setup_success(false);
@@ -145,7 +145,7 @@ TEST_F(framework_test, server_start_failure) {
     // verify other components are shutdown when final service failed to start
     auto cfg = api::configuration::create_configuration("", tateyama::test::default_configuration_for_tests);
     server sv{boot_mode::database_server, cfg};
-    add_core_components(sv);
+    tateyama::test::add_core_components_for_test(sv);
     sv.add_resource(std::make_shared<test_resource>());
     auto svc = std::make_shared<test_service>();
     svc->set_start_success(false);

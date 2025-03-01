@@ -20,6 +20,7 @@
 
 #include "temporary_folder.h"
 #include "request_response.h"
+#include "test_server.h"
 
 namespace tateyama::test {
 

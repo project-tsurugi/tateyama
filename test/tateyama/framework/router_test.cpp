@@ -87,7 +87,7 @@ TEST_F(router_test, basic) {
     server sv{boot_mode::database_server, cfg};
     auto svc0 = std::make_shared<test_service>();
     sv.add_service(svc0);
-    add_core_components(sv);
+    tateyama::test::add_core_components_for_test(sv);
     sv.start();
 
     auto router = sv.find_service<framework::routing_service>();
@@ -116,7 +116,7 @@ TEST_F(router_test, update_expiration_time) {
     server sv{boot_mode::database_server, cfg};
     auto svc0 = std::make_shared<test_service>();
     sv.add_service(svc0);
-    add_core_components(sv);
+    tateyama::test::add_core_components_for_test(sv);
     sv.start();
 
     auto router = sv.find_service<framework::routing_service>();
@@ -149,7 +149,7 @@ TEST_F(router_test, invalid_service_id) {
     auto cfg = api::configuration::create_configuration("", tateyama::test::default_configuration_for_tests);
     set_dbpath(*cfg);
     server sv{boot_mode::database_server, cfg};
-    add_core_components(sv);
+    tateyama::test::add_core_components_for_test(sv);
     sv.start();
 
     auto router = sv.find_service<framework::routing_service>();

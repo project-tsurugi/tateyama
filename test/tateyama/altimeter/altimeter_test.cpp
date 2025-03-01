@@ -87,7 +87,7 @@ public:
         auto cfg = api::configuration::create_configuration("", tateyama::test::default_configuration_for_tests);
         set_dbpath(*cfg);
         sv_ = std::make_unique<framework::server>(framework::boot_mode::database_server, cfg);
-        add_core_components(*sv_);
+        tateyama::test::add_core_components_for_test(*sv_);
         sv_->start();
 
         router_ = sv_->find_service<framework::routing_service>();
