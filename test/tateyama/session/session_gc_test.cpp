@@ -22,13 +22,13 @@
 #include <tateyama/proto/session/response.pb.h>
 
 #include <gtest/gtest.h>
-#include <tateyama/utils/test_utils.h>
+#include <tateyama/test_utils/utility.h>
 
 namespace tateyama::session {
 
 class session_gc_test :
     public ::testing::Test,
-    public test::test_utils
+    public test_utils::utility
 {
 public:
     void SetUp() override {
@@ -51,10 +51,10 @@ protected:
 };
 
 TEST_F(session_gc_test, session_list) {
-    auto cfg = api::configuration::create_configuration("", tateyama::test::default_configuration_for_tests);
+    auto cfg = api::configuration::create_configuration("", tateyama::test_utils::default_configuration_for_tests);
     set_dbpath(*cfg);
     framework::server sv{framework::boot_mode::database_server, cfg};
-    add_core_components(sv);
+    tateyama::test_utils::add_core_components_for_test(sv);
     sv.start();
     auto router = sv.find_service<framework::routing_service>();
     EXPECT_TRUE(router);
@@ -73,8 +73,8 @@ TEST_F(session_gc_test, session_list) {
             rq.clear_session_list();
         }
 
-        auto svrreq = std::make_shared<tateyama::utils::test_request>(10, session::service::bridge::tag, str);
-        auto svrres = std::make_shared<tateyama::utils::test_response>();
+        auto svrreq = std::make_shared<tateyama::test_utils::test_request>(10, session::service::bridge::tag, str);
+        auto svrres = std::make_shared<tateyama::test_utils::test_response>();
 
         (*router)(svrreq, svrres);
         EXPECT_EQ(10, svrres->session_id_);
@@ -99,8 +99,8 @@ TEST_F(session_gc_test, session_list) {
             rq.clear_session_list();
         }
 
-        auto svrreq = std::make_shared<tateyama::utils::test_request>(10, session::service::bridge::tag, str);
-        auto svrres = std::make_shared<tateyama::utils::test_response>();
+        auto svrreq = std::make_shared<tateyama::test_utils::test_request>(10, session::service::bridge::tag, str);
+        auto svrres = std::make_shared<tateyama::test_utils::test_response>();
 
         (*router)(svrreq, svrres);
         EXPECT_EQ(10, svrres->session_id_);
@@ -125,8 +125,8 @@ TEST_F(session_gc_test, session_list) {
             rq.clear_session_list();
         }
 
-        auto svrreq = std::make_shared<tateyama::utils::test_request>(10, session::service::bridge::tag, str);
-        auto svrres = std::make_shared<tateyama::utils::test_response>();
+        auto svrreq = std::make_shared<tateyama::test_utils::test_request>(10, session::service::bridge::tag, str);
+        auto svrres = std::make_shared<tateyama::test_utils::test_response>();
 
         (*router)(svrreq, svrres);
         EXPECT_EQ(10, svrres->session_id_);

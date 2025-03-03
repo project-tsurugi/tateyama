@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <tateyama/utils/protobuf_utils.h>
+#include <tateyama/test_utils/protobuf_utils.h>
 
 #include <gtest/gtest.h>
 #include <google/protobuf/io/zero_copy_stream.h>

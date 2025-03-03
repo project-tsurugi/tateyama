@@ -24,11 +24,11 @@
 #include <tateyama/loopback/loopback_client.h>
 
 #include <gtest/gtest.h>
-#include <tateyama/utils/test_utils.h>
+#include <tateyama/test_utils/utility.h>
 
 namespace tateyama::framework {
 
-class loopback_client_test: public ::testing::Test, public test::test_utils {
+class loopback_client_test: public ::testing::Test, public test_utils::utility {
 public:
     void SetUp() override {
         temporary_.prepare();
@@ -114,7 +114,7 @@ TEST_F(loopback_client_test, single) {
     const int nwriter = 5;
     const int nloop = 10;
     //
-    auto cfg = api::configuration::create_configuration("", tateyama::test::default_configuration_for_tests);
+    auto cfg = api::configuration::create_configuration("", tateyama::test_utils::default_configuration_for_tests);
     set_dbpath(*cfg);
     tateyama::loopback::loopback_client loopback;
     tateyama::framework::server sv { tateyama::framework::boot_mode::database_server, cfg };
@@ -157,11 +157,11 @@ TEST_F(loopback_client_test, multi_request) {
     const int nloop = 10;
     const int nrequest = 10;
     //
-    auto cfg = api::configuration::create_configuration("", tateyama::test::default_configuration_for_tests);
+    auto cfg = api::configuration::create_configuration("", tateyama::test_utils::default_configuration_for_tests);
     set_dbpath(*cfg);
     tateyama::loopback::loopback_client loopback;
     tateyama::framework::server sv { tateyama::framework::boot_mode::database_server, cfg };
-    add_core_components(sv);
+    tateyama::test_utils::add_core_components_for_test(sv);
     sv.add_service(std::make_shared<data_channel_service>(nchannel, nwriter, nloop));
     sv.add_endpoint(loopback.endpoint());
     ASSERT_TRUE(sv.start());
@@ -199,11 +199,11 @@ TEST_F(loopback_client_test, unknown_service_id) {
     const std::size_t invalid_service_id = service_id + 1;
     const std::string request { "loopback_test" };
     //
-    auto cfg = api::configuration::create_configuration("", tateyama::test::default_configuration_for_tests);
+    auto cfg = api::configuration::create_configuration("", tateyama::test_utils::default_configuration_for_tests);
     set_dbpath(*cfg);
     tateyama::loopback::loopback_client loopback;
     tateyama::framework::server sv { tateyama::framework::boot_mode::database_server, cfg };
-    add_core_components(sv);
+    tateyama::test_utils::add_core_components_for_test(sv);
     sv.add_service(std::make_shared<data_channel_service>(0, 0, 0));
     sv.add_endpoint(loopback.endpoint());
     ASSERT_TRUE(sv.start());

@@ -19,7 +19,7 @@
 #include <tateyama/metrics/resource/bridge.h>
 
 #include <gtest/gtest.h>
-#include <tateyama/utils/test_utils.h>
+#include <tateyama/test_utils/utility.h>
 
 namespace tateyama::metrics {
 
@@ -28,7 +28,7 @@ using namespace std::string_view_literals;
 
 class metrics_resource_test :
     public ::testing::Test,
-    public test::test_utils
+    public test_utils::utility
 {
 public:
     void SetUp() override {

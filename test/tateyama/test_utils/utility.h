@@ -20,10 +20,11 @@
 
 #include "temporary_folder.h"
 #include "request_response.h"
+#include "test_server.h"
 
-namespace tateyama::test {
+namespace tateyama::test_utils {
 
-class test_utils {
+class utility {
 public:
     [[nodiscard]] std::string path() const {
         return temporary_.path();

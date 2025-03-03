@@ -18,16 +18,16 @@
 #include <gtest/gtest.h>
 #include <tateyama/framework/server.h>
 #include <tateyama/framework/routing_service.h>
-#include <tateyama/utils/test_utils.h>
+#include <tateyama/test_utils/utility.h>
 
 #include <tateyama/loopback/loopback_client.h>
 
 namespace tateyama::api::endpoint::loopback {
 
-class loopback_test_base: public ::testing::Test, public test::test_utils {
+class loopback_test_base: public ::testing::Test, public test_utils::utility {
     void SetUp() override {
         temporary_.prepare();
-        cfg_ = tateyama::api::configuration::create_configuration("", tateyama::test::default_configuration_for_tests);
+        cfg_ = tateyama::api::configuration::create_configuration("", tateyama::test_utils::default_configuration_for_tests);
         set_dbpath(*cfg_);
     }
     void TearDown() override {
