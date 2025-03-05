@@ -28,7 +28,7 @@ namespace tateyama::endpoint::ipc::bootstrap {
 class alignas(64) ipc_worker : public tateyama::endpoint::common::worker_common {
 public:
     ipc_worker(tateyama::framework::routing_service& service,
-               const tateyama::endpoint::common::worker_common::configuration& conf,
+               const tateyama::endpoint::common::configuration& conf,
                std::size_t session_id,
                std::shared_ptr<server_wire_container_impl> wire,
                const tateyama::api::server::database_info& database_info) :
@@ -36,7 +36,8 @@ public:
             service_(service),
             wire_(std::move(wire)),
             request_wire_container_(dynamic_cast<server_wire_container_impl::wire_container_impl*>(wire_->get_request_wire())),
-            database_info_(database_info) {
+            database_info_(database_info),
+            conf_(conf) {
     }
     void delete_hook() {
         shutdown_complete();
@@ -51,6 +52,7 @@ private:
     std::shared_ptr<server_wire_container_impl> wire_;
     server_wire_container_impl::wire_container_impl* request_wire_container_;
     const tateyama::api::server::database_info& database_info_;
+    const tateyama::endpoint::common::configuration& conf_;
 
     bool has_incomplete_resultset() override {
         auto* gc = wire_->get_garbage_collector();

@@ -27,7 +27,7 @@ namespace tateyama::endpoint::stream::bootstrap {
 class alignas(64) stream_worker : public tateyama::endpoint::common::worker_common {
  public:
     stream_worker(tateyama::framework::routing_service& service,
-                  const tateyama::endpoint::common::worker_common::configuration& conf,
+                  const tateyama::endpoint::common::configuration& conf,
                   std::size_t session_id,
                   std::shared_ptr<stream_socket> stream,
                   const tateyama::api::server::database_info& database_info,
@@ -36,6 +36,7 @@ class alignas(64) stream_worker : public tateyama::endpoint::common::worker_comm
           service_(service),
           session_stream_(std::move(stream)),
           database_info_(database_info),
+          conf_(conf),
           decline_(decline) {
         if (!session_stream_->set_owner(static_cast<void*>(this))) {
             throw std::runtime_error("the sesstion stream already has owner");
@@ -50,6 +51,7 @@ class alignas(64) stream_worker : public tateyama::endpoint::common::worker_comm
     tateyama::framework::routing_service& service_;
     std::shared_ptr<stream_socket> session_stream_;
     const tateyama::api::server::database_info& database_info_;
+    const tateyama::endpoint::common::configuration& conf_;
     const bool decline_;
 
     void notify_of_decline(tateyama::api::server::response* response) {

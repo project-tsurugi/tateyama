@@ -62,7 +62,7 @@ public:
           router_(env.service_repository().find<framework::routing_service>()),
           status_(env.resource_repository().find<status_info::resource::bridge>()),
           session_(env.resource_repository().find<session::resource::bridge>()),
-          conf_(tateyama::endpoint::common::worker_common::connection_type::stream, session_),
+          conf_(tateyama::endpoint::common::connection_type::stream, session_),
           stream_metrics_(env) {
 
         auto endpoint_config = cfg_->get_section("stream_endpoint");
@@ -82,6 +82,14 @@ public:
             exit(1);
         }
         auto threads = threads_opt.value();
+
+        auto allow_blob_privileged_opt = endpoint_config->get<bool>("allow_blob_privileged");
+        if (!allow_blob_privileged_opt) {
+            throw std::runtime_error("cannot find allow_blob_privileged at the ipc_endpoint section in the configuration");
+        }
+        auto allow_blob_privileged = allow_blob_privileged_opt.value();
+        VLOG_LP(log_debug) << "allow_blob_privileged = " << std::boolalpha << allow_blob_privileged << std::noboolalpha;
+        conf_.allow_blob_privileged(allow_blob_privileged);
 
         // connection stream
         connection_socket_ = std::make_unique<connection_socket>(port, connection_socket_timeout);
@@ -130,6 +138,10 @@ public:
                           << "maximum refresh timeout in seconds.";
             }
         }
+
+        LOG(INFO) << tateyama::endpoint::common::ipc_endpoint_config_prefix
+                  << "allow_blob_privileged: " << std::boolalpha << allow_blob_privileged << std::noboolalpha << ", "
+                  << "whether permission to handle blobs in privileged mode is granted or not.";
     }
 
     ~stream_listener() override {
@@ -262,7 +274,7 @@ private:
     const std::shared_ptr<framework::routing_service> router_;
     const std::shared_ptr<status_info::resource::bridge> status_;
     const std::shared_ptr<tateyama::session::resource::bridge> session_;
-    tateyama::endpoint::common::worker_common::configuration conf_;
+    tateyama::endpoint::common::configuration conf_;
     tateyama::endpoint::stream::metrics::stream_metrics stream_metrics_;
 
     std::size_t session_id_{};

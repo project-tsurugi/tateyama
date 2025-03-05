@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2024 Project Tsurugi.
+ * Copyright 2018-2025 Project Tsurugi.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,57 +44,12 @@
 #include "response.h"
 #include "listener_common.h"
 #include "session_info_impl.h"
+#include "worker_configuration.h"
 
 namespace tateyama::endpoint::common {
 
 class worker_common {
 public:
-    enum class connection_type : std::uint32_t {
-        /**
-         * @brief undefined type.
-         */
-        undefined = 0U,
-
-        /**
-         * @brief IPC connection.
-         */
-        ipc,
-
-        /**
-         * @brief stream (TCP/IP) connection.
-         */
-        stream,
-    };
-
-    class configuration {
-    public:
-        configuration(connection_type con, std::shared_ptr<tateyama::session::resource::bridge> session) :
-            con_(con), session_(std::move(session)) {
-        }
-        explicit configuration(connection_type con) : configuration(con, nullptr) {  // for tests
-        }
-        void set_timeout(std::size_t refresh_timeout, std::size_t max_refresh_timeout) {
-            if (refresh_timeout < 120) {
-                throw std::runtime_error("section.refresh_timeout should be greater than or equal to 120");
-            }
-            if (max_refresh_timeout < 120) {
-                throw std::runtime_error("section.max_refresh_timeout should be greater than or equal to 120");
-            }
-            enable_timeout_ = true;
-            refresh_timeout_ = refresh_timeout;
-            max_refresh_timeout_ = max_refresh_timeout;
-        }
-
-    private:
-        const connection_type con_;
-        const std::shared_ptr<tateyama::session::resource::bridge> session_;
-        bool enable_timeout_{};
-        std::size_t refresh_timeout_{};
-        std::size_t max_refresh_timeout_ {};
-
-        friend class worker_common;
-    };
-
     worker_common(const configuration& config, std::size_t session_id, std::string_view conn_info)
         : connection_type_(config.con_),
           session_id_(session_id),
@@ -434,12 +389,19 @@ protected:
         }
     }
 
-    void register_reqres(std::size_t slot, const std::shared_ptr<tateyama::endpoint::common::request>& request, const std::shared_ptr<tateyama::endpoint::common::response>& response) noexcept {
-        std::lock_guard<std::mutex> lock(mtx_reqreses_);
-        if (auto itr = reqreses_.find(slot); itr != reqreses_.end()) {
-            reqreses_.erase(itr);
+    [[nodiscard]] bool register_reqres(std::size_t slot, const std::shared_ptr<tateyama::endpoint::common::request>& request, const std::shared_ptr<tateyama::endpoint::common::response>& response) noexcept {
+        {
+            std::lock_guard<std::mutex> lock(mtx_reqreses_);
+            if (auto itr = reqreses_.find(slot); itr != reqreses_.end()) {
+                reqreses_.erase(itr);  // shound not happen
+            }
+            reqreses_.emplace(slot, std::pair<std::shared_ptr<tateyama::endpoint::common::request>, std::shared_ptr<tateyama::endpoint::common::response>>(request, response));
         }
-        reqreses_.emplace(slot, std::pair<std::shared_ptr<tateyama::endpoint::common::request>, std::shared_ptr<tateyama::endpoint::common::response>>(request, response));
+        if (request->get_blob_error() != request::blob_error::ok) {
+            notify_client(response.get(), tateyama::proto::diagnostics::Code::INVALID_REQUEST, request->blob_error_message());
+            return false;
+        }
+        return true;
     }
 
     void remove_reqres(std::size_t slot) noexcept {

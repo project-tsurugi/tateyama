@@ -68,30 +68,35 @@ static constexpr std::string_view default_configuration_for_tests {  // NOLINT
         "datachannel_buffer_size=64\n"
         "max_datachannel_buffers=16\n"
         "admin_sessions=1\n"
+        "allow_blob_privileged=true\n"
 
     "[stream_endpoint]\n"
+        "enabled=true\n"
         "port=12345\n"
         "threads=104\n"
+        "allow_blob_privileged=false\n"
 
     "[session]\n"
         "enable_timeout=true\n"
         "refresh_timeout=300\n"
         "max_refresh_timeout=86400\n"
-
-    "[fdw]\n"
-        "name=tsurugi\n"
-        "threads=104\n"
+        "zone_offset=\n"
 
     "[datastore]\n"
         "log_location=\n"
         "logging_max_parallelism=112\n"
+        "recover_max_parallelism=8\n"
 
     "[cc]\n"
         "epoch_duration=40000\n"
+        "waiting_resolver_threads=2\n"
+        "max_concurrent_transactions=\n"
 
     "[system]\n"
         "pid_directory = /tmp\n"
 
+    "[glog]\n"
+        "dummy=\n"  // just for retain glog section in default configuration
 };
 
 }
