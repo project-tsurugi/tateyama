@@ -34,8 +34,8 @@ void stream_worker::run()  // NOLINT(readability-function-cognitive-complexity)
 
         case tateyama::endpoint::stream::stream_socket::await_result::payload:
         {
-            stream_request request_obj{*session_stream_, payload, database_info_, session_info_, session_store_, session_variable_set_, local_id_++};
-            stream_response response_obj{session_stream_, slot, [](){}};
+            stream_request request_obj{*session_stream_, payload, database_info_, session_info_, session_store_, session_variable_set_, local_id_++, conf_};
+            stream_response response_obj{session_stream_, slot, [](){}, conf_};
 
             if (decline_) {
                 notify_of_decline(&response_obj);
@@ -97,11 +97,11 @@ void stream_worker::run()  // NOLINT(readability-function-cognitive-complexity)
         case tateyama::endpoint::stream::stream_socket::await_result::payload:
         {
             update_expiration_time();
-            auto request = std::make_shared<stream_request>(*session_stream_, payload, database_info_, session_info_, session_store_, session_variable_set_, local_id_++);
+            auto request = std::make_shared<stream_request>(*session_stream_, payload, database_info_, session_info_, session_store_, session_variable_set_, local_id_++, conf_);
             switch (request->service_id()) {
             case tateyama::framework::service_id_endpoint_broker:
             {
-                auto response = std::make_shared<stream_response>(session_stream_, slot, [](){});
+                auto response = std::make_shared<stream_response>(session_stream_, slot, [](){}, conf_);
                 // currently cancel request only
                 if (endpoint_service(std::dynamic_pointer_cast<tateyama::api::server::request>(request),
                                      std::dynamic_pointer_cast<tateyama::endpoint::common::response>(response),
@@ -113,10 +113,12 @@ void stream_worker::run()  // NOLINT(readability-function-cognitive-complexity)
             }
             case tateyama::framework::service_id_routing:
             {
-                auto response = std::make_shared<stream_response>(session_stream_, slot, [this, slot](){remove_reqres(slot);});
-                register_reqres(slot,
-                                std::dynamic_pointer_cast<tateyama::endpoint::common::request>(request),
-                                std::dynamic_pointer_cast<tateyama::endpoint::common::response>(response));
+                auto response = std::make_shared<stream_response>(session_stream_, slot, [this, slot](){remove_reqres(slot);}, conf_);
+                if (!register_reqres(slot,
+                                     std::dynamic_pointer_cast<tateyama::endpoint::common::request>(request),
+                                     std::dynamic_pointer_cast<tateyama::endpoint::common::response>(response))) {
+                    continue;  // error has been notified to the client
+                }
                 if (routing_service_chain(std::dynamic_pointer_cast<tateyama::api::server::request>(request),
                                           std::dynamic_pointer_cast<tateyama::api::server::response>(response),
                                           slot)) {
@@ -136,11 +138,13 @@ void stream_worker::run()  // NOLINT(readability-function-cognitive-complexity)
             }
             default:
             {
-                auto response = std::make_shared<stream_response>(session_stream_, slot, [this, slot](){remove_reqres(slot);});
+                auto response = std::make_shared<stream_response>(session_stream_, slot, [this, slot](){remove_reqres(slot);}, conf_);
                 if (!check_shutdown_request()) {
-                    register_reqres(slot,
-                                    std::dynamic_pointer_cast<tateyama::endpoint::common::request>(request),
-                                    std::dynamic_pointer_cast<tateyama::endpoint::common::response>(response));
+                    if (!register_reqres(slot,
+                                         std::dynamic_pointer_cast<tateyama::endpoint::common::request>(request),
+                                         std::dynamic_pointer_cast<tateyama::endpoint::common::response>(response))) {
+                        continue;  // error has been notified to the client
+                    }
                     if(service_(std::dynamic_pointer_cast<tateyama::api::server::request>(request),
                                 std::dynamic_pointer_cast<tateyama::api::server::response>(response))) {
                         continue;

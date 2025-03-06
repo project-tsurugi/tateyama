@@ -26,6 +26,7 @@
 
 #include <tateyama/api/server/response.h>
 #include "pointer_comp.h"
+#include "worker_configuration.h"
 
 namespace tateyama::endpoint::common {
 /**
@@ -33,7 +34,7 @@ namespace tateyama::endpoint::common {
  */
 class response : public tateyama::api::server::response {
 public:
-    explicit response(std::size_t index) : index_(index) {
+    response(std::size_t index, const configuration& conf) : index_(index), conf_(conf) {
     }
 
     void session_id(std::size_t id) override {
@@ -45,6 +46,9 @@ public:
     }
 
     tateyama::status add_blob(std::unique_ptr<tateyama::api::server::blob_info> blob) override {
+        if (!conf_.allow_blob_privileged_) {
+            return tateyama::status::invalid_request;
+        }
         try {
             blobs_.emplace(std::move(blob));
             return tateyama::status::ok;
@@ -128,6 +132,7 @@ protected:
     }
 
 private:
+    const configuration& conf_;
     bool cancel_{};
 
     state state_{state::no_data_channel};

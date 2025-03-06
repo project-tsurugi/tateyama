@@ -93,8 +93,11 @@ class alignas(64) ipc_response : public tateyama::endpoint::common::response {
     friend ipc_data_channel;
 
 public:
-  ipc_response(std::shared_ptr<server_wire_container> server_wire, std::size_t index, std::function<void(void)> clean_up) :
-        tateyama::endpoint::common::response(index),
+  ipc_response(std::shared_ptr<server_wire_container> server_wire,
+               std::size_t index,
+               std::function<void(void)> clean_up,
+               const tateyama::endpoint::common::configuration& conf) :
+        tateyama::endpoint::common::response(index, conf),
         server_wire_(std::move(server_wire)),
         garbage_collector_(*server_wire_->get_garbage_collector()),
         clean_up_(std::move(clean_up)) {

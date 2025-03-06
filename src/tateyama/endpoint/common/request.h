@@ -18,12 +18,17 @@
 #include <chrono>
 #include <string_view>
 #include <filesystem>
+#include <sstream>
+#include <cstddef>
+#include <cstdint>
+#include <unistd.h>
 
 #include <tateyama/api/server/request.h>
 
 #include "tateyama/status/resource/database_info_impl.h"
 #include "session_info_impl.h"
 #include "tateyama/endpoint/common/endpoint_proto_utils.h"
+#include "worker_configuration.h"
 
 namespace tateyama::endpoint::common {
 /**
@@ -54,13 +59,21 @@ class request : public tateyama::api::server::request {
     };
 
 public:
+    enum class blob_error : std::int64_t {
+        ok = 0,
+        not_allowed,
+        not_found,
+        not_accessible,
+    };
+
     explicit request(const tateyama::api::server::database_info& database_info,
                      const tateyama::api::server::session_info& session_info,
                      tateyama::api::server::session_store& session_store,
                      tateyama::session::session_variable_set& session_variable_set,
-                     std::size_t local_id) :
+                     std::size_t local_id,
+                     const configuration& conf) :
         database_info_(database_info), session_info_(session_info), session_store_(session_store), session_variable_set_(session_variable_set),
-        local_id_(local_id), start_at_(std::chrono::system_clock::now()) {
+        local_id_(local_id), start_at_(std::chrono::system_clock::now()), conf_(conf) {
     }
 
     [[nodiscard]] std::size_t session_id() const override {
@@ -92,20 +105,41 @@ public:
     }
 
     [[nodiscard]] bool has_blob(std::string_view channel_name) const noexcept override {
+        if (blob_error_ != blob_error::ok) {
+            return false;
+        }
         return blobs_.find(std::string(channel_name)) != blobs_.end();
     }
 
     [[nodiscard]] tateyama::api::server::blob_info const& get_blob(std::string_view name) const override {
+        if (blob_error_ != blob_error::ok) {
+            throw std::runtime_error(std::string(to_string_view(blob_error_)));
+        }
         if(auto itr = blobs_.find(std::string(name)); itr != blobs_.end()) {
             blob_info_ = std::make_unique<blob_info_impl>(name, std::filesystem::path(itr->second.first), itr->second.second);
             return *blob_info_;
         }
-        throw std::runtime_error("blob not found");
+        throw std::runtime_error("not found any blob entry with the given name");
     }
-
 
     [[nodiscard]] std::chrono::system_clock::time_point start_at() const noexcept {
         return start_at_;
+    }
+
+    [[nodiscard]] blob_error get_blob_error() const noexcept {
+        return blob_error_;
+    }
+
+    [[nodiscard]] std::string blob_error_message() const noexcept {
+        std::ostringstream ss{};
+        switch (blob_error_) {
+        case blob_error::ok: return {""};
+        case blob_error::not_allowed: return {"BLOB handling in privileged mode is not allowed on this endpoint"};
+        case blob_error::not_found: ss << "tsurugidb failed to receive BLOB file in privileged mode: "; break;
+        case blob_error::not_accessible: ss << "tsurugidb failed to receive BLOB file in privileged mode: "; break;
+        }
+        ss << causing_file_;
+        return ss.str();
     }
 
 protected:
@@ -121,19 +155,55 @@ protected:
         if (parse_header(message, res, blobs_)) {
             session_id_ = res.session_id_;
             service_id_ = res.service_id_;
+
+            if (!blobs_.empty()) {
+                if (!conf_.allow_blob_privileged_) {
+                    blob_error_ = blob_error::not_allowed;
+                    return;
+                }
+                for (auto&& e: blobs_) {
+                    if (access(e.second.first.string().c_str(), F_OK) != 0) {
+                        blob_error_ = blob_error::not_found;
+                        causing_file_ = e.second.first;
+                        return;
+                    }
+                    if (access(e.second.first.string().c_str(), R_OK) != 0) {
+                        blob_error_ = blob_error::not_accessible;
+                        causing_file_ = e.second.first;
+                        return;
+                    }
+                }
+            }
             return;
         }
         throw std::runtime_error("error in parse framework header");
     }
     
 private:
+    std::size_t local_id_;
+    std::chrono::system_clock::time_point start_at_;
+    const configuration& conf_;
+
     std::size_t session_id_{};
     std::size_t service_id_{};
     std::map<std::string, std::pair<std::filesystem::path, bool>> blobs_{};
+    blob_error blob_error_{blob_error::ok};
+    std::filesystem::path causing_file_{};
 
-    std::size_t local_id_{};
     mutable std::unique_ptr<blob_info_impl> blob_info_{};
-    std::chrono::system_clock::time_point start_at_;
+
+
+[[nodiscard]] constexpr inline std::string_view to_string_view(blob_error value) const noexcept {
+    using namespace std::string_view_literals;
+    switch (value) {
+        case blob_error::ok: return "ok"sv;
+        case blob_error::not_allowed: return "not_allowed"sv;
+        case blob_error::not_found: return "not_found"sv;
+        case blob_error::not_accessible: return "not_accessible"sv;
+    }
+    std::abort();
+}
+
 };
 
 }  // tateyama::endpoint::common

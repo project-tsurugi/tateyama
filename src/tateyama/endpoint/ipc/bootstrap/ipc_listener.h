@@ -53,7 +53,7 @@ public:
           router_(env.service_repository().find<framework::routing_service>()),
           status_(env.resource_repository().find<status_info::resource::bridge>()),
           session_(env.resource_repository().find<session::resource::bridge>()),
-          conf_(tateyama::endpoint::common::worker_common::connection_type::ipc, session_),
+          conf_(tateyama::endpoint::common::connection_type::ipc, session_),
           ipc_metrics_(env) {
 
         auto* endpoint_config = cfg_->get_section("ipc_endpoint");
@@ -99,6 +99,14 @@ public:
         }
         auto admin_sessions = admin_sessions_opt.value();
         VLOG_LP(log_debug) << "admin_sessions = " << admin_sessions;
+
+        auto allow_blob_privileged_opt = endpoint_config->get<bool>("allow_blob_privileged");
+        if (!allow_blob_privileged_opt) {
+            throw std::runtime_error("cannot find allow_blob_privileged at the ipc_endpoint section in the configuration");
+        }
+        auto allow_blob_privileged = allow_blob_privileged_opt.value();
+        VLOG_LP(log_debug) << "allow_blob_privileged = " << std::boolalpha << allow_blob_privileged << std::noboolalpha;
+        conf_.allow_blob_privileged(allow_blob_privileged);
 
         // connection channel
         container_ = std::make_unique<connection_container>(database_name_, threads, admin_sessions);
@@ -163,6 +171,10 @@ public:
                           << "maximum refresh timeout in seconds.";
             }
         }
+
+        LOG(INFO) << tateyama::endpoint::common::ipc_endpoint_config_prefix
+                  << "allow_blob_privileged: " << std::boolalpha << allow_blob_privileged << std::noboolalpha << ", "
+                  << "whether permission to handle blobs in privileged mode is granted or not.";
     }
 
     void operator()()  override {
@@ -272,7 +284,7 @@ private:
     const std::shared_ptr<framework::routing_service> router_;
     const std::shared_ptr<status_info::resource::bridge> status_;
     const std::shared_ptr<session::resource::bridge> session_;
-    tateyama::endpoint::common::worker_common::configuration conf_;
+    tateyama::endpoint::common::configuration conf_;
     tateyama::endpoint::ipc::metrics::ipc_metrics ipc_metrics_;
 
     std::unique_ptr<connection_container> container_{};

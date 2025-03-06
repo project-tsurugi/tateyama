@@ -85,8 +85,11 @@ class alignas(64) stream_response : public tateyama::endpoint::common::response 
     friend stream_data_channel;
 
 public:
-    stream_response(std::shared_ptr<stream_socket> stream, std::uint16_t index, std::function<void(void)> clean_up) :
-        tateyama::endpoint::common::response(index),
+    stream_response(std::shared_ptr<stream_socket> stream,
+                    std::uint16_t index,
+                    std::function<void(void)> clean_up,
+                    const tateyama::endpoint::common::configuration& conf) :
+        tateyama::endpoint::common::response(index, conf),
         stream_(std::move(stream)),
         clean_up_(std::move(clean_up)) {
     }
