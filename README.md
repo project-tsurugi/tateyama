@@ -64,7 +64,7 @@ available options:
 * `-DBUILD_BENCHMARK=OFF` - don't build benchmark programs
 * `-DBUILD_DOCUMENTS=OFF` - don't build documents by doxygen
 * `-DINSTALL_EXAMPLES=ON` - install example applications
-* `-DSHARKSFIN_IMPLEMENTATION=<implementation name>` - switch sharksfin implementation. Available options are `memory` and `shirakami` (default: `memory`)
+* `-DSHARKSFIN_IMPLEMENTATION=<implementation name>` - switch sharksfin implementation. Available options are `memory` and `shirakami` (default: `shirakami`)
 * `-DENABLE_ALTIMETER=ON` - turn on the `altimeter logging`.
 * `-DMC_QUEUE=ON` - use moody camel queue instead of tbb queue to store tasks in tateyama task scheduler.
 * `-DENABLE_DEBUG_SERVICE=OFF` - turn off the `debug service`.
