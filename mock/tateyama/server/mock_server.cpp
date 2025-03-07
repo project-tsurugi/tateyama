@@ -38,6 +38,8 @@
 #include "mock_server.h"
 
 DEFINE_bool(fault, false, "fault injection");
+DEFINE_bool(write, true, "write lob files before test run");
+DEFINE_bool(clear, true, "clear lob files after test run");
 
 namespace tateyama::server {
 
@@ -58,10 +60,12 @@ static constexpr std::string_view default_configuration_for_mock_server {  // NO
         "datachannel_buffer_size=64\n"
         "max_datachannel_buffers=16\n"
         "admin_sessions=1\n"
+        "allow_blob_privileged=true\n"
 
     "[stream_endpoint]\n"
         "port=12345\n"
         "threads=104\n"
+        "allow_blob_privileged=false\n"
 
     "[session]\n"
         "enable_timeout=false\n"
@@ -153,6 +157,13 @@ mock_server_main(int argc, char **argv) {
     }
 
     status_info->whole(tateyama::status_info::state::activated);
+
+    if (!FLAGS_write) {
+        std::cout << "does not create and write blob files for the test" << std::endl;
+    }
+    if (!FLAGS_clear) {
+        std::cout << "does not clear blob files for the test" << std::endl;
+    }
 
     // wait for a shutdown request
     while(!shutdown_requested) {
@@ -263,7 +274,7 @@ void add_core_components(mock_server& svr) {
         svr.add_service(std::make_shared<::tateyama::service::mock_faulty_service>());
     } else {
         std::cout << "mock_server for blob/clob test" << std::endl;
-        svr.add_service(std::make_shared<::tateyama::service::mock_service>());
+        svr.add_service(std::make_shared<::tateyama::service::mock_service>(FLAGS_write, FLAGS_clear));
     }
     svr.add_service(std::make_shared<session::service::bridge>());
 

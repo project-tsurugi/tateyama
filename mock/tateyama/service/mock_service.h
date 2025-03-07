@@ -23,6 +23,9 @@
 #include <tateyama/framework/environment.h>
 #include <tateyama/framework/component_ids.h>
 
+#include "mock_service.h"
+#include "test_pattern.h"
+
 namespace tateyama::service {
 
 using tateyama::api::server::request;
@@ -64,7 +67,8 @@ public:
     /**
      * @brief create empty object
      */
-    mock_service() = default;
+    mock_service(bool write, bool clear) : pattern_(std::make_unique<test_pattern>(write, clear)) {
+    }
 
     mock_service(mock_service const& other) = delete;
     mock_service& operator=(mock_service const& other) = delete;
@@ -102,6 +106,9 @@ public:
     void explain_by_text(std::shared_ptr<request> req, std::shared_ptr<response> res);
     void extract_statement_info(std::shared_ptr<request> req, std::shared_ptr<response> res);
     void get_large_object_data(std::shared_ptr<request> req, std::shared_ptr<response> res);
+
+private:
+    std::unique_ptr<test_pattern> pattern_;
 };
 
 class blob_info_for_test : public tateyama::api::server::blob_info {

@@ -16,6 +16,9 @@
 #include <iostream>
 #include <thread>
 #include <chrono>
+#include <memory>
+
+#include <gflags/gflags.h>
 
 #include <jogasaki/proto/sql/request.pb.h>
 #include <jogasaki/proto/sql/response.pb.h>
@@ -24,11 +27,8 @@
 #include <jogasaki/serializer/value_writer.h>
 
 #include "mock_service.h"
-#include "test_pattern.h"
 
 namespace tateyama::service {
-
-test_pattern pattern{};
 
 // utilities
 static void reply_ok(response* res) {
@@ -128,11 +128,11 @@ void mock_service::execute_prepared_query(std::shared_ptr<request>, std::shared_
 
     auto vw = std::make_shared<jogasaki::serializer::value_writer<writer, std::size_t>>(*wrt);
 
-    (void) vw->write_row_begin(pattern.size());
-    pattern.foreach_blob([vw](std::size_t lob_id, std::string&, std::string&, std::string&){
+    (void) vw->write_row_begin(pattern_->size());
+    pattern_->foreach_blob([vw](std::size_t lob_id, std::string&, std::string&, std::string&){
         (void) vw->write_blob(1, lob_id);
     });
-    pattern.foreach_clob([vw](std::size_t lob_id, std::string&, std::string&, std::string&){
+    pattern_->foreach_clob([vw](std::size_t lob_id, std::string&, std::string&, std::string&){
         (void) vw->write_clob(1, lob_id);
     });
     (void) wrt->commit();
@@ -145,12 +145,12 @@ void mock_service::execute_prepared_query(std::shared_ptr<request>, std::shared_
     auto *eq = head.mutable_execute_query();
     eq->set_name("ResultSetName");
     auto *meta = eq->mutable_record_meta();
-    pattern.foreach_blob([meta](std::size_t, std::string& name, std::string&, std::string&){
+    pattern_->foreach_blob([meta](std::size_t, std::string& name, std::string&, std::string&){
         auto *column = meta->add_columns();
         column->set_name(name);
         column->set_atom_type(jogasaki::proto::sql::common::AtomType::BLOB);
     });
-    pattern.foreach_clob([meta](std::size_t, std::string& name, std::string&, std::string&){
+    pattern_->foreach_clob([meta](std::size_t, std::string& name, std::string&, std::string&){
         auto *column = meta->add_columns();
         column->set_name(name);
         column->set_atom_type(jogasaki::proto::sql::common::AtomType::CLOB);
@@ -176,13 +176,13 @@ void mock_service::get_large_object_data(std::shared_ptr<request> req, std::shar
     request_message.ParseFromString(std::string(req->payload()));
     auto& ref = request_message.get_large_object_data().reference();
 
-    pattern.foreach_blob([res, &ref](std::size_t object_id, std::string& column, std::string& blob_channel, std::string& file_name){
+    pattern_->foreach_blob([res, &ref](std::size_t object_id, std::string& column, std::string& blob_channel, std::string& file_name){
         if (ref.object_id() == object_id) {
             std::cout << "set blob reference for column " << column << ": id = " << ref.provider() << ":" << ref.object_id() << ": filename = " << file_name << std::endl;
             res->add_blob(std::make_unique<blob_info_for_test>(blob_channel, std::filesystem::path(file_name), false));
         }
     });
-    pattern.foreach_clob([res, &ref](std::size_t object_id, std::string& column, std::string& clob_channel, std::string& file_name){
+    pattern_->foreach_clob([res, &ref](std::size_t object_id, std::string& column, std::string& clob_channel, std::string& file_name){
         if (ref.object_id() == object_id) {
             std::cout << "set clob reference for column " << column << ": id = " << ref.provider() << ":" << ref.object_id() << ": filename = " << file_name << std::endl;
             res->add_blob(std::make_unique<blob_info_for_test>(clob_channel, std::filesystem::path(file_name), false));
@@ -191,7 +191,7 @@ void mock_service::get_large_object_data(std::shared_ptr<request> req, std::shar
 
     jogasaki::proto::sql::response::Response response_message{};
     auto *rmsg = response_message.mutable_get_large_object_data();
-    if (auto name_opt = pattern.find(ref.object_id()); name_opt) {
+    if (auto name_opt = pattern_->find(ref.object_id()); name_opt) {
         auto* success = rmsg->mutable_success();
         success->set_channel_name(name_opt.value());
     } else {

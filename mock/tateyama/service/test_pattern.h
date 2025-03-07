@@ -43,16 +43,20 @@ private: std::string name_{};
 
 class test_pattern {
 public:
-    test_pattern() {
+    test_pattern(bool write, bool clear) : clear_(clear) {
         using namespace std::literals::string_literals;
         blobs_.emplace(13578, std::make_tuple<std::string, std::string, std::string>("blob1"s, "BlobChannelDown1"s, "/tmp/BlobFileDown1"s));
         blobs_.emplace(24680, std::make_tuple<std::string, std::string, std::string>("blob2"s, "BlobChannelDown2"s, "/tmp/BlobFileDown2"s));
         clobs_.emplace(98765, std::make_tuple<std::string, std::string, std::string>("clob"s, "ClobChannelDown"s, "/tmp/ClobFileDown"s));
 
-        initialize_file();
+        if (write) {
+            initialize_file();
+        }
     }
     ~test_pattern() {
-        clear_file();
+        if (clear_) {
+            clear_file();
+        }
     }
     std::size_t size() {
         return blobs_.size() + clobs_.size();
@@ -80,30 +84,37 @@ public:
     }
 
 private:
+    bool clear_;
     std::map<std::size_t, std::tuple<std::string, std::string, std::string>> blobs_{};
     std::map<std::size_t, std::tuple<std::string, std::string, std::string>> clobs_{};
 
     void initialize_file() {
         using namespace std::literals::string_literals;
         foreach_blob([](std::size_t, std::string& column, std::string& channel, std::string& file_name){
-            test_file file{file_name};
-            file.clear();
-            file.write("this is a test file of blob, column = "s + column + ", channel = "s + channel);
+            if (!std::filesystem::exists(std::filesystem::status(file_name))) {
+                test_file file{file_name};
+                file.write("this is a test file of blob, column = "s + column + ", channel = "s + channel);
+            }
         });
         foreach_clob([](std::size_t, std::string& column, std::string& channel, std::string& file_name){
-            test_file file{file_name};
-            file.clear();
-            file.write("this is a test file of clob, column = "s + column + ", channel = "s + channel);
+            if (!std::filesystem::exists(std::filesystem::status(file_name))) {
+                test_file file{file_name};
+                file.write("this is a test file of clob, column = "s + column + ", channel = "s + channel);
+            }
         });
     }
     void clear_file() {
         foreach_blob([](std::size_t, std::string&, std::string&, std::string& file_name){
-            test_file file{file_name};
-            file.clear();
+            if (std::filesystem::exists(std::filesystem::status(file_name))) {
+                test_file file{file_name};
+                file.clear();
+            }
         });
         foreach_clob([](std::size_t, std::string&, std::string&, std::string& file_name){
-            test_file file{file_name};
-            file.clear();
+            if (std::filesystem::exists(std::filesystem::status(file_name))) {
+                test_file file{file_name};
+                file.clear();
+            }
         });
     }
 
