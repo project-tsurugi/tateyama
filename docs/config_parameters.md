@@ -80,7 +80,7 @@ parameter=value
 |dev_inplace_dag_schedule| ブール(true/false) | プランスケジューラ(dag controller)の状態遷移を現在のスレッドで行いタスクの作成をバイパスするか。デフォルトはtrue | 開発用のため将来的に削除/変更される可能性あり|
 |enable_join_scan| ブール(true/false) | インデックスを用いた結合処理において、全キー列のデータが利用可能でない場合に、その一部(プレフィックス)を利用して候補をスキャンして探索する演算子`join_scan` を使用可能にするか。`enable_index_join=true` の場合のみ有効。デフォルトはtrue | 開発用のため将来的に削除/変更される可能性あり|
 |dev_rtx_key_distribution| 文字列 | RTXのparallel scanにおいて、キー範囲を分割する手法を指定。次のいずれかから選択 (`simple`, `uniform`, `sampling`) 。 `dev_rtx_parallel_scan=true` の場合のみ有効。デフォルトは uniform|開発用のため将来的に削除/変更される可能性あり|
-|dev_enable_blob_cast| ブール(true/false) | BLOB/CLOBのキャストを可能にするか。デフォルトはfalse | 開発用のため将来的に削除/変更される可能性あり|
+|dev_enable_blob_cast| ブール(true/false) | BLOB/CLOBのキャストを可能にするか。デフォルトはtrue | 開発用のため将来的に削除/変更される可能性あり|
 |max_result_set_writers | 整数 | writer resultsetの最大数。デフォルトは64。|この値は256以下でなければならない|
 
 
