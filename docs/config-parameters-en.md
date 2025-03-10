@@ -98,6 +98,7 @@ Target component
 | datachannel_buffer_size | Integer | Buffer size of resultset in KB. The default value is 64. | The maximum raw size that can be handled by ipc is datachannel_buffer_size-4B. |
 | max_datachannel_buffers | Integer | Number of writers that can be used simultaneously in one session. The default value is 256. | This parameter is the upper limit for the session, not the entire system (database instance).
 | admin_sessions | Integer | Number of sessions for management commands (tgctl). The default value is 1. | The maximum number of sessions for management commands that can be specified is 255, which is separate from the normal maximum number of sessions specified in threads.
+| allow_blob_privileged | Boolean (true/false) | Whether BLOBs are allowed in privileged mode or not. The default value is true(allowed). |
 
 ## stream_endpoint section
 
@@ -112,6 +113,7 @@ Target component
 | port | Integer | Port number to connect to stream_endpoint. The default value is 12345. |
 | threads | Integer | Maximum number of simultaneous connections to stream_endpoint. The default value is 104. |
 | enabled | Boolean (true/false) | Enable or disable stream_endpoint when tsurugidb starts. The default value is false (disabled at start).
+| allow_blob_privileged | Boolean (true/false) | Whether BLOBs are allowed in privileged mode or not. The default value is false(not allowed). |
 
 ## session section
 

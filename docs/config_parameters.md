@@ -99,6 +99,7 @@ parameter=value
 |datachannel_buffer_size | 整数 | resultsetのbuffer size、単位はKB、デフォルトは64。 | ipcで扱える最大のraw sizeはdatachannel_buffer_size-4B。
 |max_datachannel_buffers | 整数 | 1セッションで同時使用可能なwriterの数。デフォルト値は256。 | このパラメータはセッションに対する上限値であり、システム（データベース・インスタンス）全体に対する上限値ではない。
 |admin_sessions | 整数 | 管理コマンド（tgctl）用のセッション数。デフォルト値は1。 | threadsで指定する通常のセッション数上限とは別に用意する管理コマンド用のセッション数、指定可能な最大値は255。
+|allow_blob_privileged | ブール(true/false) | 特権モードでのBLOB利用可否。デフォルト値はtrue（利用可能）。 |
 
 ## stream_endpointセクション
 
@@ -113,6 +114,7 @@ parameter=value
 |port | 整数 | stream_endpointに接続する際のport番号、デフォルトは12345
 |threads | 整数 | stream_endpointの最大同時接続数、デフォルトは104
 |enabled | ブール(true/false) | stream_endpointを有効化 or 無効化してtsurugidbを起動する、デフォルトはfalse（無効化して起動する）
+|allow_blob_privileged | ブール(true/false) | 特権モードでのBLOB利用可否。デフォルト値はfalse（利用不可）。 |
 
 ## sessionセクション
 
