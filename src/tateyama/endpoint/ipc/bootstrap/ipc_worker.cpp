@@ -37,7 +37,7 @@ void ipc_worker::run() {  // NOLINT(readability-function-cognitive-complexity)
             return;
         }
 
-        ipc_request request_obj{*wire_, hdr, database_info_, session_info_, session_store_, session_variable_set_, local_id_++, conf_};
+        ipc_request request_obj{*wire_, hdr, resources(), local_id_++, conf_};
         ipc_response response_obj{wire_, hdr.get_idx(), [](){}, conf_};
         if (! handshake(static_cast<tateyama::api::server::request*>(&request_obj), static_cast<tateyama::api::server::response*>(&response_obj))) {
             return;
@@ -48,7 +48,7 @@ void ipc_worker::run() {  // NOLINT(readability-function-cognitive-complexity)
     VLOG(log_debug_timing_event) << "/:tateyama:timing:session:started " << session_id_;
 #ifdef ENABLE_ALTIMETER
     const std::chrono::time_point session_start_time = std::chrono::steady_clock::now();
-    tateyama::endpoint::altimeter::session_start(database_info_, session_info_);
+    tateyama::endpoint::altimeter::session_start(conf_->database_info(), session_info_);
 #endif
     bool notiry_expiration_time_over{};
     while(true) {
@@ -80,7 +80,7 @@ void ipc_worker::run() {  // NOLINT(readability-function-cognitive-complexity)
             }
 
             update_expiration_time();
-            auto request = std::make_shared<ipc_request>(*wire_, hdr, database_info_, session_info_, session_store_, session_variable_set_, local_id_++, conf_);
+            auto request = std::make_shared<ipc_request>(*wire_, hdr, resources(), local_id_++, conf_);
             std::size_t index = hdr.get_idx();
             bool exit_frag = false;
             switch (request->service_id()) {
@@ -154,7 +154,7 @@ void ipc_worker::run() {  // NOLINT(readability-function-cognitive-complexity)
     }
     VLOG_LP(log_trace) << "destroy session wire: session_id = " << std::to_string(session_id_);
 #ifdef ENABLE_ALTIMETER
-    tateyama::endpoint::altimeter::session_end(database_info_, session_info_, std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - session_start_time).count());
+    tateyama::endpoint::altimeter::session_end(conf_.database_info(), session_info_, std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - session_start_time).count());
 #endif
     VLOG(log_debug_timing_event) << "/:tateyama:timing:session:finished " << session_id_;
 }

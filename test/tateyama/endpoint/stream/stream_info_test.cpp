@@ -47,8 +47,8 @@ public:
         return true;
     }
 
-    tateyama::api::server::request* request() {
-        return req_.get();
+    std::shared_ptr<tateyama::api::server::request> request() {
+        return req_;
     }
 
 private:
@@ -57,16 +57,14 @@ private:
 
 class stream_listener_for_info_test {
 public:
-    stream_listener_for_info_test(info_service_for_test& service) : service_(service) {
+    stream_listener_for_info_test(info_service_for_test& service, tateyama::status_info::resource::database_info_impl& database_info) : service_(service), conf_(tateyama::endpoint::common::connection_type::stream, database_info) {
     }
     void operator()() {
         while (true) {
             std::shared_ptr<stream_socket> stream{};
             stream = connection_socket_.accept();
-
             if (stream != nullptr) {
-                tateyama::endpoint::common::configuration conf(tateyama::endpoint::common::connection_type::stream);
-                worker_ = std::make_unique<tateyama::endpoint::stream::bootstrap::stream_worker>(service_, conf, my_session_id_, std::move(stream), database_info_, false);
+                worker_ = std::make_unique<tateyama::endpoint::stream::bootstrap::stream_worker>(service_, conf_, my_session_id_, std::move(stream), false);
                 worker_->invoke([&]{worker_->run();});
             } else {  // connect via pipe (request_terminate)
                 break;
@@ -83,9 +81,9 @@ public:
 
 private:
     info_service_for_test& service_;
+    tateyama::endpoint::common::configuration conf_;
     connection_socket connection_socket_{tateyama::api::endpoint::stream::stream_client::PORT_FOR_TEST};
     std::unique_ptr<tateyama::endpoint::stream::bootstrap::stream_worker> worker_{};
-    tateyama::status_info::resource::database_info_impl database_info_{"stream_info_test"};
 };
 }
 
@@ -103,7 +101,8 @@ class stream_info_test : public ::testing::Test {
 
 public:
     tateyama::endpoint::stream::info_service_for_test service_{};
-    tateyama::endpoint::stream::stream_listener_for_info_test listener_{service_};
+    tateyama::status_info::resource::database_info_impl database_info_{"stream_info_test"};
+    tateyama::endpoint::stream::stream_listener_for_info_test listener_{service_, database_info_};
     std::thread thread_{};
 };
 
@@ -124,10 +123,12 @@ TEST_F(stream_info_test, basic) {
         client->send(service_id_of_info_service, request_test_message);  // we do not care service_id nor request message here
         cci.release_credential();
         hs.release_client_information();
+
+        // client  part
         client->receive();
 
         // server part
-        auto* request = service_.request();
+        std::shared_ptr<tateyama::api::server::request> request = service_.request();
         auto now = std::chrono::system_clock::now();
 
         // test for database_info

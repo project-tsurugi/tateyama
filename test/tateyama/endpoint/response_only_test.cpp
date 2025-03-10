@@ -46,6 +46,7 @@ public:
     static constexpr std::string_view response_test_message_ = "opqrstuvwxyz";
     static constexpr tateyama::common::wire::message_header::index_type index_ = 1;
     static constexpr std::size_t writer_count = 8;
+    static constexpr std::size_t session_id = 10;
 
     std::shared_ptr<bootstrap::server_wire_container_impl> wire_;
 
@@ -53,7 +54,8 @@ public:
     tateyama::endpoint::common::session_info_impl dmy_ssinfo_{};
     tateyama::api::server::session_store dmy_ssstore_{};
     tateyama::session::session_variable_set dmy_svariable_set_{};
-    tateyama::endpoint::common::configuration conf_{tateyama::endpoint::common::connection_type::ipc};
+    tateyama::endpoint::common::configuration conf_{tateyama::endpoint::common::connection_type::ipc, dmy_dbinfo_};
+    tateyama::endpoint::common::resources resources_{session_id, dmy_ssinfo_, dmy_ssstore_, dmy_svariable_set_};
 
     class test_service {
     public:
@@ -74,7 +76,7 @@ public:
 TEST_F(response_only_test, normal) {
     auto* request_wire = static_cast<bootstrap::server_wire_container_impl::wire_container_impl*>(wire_->get_request_wire());
 
-    request_header_content hdr{10, 100};
+    request_header_content hdr{session_id, 100};
     std::stringstream ss{};
     append_request_header(ss, request_test_message_, hdr);
     auto request_message = ss.str();
@@ -85,9 +87,9 @@ TEST_F(response_only_test, normal) {
     EXPECT_EQ(index_, h.get_idx());
     EXPECT_EQ(request_wire->payload(), request_message);
 
-    auto request = std::make_shared<ipc_request>(*wire_, h, dmy_dbinfo_, dmy_ssinfo_, dmy_ssstore_, dmy_svariable_set_, 0, conf_);
+    auto request = std::make_shared<ipc_request>(*wire_, h, resources_, 0, conf_);
     auto response = std::make_shared<ipc_response>(wire_, h.get_idx(), [](){}, conf_);
-    EXPECT_EQ(request->session_id(), 10);
+    EXPECT_EQ(request->session_id(), session_id);
     EXPECT_EQ(request->service_id(), 100);
 
     test_service sv;
@@ -101,7 +103,7 @@ TEST_F(response_only_test, normal) {
     response_wire.read(r_msg.data());
 
     std::stringstream expected{};
-    tateyama::endpoint::common::header_content hc{10};
+    tateyama::endpoint::common::header_content hc{session_id};
     tateyama::endpoint::common::append_response_header(expected, response_test_message_, hc, ::tateyama::proto::framework::response::Header::SERVICE_RESULT);
     EXPECT_EQ(r_msg, expected.str());
 }

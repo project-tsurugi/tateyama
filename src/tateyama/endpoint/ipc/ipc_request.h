@@ -35,13 +35,10 @@ class alignas(64) ipc_request : public tateyama::endpoint::common::request {
 public:
     ipc_request(server_wire_container& server_wire,
                 tateyama::common::wire::message_header& header,
-                const tateyama::api::server::database_info& database_info,
-                const tateyama::api::server::session_info& session_info,
-                tateyama::api::server::session_store& session_store,
-                tateyama::session::session_variable_set& session_variable_set,
+                tateyama::endpoint::common::resources& recources,
                 std::size_t local_id,
                 const tateyama::endpoint::common::configuration& conf) :
-        tateyama::endpoint::common::request(database_info, session_info, session_store, session_variable_set, local_id, conf),
+        tateyama::endpoint::common::request(recources, local_id, conf),
         server_wire_(server_wire),
         length_(header.get_length()),
         index_(header.get_idx()) {

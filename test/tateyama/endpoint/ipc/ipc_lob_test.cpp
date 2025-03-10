@@ -119,7 +119,7 @@ class ipc_lob_test : public ::testing::Test {
         session_name += std::to_string(my_session_id);
         wire_ = std::make_shared<bootstrap::server_wire_container_impl>(session_name, "dummy_mutex_file_name", datachannel_buffer_size, 16);
         conf_.allow_blob_privileged(true);
-        worker_ = std::make_unique<tateyama::endpoint::ipc::bootstrap::ipc_worker>(service_, conf_, my_session_id, wire_, database_info_);
+        worker_ = std::make_unique<tateyama::endpoint::ipc::bootstrap::ipc_worker>(service_, conf_, my_session_id, wire_);
         tateyama::server::ipc_listener_for_test::run(*worker_);
 
         // client part
@@ -143,7 +143,7 @@ class ipc_lob_test : public ::testing::Test {
         auto rv = system("if [ -f /dev/shm/ipc_lob_test ]; then rm -f /dev/shm/ipc_lob_test; fi");
     }
 
-    tateyama::endpoint::common::configuration conf_{tateyama::endpoint::common::connection_type::ipc};
+    tateyama::endpoint::common::configuration conf_{tateyama::endpoint::common::connection_type::ipc, database_info_};
 
 public:
     tateyama::status_info::resource::database_info_impl database_info_{database_name};

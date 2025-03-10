@@ -59,7 +59,8 @@ public:
           session_context_(std::make_shared<tateyama::session::resource::session_context_impl>(session_info_, session_variable_set_)),
           enable_timeout_(config.enable_timeout_),
           refresh_timeout_(config.refresh_timeout_),
-          max_refresh_timeout_(config.max_refresh_timeout_) {
+          max_refresh_timeout_(config.max_refresh_timeout_),
+          resources_(session_id_, session_info_, session_store_, session_variable_set_) {
         if (session_) {
             session_->register_session(session_context_);
         }
@@ -511,12 +512,16 @@ protected:
         }
         return false;
     }
+    tateyama::endpoint::common::resources& resources() {
+        return resources_;
+    }
 
 private:
     const std::shared_ptr<tateyama::session::resource::session_context_impl> session_context_;
     bool enable_timeout_;
     std::chrono::seconds refresh_timeout_;
     std::chrono::seconds max_refresh_timeout_;
+    tateyama::endpoint::common::resources resources_;
     std::map<std::size_t, std::pair<std::shared_ptr<tateyama::endpoint::common::request>, std::shared_ptr<tateyama::endpoint::common::response>>> reqreses_{};
     std::mutex mtx_reqreses_{};
     std::vector<std::shared_ptr<tateyama::api::server::response>> shutdown_response_{};

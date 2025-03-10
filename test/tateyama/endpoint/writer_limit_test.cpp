@@ -52,6 +52,7 @@ public:
     static constexpr std::size_t value_size = 1024;
     static constexpr std::size_t writers = 256;
     static constexpr std::size_t writer_count = 32;
+    static constexpr std::size_t session_id = 10;
 
     static constexpr std::string_view request_test_message_ = "abcdefgh";
     static constexpr std::string_view response_test_message_ = "opqrstuvwxyz";
@@ -65,7 +66,8 @@ public:
     tateyama::endpoint::common::session_info_impl dmy_ssinfo_{};
     tateyama::api::server::session_store dmy_ssstore_{};
     tateyama::session::session_variable_set dmy_svariable_set_{};
-    tateyama::endpoint::common::configuration conf_{tateyama::endpoint::common::connection_type::ipc};
+    tateyama::endpoint::common::configuration conf_{tateyama::endpoint::common::connection_type::ipc, dmy_dbinfo_};
+    tateyama::endpoint::common::resources resources_{session_id, dmy_ssinfo_, dmy_ssstore_, dmy_svariable_set_};
 
     bool timeout(std::function<void()>&& test_behavior) {
         std::promise<bool> promisedFinished;
@@ -93,7 +95,7 @@ TEST_F(writer_limit_test, within_writers) {
     EXPECT_EQ(index_, h.get_idx());
     EXPECT_EQ(request_wire->payload(), request_message);
 
-    auto request = std::make_shared<ipc_request>(*wire_, h, dmy_dbinfo_, dmy_ssinfo_, dmy_ssstore_, dmy_svariable_set_, 0, conf_);
+    auto request = std::make_shared<ipc_request>(*wire_, h, resources_, 0, conf_);
     auto response = std::make_shared<ipc_response>(wire_, h.get_idx(), [](){}, conf_);
 
     std::array<std::shared_ptr<tateyama::api::server::data_channel>, writers> dcs{};
@@ -126,7 +128,7 @@ TEST_F(writer_limit_test, exceed_writers) {
     EXPECT_EQ(index_, h.get_idx());
     EXPECT_EQ(request_wire->payload(), request_message);
 
-    auto request = std::make_shared<ipc_request>(*wire_, h, dmy_dbinfo_, dmy_ssinfo_, dmy_ssstore_, dmy_svariable_set_, 0, conf_);
+    auto request = std::make_shared<ipc_request>(*wire_, h, resources_, 0, conf_);
     auto response = std::make_shared<ipc_response>(wire_, h.get_idx(), [](){}, conf_);
 
     std::array<std::shared_ptr<tateyama::api::server::data_channel>, writers+1> dcs{};
