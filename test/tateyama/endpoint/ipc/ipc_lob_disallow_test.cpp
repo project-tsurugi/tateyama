@@ -85,7 +85,7 @@ public:
         visit_++;
         req_ = req;
         for (auto&& e: blobs_) {
-            EXPECT_EQ(res->add_blob(std::make_unique<blob_info_for_disallow_test>(std::get<0>(e), std::get<1>(e), std::get<2>(e))), tateyama::status::invalid_request);
+            EXPECT_EQ(res->add_blob(std::make_unique<blob_info_for_disallow_test>(std::get<0>(e), std::get<1>(e), std::get<2>(e))), tateyama::status::operation_denied);
         }
         res->body(response_disallow_test_message);
         return true;

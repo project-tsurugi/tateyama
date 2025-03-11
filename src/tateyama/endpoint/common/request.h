@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2024 Project Tsurugi.
+ * Copyright 2018-2025 Project Tsurugi.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,6 +64,7 @@ public:
         not_allowed,
         not_found,
         not_accessible,
+        not_regular_file,
     };
 
     explicit request(const tateyama::api::server::database_info& database_info,
@@ -133,10 +134,11 @@ public:
     [[nodiscard]] std::string blob_error_message() const noexcept {
         std::ostringstream ss{};
         switch (blob_error_) {
-        case blob_error::ok: return {""};
-        case blob_error::not_allowed: return {"BLOB handling in privileged mode is not allowed on this endpoint"};
-        case blob_error::not_found: ss << "tsurugidb failed to receive BLOB file in privileged mode: "; break;
-        case blob_error::not_accessible: ss << "tsurugidb failed to receive BLOB file in privileged mode: "; break;
+            case blob_error::ok: return {""};
+            case blob_error::not_allowed: return {"BLOB handling in privileged mode is not allowed on this endpoint"};
+            case blob_error::not_found: ss << "tsurugidb failed to receive BLOB file in privileged mode (not found): "; break;
+            case blob_error::not_accessible: ss << "tsurugidb failed to receive BLOB file in privileged mode (cannot read): "; break;
+            case blob_error::not_regular_file: ss << "tsurugidb failed to receive BLOB file in privileged mode (not regular file): "; break;
         }
         ss << causing_file_;
         return ss.str();
@@ -162,16 +164,24 @@ protected:
                     return;
                 }
                 for (auto&& e: blobs_) {
-                    if (access(e.second.first.string().c_str(), F_OK) != 0) {
-                        blob_error_ = blob_error::not_found;
-                        causing_file_ = e.second.first;
-                        return;
-                    }
-                    if (access(e.second.first.string().c_str(), R_OK) != 0) {
+                    std::error_code ec{};
+                    std::filesystem::path p(e.second.first);
+                    if (std::filesystem::exists(p, ec) && !ec) {
+                        if (is_readable(p)) {
+                            if (std::filesystem::is_regular_file(p, ec) && !ec) {
+                                continue;
+                            }
+                            blob_error_ = blob_error::not_regular_file;
+                            causing_file_ = e.second.first;
+                            return;
+                        }
                         blob_error_ = blob_error::not_accessible;
                         causing_file_ = e.second.first;
                         return;
                     }
+                    blob_error_ = blob_error::not_found;
+                    causing_file_ = e.second.first;
+                    return;
                 }
             }
             return;
@@ -193,16 +203,21 @@ private:
     mutable std::unique_ptr<blob_info_impl> blob_info_{};
 
 
-[[nodiscard]] constexpr inline std::string_view to_string_view(blob_error value) const noexcept {
-    using namespace std::string_view_literals;
-    switch (value) {
-        case blob_error::ok: return "ok"sv;
-        case blob_error::not_allowed: return "not_allowed"sv;
-        case blob_error::not_found: return "not_found"sv;
-        case blob_error::not_accessible: return "not_accessible"sv;
+    [[nodiscard]] constexpr inline std::string_view to_string_view(blob_error value) const noexcept {
+        using namespace std::string_view_literals;
+        switch (value) {
+            case blob_error::ok: return "ok"sv;
+            case blob_error::not_allowed: return "not_allowed"sv;
+            case blob_error::not_found: return "not_found"sv;
+            case blob_error::not_accessible: return "not_accessible"sv;
+            case blob_error::not_regular_file: return "not_regular_file"sv;
+        }
+        std::abort();
     }
-    std::abort();
-}
+
+    [[nodiscard]] bool is_readable(const std::filesystem::path& p) {
+        return access(p.c_str(), R_OK) == 0;
+    }
 
 };
 

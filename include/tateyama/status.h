@@ -28,7 +28,7 @@ enum class status : std::int64_t {
     ok = 0,
     not_found,
     unknown,
-    invalid_request,
+    operation_denied,
 };
 
 /**
@@ -42,7 +42,7 @@ enum class status : std::int64_t {
         case status::ok: return "ok"sv;
         case status::not_found: return "not_found"sv;
         case status::unknown: return "unknown"sv;
-        case status::invalid_request: return "invalid_request"sv;
+        case status::operation_denied: return "operation_denied"sv;
     }
     std::abort();
 }
