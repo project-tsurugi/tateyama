@@ -53,7 +53,7 @@ public:
           router_(env.service_repository().find<framework::routing_service>()),
           status_(env.resource_repository().find<status_info::resource::bridge>()),
           session_(env.resource_repository().find<session::resource::bridge>()),
-          conf_(tateyama::endpoint::common::connection_type::ipc, session_),
+          conf_(tateyama::endpoint::common::connection_type::ipc, session_, status_->database_info()),
           ipc_metrics_(env) {
 
         auto* endpoint_config = cfg_->get_section("ipc_endpoint");
@@ -207,7 +207,7 @@ public:
 
                     auto& worker_entry = workers_.at(slot_index);
                     std::unique_lock<std::mutex> lock(mtx_workers_);
-                    worker_entry = std::make_shared<ipc_worker>(*router_, conf_, session_id, std::move(wire), status_->database_info());
+                    worker_entry = std::make_shared<ipc_worker>(*router_, conf_, session_id, std::move(wire));
                     connection_queue.accept(slot_id, session_id);
                     ipc_metrics_.increase();
                     worker_entry->invoke([this, slot_id, slot_index, &connection_queue]{

@@ -31,13 +31,10 @@ public:
     stream_request() = delete;
     explicit stream_request(stream_socket& session_socket,
                             std::string& payload,
-                            const tateyama::api::server::database_info& database_info,
-                            const tateyama::api::server::session_info& session_info,
-                            tateyama::api::server::session_store& session_store,
-                            tateyama::session::session_variable_set& session_variable_set,
+                            tateyama::endpoint::common::resources& resources,
                             std::size_t local_id,
                             const tateyama::endpoint::common::configuration& conf)
-        : tateyama::endpoint::common::request(database_info, session_info, session_store, session_variable_set, local_id, conf), session_socket_(session_socket) {
+        : tateyama::endpoint::common::request(resources, local_id, conf), session_socket_(session_socket) {
         endpoint::common::parse_result res{};
         parse_framework_header(payload, res);
         payload_ = res.payload_;

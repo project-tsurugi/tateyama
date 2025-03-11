@@ -52,6 +52,7 @@ public:
     static constexpr tateyama::common::wire::message_header::index_type index_ = 1;
     static constexpr std::string_view r_ = "row_data_test";  // length = 13
     static constexpr std::size_t writer_count = 8;
+    static constexpr std::size_t session_id = 10;
 
     std::shared_ptr<bootstrap::server_wire_container_impl> wire_;
 
@@ -59,7 +60,8 @@ public:
     tateyama::endpoint::common::session_info_impl dmy_ssinfo_{};
     tateyama::api::server::session_store dmy_ssstore_{};
     tateyama::session::session_variable_set dmy_svariable_set_{};
-    tateyama::endpoint::common::configuration conf_{tateyama::endpoint::common::connection_type::ipc};
+    tateyama::endpoint::common::configuration conf_{tateyama::endpoint::common::connection_type::ipc, dmy_dbinfo_};
+    tateyama::endpoint::common::resources resources_{session_id, dmy_ssinfo_, dmy_ssstore_, dmy_svariable_set_};
 
     class test_service {
     public:
@@ -102,7 +104,7 @@ TEST_F(result_set_test, normal) {
     EXPECT_EQ(index_, h.get_idx());
     EXPECT_EQ(request_wire->payload(), request_message);
 
-    auto request = std::make_shared<ipc_request>(*wire_, h, dmy_dbinfo_, dmy_ssinfo_, dmy_ssstore_, dmy_svariable_set_, 0, conf_);
+    auto request = std::make_shared<ipc_request>(*wire_, h, resources_, 0, conf_);
     auto response = std::make_shared<ipc_response>(wire_, h.get_idx(), [](){}, conf_);
 
     test_service sv;
@@ -159,7 +161,7 @@ TEST_F(result_set_test, large) {
     EXPECT_EQ(index_, h.get_idx());
     EXPECT_EQ(request_wire->payload(), request_message);
 
-    auto request = std::make_shared<ipc_request>(*wire_, h, dmy_dbinfo_, dmy_ssinfo_, dmy_ssstore_, dmy_svariable_set_, 0, conf_);
+    auto request = std::make_shared<ipc_request>(*wire_, h, resources_, 0, conf_);
     auto response = std::make_shared<ipc_response>(wire_, h.get_idx(), [](){}, conf_);
 
 

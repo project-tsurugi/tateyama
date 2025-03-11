@@ -62,7 +62,7 @@ public:
           router_(env.service_repository().find<framework::routing_service>()),
           status_(env.resource_repository().find<status_info::resource::bridge>()),
           session_(env.resource_repository().find<session::resource::bridge>()),
-          conf_(tateyama::endpoint::common::connection_type::stream, session_),
+          conf_(tateyama::endpoint::common::connection_type::stream, session_, status_->database_info()),
           stream_metrics_(env) {
 
         auto endpoint_config = cfg_->get_section("stream_endpoint");
@@ -183,7 +183,7 @@ public:
             }
             if (!found) {
                 try {
-                    auto worker_decline = std::make_shared<stream_worker>(*router_, conf_, session_id_, std::move(stream), status_->database_info(), true);
+                    auto worker_decline = std::make_shared<stream_worker>(*router_, conf_, session_id_, std::move(stream), true);
                     auto* worker = worker_decline.get();
                     {
                         std::unique_lock<std::mutex> lock(mtx_undertakers_);
@@ -205,7 +205,7 @@ public:
                     auto& worker_entry = workers_.at(index);
                     {
                         std::unique_lock<std::mutex> lock(mtx_workers_);
-                        worker_entry = std::make_shared<stream_worker>(*router_, conf_, session_id_, std::move(stream), status_->database_info(), false);
+                        worker_entry = std::make_shared<stream_worker>(*router_, conf_, session_id_, std::move(stream), false);
                     }
                     stream_metrics_.increase();
                     worker_entry->invoke([this, index]{

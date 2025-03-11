@@ -67,13 +67,10 @@ public:
         not_regular_file,
     };
 
-    explicit request(const tateyama::api::server::database_info& database_info,
-                     const tateyama::api::server::session_info& session_info,
-                     tateyama::api::server::session_store& session_store,
-                     tateyama::session::session_variable_set& session_variable_set,
+    request(tateyama::endpoint::common::resources& resources,
                      std::size_t local_id,
                      const configuration& conf) :
-        database_info_(database_info), session_info_(session_info), session_store_(session_store), session_variable_set_(session_variable_set),
+        session_info_(resources.session_info()), session_store_(resources.session_store()), session_variable_set_(resources.session_variable_set()),
         local_id_(local_id), start_at_(std::chrono::system_clock::now()), conf_(conf) {
     }
 
@@ -86,7 +83,7 @@ public:
     }
 
     [[nodiscard]] tateyama::api::server::database_info const& database_info() const noexcept override {
-        return database_info_;
+        return conf_.database_info();
     }
 
     [[nodiscard]] tateyama::api::server::session_info const& session_info() const noexcept override {
@@ -145,8 +142,6 @@ public:
     }
 
 protected:
-    const tateyama::api::server::database_info& database_info_;  // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes,misc-non-private-member-variables-in-classes)
-
     const tateyama::api::server::session_info& session_info_;  // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes,misc-non-private-member-variables-in-classes)
 
     tateyama::api::server::session_store& session_store_;  // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes,misc-non-private-member-variables-in-classes)

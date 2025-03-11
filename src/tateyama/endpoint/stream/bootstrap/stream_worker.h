@@ -30,12 +30,10 @@ class alignas(64) stream_worker : public tateyama::endpoint::common::worker_comm
                   const tateyama::endpoint::common::configuration& conf,
                   std::size_t session_id,
                   std::shared_ptr<stream_socket> stream,
-                  const tateyama::api::server::database_info& database_info,
                   const bool decline)
         : worker_common(conf, session_id, stream->connection_info()),
           service_(service),
           session_stream_(std::move(stream)),
-          database_info_(database_info),
           conf_(conf),
           decline_(decline) {
         if (!session_stream_->set_owner(static_cast<void*>(this))) {
@@ -50,7 +48,6 @@ class alignas(64) stream_worker : public tateyama::endpoint::common::worker_comm
  private:
     tateyama::framework::routing_service& service_;
     std::shared_ptr<stream_socket> session_stream_;
-    const tateyama::api::server::database_info& database_info_;
     const tateyama::endpoint::common::configuration& conf_;
     const bool decline_;
 
