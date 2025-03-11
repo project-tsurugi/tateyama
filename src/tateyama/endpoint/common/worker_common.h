@@ -398,7 +398,7 @@ protected:
             reqreses_.emplace(slot, std::pair<std::shared_ptr<tateyama::endpoint::common::request>, std::shared_ptr<tateyama::endpoint::common::response>>(request, response));
         }
         if (request->get_blob_error() != request::blob_error::ok) {
-            notify_client(response.get(), tateyama::proto::diagnostics::Code::INVALID_REQUEST, request->blob_error_message());
+            notify_client(response.get(), tateyama::proto::diagnostics::Code::OPERATION_DENIED, request->blob_error_message());
             return false;
         }
         return true;

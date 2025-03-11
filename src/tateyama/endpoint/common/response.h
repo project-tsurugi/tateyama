@@ -47,7 +47,7 @@ public:
 
     tateyama::status add_blob(std::unique_ptr<tateyama::api::server::blob_info> blob) override {
         if (!conf_.allow_blob_privileged_) {
-            return tateyama::status::invalid_request;
+            return tateyama::status::operation_denied;
         }
         try {
             blobs_.emplace(std::move(blob));
