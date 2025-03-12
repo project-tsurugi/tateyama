@@ -227,7 +227,7 @@ tgctl session set <session-ref> <variable-name> [<variable-value>]　[--conf </p
 
   ```sh
   # enable SQL execution plan recording in session "cost-batch-01"
-  tgctl session set cost-batch-01 sql.plan-recording true
+  tgctl session set cost-batch-01 sql.plan_recording true
   ```
 
 * 備考
