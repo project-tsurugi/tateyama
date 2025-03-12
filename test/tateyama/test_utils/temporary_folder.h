@@ -19,7 +19,7 @@
 
 #include "boost/filesystem.hpp"
 
-namespace tateyama::test {
+namespace tateyama::test_utils {
 
 class temporary_folder {
 public:

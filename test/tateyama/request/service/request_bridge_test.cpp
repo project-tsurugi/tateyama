@@ -27,7 +27,7 @@
 #include <tateyama/proto/request/response.pb.h>
 
 #include <gtest/gtest.h>
-#include <tateyama/utils/test_utils.h>
+#include <tateyama/test_utils/utility.h>
 
 namespace tateyama::request {
 
@@ -39,7 +39,7 @@ public:
     void print_diagnostic(std::ostream&) {}
     void foreach_request(const callback& cb) {
         for (auto&& e : data_) {
-            cb(std::make_shared<tateyama::utils::test_request>(std::get<0>(e), std::get<1>(e), std::get<2>(e), std::get<3>(e)), std::chrono::system_clock::now());
+            cb(std::make_shared<tateyama::test_utils::test_request>(std::get<0>(e), std::get<1>(e), std::get<2>(e), std::get<3>(e)), std::chrono::system_clock::now());
             std::this_thread::sleep_for( std::chrono::milliseconds(10) );
         }
     }
@@ -55,14 +55,14 @@ private:
 
 class request_bridge_test :
         public ::testing::Test,
-        public test::test_utils {
+        public test_utils::utility {
 public:
     void SetUp() override {
         temporary_.prepare();
-        auto cfg = tateyama::api::configuration::create_configuration("", tateyama::test::default_configuration_for_tests);
+        auto cfg = tateyama::api::configuration::create_configuration("", tateyama::test_utils::default_configuration_for_tests);
         set_dbpath(*cfg);
         sv_ = std::make_unique<framework::server>(tateyama::framework::boot_mode::database_server, cfg);
-        add_core_components(*sv_);
+        tateyama::test_utils::add_core_components_for_test(*sv_);
         sv_->start();
         router_ = sv_->find_service<framework::routing_service>();
 
@@ -97,8 +97,8 @@ TEST_F(request_bridge_test, list_request) {
         rq.clear_list_request();
     }
 
-    auto svrreq = std::make_shared<tateyama::utils::test_request>(10, request::service::bridge::tag, str);
-    auto svrres = std::make_shared<tateyama::utils::test_response>();
+    auto svrreq = std::make_shared<tateyama::test_utils::test_request>(10, request::service::bridge::tag, str);
+    auto svrres = std::make_shared<tateyama::test_utils::test_response>();
 
     (*router_)(svrreq, svrres);
     EXPECT_EQ(10, svrres->session_id_);
@@ -156,8 +156,8 @@ TEST_F(request_bridge_test, list_request_t3) {
         rq.clear_list_request();
     }
 
-    auto svrreq = std::make_shared<tateyama::utils::test_request>(10, request::service::bridge::tag, str);
-    auto svrres = std::make_shared<tateyama::utils::test_response>();
+    auto svrreq = std::make_shared<tateyama::test_utils::test_request>(10, request::service::bridge::tag, str);
+    auto svrres = std::make_shared<tateyama::test_utils::test_response>();
 
     (*router_)(svrreq, svrres);
     EXPECT_EQ(10, svrres->session_id_);
@@ -205,8 +205,8 @@ TEST_F(request_bridge_test, list_request_f3) {
         rq.clear_list_request();
     }
 
-    auto svrreq = std::make_shared<tateyama::utils::test_request>(10, request::service::bridge::tag, str);
-    auto svrres = std::make_shared<tateyama::utils::test_response>();
+    auto svrreq = std::make_shared<tateyama::test_utils::test_request>(10, request::service::bridge::tag, str);
+    auto svrres = std::make_shared<tateyama::test_utils::test_response>();
 
     (*router_)(svrreq, svrres);
     EXPECT_EQ(10, svrres->session_id_);
@@ -260,8 +260,8 @@ TEST_F(request_bridge_test, list_request_t3_f3) {
         rq.clear_list_request();
     }
 
-    auto svrreq = std::make_shared<tateyama::utils::test_request>(10, request::service::bridge::tag, str);
-    auto svrres = std::make_shared<tateyama::utils::test_response>();
+    auto svrreq = std::make_shared<tateyama::test_utils::test_request>(10, request::service::bridge::tag, str);
+    auto svrres = std::make_shared<tateyama::test_utils::test_response>();
 
     (*router_)(svrreq, svrres);
     EXPECT_EQ(10, svrres->session_id_);
@@ -310,8 +310,8 @@ TEST_F(request_bridge_test, get_payload) {
         rq.clear_get_payload();
     }
 
-    auto svrreq = std::make_shared<tateyama::utils::test_request>(11, request::service::bridge::tag, str);
-    auto svrres = std::make_shared<tateyama::utils::test_response>();
+    auto svrreq = std::make_shared<tateyama::test_utils::test_request>(11, request::service::bridge::tag, str);
+    auto svrres = std::make_shared<tateyama::test_utils::test_response>();
 
     (*router_)(svrreq, svrres);
     EXPECT_EQ(11, svrres->session_id_);
@@ -337,8 +337,8 @@ TEST_F(request_bridge_test, get_payload_fail) {
         rq.clear_get_payload();
     }
 
-    auto svrreq = std::make_shared<tateyama::utils::test_request>(11, request::service::bridge::tag, str);
-    auto svrres = std::make_shared<tateyama::utils::test_response>();
+    auto svrreq = std::make_shared<tateyama::test_utils::test_request>(11, request::service::bridge::tag, str);
+    auto svrres = std::make_shared<tateyama::test_utils::test_response>();
 
     (*router_)(svrreq, svrres);
     EXPECT_EQ(11, svrres->session_id_);

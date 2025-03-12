@@ -25,8 +25,8 @@
 #include "tateyama/endpoint/common/session_info_impl.h"
 
 #include <gtest/gtest.h>
-#include <tateyama/utils/test_utils.h>
-#include <tateyama/utils/request_response.h>
+#include <tateyama/test_utils/utility.h>
+#include <tateyama/test_utils/request_response.h>
 
 namespace tateyama::datastore {
 
@@ -34,7 +34,7 @@ using namespace std::literals::string_literals;
 
 class datastore_test :
     public ::testing::Test,
-    public test::test_utils
+    public test_utils::utility
 {
 public:
     void SetUp() override {
@@ -52,7 +52,7 @@ TEST_F(datastore_test, basic) {
     if (auto rc = ::sharksfin::implementation_id(&name); rc == ::sharksfin::StatusCode::OK && name == "memory") {
         GTEST_SKIP() << "tateyama-memory doesn't support datastore";
     }
-    auto cfg = api::configuration::create_configuration("", tateyama::test::default_configuration_for_tests);
+    auto cfg = api::configuration::create_configuration("", tateyama::test_utils::default_configuration_for_tests);
     set_dbpath(*cfg);
     framework::server sv{framework::boot_mode::database_server, cfg};
     add_core_components(sv);
@@ -70,8 +70,8 @@ TEST_F(datastore_test, basic) {
         str = rq.SerializeAsString();
         rq.clear_backup_begin();
     }
-    auto svrreq = std::make_shared<tateyama::utils::test_request>(10, datastore::service::bridge::tag, str);
-    auto svrres = std::make_shared<tateyama::utils::test_response>();
+    auto svrreq = std::make_shared<tateyama::test_utils::test_request>(10, datastore::service::bridge::tag, str);
+    auto svrres = std::make_shared<tateyama::test_utils::test_response>();
 
     (*router)(svrreq, svrres);
     EXPECT_EQ(10, svrres->session_id_);
@@ -89,7 +89,7 @@ TEST_F(datastore_test, basic) {
 
 #if 0
 TEST_F(datastore_test, test_connectivity_with_limestone) {
-    auto cfg = api::configuration::create_configuration("", tateyama::test::default_configuration_for_tests);
+    auto cfg = api::configuration::create_configuration("", tateyama::test_utils::default_configuration_for_tests);
     set_dbpath(*cfg);
     framework::server sv{framework::boot_mode::database_server, cfg};
     add_core_components(sv);

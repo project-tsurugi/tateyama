@@ -22,7 +22,7 @@
 #include <tateyama/proto/altimeter/response.pb.h>
 
 #include <gtest/gtest.h>
-#include <tateyama/utils/test_utils.h>
+#include <tateyama/test_utils/utility.h>
 
 namespace tateyama::altimeter {
 
@@ -78,16 +78,16 @@ private:
 
 class altimeter_test :
     public ::testing::Test,
-    public test::test_utils
+    public test_utils::utility
 {
 public:
     void SetUp() override {
         temporary_.prepare();
 
-        auto cfg = api::configuration::create_configuration("", tateyama::test::default_configuration_for_tests);
+        auto cfg = api::configuration::create_configuration("", tateyama::test_utils::default_configuration_for_tests);
         set_dbpath(*cfg);
         sv_ = std::make_unique<framework::server>(framework::boot_mode::database_server, cfg);
-        add_core_components(*sv_);
+        tateyama::test_utils::add_core_components_for_test(*sv_);
         sv_->start();
 
         router_ = sv_->find_service<framework::routing_service>();
@@ -130,8 +130,8 @@ TEST_F(altimeter_test, enable_event) {
         rq.clear_configure();
     }
 
-    auto svrreq = std::make_shared<tateyama::utils::test_request>(11, altimeter::service::bridge::tag, str);
-    auto svrres = std::make_shared<tateyama::utils::test_response>();
+    auto svrreq = std::make_shared<tateyama::test_utils::test_request>(11, altimeter::service::bridge::tag, str);
+    auto svrres = std::make_shared<tateyama::test_utils::test_response>();
 
     (*router_)(svrreq, svrres);
     EXPECT_EQ(11, svrres->session_id_);
@@ -153,8 +153,8 @@ TEST_F(altimeter_test, enable_audit) {
         rq.clear_configure();
     }
 
-    auto svrreq = std::make_shared<tateyama::utils::test_request>(11, altimeter::service::bridge::tag, str);
-    auto svrres = std::make_shared<tateyama::utils::test_response>();
+    auto svrreq = std::make_shared<tateyama::test_utils::test_request>(11, altimeter::service::bridge::tag, str);
+    auto svrres = std::make_shared<tateyama::test_utils::test_response>();
 
     (*router_)(svrreq, svrres);
     EXPECT_EQ(11, svrres->session_id_);
@@ -177,8 +177,8 @@ TEST_F(altimeter_test, disable_event) {
         rq.clear_configure();
     }
 
-    auto svrreq = std::make_shared<tateyama::utils::test_request>(11, altimeter::service::bridge::tag, str);
-    auto svrres = std::make_shared<tateyama::utils::test_response>();
+    auto svrreq = std::make_shared<tateyama::test_utils::test_request>(11, altimeter::service::bridge::tag, str);
+    auto svrres = std::make_shared<tateyama::test_utils::test_response>();
 
     (*router_)(svrreq, svrres);
     EXPECT_EQ(11, svrres->session_id_);
@@ -200,8 +200,8 @@ TEST_F(altimeter_test, disable_audit) {
         rq.clear_configure();
     }
 
-    auto svrreq = std::make_shared<tateyama::utils::test_request>(11, altimeter::service::bridge::tag, str);
-    auto svrres = std::make_shared<tateyama::utils::test_response>();
+    auto svrreq = std::make_shared<tateyama::test_utils::test_request>(11, altimeter::service::bridge::tag, str);
+    auto svrres = std::make_shared<tateyama::test_utils::test_response>();
 
     (*router_)(svrreq, svrres);
     EXPECT_EQ(11, svrres->session_id_);
@@ -224,8 +224,8 @@ TEST_F(altimeter_test, level_event) {
         rq.clear_configure();
     }
 
-    auto svrreq = std::make_shared<tateyama::utils::test_request>(11, altimeter::service::bridge::tag, str);
-    auto svrres = std::make_shared<tateyama::utils::test_response>();
+    auto svrreq = std::make_shared<tateyama::test_utils::test_request>(11, altimeter::service::bridge::tag, str);
+    auto svrres = std::make_shared<tateyama::test_utils::test_response>();
 
     (*router_)(svrreq, svrres);
     EXPECT_EQ(11, svrres->session_id_);
@@ -247,8 +247,8 @@ TEST_F(altimeter_test, level_audit) {
         rq.clear_configure();
     }
 
-    auto svrreq = std::make_shared<tateyama::utils::test_request>(11, altimeter::service::bridge::tag, str);
-    auto svrres = std::make_shared<tateyama::utils::test_response>();
+    auto svrreq = std::make_shared<tateyama::test_utils::test_request>(11, altimeter::service::bridge::tag, str);
+    auto svrres = std::make_shared<tateyama::test_utils::test_response>();
 
     (*router_)(svrreq, svrres);
     EXPECT_EQ(11, svrres->session_id_);
@@ -271,8 +271,8 @@ TEST_F(altimeter_test, statement_duration) {
         rq.clear_configure();
     }
 
-    auto svrreq = std::make_shared<tateyama::utils::test_request>(11, altimeter::service::bridge::tag, str);
-    auto svrres = std::make_shared<tateyama::utils::test_response>();
+    auto svrreq = std::make_shared<tateyama::test_utils::test_request>(11, altimeter::service::bridge::tag, str);
+    auto svrres = std::make_shared<tateyama::test_utils::test_response>();
 
     (*router_)(svrreq, svrres);
     EXPECT_EQ(11, svrres->session_id_);
@@ -294,8 +294,8 @@ TEST_F(altimeter_test, rotete_event) {
         rq.clear_log_rotate();
     }
 
-    auto svrreq = std::make_shared<tateyama::utils::test_request>(11, altimeter::service::bridge::tag, str);
-    auto svrres = std::make_shared<tateyama::utils::test_response>();
+    auto svrreq = std::make_shared<tateyama::test_utils::test_request>(11, altimeter::service::bridge::tag, str);
+    auto svrres = std::make_shared<tateyama::test_utils::test_response>();
 
     (*router_)(svrreq, svrres);
     EXPECT_EQ(11, svrres->session_id_);
@@ -316,8 +316,8 @@ TEST_F(altimeter_test, rotete_audit) {
         rq.clear_log_rotate();
     }
 
-    auto svrreq = std::make_shared<tateyama::utils::test_request>(11, altimeter::service::bridge::tag, str);
-    auto svrres = std::make_shared<tateyama::utils::test_response>();
+    auto svrreq = std::make_shared<tateyama::test_utils::test_request>(11, altimeter::service::bridge::tag, str);
+    auto svrres = std::make_shared<tateyama::test_utils::test_response>();
 
     (*router_)(svrreq, svrres);
     EXPECT_EQ(11, svrres->session_id_);

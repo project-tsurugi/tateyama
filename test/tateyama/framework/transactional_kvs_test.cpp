@@ -26,7 +26,7 @@
 #include <tateyama/proto/test.pb.h>
 
 #include <gtest/gtest.h>
-#include <tateyama/utils/test_utils.h>
+#include <tateyama/test_utils/utility.h>
 
 namespace tateyama::framework {
 
@@ -35,7 +35,7 @@ using namespace std::string_view_literals;
 
 class transactional_kvs_test :
     public ::testing::Test,
-    public test::test_utils {
+    public test_utils::utility {
 public:
     void SetUp() override {
         temporary_.prepare();
@@ -52,7 +52,7 @@ TEST_F(transactional_kvs_test, basic) {
     ss << path();
     ss << "\n";
     std::cerr << "ss : " << ss.str();
-    auto cfg = std::make_shared<tateyama::api::configuration::whole>(ss, tateyama::test::default_configuration_for_tests);
+    auto cfg = std::make_shared<tateyama::api::configuration::whole>(ss, tateyama::test_utils::default_configuration_for_tests);
     framework::environment env{boot_mode::database_server, cfg};
     transactional_kvs_resource kvs{};
     ASSERT_TRUE(kvs.setup(env));
@@ -66,7 +66,7 @@ TEST_F(transactional_kvs_test, relative_path) {
         "[datastore]\n"
         "log_location=db\n",
     };
-    auto cfg = std::make_shared<tateyama::api::configuration::whole>(ss, tateyama::test::default_configuration_for_tests);
+    auto cfg = std::make_shared<tateyama::api::configuration::whole>(ss, tateyama::test_utils::default_configuration_for_tests);
     cfg->base_path(path());
     framework::environment env{boot_mode::database_server, cfg};
     transactional_kvs_resource kvs{};
@@ -83,7 +83,7 @@ TEST_F(transactional_kvs_test, empty_string) {
         "[datastore]\n"
         "log_location=\n",
     };
-    auto cfg = std::make_shared<tateyama::api::configuration::whole>(ss, tateyama::test::default_configuration_for_tests);
+    auto cfg = std::make_shared<tateyama::api::configuration::whole>(ss, tateyama::test_utils::default_configuration_for_tests);
     cfg->base_path(path());
     framework::environment env{boot_mode::database_server, cfg};
     transactional_kvs_resource kvs{};
@@ -96,7 +96,7 @@ TEST_F(transactional_kvs_test, DISABLED_error_detection) {
         "[datastore]\n"
         "log_location=/does_not_exist\n",  // to arise error
     };
-    auto cfg = std::make_shared<tateyama::api::configuration::whole>(ss, tateyama::test::default_configuration_for_tests);
+    auto cfg = std::make_shared<tateyama::api::configuration::whole>(ss, tateyama::test_utils::default_configuration_for_tests);
     cfg->base_path(path());
     framework::environment env{boot_mode::database_server, cfg};
     transactional_kvs_resource kvs{};

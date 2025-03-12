@@ -24,7 +24,7 @@
 #include "tateyama/status/resource/database_info_impl.h"
 #include "tateyama/endpoint/common/session_info_impl.h"
 
-namespace tateyama::utils {
+namespace tateyama::test_utils {
 
 class test_request : public api::server::request {
 public:

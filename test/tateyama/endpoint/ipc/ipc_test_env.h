@@ -20,11 +20,11 @@
 
 namespace tateyama::endpoint::ipc {
 
-class ipc_test_env: public test::test_utils {
+class ipc_test_env: public test_utils::utility {
 public:
     void setup() {
         temporary_.prepare();
-        cfg_ = tateyama::api::configuration::create_configuration("", tateyama::test::default_configuration_for_tests);
+        cfg_ = tateyama::api::configuration::create_configuration("", tateyama::test_utils::default_configuration_for_tests);
         set_dbpath(*cfg_);
         get_ipc_max_session(cfg_, ipc_max_session_);
     }

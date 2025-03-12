@@ -30,8 +30,8 @@
 #include "tateyama/endpoint/common/session_info_impl.h"
 
 #include <gtest/gtest.h>
-#include <tateyama/utils/test_utils.h>
-#include <tateyama/utils/request_response.h>
+#include <tateyama/test_utils/utility.h>
+#include <tateyama/test_utils/request_response.h>
 
 namespace tateyama::framework {
 
@@ -40,7 +40,7 @@ using namespace std::string_view_literals;
 
 class router_test :
     public ::testing::Test,
-    public test::test_utils
+    public test_utils::utility
 {
 public:
     void SetUp() override {
@@ -68,7 +68,7 @@ public:
         bool called_{false};
     };
 
-    class test_response_for_the_test : public tateyama::utils::test_response {
+    class test_response_for_the_test : public tateyama::test_utils::test_response {
     public:
         void error(proto::diagnostics::Record const& record) override {
             error_invoked_ = true;
@@ -82,12 +82,12 @@ public:
 };
 
 TEST_F(router_test, basic) {
-    auto cfg = api::configuration::create_configuration("", tateyama::test::default_configuration_for_tests);
+    auto cfg = api::configuration::create_configuration("", tateyama::test_utils::default_configuration_for_tests);
     set_dbpath(*cfg);
     server sv{boot_mode::database_server, cfg};
     auto svc0 = std::make_shared<test_service>();
     sv.add_service(svc0);
-    add_core_components(sv);
+    tateyama::test_utils::add_core_components_for_test(sv);
     sv.start();
 
     auto router = sv.find_service<framework::routing_service>();
@@ -101,7 +101,7 @@ TEST_F(router_test, basic) {
         ASSERT_TRUE(msg.SerializeToOstream(&ss));
     }
     auto str = ss.str();
-    auto svrreq = std::make_shared<tateyama::utils::test_request>(10, test_service::tag, str);
+    auto svrreq = std::make_shared<tateyama::test_utils::test_request>(10, test_service::tag, str);
     auto svrres = std::make_shared<test_response_for_the_test>();
 
     ASSERT_FALSE(svc0->called_);
@@ -111,12 +111,12 @@ TEST_F(router_test, basic) {
 }
 
 TEST_F(router_test, update_expiration_time) {
-    auto cfg = api::configuration::create_configuration("", tateyama::test::default_configuration_for_tests);
+    auto cfg = api::configuration::create_configuration("", tateyama::test_utils::default_configuration_for_tests);
     set_dbpath(*cfg);
     server sv{boot_mode::database_server, cfg};
     auto svc0 = std::make_shared<test_service>();
     sv.add_service(svc0);
-    add_core_components(sv);
+    tateyama::test_utils::add_core_components_for_test(sv);
     sv.start();
 
     auto router = sv.find_service<framework::routing_service>();
@@ -131,7 +131,7 @@ TEST_F(router_test, update_expiration_time) {
         ASSERT_TRUE(msg.SerializeToOstream(&ss));
     }
     auto str = ss.str();
-    auto svrreq = std::make_shared<tateyama::utils::test_request>(10, routing_service::tag, str);
+    auto svrreq = std::make_shared<tateyama::test_utils::test_request>(10, routing_service::tag, str);
     auto svrres = std::make_shared<test_response_for_the_test>();
 
     ASSERT_FALSE(svc0->called_);
@@ -146,17 +146,17 @@ TEST_F(router_test, update_expiration_time) {
 }
 
 TEST_F(router_test, invalid_service_id) {
-    auto cfg = api::configuration::create_configuration("", tateyama::test::default_configuration_for_tests);
+    auto cfg = api::configuration::create_configuration("", tateyama::test_utils::default_configuration_for_tests);
     set_dbpath(*cfg);
     server sv{boot_mode::database_server, cfg};
-    add_core_components(sv);
+    tateyama::test_utils::add_core_components_for_test(sv);
     sv.start();
 
     auto router = sv.find_service<framework::routing_service>();
     ASSERT_TRUE(router);
     ASSERT_EQ(framework::routing_service::tag, router->id());
 
-    auto svrreq = std::make_shared<tateyama::utils::test_request>(10, 999, "");  // 999 is an invalid service id
+    auto svrreq = std::make_shared<tateyama::test_utils::test_request>(10, 999, "");  // 999 is an invalid service id
     auto svrres = std::make_shared<test_response_for_the_test>();
 
     (*router)(svrreq, svrres);
