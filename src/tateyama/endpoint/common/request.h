@@ -164,7 +164,9 @@ protected:
                     if (std::filesystem::exists(p, ec) && !ec) {
                         if (is_readable(p)) {
                             if (std::filesystem::is_regular_file(p, ec) && !ec) {
-                                continue;
+                                if (!std::filesystem::is_symlink(p, ec) && !ec) {
+                                    continue;
+                                }
                             }
                             blob_error_ = blob_error::not_regular_file;
                             causing_file_ = e.second.first;
