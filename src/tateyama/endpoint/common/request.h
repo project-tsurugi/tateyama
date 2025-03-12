@@ -132,7 +132,7 @@ public:
         std::ostringstream ss{};
         switch (blob_error_) {
             case blob_error::ok: return {""};
-            case blob_error::not_allowed: return {"BLOB handling in privileged mode is not allowed on this endpoint"};
+            case blob_error::not_allowed: return {"BLOB handling in privileged mode is not allowed"};
             case blob_error::not_found: ss << "tsurugidb failed to receive BLOB file in privileged mode (not found): "; break;
             case blob_error::not_accessible: ss << "tsurugidb failed to receive BLOB file in privileged mode (cannot read): "; break;
             case blob_error::not_regular_file: ss << "tsurugidb failed to receive BLOB file in privileged mode (not regular file): "; break;
