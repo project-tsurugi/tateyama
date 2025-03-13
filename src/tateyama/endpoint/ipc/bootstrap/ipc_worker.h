@@ -43,7 +43,6 @@ public:
     }
     void run();
     bool terminate(tateyama::session::shutdown_request_type type);
-    [[nodiscard]] std::size_t session_id() const noexcept { return session_id_; }
 
     /**
      * @brief print diagnostics for garbage collector

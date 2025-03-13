@@ -33,7 +33,7 @@ void ipc_worker::run() {  // NOLINT(readability-function-cognitive-complexity)
             continue;
         }
         if (hdr.get_length() == 0 && hdr.get_idx() == tateyama::common::wire::message_header::terminate_request) {
-            VLOG_LP(log_trace) << "received shutdown request: session_id = " << std::to_string(session_id_);
+            VLOG_LP(log_trace) << "received shutdown request: session_id = " << std::to_string(session_id());
             return;
         }
 
@@ -45,7 +45,7 @@ void ipc_worker::run() {  // NOLINT(readability-function-cognitive-complexity)
         break;
     }
 
-    VLOG(log_debug_timing_event) << "/:tateyama:timing:session:started " << session_id_;
+    VLOG(log_debug_timing_event) << "/:tateyama:timing:session:started " << session_id();
 #ifdef ENABLE_ALTIMETER
     const std::chrono::time_point session_start_time = std::chrono::steady_clock::now();
     tateyama::endpoint::altimeter::session_start(conf_->database_info(), session_info_);
@@ -57,7 +57,7 @@ void ipc_worker::run() {  // NOLINT(readability-function-cognitive-complexity)
         } catch (std::exception &ex) {
             care_reqreses();
             if (check_shutdown_request() && is_completed()) {
-                VLOG_LP(log_trace) << "terminate worker thread for session " << session_id_ << ", as it has received a shutdown request";
+                VLOG_LP(log_trace) << "terminate worker thread for session " << session_id() << ", as it has received a shutdown request";
                 break;  // break the while loop
             }
             if (is_expiration_time_over() && !notiry_expiration_time_over) {
@@ -72,10 +72,10 @@ void ipc_worker::run() {  // NOLINT(readability-function-cognitive-complexity)
                 request_shutdown(tateyama::session::shutdown_request_type::forceful);
                 care_reqreses();
                 if (check_shutdown_request() && is_completed()) {
-                    VLOG_LP(log_trace) << "terminate worker thread for session " << session_id_ << ", as disconnection is requested and the subsequent shutdown process is completed";
+                    VLOG_LP(log_trace) << "terminate worker thread for session " << session_id() << ", as disconnection is requested and the subsequent shutdown process is completed";
                     break;  // break the while loop
                 }
-                VLOG_LP(log_trace) << "shutdown for session " << session_id_ << " is to be delayed";
+                VLOG_LP(log_trace) << "shutdown for session " << session_id() << " is to be delayed";
                 continue;
             }
 
@@ -109,7 +109,7 @@ void ipc_worker::run() {  // NOLINT(readability-function-cognitive-complexity)
                                           index)) {
                     care_reqreses();
                     if (check_shutdown_request() && is_completed()) {
-                        VLOG_LP(log_trace) << "received and completed shutdown request: session_id = " << std::to_string(session_id_);
+                        VLOG_LP(log_trace) << "received and completed shutdown request: session_id = " << std::to_string(session_id());
                         exit_frag = true;
                     }
                     break;  // break the switch, and set exit_flag true to break the while loop
@@ -152,16 +152,16 @@ void ipc_worker::run() {  // NOLINT(readability-function-cognitive-complexity)
             break;  // break the while loop
         }
     }
-    VLOG_LP(log_trace) << "destroy session wire: session_id = " << std::to_string(session_id_);
+    VLOG_LP(log_trace) << "destroy session wire: session_id = " << std::to_string(session_id());
 #ifdef ENABLE_ALTIMETER
     tateyama::endpoint::altimeter::session_end(conf_.database_info(), session_info_, std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - session_start_time).count());
 #endif
-    VLOG(log_debug_timing_event) << "/:tateyama:timing:session:finished " << session_id_;
+    VLOG(log_debug_timing_event) << "/:tateyama:timing:session:finished " << session_id();
 }
 
 // Processes shutdown requests from outside the communication partner.
 bool ipc_worker::terminate(tateyama::session::shutdown_request_type type) {
-    VLOG_LP(log_trace) << "send terminate request: session_id = " << std::to_string(session_id_);
+    VLOG_LP(log_trace) << "send terminate request: session_id = " << std::to_string(session_id());
 
     auto rv = request_shutdown(type);
     wire_->get_request_wire()->notify();

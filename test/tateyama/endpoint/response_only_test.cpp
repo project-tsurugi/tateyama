@@ -51,11 +51,8 @@ public:
     std::shared_ptr<bootstrap::server_wire_container_impl> wire_;
 
     tateyama::status_info::resource::database_info_impl dmy_dbinfo_{};
-    tateyama::endpoint::common::session_info_impl dmy_ssinfo_{};
-    tateyama::api::server::session_store dmy_ssstore_{};
-    tateyama::session::session_variable_set dmy_svariable_set_{};
     tateyama::endpoint::common::configuration conf_{tateyama::endpoint::common::connection_type::ipc, dmy_dbinfo_};
-    tateyama::endpoint::common::resources resources_{session_id, dmy_ssinfo_, dmy_ssstore_, dmy_svariable_set_};
+    tateyama::endpoint::common::resources resources_{conf_, session_id, ""};
 
     class test_service {
     public:
