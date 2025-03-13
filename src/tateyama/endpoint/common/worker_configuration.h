@@ -19,9 +19,10 @@
 
 #include <tateyama/session/resource/bridge.h>
 
-#include <tateyama/api/server/session_info.h>
 #include <tateyama/api/server/session_store.h>
 #include <tateyama/session/variable_set.h>
+
+#include "session_info_impl.h"
 
 namespace tateyama::endpoint::common {
 
@@ -79,38 +80,54 @@ private:
     friend class worker_common;
     friend class request;
     friend class response;
+    friend class resources;
 };
 
-class alignas(64) resources {
+
+class resources {
 public:
-  resources(std::size_t session_id,
-            const tateyama::api::server::session_info& session_info,
-            tateyama::api::server::session_store& session_store,
-            tateyama::session::session_variable_set& session_variable_set)
+    resources(const configuration& config, std::size_t session_id, std::string_view conn_info)
       : session_id_(session_id),
-        session_info_(session_info),
-        session_store_(session_store),
-        session_variable_set_(session_variable_set) {
+        session_info_(session_id_, connection_label(config.con_), conn_info),
+        session_variable_set_(config.session_ ? config.session_->sessions_core().variable_declarations().make_variable_set() : tateyama::session::session_variable_set{}) {
     }
 
-    [[nodiscard]] std::size_t session_id() const noexcept {
+    [[nodiscard]] inline std::size_t session_id() const noexcept {
         return session_id_;
     }
-    [[nodiscard]] const tateyama::api::server::session_info& session_info() const noexcept {
+    [[nodiscard]] inline session_info_impl& session_info() noexcept {
         return session_info_;
     }
-    [[nodiscard]] tateyama::api::server::session_store& session_store() const noexcept {
+    [[nodiscard]] inline tateyama::api::server::session_store& session_store() noexcept {
         return session_store_;
     }
-    [[nodiscard]] tateyama::session::session_variable_set& session_variable_set() const noexcept {
+    [[nodiscard]] inline tateyama::session::session_variable_set& session_variable_set() noexcept {
         return session_variable_set_;
     }
 
 private:
-    std::size_t session_id_;
-    const tateyama::api::server::session_info& session_info_;
-    tateyama::api::server::session_store& session_store_;
-    tateyama::session::session_variable_set& session_variable_set_;
+    // session id
+    const std::size_t session_id_;
+
+    // session info
+    session_info_impl session_info_;
+
+    // session variable set
+    tateyama::session::session_variable_set session_variable_set_;
+
+    // session store
+    tateyama::api::server::session_store session_store_{};
+
+    static std::string_view connection_label(connection_type con) {
+        switch (con) {
+        case connection_type::ipc:
+            return "ipc";
+        case connection_type::stream:
+            return "tcp";
+        default:
+            return "";
+        }
+    }
 };
 
 }  // tateyama::endpoint::common

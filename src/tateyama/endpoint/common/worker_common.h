@@ -43,7 +43,6 @@
 #include "request.h"
 #include "response.h"
 #include "listener_common.h"
-#include "session_info_impl.h"
 #include "worker_configuration.h"
 
 namespace tateyama::endpoint::common {
@@ -52,15 +51,12 @@ class worker_common {
 public:
     worker_common(const configuration& config, std::size_t session_id, std::string_view conn_info)
         : connection_type_(config.con_),
-          session_id_(session_id),
-          session_info_(session_id_, connection_label(config.con_), conn_info),
           session_(config.session_),
-          session_variable_set_(config.session_ ? config.session_->sessions_core().variable_declarations().make_variable_set() : tateyama::session::session_variable_set{}),  // for tests
-          session_context_(std::make_shared<tateyama::session::resource::session_context_impl>(session_info_, session_variable_set_)),
+          resources_(config, session_id, conn_info),
+          session_context_(std::make_shared<tateyama::session::resource::session_context_impl>(resources_.session_info(), resources_.session_variable_set())),
           enable_timeout_(config.enable_timeout_),
           refresh_timeout_(config.refresh_timeout_),
-          max_refresh_timeout_(config.max_refresh_timeout_),
-          resources_(session_id_, session_info_, session_store_, session_variable_set_) {
+          max_refresh_timeout_(config.max_refresh_timeout_) {
         if (session_) {
             session_->register_session(session_context_);
         }
@@ -108,7 +104,7 @@ public:
      */
     void dispose_session_store() {
         if (!dispose_done_) {
-            session_store_.dispose();
+            resources_.session_store().dispose();
             dispose_done_ = true;
         }
     }
@@ -117,7 +113,7 @@ public:
      * @brief print diagnostics
      */
     void print_diagnostic(std::ostream& os) {
-        os << "    session id = " << session_id_ << std::endl;
+        os << "    session id = " << resources_.session_id() << std::endl;
         os << "      processing requests" << std::endl;
         std::lock_guard<std::mutex> lock(mtx_reqreses_);
         for (auto itr{reqreses_.begin()}, end{reqreses_.end()}; itr != end; ++itr) {
@@ -150,11 +146,13 @@ public:
             func(std::dynamic_pointer_cast<tateyama::api::server::request>(e), e->start_at());
         }
     }
+    /**
+     * @brief returns session id
+     */
+    [[nodiscard]] inline std::size_t session_id() const noexcept { return resources_.session_id(); }
 
 protected:
     const connection_type connection_type_; // NOLINT
-    const std::size_t session_id_;          // NOLINT
-    session_info_impl session_info_;        // NOLINT
 
     // for ipc endpoint only
     std::string connection_info_{};         // NOLINT
@@ -168,12 +166,6 @@ protected:
 
     // for session management
     const std::shared_ptr<tateyama::session::resource::bridge> session_;  // NOLINT
-
-    // session store
-    tateyama::api::server::session_store session_store_{};  // NOLINT
-
-    // session variable set
-    tateyama::session::session_variable_set session_variable_set_;  // NOLINT
 
     // local_id
     std::size_t local_id_{};  // NOLINT
@@ -210,8 +202,9 @@ protected:
                 return false;
             }
         }
-        session_info_.label(connection_label);
-        session_info_.application_name(ci.application_name());
+        auto& session_info = resources_.session_info();
+        session_info.label(connection_label);
+        session_info.application_name(ci.application_name());
         // FIXME handle userName when a credential specification is fixed.
 
         auto wi = rq.handshake().wire_information();
@@ -224,7 +217,7 @@ protected:
                 notify_client(res, tateyama::proto::diagnostics::Code::INVALID_REQUEST, ss.str());
                 return false;
             }
-            session_info_.connection_information(wi.ipc_information().connection_information());
+            session_info.connection_information(wi.ipc_information().connection_information());
             break;
         case connection_type::stream:
             if(wi.wire_information_case() != tateyama::proto::endpoint::request::WireInformation::kStreamInformation) {
@@ -243,11 +236,11 @@ protected:
             notify_client(res, tateyama::proto::diagnostics::Code::INVALID_REQUEST, ss.str());
             return false;
         }
-        VLOG_LP(log_trace) << session_info_;  //NOLINT
+        VLOG_LP(log_trace) << session_info;  //NOLINT
 
         tateyama::proto::endpoint::response::Handshake rp{};
         auto rs = rp.mutable_success();
-        rs->set_session_id(session_id_);
+        rs->set_session_id(resources_.session_id());
         auto body = rp.SerializeAsString();
         res->body(body);
         rp.clear_success();
@@ -506,39 +499,28 @@ protected:
         if (auto expiration_time_opt = session_context_->expiration_time(); expiration_time_opt) {
             bool rv = tateyama::session::session_context::expiration_time_type::clock::now() > expiration_time_opt.value();
             if (rv) {
-                LOG_LP(INFO) << "expiration time over, session = " << session_id_;
+                LOG_LP(INFO) << "expiration time over, session = " << resources_.session_id();
             }
             return rv;
         }
         return false;
     }
-    tateyama::endpoint::common::resources& resources() {
+    inline tateyama::endpoint::common::resources& resources() {
         return resources_;
     }
 
 private:
+    tateyama::endpoint::common::resources resources_;
     const std::shared_ptr<tateyama::session::resource::session_context_impl> session_context_;
     bool enable_timeout_;
     std::chrono::seconds refresh_timeout_;
     std::chrono::seconds max_refresh_timeout_;
-    tateyama::endpoint::common::resources resources_;
     std::map<std::size_t, std::pair<std::shared_ptr<tateyama::endpoint::common::request>, std::shared_ptr<tateyama::endpoint::common::response>>> reqreses_{};
     std::mutex mtx_reqreses_{};
     std::vector<std::shared_ptr<tateyama::api::server::response>> shutdown_response_{};
     bool cancel_requested_to_all_responses_{};
     bool dispose_done_{};
     bool complete_shutdown_from_client_{};
-
-    std::string_view connection_label(connection_type con) {
-        switch (con) {
-        case connection_type::ipc:
-            return "ipc";
-        case connection_type::stream:
-            return "tcp";
-        default:
-            return "";
-        }
-    }
 
     void dump_message(std::ostream& os, std::string_view message) {
         for (auto&& c: message) {
