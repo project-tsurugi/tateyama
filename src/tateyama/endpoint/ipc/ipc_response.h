@@ -49,9 +49,13 @@ public:
 
 private:
     server_wire_container::unq_p_resultset_wire_conteiner resultset_wire_;
-    std::atomic_bool released_{};
 
-    void release();
+    [[nodiscard]] inline bool is_disposable() {
+        return resultset_wire_->is_disposable();
+    }
+    inline void release() {
+        resultset_wire_->release();
+    }
 };
 
 /**
@@ -74,6 +78,8 @@ public:
     tateyama::status acquire(std::shared_ptr<tateyama::api::server::writer>& wrt) override;
     tateyama::status release(tateyama::api::server::writer& wrt) override;
 
+    [[nodiscard]] inline bool is_closed() { return resultset_wires_->is_closed(); }
+    [[nodiscard]] bool is_disposable();
     inline server_wire_container::unq_p_resultset_wires_conteiner::pointer resultset_wires_conteiner() {
         return resultset_wires_.get();
     }
@@ -87,7 +93,7 @@ private:
     std::size_t index_;
 
     std::set<std::shared_ptr<ipc_writer>, tateyama::endpoint::common::pointer_comp<ipc_writer>> data_writers_{};
-    std::mutex mutex_{};
+    mutable std::mutex mutex_{};
 
     void shutdown(const std::shared_ptr<tateyama::api::server::data_channel>& data_channel);
 };
