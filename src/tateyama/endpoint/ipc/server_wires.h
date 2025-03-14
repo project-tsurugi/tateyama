@@ -66,8 +66,9 @@ public:
 
         virtual void write(char const*, std::size_t) = 0;
         virtual void flush() = 0;
-        virtual void release(unq_p_resultset_wire_conteiner) = 0;
-        virtual bool is_disposable() = 0;
+        virtual void release() = 0;
+        [[nodiscard]] virtual bool is_released() = 0;
+        [[nodiscard]] virtual bool is_disposable() = 0;
     };
     class resultset_wires_container {
     public:
@@ -80,8 +81,7 @@ public:
 
         virtual unq_p_resultset_wire_conteiner acquire() = 0;
         virtual void set_eor() = 0;
-        virtual bool is_closed() = 0;
-        virtual bool is_disposable() = 0;
+        [[nodiscard]] virtual bool is_closed() = 0;
         virtual void expiration_time_over() = 0;
     };
     using resultset_deleter_type = void(*)(resultset_wires_container*);
