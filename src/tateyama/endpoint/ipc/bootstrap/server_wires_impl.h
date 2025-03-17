@@ -125,13 +125,13 @@ public:
             std::size_t chunk_size_{};
             bool full_{};
 
-            std::mutex mtx_chunks_{};
-            std::condition_variable cnd_chunks_{};
+            mutable std::mutex mtx_chunks_{};
+            mutable std::condition_variable cnd_chunks_{};
         };
 
     public:
         resultset_wire_container_impl(tateyama::common::wire::shm_resultset_wire* resultset_wire, resultset_wires_container_impl& resultset_wires_container_impl, std::size_t datachannel_buffer_size)
-            : shm_resultset_wire_(resultset_wire), resultset_wires_container_impl_(resultset_wires_container_impl), datachannel_buffer_size_(datachannel_buffer_size) {
+            : shm_resultset_wire_(resultset_wire), envelope_(resultset_wires_container_impl), datachannel_buffer_size_(datachannel_buffer_size) {
             VLOG_LP(log_trace) << "creates a resultset_wire with a size of " << datachannel_buffer_size_ << " bytes";
         }
         ~resultset_wire_container_impl() override {
@@ -229,12 +229,17 @@ public:
                 }
             }
         }
-        void release(unq_p_resultset_wire_conteiner resultset_wire) override;
-        bool is_disposable() override { return !thread_active_; }
+        [[nodiscard]] bool is_released() override {
+            return released_;
+        }
+        [[nodiscard]] bool is_disposable() override {
+            return released_ && !thread_active_;
+        }
+        void release() override;
 
     private:
         tateyama::common::wire::shm_resultset_wire* shm_resultset_wire_;
-        resultset_wires_container_impl &resultset_wires_container_impl_;
+        resultset_wires_container_impl &envelope_;
 
         std::queue<std::unique_ptr<annex>> queue_{};
         std::thread writer_thread_{};
@@ -243,8 +248,8 @@ public:
         std::atomic_bool thread_active_{};
         bool released_{};
 
-        std::mutex mtx_queue_{};
-        std::condition_variable cnd_queue_{};
+        mutable std::mutex mtx_queue_{};
+        mutable std::condition_variable cnd_queue_{};
 
         std::size_t datachannel_buffer_size_;
         std::size_t current_record_size{};
@@ -319,16 +324,8 @@ public:
             eor_ = true;
             notify_eor_conditional();
         }
-        bool is_closed() override {
+        [[nodiscard]] bool is_closed() override {
             return shm_resultset_wires_->is_closed();
-        }
-        bool is_disposable() override {
-            for (auto&& e : released_writers_) {
-                if (!e->is_disposable()) {
-                    return false;
-                }
-            }
-            return true;
         }
         // in case lost client
         void expiration_time_over() override {
@@ -336,9 +333,6 @@ public:
             expiration_time_over_ = true;
         }
 
-        void add_released_writer(unq_p_resultset_wire_conteiner resultset_wire) {
-            released_writers_.emplace(std::move(resultset_wire));
-        }
         void write_complete() {
             completed_writers_++;
             notify_eor_conditional();
@@ -380,7 +374,6 @@ public:
         std::mutex& mtx_shm_;
         std::size_t datachannel_buffer_size_;
 
-        std::set<unq_p_resultset_wire_conteiner> released_writers_{};
         std::atomic_ulong writers_{};
         std::atomic_ulong completed_writers_{};
         bool eor_{};
@@ -437,8 +430,7 @@ public:
 
                     auto it = data_channel_set_.begin();
                     while (it != data_channel_set_.end()) {
-                        auto* wc = (*it)->resultset_wires_conteiner();
-                        if (wc->is_closed() && wc->is_disposable()) {
+                        if ((*it)->is_closed() && (*it)->is_disposable()) {
                             data_channel_set_.erase(it++);
                         } else {
                             it++;
@@ -473,8 +465,8 @@ public:
     private:
         std::set<std::shared_ptr<ipc_data_channel>> data_channel_set_{};
         bool expiration_time_over_{};
-        std::mutex mtx_put_{};
-        std::mutex mtx_dump_{};
+        mutable std::mutex mtx_put_{};
+        mutable std::mutex mtx_dump_{};
     };
 
 
@@ -558,7 +550,7 @@ public:
     private:
         tateyama::common::wire::unidirectional_response_wire* wire_{};
         char* bip_buffer_{};
-        std::mutex mtx_{};
+        mutable std::mutex mtx_{};
     };
 
     server_wire_container_impl(std::string_view name, std::string_view mutex_file, std::size_t datachannel_buffer_size, std::size_t max_datachannel_buffers, std::function<void(void)> clean_up)
@@ -638,29 +630,28 @@ private:
     response_wire_container_impl response_wire_{};
     tateyama::common::wire::status_provider* status_provider_{};
     std::unique_ptr<garbage_collector_impl> garbage_collector_impl_;
-    std::mutex mtx_shm_{};
+    mutable std::mutex mtx_shm_{};
 
     std::size_t datachannel_buffer_size_;
     const std::function<void(void)> clean_up_;
 };
 
-inline void server_wire_container_impl::resultset_wire_container_impl::release(unq_p_resultset_wire_conteiner resultset_wire_conteiner) {
-    resultset_wires_container_impl_.add_released_writer(std::move(resultset_wire_conteiner));
+inline void server_wire_container_impl::resultset_wire_container_impl::write_complete() {
+    envelope_.write_complete();
+}
+inline void server_wire_container_impl::resultset_wire_container_impl::release() {
+    released_ = true;
+
     if (thread_invoked_) {
         std::unique_lock<std::mutex> lock(mtx_queue_);
-
-        released_ = true;
         cnd_queue_.notify_one();
         if (!queue_.empty()) {
             auto* current_annex = queue_.back().get();
             current_annex->notify();
         }
     } else {
-        resultset_wires_container_impl_.write_complete();
+        write_complete();
     }
-}
-inline void server_wire_container_impl::resultset_wire_container_impl::write_complete() {
-    resultset_wires_container_impl_.write_complete();
 }
 
 class connection_container

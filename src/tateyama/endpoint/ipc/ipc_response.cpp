@@ -188,6 +188,11 @@ tateyama::status ipc_data_channel::release(tateyama::api::server::writer& wrt) {
     return tateyama::status::unknown;
 }
 
+bool ipc_data_channel::is_disposable() {
+    std::unique_lock lock{mutex_};
+    return std::all_of(data_writers_.begin(), data_writers_.end(), [](const std::shared_ptr<ipc_writer>& e){return e->is_disposable();});
+}
+
 void ipc_data_channel::shutdown(const std::shared_ptr<tateyama::api::server::data_channel>& data_channel) {
     std::unique_lock lock{mutex_};
 
@@ -211,7 +216,7 @@ void ipc_data_channel::shutdown(const std::shared_ptr<tateyama::api::server::dat
 // class writer
 tateyama::status ipc_writer::write(char const* data, std::size_t length) {
     VLOG_LP(log_trace) << static_cast<const void*>(this);  //NOLINT
-    if (released_.load()) {
+    if (resultset_wire_->is_released()) {
         LOG_LP(INFO) << "ipc_writer (" << static_cast<const void*>(this) << ") has already been released";  //NOLINT
         return tateyama::status::unknown;
     }
@@ -227,18 +232,13 @@ tateyama::status ipc_writer::write(char const* data, std::size_t length) {
 
 tateyama::status ipc_writer::commit() {
     VLOG_LP(log_trace) << static_cast<const void*>(this);  //NOLINT
-    if (released_.load()) {
+    if (resultset_wire_->is_released()) {
         LOG_LP(INFO) << "ipc_writer (" << static_cast<const void*>(this) << ") has already been released";  //NOLINT
         return tateyama::status::unknown;
     }
 
     resultset_wire_->flush();
     return tateyama::status::ok;
-}
-
-void ipc_writer::release() {
-    released_.store(true);
-    resultset_wire_->release(std::move(resultset_wire_));
 }
 
 }
