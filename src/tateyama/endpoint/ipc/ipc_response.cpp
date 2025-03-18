@@ -180,7 +180,9 @@ tateyama::status ipc_data_channel::release(tateyama::api::server::writer& wrt) {
         std::unique_lock lock{mutex_};
         if (auto itr = data_writers_.find(dynamic_cast<ipc_writer*>(&wrt)); itr != data_writers_.end()) {
             (*itr)->release();
-            data_writers_.erase(itr);
+            if (resultset_wires_->is_closed()) {
+                data_writers_.erase(itr);
+            }
             return tateyama::status::ok;
         }
     }
@@ -205,8 +207,8 @@ void ipc_data_channel::shutdown(const std::shared_ptr<tateyama::api::server::dat
             }
             resultset_wires_ = nullptr;
         } else {
-            for (auto&& it = data_writers_.begin(), last = data_writers_.end(); it != last;) {
-                (*it)->release();
+            for (auto&& e: data_writers_) {
+                e->release();
             }
             garbage_collector_.put(std::dynamic_pointer_cast<ipc_data_channel>(data_channel));
         }
