@@ -48,7 +48,7 @@ void ipc_worker::run() {  // NOLINT(readability-function-cognitive-complexity)
     VLOG(log_debug_timing_event) << "/:tateyama:timing:session:started " << session_id();
 #ifdef ENABLE_ALTIMETER
     const std::chrono::time_point session_start_time = std::chrono::steady_clock::now();
-    tateyama::endpoint::altimeter::session_start(conf_->database_info(), session_info_);
+    tateyama::endpoint::altimeter::session_start(conf_.database_info(), resources().session_info());
 #endif
     bool notiry_expiration_time_over{};
     while(true) {
@@ -154,7 +154,7 @@ void ipc_worker::run() {  // NOLINT(readability-function-cognitive-complexity)
     }
     VLOG_LP(log_trace) << "destroy session wire: session_id = " << std::to_string(session_id());
 #ifdef ENABLE_ALTIMETER
-    tateyama::endpoint::altimeter::session_end(conf_.database_info(), session_info_, std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - session_start_time).count());
+    tateyama::endpoint::altimeter::session_end(conf_.database_info(), resources().session_info(), std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - session_start_time).count());
 #endif
     VLOG(log_debug_timing_event) << "/:tateyama:timing:session:finished " << session_id();
 }
