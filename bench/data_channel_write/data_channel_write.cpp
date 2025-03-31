@@ -111,7 +111,7 @@ public:
         resultset_wires_container *rwc = client.create_resultset_wires();
         rwc->connect(resultset_name);
         while (true) {
-            std::string_view chunk = rwc->get_chunk();
+            std::string_view chunk = rwc->get_chunk(0);
             if (chunk.length() == 0 && rwc->is_eor()) {
                 break;
             }

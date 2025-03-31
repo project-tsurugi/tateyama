@@ -81,7 +81,7 @@ private:
     std::size_t session_id_ { };
     std::string session_name_ { };
     std::unique_ptr<tsubakuro::common::wire::session_wire_container> swc_ { };
-    tsubakuro::common::wire::session_wire_container::wire_container *request_wire_ { };
+    tsubakuro::common::wire::session_wire_container::request_wire_container *request_wire_ { };
     tsubakuro::common::wire::session_wire_container::response_wire_container *response_wire_ { };
     tateyama::proto::endpoint::request::Handshake default_endpoint_handshake_{ };
     tateyama::proto::framework::response::Header hdr_ { };

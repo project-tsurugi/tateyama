@@ -107,7 +107,7 @@ public:
                 // NOTE: One call of writer->write(data, len) (>= 16KB or so) may be gotten
                 // by more than one get_chunk(). You should concatenate every chunk data.
                 while (data.length() < len) {
-                    std::string_view chunk = rwc->get_chunk();
+                    std::string_view chunk = rwc->get_chunk(0);
                     if (chunk.length() == 0) {
                         break;
                     }
@@ -121,7 +121,7 @@ public:
             std::string data_short { };
             data_short.reserve(len);
             while (data_short.length() < len) {
-                std::string_view chunk = rwc->get_chunk();
+                std::string_view chunk = rwc->get_chunk(0);
                 if (chunk.length() == 0) {
                     break;
                 }
@@ -133,10 +133,10 @@ public:
 
             // just wait until is_eor() is true
             while (!rwc->is_eor()) {
-                EXPECT_EQ(rwc->get_chunk().length(), 0);
+                EXPECT_EQ(rwc->get_chunk(0).length(), 0);
             }
             EXPECT_TRUE(rwc->is_eor());
-            EXPECT_EQ(rwc->get_chunk().length(), 0);
+            EXPECT_EQ(rwc->get_chunk(0).length(), 0);
             client.dispose_resultset_wires(rwc);
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));

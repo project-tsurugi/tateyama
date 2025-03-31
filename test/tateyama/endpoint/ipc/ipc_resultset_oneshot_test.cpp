@@ -81,7 +81,7 @@ public:
         // by more than one get_chunk(). You should concatenate every chunk data.
         while (data.length() < datalen_) {
             std::cout << "client : call get_chunk()" << std::endl;
-            std::string_view chunk = rwc->get_chunk();
+            std::string_view chunk = rwc->get_chunk(0);
             std::cout << "client : get_chunk() done : " << chunk.length() << std::endl;
             if (chunk.length() == 0) {
                 break;
@@ -92,10 +92,10 @@ public:
         }
         // just wait until is_eor() is true
         while (!rwc->is_eor()) {
-            EXPECT_EQ(rwc->get_chunk().length(), 0);
+            EXPECT_EQ(rwc->get_chunk(0).length(), 0);
         }
         EXPECT_TRUE(rwc->is_eor());
-        EXPECT_EQ(rwc->get_chunk().length(), 0);
+        EXPECT_EQ(rwc->get_chunk(0).length(), 0);
         EXPECT_EQ(datalen_, data.length());
         EXPECT_TRUE(check_dummy_message(client.session_id(), data));
         client.dispose_resultset_wires(rwc);

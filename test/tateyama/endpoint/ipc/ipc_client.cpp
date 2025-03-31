@@ -85,7 +85,7 @@ void ipc_client::receive(std::string &message, tateyama::proto::framework::respo
     do {
         // NOTE: await() throws exception if it cannot receive any response in a few seconds.
         try {
-            header = response_wire_->await();
+            header = response_wire_->await(0);
             if (header.get_length() == 0 && header.get_idx() == 0 && header.get_type() == 0 && response_wire_->check_shutdown()) {
                 throw std::runtime_error("server shutdown");
             }

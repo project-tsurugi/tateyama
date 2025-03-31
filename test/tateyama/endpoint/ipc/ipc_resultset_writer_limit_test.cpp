@@ -112,7 +112,7 @@ public:
         resultset_wires_container *rwc = client.create_resultset_wires();
         rwc->connect(resultset_name);
         while (true) {
-            std::string_view chunk = rwc->get_chunk();
+            std::string_view chunk = rwc->get_chunk(0);
             if (chunk.length() == 0 && rwc->is_eor()) {
                 break;
             }
@@ -122,7 +122,7 @@ public:
             if (chunk.length() < len) {
                 // The message was split because it was received beyond ring buffer boundary.
                 // concatenate 2nd chunk to 1st.
-                std::string_view chunk2 = rwc->get_chunk();
+                std::string_view chunk2 = rwc->get_chunk(0);
                 EXPECT_EQ(chunk2.length(), len - chunk.length());
                 data += chunk2;
             }
@@ -134,7 +134,7 @@ public:
             received_parts.emplace(part);
         }
         EXPECT_TRUE(rwc->is_eor());
-        EXPECT_EQ(rwc->get_chunk().length(), 0);
+        EXPECT_EQ(rwc->get_chunk(0).length(), 0);
         client.dispose_resultset_wires(rwc);
         /*
          * Check all message was received
