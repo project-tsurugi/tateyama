@@ -30,7 +30,6 @@
 
 #include "tateyama/endpoint/ipc/wire.h"
 #include "tateyama/endpoint/ipc/server_wires.h"
-#include "tateyama/endpoint/ipc/ipc_response.h"
 
 namespace tateyama::endpoint::ipc::bootstrap {
 
@@ -229,13 +228,8 @@ public:
                 }
             }
         }
-        [[nodiscard]] bool is_released() override {
-            return released_;
-        }
-        [[nodiscard]] bool is_disposable() override {
-            return released_ && !thread_active_;
-        }
-        void release() override;
+        void release(unq_p_resultset_wire_conteiner resultset_wire) override;
+        [[nodiscard]] bool is_disposable() override { return !thread_active_; }
 
     private:
         tateyama::common::wire::shm_resultset_wire* shm_resultset_wire_;
@@ -327,12 +321,24 @@ public:
         [[nodiscard]] bool is_closed() override {
             return shm_resultset_wires_->is_closed();
         }
+        [[nodiscard]] bool is_disposable() override {
+            for (auto&& e : released_writers_) {
+                if (!e->is_disposable()) {
+                    return false;
+                }
+            }
+            return true;
+        }
         // in case lost client
         void expiration_time_over() override {
             shm_resultset_wires_->set_closed();
             expiration_time_over_ = true;
         }
 
+        void add_released_writer(unq_p_resultset_wire_conteiner resultset_wire) {
+            std::unique_lock<std::mutex> lock(mtx_released_writers_);
+            released_writers_.emplace(std::move(resultset_wire));
+        }
         void write_complete() {
             completed_writers_++;
             notify_eor_conditional();
@@ -374,10 +380,12 @@ public:
         std::mutex& mtx_shm_;
         std::size_t datachannel_buffer_size_;
 
+        std::set<unq_p_resultset_wire_conteiner> released_writers_{};
         std::atomic_ulong writers_{};
         std::atomic_ulong completed_writers_{};
         bool eor_{};
         std::atomic_flag notify_eor_{};
+        mutable std::mutex mtx_released_writers_{};
         
         void notify_eor_conditional() {
             if ((writers_.load() == completed_writers_.load()) && eor_) {
@@ -405,7 +413,7 @@ public:
         garbage_collector_impl() = default;
         ~garbage_collector_impl() override {
             std::lock_guard<std::mutex> lock(mtx_put_);
-            data_channel_set_.clear();
+            resultset_wires_set_.clear();
         }
 
         /**
@@ -416,22 +424,22 @@ public:
         garbage_collector_impl& operator = (garbage_collector_impl const&) = delete;
         garbage_collector_impl& operator = (garbage_collector_impl&&) = delete;
 
-        void put(std::shared_ptr<ipc_data_channel> ch) override {
+        void put(unq_p_resultset_wires_conteiner wires) override {
             std::lock_guard<std::mutex> lock(mtx_put_);
             if (expiration_time_over_) {
-                ch->resultset_wires_conteiner()->expiration_time_over();
+                wires->expiration_time_over();
             }
-            data_channel_set_.emplace(std::move(ch));
+            resultset_wires_set_.emplace(std::move(wires));
         }
         void dump() override {
             if (!expiration_time_over_) {
                 if (mtx_dump_.try_lock()) {
                     std::lock_guard<std::mutex> lock(mtx_put_);
 
-                    auto it = data_channel_set_.begin();
-                    while (it != data_channel_set_.end()) {
+                    auto it = resultset_wires_set_.begin();
+                    while (it != resultset_wires_set_.end()) {
                         if ((*it)->is_closed() && (*it)->is_disposable()) {
-                            data_channel_set_.erase(it++);
+                            resultset_wires_set_.erase(it++);
                         } else {
                             it++;
                         }
@@ -442,28 +450,18 @@ public:
         }
         bool empty() override {
             std::lock_guard<std::mutex> lock(mtx_put_);
-            return data_channel_set_.empty() || expiration_time_over_;
+            return resultset_wires_set_.empty() || expiration_time_over_;
         }
         void expiration_time_over() override {
             std::lock_guard<std::mutex> lock(mtx_put_);
-            for (const auto& it : data_channel_set_) {
-                it->resultset_wires_conteiner()->expiration_time_over();
+            for (const auto& it : resultset_wires_set_) {
+                it->expiration_time_over();
             }
             expiration_time_over_ = true;
         }
-        void print_diagnostic(std::ostream& os) override {
-            std::lock_guard<std::mutex> lock(mtx_put_);
-
-            if (!data_channel_set_.empty()) {
-                os << "      resultset waiting client close" << std::endl;
-                for (auto&& e: data_channel_set_) {
-                    os << "         index = " << e->index() << std::endl;
-                }
-            }
-        }
 
     private:
-        std::set<std::shared_ptr<ipc_data_channel>> data_channel_set_{};
+        std::set<unq_p_resultset_wires_conteiner> resultset_wires_set_{};
         bool expiration_time_over_{};
         mutable std::mutex mtx_put_{};
         mutable std::mutex mtx_dump_{};
@@ -636,22 +634,23 @@ private:
     const std::function<void(void)> clean_up_;
 };
 
-inline void server_wire_container_impl::resultset_wire_container_impl::write_complete() {
-    envelope_.write_complete();
-}
-inline void server_wire_container_impl::resultset_wire_container_impl::release() {
-    released_ = true;
-
+inline void server_wire_container_impl::resultset_wire_container_impl::release(unq_p_resultset_wire_conteiner resultset_wire_conteiner) {
+    envelope_.add_released_writer(std::move(resultset_wire_conteiner));
     if (thread_invoked_) {
         std::unique_lock<std::mutex> lock(mtx_queue_);
+
+        released_ = true;
         cnd_queue_.notify_one();
         if (!queue_.empty()) {
             auto* current_annex = queue_.back().get();
             current_annex->notify();
         }
     } else {
-        write_complete();
+        envelope_.write_complete();
     }
+}
+inline void server_wire_container_impl::resultset_wire_container_impl::write_complete() {
+    envelope_.write_complete();
 }
 
 class connection_container

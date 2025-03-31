@@ -32,7 +32,7 @@ tateyama::status ipc_response::body(std::string_view body) {
     if (completed_.compare_exchange_strong(expected, true)) {
         VLOG_LP(log_trace) << static_cast<const void*>(server_wire_.get()) << " length = " << body.length() << " slot = " << index_;  //NOLINT
         if (data_channel_) {
-            std::dynamic_pointer_cast<ipc_data_channel>(data_channel_)->shutdown(data_channel_);  // Guard against improper operation
+            std::dynamic_pointer_cast<ipc_data_channel>(data_channel_)->shutdown();  // Guard against improper operation
         }
         clean_up_();
 
@@ -77,7 +77,7 @@ void ipc_response::error(proto::diagnostics::Record const& record) {
     if (completed_.compare_exchange_strong(expected, true)) {
         VLOG_LP(log_trace) << static_cast<const void*>(server_wire_.get()) << " slot = " << index_;  //NOLINT
         if (data_channel_) {
-            std::dynamic_pointer_cast<ipc_data_channel>(data_channel_)->shutdown(data_channel_);  // Guard against improper operation
+            std::dynamic_pointer_cast<ipc_data_channel>(data_channel_)->shutdown();  // Guard against improper operation
         }
         clean_up_();
 
@@ -117,7 +117,7 @@ tateyama::status ipc_response::acquire_channel(std::string_view name, std::share
         return tateyama::status::unknown;
     }
     try {
-        data_channel_ = std::make_shared<ipc_data_channel>(server_wire_->create_resultset_wires(name, max_writer_count), garbage_collector_, index_);
+        data_channel_ = std::make_shared<ipc_data_channel>(server_wire_->create_resultset_wires(name, max_writer_count), garbage_collector_);
     } catch (std::exception &ex) {
         ch = nullptr;
 
@@ -140,7 +140,7 @@ tateyama::status ipc_response::release_channel(tateyama::api::server::data_chann
     VLOG_LP(log_trace) << static_cast<const void*>(server_wire_.get()) << " data_channel_ = " << static_cast<const void*>(data_channel_.get());  //NOLINT
 
     if (data_channel_.get() == &ch) {
-        std::dynamic_pointer_cast<ipc_data_channel>(data_channel_)->shutdown(data_channel_);
+        std::dynamic_pointer_cast<ipc_data_channel>(data_channel_)->shutdown();
         data_channel_ = nullptr;
         set_state(state::released);
         return tateyama::status::ok;
@@ -180,9 +180,7 @@ tateyama::status ipc_data_channel::release(tateyama::api::server::writer& wrt) {
         std::unique_lock lock{mutex_};
         if (auto itr = data_writers_.find(dynamic_cast<ipc_writer*>(&wrt)); itr != data_writers_.end()) {
             (*itr)->release();
-            if (resultset_wires_->is_closed()) {
-                data_writers_.erase(itr);
-            }
+            data_writers_.erase(itr);
             return tateyama::status::ok;
         }
     }
@@ -190,27 +188,19 @@ tateyama::status ipc_data_channel::release(tateyama::api::server::writer& wrt) {
     return tateyama::status::unknown;
 }
 
-bool ipc_data_channel::is_disposable() {
-    std::unique_lock lock{mutex_};
-    return std::all_of(data_writers_.begin(), data_writers_.end(), [](const std::shared_ptr<ipc_writer>& e){return e->is_disposable();});
-}
-
-void ipc_data_channel::shutdown(const std::shared_ptr<tateyama::api::server::data_channel>& data_channel) {
+void ipc_data_channel::shutdown() {
     std::unique_lock lock{mutex_};
 
     if (resultset_wires_) {
         resultset_wires_->set_eor();
-        if (resultset_wires_->is_closed()) {
-            for (auto&& it = data_writers_.begin(), last = data_writers_.end(); it != last;) {
-                (*it)->release();
-                it = data_writers_.erase(it);
-            }
-            resultset_wires_ = nullptr;
+        for (auto&& it = data_writers_.begin(), last = data_writers_.end(); it != last;) {
+            (*it)->release();
+            it = data_writers_.erase(it);
+        }
+        if (!resultset_wires_->is_closed()) {
+            garbage_collector_.put(std::move(resultset_wires_));
         } else {
-            for (auto&& e: data_writers_) {
-                e->release();
-            }
-            garbage_collector_.put(std::dynamic_pointer_cast<ipc_data_channel>(data_channel));
+            resultset_wires_ = nullptr;
         }
     }
 }
@@ -218,7 +208,7 @@ void ipc_data_channel::shutdown(const std::shared_ptr<tateyama::api::server::dat
 // class writer
 tateyama::status ipc_writer::write(char const* data, std::size_t length) {
     VLOG_LP(log_trace) << static_cast<const void*>(this);  //NOLINT
-    if (resultset_wire_->is_released()) {
+    if (released_.load()) {
         LOG_LP(INFO) << "ipc_writer (" << static_cast<const void*>(this) << ") has already been released";  //NOLINT
         return tateyama::status::unknown;
     }
@@ -234,13 +224,18 @@ tateyama::status ipc_writer::write(char const* data, std::size_t length) {
 
 tateyama::status ipc_writer::commit() {
     VLOG_LP(log_trace) << static_cast<const void*>(this);  //NOLINT
-    if (resultset_wire_->is_released()) {
+    if (released_.load()) {
         LOG_LP(INFO) << "ipc_writer (" << static_cast<const void*>(this) << ") has already been released";  //NOLINT
         return tateyama::status::unknown;
     }
 
     resultset_wire_->flush();
     return tateyama::status::ok;
+}
+
+void ipc_writer::release() {
+    released_.store(true);
+    resultset_wire_->release(std::move(resultset_wire_));
 }
 
 }
