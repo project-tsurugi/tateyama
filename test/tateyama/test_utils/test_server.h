@@ -24,6 +24,9 @@
 #include <tateyama/session/resource/bridge.h>
 #include <tateyama/metrics/service/bridge.h>
 #include <tateyama/metrics/resource/bridge.h>
+#ifdef ENABLE_ALTIMETER
+#include <tateyama/altimeter/service/bridge.h>
+#endif
 #include <tateyama/request/service/bridge.h>
 #include <tateyama/endpoint/ipc/bootstrap/ipc_endpoint.h>
 
@@ -37,6 +40,9 @@ namespace tateyama::test_utils {
         svr.add_service(std::make_shared<tateyama::framework::routing_service>());
         svr.add_service(std::make_shared<tateyama::metrics::service::bridge>());
         svr.add_service(std::make_shared<tateyama::session::service::bridge>());
+#ifdef ENABLE_ALTIMETER
+        svr.add_service(std::make_shared<altimeter::service::bridge>());
+#endif
         svr.add_service(std::make_shared<tateyama::request::service::bridge>());
 
         svr.add_endpoint(std::make_shared<tateyama::framework::ipc_endpoint>());
