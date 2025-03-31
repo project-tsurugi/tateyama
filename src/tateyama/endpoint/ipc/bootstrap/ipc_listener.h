@@ -259,7 +259,6 @@ public:
             if (std::shared_ptr<ipc_worker> worker = e; worker) {
                 if (!worker->is_terminated()) {
                     worker->print_diagnostic(os);
-                    worker->print_diagnostic_gc(os);
                 }
             }
         }

@@ -44,13 +44,6 @@ public:
     void run();
     bool terminate(tateyama::session::shutdown_request_type type);
 
-    /**
-     * @brief print diagnostics for garbage collector
-     */
-    void print_diagnostic_gc(std::ostream& os) {
-        wire_->get_garbage_collector()->print_diagnostic(os);
-    }
-
 private:
     tateyama::framework::routing_service& service_;
     std::shared_ptr<server_wire_container_impl> wire_;

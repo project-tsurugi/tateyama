@@ -20,8 +20,6 @@
 
 namespace tateyama::endpoint::ipc {
 
-class ipc_data_channel;
-
 class server_wire_container
 {
 public:
@@ -66,8 +64,7 @@ public:
 
         virtual void write(char const*, std::size_t) = 0;
         virtual void flush() = 0;
-        virtual void release() = 0;
-        [[nodiscard]] virtual bool is_released() = 0;
+        virtual void release(unq_p_resultset_wire_conteiner) = 0;
         [[nodiscard]] virtual bool is_disposable() = 0;
     };
     class resultset_wires_container {
@@ -82,6 +79,7 @@ public:
         virtual unq_p_resultset_wire_conteiner acquire() = 0;
         virtual void set_eor() = 0;
         [[nodiscard]] virtual bool is_closed() = 0;
+        [[nodiscard]] virtual bool is_disposable() = 0;
         virtual void expiration_time_over() = 0;
     };
     using resultset_deleter_type = void(*)(resultset_wires_container*);
@@ -99,11 +97,10 @@ public:
          * @brief try to dispose remaining resultset_wire
          * @returns true if garbage_collector has no remaining resultset_wire.
          */
-        virtual void put(std::shared_ptr<ipc_data_channel>) = 0;
+        virtual void put(unq_p_resultset_wires_conteiner) = 0;
         virtual void dump() = 0;
         virtual bool empty() = 0;
         virtual void expiration_time_over() = 0;
-        virtual void print_diagnostic(std::ostream& os) = 0;
     };
 
     server_wire_container() = default;
