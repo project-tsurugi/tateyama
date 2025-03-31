@@ -78,7 +78,7 @@ public:
     /**
      * @brief destructor the object
      */
-    ~bridge() = default;
+    ~bridge() override = default;
 
     /**
      * @see `tateyama::framework::component::label()`

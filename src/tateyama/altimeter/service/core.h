@@ -31,6 +31,14 @@ using tateyama::api::server::response;
  */
 class altimeter_helper {
 public:
+    altimeter_helper() = default;
+    virtual ~altimeter_helper() = default;
+
+    altimeter_helper(altimeter_helper const& other) = delete;
+    altimeter_helper& operator=(altimeter_helper const& other) = delete;
+    altimeter_helper(altimeter_helper&& other) noexcept = delete;
+    altimeter_helper& operator=(altimeter_helper&& other) noexcept = delete;
+
     virtual void set_enabled(std::string_view, const bool&)= 0;
     virtual void set_level(std::string_view, std::uint64_t) = 0;
     virtual void set_stmt_duration_threshold(std::uint64_t) = 0;
