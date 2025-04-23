@@ -257,7 +257,7 @@ protected:
     }
 
     bool endpoint_service(const std::shared_ptr<tateyama::api::server::request>& req,
-                          const std::shared_ptr<tateyama::endpoint::common::response>& res,
+                          const std::shared_ptr<tateyama::api::server::response>& res,
                           std::size_t slot) {
         auto data = req->payload();
         tateyama::proto::endpoint::request::Request rq{};
@@ -273,7 +273,9 @@ protected:
         case tateyama::proto::endpoint::request::Request::kCancel:
         {
             VLOG_LP(log_trace) << "received cancel request, slot = " << slot;  //NOLINT
-            res->set_completed();
+            if (auto sp = std::dynamic_pointer_cast<tateyama::endpoint::common::response>(res); sp) {
+                sp->set_completed();
+            }
             {
                 std::lock_guard<std::mutex> lock(mtx_reqreses_);
                 if (auto itr = reqreses_.find(slot); itr != reqreses_.end()) {
@@ -327,8 +329,10 @@ protected:
                 return false;
             }
             request_shutdown(shutdown_type);
-            remove_reqres(index);
-            shutdown_response_.emplace_back(res);
+            {
+                std::lock_guard<std::mutex> lock(mtx_reqreses_);
+                shutdown_response_.emplace(index, res);
+            }
             return true;
         }
 
@@ -372,14 +376,21 @@ protected:
     }
 
     void shutdown_complete() {
-        if (!shutdown_response_.empty()) {
+        std::vector<std::shared_ptr<tateyama::api::server::response>> targets{};
+        {
+            std::lock_guard<std::mutex> lock(mtx_reqreses_);
+            for (auto&& e: shutdown_response_) {
+                targets.emplace_back(e.second);
+            }
+            shutdown_response_.clear();
+        }
+        if (!targets.empty()) {
             tateyama::proto::core::response::Shutdown rp{};
             auto body = rp.SerializeAsString();
-            for (auto&& e: shutdown_response_) {
+            for (auto&& e: targets) {
                 e->body(body);
             }
             complete_shutdown_from_client_ = true;
-            shutdown_response_.clear();
         }
     }
 
@@ -439,7 +450,15 @@ protected:
 
     bool is_completed() {
         std::lock_guard<std::mutex> lock(mtx_reqreses_);
-        return reqreses_.empty();
+        if (shutdown_response_.empty()) {
+            return reqreses_.empty();
+        }
+        for (auto r_itr{reqreses_.begin()}, end{reqreses_.end()}; r_itr != end; r_itr++) {
+            if (shutdown_response_.find(r_itr->first) == shutdown_response_.end()) {
+                return false;
+            }
+        }
+        return true;
     }
 
     void foreach_reqreses(const std::function<void(tateyama::endpoint::common::response&)>& func) {
@@ -517,7 +536,7 @@ private:
     std::chrono::seconds max_refresh_timeout_;
     std::map<std::size_t, std::pair<std::shared_ptr<tateyama::endpoint::common::request>, std::shared_ptr<tateyama::endpoint::common::response>>> reqreses_{};
     std::mutex mtx_reqreses_{};
-    std::vector<std::shared_ptr<tateyama::api::server::response>> shutdown_response_{};
+    std::map<std::size_t, std::shared_ptr<tateyama::api::server::response>> shutdown_response_{};
     bool cancel_requested_to_all_responses_{};
     bool dispose_done_{};
     bool complete_shutdown_from_client_{};
