@@ -61,8 +61,8 @@ class alignas(64) ipc_data_channel : public tateyama::api::server::data_channel 
     friend ipc_response;
 
 public:
-    explicit ipc_data_channel(server_wire_container::unq_p_resultset_wires_conteiner resultset_wires, garbage_collector& gc)
-        : resultset_wires_(std::move(resultset_wires)), garbage_collector_(gc) {
+    explicit ipc_data_channel(server_wire_container::unq_p_resultset_wires_conteiner resultset_wires, garbage_collector& gc, ipc_response* response)
+        : resultset_wires_(std::move(resultset_wires)), garbage_collector_(gc), envelope_(response) {
     }
     ~ipc_data_channel() override {
         shutdown();
@@ -79,6 +79,7 @@ public:
 private:
     server_wire_container::unq_p_resultset_wires_conteiner resultset_wires_;
     garbage_collector& garbage_collector_;
+    ipc_response* envelope_;
 
     std::set<std::shared_ptr<ipc_writer>, tateyama::endpoint::common::pointer_comp<ipc_writer>> data_writers_{};
     mutable std::mutex mutex_{};

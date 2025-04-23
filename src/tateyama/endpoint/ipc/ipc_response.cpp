@@ -117,7 +117,7 @@ tateyama::status ipc_response::acquire_channel(std::string_view name, std::share
         return tateyama::status::unknown;
     }
     try {
-        data_channel_ = std::make_shared<ipc_data_channel>(server_wire_->create_resultset_wires(name, max_writer_count), garbage_collector_);
+        data_channel_ = std::make_shared<ipc_data_channel>(server_wire_->create_resultset_wires(name, max_writer_count), garbage_collector_, this);
     } catch (std::exception &ex) {
         ch = nullptr;
 
@@ -144,7 +144,6 @@ tateyama::status ipc_response::release_channel(tateyama::api::server::data_chann
         std::dynamic_pointer_cast<ipc_data_channel>(data_channel_)->shutdown();
         data_channel_ = nullptr;
         set_state(state::released);
-        has_live_resultset_ = false;
         return tateyama::status::ok;
     }
     LOG_LP(ERROR) << "the parameter given (tateyama::api::server::data_channel& ch) does not match the data_channel_ this object has";
@@ -204,6 +203,7 @@ void ipc_data_channel::shutdown() {
         } else {
             resultset_wires_ = nullptr;
         }
+        envelope_->has_live_resultset_ = false;
     }
 }
 
