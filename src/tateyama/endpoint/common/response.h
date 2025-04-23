@@ -63,7 +63,7 @@ public:
     }
 
     [[nodiscard]] bool is_completed() noexcept {
-        return completed_.load();
+        return completed_.load() && !has_live_resultset_;
     }
 
     void set_completed() noexcept {
@@ -126,6 +126,8 @@ protected:
     std::atomic_bool completed_{};  // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes,misc-non-private-member-variables-in-classes)
 
     std::set<std::unique_ptr<tateyama::api::server::blob_info>, pointer_comp<tateyama::api::server::blob_info>> blobs_{};  // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes,misc-non-private-member-variables-in-classes)
+
+    bool has_live_resultset_{}; // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes,misc-non-private-member-variables-in-classes)
 
     void set_state(state s) {
         state_ = s;
