@@ -146,7 +146,7 @@ class resultset_param {
 public:
     resultset_param(const std::string &name, std::vector<std::size_t> &write_lens, std::size_t write_nloop,
             std::size_t value = 1) :
-            name_(name), write_nloop_(write_nloop), write_lens_(write_lens), value_(value) {
+            name_(name), write_nloop_(write_nloop), value_(value), write_lens_(write_lens) {
     }
     resultset_param(const std::string &text);
     void to_string(std::string &text) noexcept;

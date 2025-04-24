@@ -79,7 +79,27 @@ if (ENABLE_ALTIMETER)
     list(APPEND SRCS ${ALTIMETER_SOURCES})
 endif()
 
+list(REMOVE_ITEM SRCS ${CMAKE_CURRENT_SOURCE_DIR}/tateyama/endpoint/ipc/ipc_resultset_multi_test.cpp)
+
 foreach(file ${SRCS})
     add_test_executable(${file})
 endforeach()
 
+file (GLOB RESULTSET_TRANSFER_TEST_SOURCES
+  "tateyama/endpoint/ipc/ipc_resultset_multi_test.cpp"
+  "tateyama/endpoint/ipc/server_client_base.cpp"
+  "tateyama/endpoint/ipc/ipc_test_utils.cpp"
+  "tateyama/endpoint/ipc/ipc_client.cpp"
+)
+
+register_tests(
+    TARGET tateyama
+    INCLUDES
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${PROJECT_SOURCE_DIR}/build/src
+    DEPENDS
+        tateyama-impl
+        limestone
+    SOURCES ${RESULTSET_TRANSFER_TEST_SOURCES}
+    TEST_LABELS "RESULTSET_TRANSFER_IPC"
+)
