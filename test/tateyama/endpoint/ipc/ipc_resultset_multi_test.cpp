@@ -55,8 +55,7 @@ class ipc_resultset_multi_test_server_client: public server_client_gtest_base {
 public:
     ipc_resultset_multi_test_server_client(std::shared_ptr<tateyama::api::configuration::whole> const &cfg, int nproc,
             int nthread, std::vector<std::size_t> &len_list, int nloop, std::size_t write_nloop) :
-            server_client_gtest_base(cfg, nproc, nthread), len_list_(len_list), nloop_(nloop), write_nloop_(
-                    write_nloop) {
+        server_client_gtest_base(cfg, nproc, nthread), nloop_(nloop), write_nloop_(write_nloop), len_list_(len_list) {
     }
 
     std::shared_ptr<tateyama::framework::service> create_server_service() override {

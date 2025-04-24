@@ -74,6 +74,7 @@ include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 include(CompileOptions)
 include(InstallOptions)
+include(Tests)
 
 add_subdirectory(third_party) # should be before enable_testing()
 
