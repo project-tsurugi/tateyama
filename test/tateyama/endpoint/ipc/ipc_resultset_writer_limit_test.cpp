@@ -73,8 +73,7 @@ public:
     ipc_resultset_writer_limit_test_server_client(std::shared_ptr<tateyama::api::configuration::whole> const &cfg,
             int nproc, int nthread, std::vector<std::size_t> &len_list, int nloop, std::size_t write_nloop,
             std::size_t nwriter) :
-            server_client_gtest_base(cfg, nproc, nthread), len_list_(len_list), nloop_(nloop), write_nloop_(
-                    write_nloop), nwriter_(nwriter) {
+            server_client_gtest_base(cfg, nproc, nthread), nloop_(nloop), write_nloop_(write_nloop), nwriter_(nwriter), len_list_(len_list) {
     }
 
     std::shared_ptr<tateyama::framework::service> create_server_service() override {
@@ -144,7 +143,7 @@ public:
         for (std::size_t i = 0; i < write_nloop_; i++) {
             msg_info info { client.session_id(), i };
             for (std::size_t len : len_list_) {
-                for (int j = 0; j < nwriter_; j++) {
+                for (std::size_t j = 0; j < nwriter_; j++) {
                     info.set_index(j);
                     std::string part;
                     // part will be "len:session_id:i:j." such as "32768:1:0:1." etc.

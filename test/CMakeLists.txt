@@ -79,14 +79,14 @@ if (ENABLE_ALTIMETER)
     list(APPEND SRCS ${ALTIMETER_SOURCES})
 endif()
 
-list(REMOVE_ITEM SRCS ${CMAKE_CURRENT_SOURCE_DIR}/tateyama/endpoint/ipc/ipc_resultset_multi_test.cpp)
+list(REMOVE_ITEM SRCS ${CMAKE_CURRENT_SOURCE_DIR}/tateyama/endpoint/ipc/ipc_resultset_writer_limit_test.cpp)
 
 foreach(file ${SRCS})
     add_test_executable(${file})
 endforeach()
 
 file (GLOB RESULTSET_TRANSFER_TEST_SOURCES
-  "tateyama/endpoint/ipc/ipc_resultset_multi_test.cpp"
+  "tateyama/endpoint/ipc/ipc_resultset_writer_limit_test.cpp"
   "tateyama/endpoint/ipc/server_client_base.cpp"
   "tateyama/endpoint/ipc/ipc_test_utils.cpp"
   "tateyama/endpoint/ipc/ipc_client.cpp"
