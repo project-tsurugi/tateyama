@@ -64,6 +64,8 @@ public:
             EXPECT_EQ(tateyama::status::ok, channel->release(*writer));
         }
         EXPECT_EQ(tateyama::status::ok, res->release_channel(*channel));
+
+        EXPECT_EQ(tateyama::status::ok, res->body(payload));
         return true;
     }
 };
@@ -135,6 +137,7 @@ public:
         EXPECT_TRUE(rwc->is_eor());
         EXPECT_EQ(rwc->get_chunk(0).length(), 0);
         client.dispose_resultset_wires(rwc);
+        client.receive(res_message);
         /*
          * Check all message was received
          */

@@ -47,6 +47,8 @@ public:
         std::cout << "server : release() done" << std::endl;
         EXPECT_EQ(tateyama::status::ok, res->release_channel(*channel));
         std::cout << "server : release_channel() done" << std::endl;
+
+        EXPECT_EQ(tateyama::status::ok, res->body(payload));
         return true;
     }
 };
@@ -99,6 +101,7 @@ public:
         EXPECT_EQ(datalen_, data.length());
         EXPECT_TRUE(check_dummy_message(client.session_id(), data));
         client.dispose_resultset_wires(rwc);
+        client.receive(res_message);
     }
 
 private:
