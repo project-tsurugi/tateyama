@@ -85,7 +85,7 @@ public:
     }
 
     [[nodiscard]] bool is_quiet() {
-        return !has_incomplete_response() && !has_incomplete_resultset() && is_terminated();
+        return !has_incomplete_response() && !has_incomplete_resultset() && is_terminated() && (pending_clear_count_.load() == 0);
     }
 
     /**
@@ -169,6 +169,9 @@ protected:
 
     // local_id
     std::size_t local_id_{};  // NOLINT
+
+    // pending clear count
+    std::atomic_int pending_clear_count_{};  // NOLINT
 
     bool handshake(tateyama::api::server::request* req, tateyama::api::server::response* res) {
         if (req->service_id() != tateyama::framework::service_id_endpoint_broker) {

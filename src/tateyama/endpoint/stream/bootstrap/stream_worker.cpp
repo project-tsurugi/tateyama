@@ -113,7 +113,8 @@ void stream_worker::run()  // NOLINT(readability-function-cognitive-complexity)
             }
             case tateyama::framework::service_id_routing:
             {
-                auto response = std::make_shared<stream_response>(session_stream_, slot, [this, slot](){remove_reqres(slot);}, conf_);
+                auto response = std::make_shared<stream_response>(session_stream_, slot, [this, slot](){remove_reqres(slot); pending_clear_count_--;}, conf_);
+                pending_clear_count_++;
                 if (!register_reqres(slot,
                                      std::dynamic_pointer_cast<tateyama::endpoint::common::request>(request),
                                      std::dynamic_pointer_cast<tateyama::endpoint::common::response>(response))) {
@@ -138,7 +139,8 @@ void stream_worker::run()  // NOLINT(readability-function-cognitive-complexity)
             }
             default:
             {
-                auto response = std::make_shared<stream_response>(session_stream_, slot, [this, slot](){remove_reqres(slot);}, conf_);
+                auto response = std::make_shared<stream_response>(session_stream_, slot, [this, slot](){remove_reqres(slot); pending_clear_count_--;}, conf_);
+                pending_clear_count_++;
                 if (!check_shutdown_request()) {
                     if (!register_reqres(slot,
                                          std::dynamic_pointer_cast<tateyama::endpoint::common::request>(request),
