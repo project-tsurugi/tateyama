@@ -82,6 +82,10 @@ Target component
 |dev_rtx_key_distribution| String | Specifies the method used to split key range used by RTX parallel scan. Choose one of the following `simple`, `uniform`, or `sampling`. Valid only if `dev_rtx_parallel_scan=true`. Default is `uniform` | This is for development and may be deleted in the future. |
 |dev_enable_blob_cast| Boolean (true/false) | Whether to enable cast expression with BLOB/CLOB. The default value is true.| This is for development and may be deleted in the future.|
 |max_result_set_writers| Integer | The maximum number of writers for a result set. The default value is 64. | The value must be equal to or less than 256. |
+| dev_core_affinity | Boolean (true/false) | Determines whether the task scheduler’s worker threads are pinned to (logical) CPU cores. Default is `false`. When `true`, cores are assigned sequentially starting from `dev_initial_core`. Effective only if `dev_force_numa_node` is not specified and `dev_assign_numa_nodes_uniformly = false`. | This is for development and may be deleted in the future. |
+| dev_initial_core | Integer | First CPU core number (0-based) when assigning cores. Effective only when `dev_core_affinity = true`. Default is `1`. | This is for development and may be deleted in the future. |
+| dev_assign_numa_nodes_uniformly | Boolean (true/false) | Uniformly distributes the task scheduler’s worker threads across NUMA nodes. Default is `false`. Effective only when `dev_core_affinity = false` and `dev_force_numa_node` is not specified. | This is for development and may be deleted in the future. |
+| dev_force_numa_node | Integer | Forces all task scheduler worker threads onto a specific NUMA node. Specify the node number (0-based). Effective only when `dev_core_affinity = false` and `dev_assign_numa_nodes_uniformly = false`. Default is *not specified* (no node affinity). | This is for development and may be deleted in the future. |
 
 ## ipc_endpoint section
 

@@ -82,7 +82,10 @@ parameter=value
 |dev_rtx_key_distribution| 文字列 | RTXのparallel scanにおいて、キー範囲を分割する手法を指定。次のいずれかから選択 (`simple`, `uniform`, `sampling`) 。 `dev_rtx_parallel_scan=true` の場合のみ有効。デフォルトは uniform|開発用のため将来的に削除/変更される可能性あり|
 |dev_enable_blob_cast| ブール(true/false) | BLOB/CLOBのキャストを可能にするか。デフォルトはtrue | 開発用のため将来的に削除/変更される可能性あり|
 |max_result_set_writers | 整数 | writer resultsetの最大数。デフォルトは64。|この値は256以下でなければならない|
-
+|dev_core_affinity| ブール(true/false) | タスクスケジューラのワーカースレッドを(論理)CPUコアに割当てるか。デフォルトはfalse。trueの場合は `dev_initial_core` を先頭にシーケンシャルに割当てられる。`dev_force_numa_node` が未指定かつ `dev_assign_numa_nodes_uniformly=false` の場合のみ有効 | 開発用のため将来的に削除/変更される可能性あり|
+|dev_initial_core | 整数 | CPUコア割当てをする際の先頭のCPUコア番号 (0-origin)。 `dev_core_affinity=true` の場合のみ有効。デフォルトは1。|開発用のため将来的に削除/変更される可能性あり|
+|dev_assign_numa_nodes_uniformly| ブール(true/false) | タスクスケジューラのワーカースレッドをNUMAノードに均等に割当てるか。デフォルトはfalse。`dev_core_affinity=false` かつ `dev_force_numa_node` が未指定の場合のみ有効。 | 開発用のため将来的に削除/変更される可能性あり|
+|dev_force_numa_node | 整数 | タスクスケジューラのワーカースレッドを特定のNUMAノードへ割当てるか。ノード番号 (0-origin)を指定された場合そのノードですべてのワーカーが稼働する。`dev_core_affinity=false` かつ `dev_assign_numa_nodes_uniformly=false` の場合のみ有効。デフォルトは未指定 (ノード割当てなし)。|開発用のため将来的に削除/変更される可能性あり|
 
 ## ipc_endpointセクション
 
