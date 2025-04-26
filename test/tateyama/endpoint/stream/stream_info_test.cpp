@@ -61,7 +61,7 @@ public:
     }
     void operator()() {
         while (true) {
-            std::shared_ptr<stream_socket> stream{};
+            std::unique_ptr<stream_socket> stream{};
             stream = connection_socket_.accept();
             if (stream != nullptr) {
                 worker_ = std::make_unique<tateyama::endpoint::stream::bootstrap::stream_worker>(service_, conf_, my_session_id_, std::move(stream), false);

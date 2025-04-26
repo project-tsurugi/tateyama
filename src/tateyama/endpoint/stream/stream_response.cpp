@@ -32,7 +32,7 @@ class stream_request;
 tateyama::status stream_response::body(std::string_view body) {
     bool expected = false;
     if (completed_.compare_exchange_strong(expected, true)) {
-        VLOG_LP(log_trace) << static_cast<const void*>(stream_.get()) << " length = " << body.length();  //NOLINT
+        VLOG_LP(log_trace) << static_cast<const void*>(&stream_) << " length = " << body.length();  //NOLINT
 
         std::stringstream ss{};
         endpoint::common::header_content arg{};
@@ -43,7 +43,7 @@ tateyama::status stream_response::body(std::string_view body) {
             return status::unknown;
         }
         auto s = ss.str();
-        stream_->send(index_, s, true);
+        stream_.send(index_, s, true);
         clean_up_();
         return tateyama::status::ok;
     }
@@ -53,7 +53,7 @@ tateyama::status stream_response::body(std::string_view body) {
 }
 
 tateyama::status stream_response::body_head(std::string_view body_head) {
-    VLOG_LP(log_trace) << static_cast<const void*>(stream_.get());  //NOLINT
+    VLOG_LP(log_trace) << static_cast<const void*>(&stream_);  //NOLINT
 
     std::stringstream ss{};
     endpoint::common::header_content arg{};
@@ -63,7 +63,7 @@ tateyama::status stream_response::body_head(std::string_view body_head) {
         return status::unknown;
     }
     auto s = ss.str();
-    stream_->send(index_, s, false);
+    stream_.send(index_, s, false);
     set_state(state::to_be_used);
     return tateyama::status::ok;
 }
@@ -71,7 +71,7 @@ tateyama::status stream_response::body_head(std::string_view body_head) {
 void stream_response::error(proto::diagnostics::Record const& record) {
     bool expected = false;
     if (completed_.compare_exchange_strong(expected, true)) {
-        VLOG_LP(log_trace) << static_cast<const void*>(stream_.get());  //NOLINT
+        VLOG_LP(log_trace) << static_cast<const void*>(&stream_);  //NOLINT
 
         std::string s{};
         if(record.SerializeToString(&s)) {
@@ -95,7 +95,7 @@ void stream_response::server_diagnostics(std::string_view diagnostic_record) {
         return;
     }
     auto s = ss.str();
-    stream_->send(index_, s, true);
+    stream_.send(index_, s, true);
 }
 
 tateyama::status stream_response::acquire_channel(std::string_view name, std::shared_ptr<tateyama::api::server::data_channel>& ch, std::size_t max_writer_count) {
@@ -105,12 +105,12 @@ tateyama::status stream_response::acquire_channel(std::string_view name, std::sh
         return tateyama::status::unknown;
     }
     try {
-        auto slot = stream_->look_for_slot();
+        auto slot = stream_.look_for_slot();
         data_channel_ = std::make_unique<stream_data_channel>(stream_, slot);
-        VLOG_LP(log_trace) << static_cast<const void*>(stream_.get()) << " data_channel_ = " << static_cast<const void*>(data_channel_.get());  //NOLINT
+        VLOG_LP(log_trace) << static_cast<const void*>(&stream_) << " data_channel_ = " << static_cast<const void*>(data_channel_.get());  //NOLINT
 
         if (ch = data_channel_; ch != nullptr) {
-            stream_->send_result_set_hello(slot, name);
+            stream_.send_result_set_hello(slot, name);
             set_state(state::acquired);
             has_live_resultset_ = true;
             return tateyama::status::ok;
@@ -126,11 +126,11 @@ tateyama::status stream_response::acquire_channel(std::string_view name, std::sh
 }
 
 tateyama::status stream_response::release_channel(tateyama::api::server::data_channel& ch) {
-    VLOG_LP(log_trace) << static_cast<const void*>(stream_.get()) << " data_channel_ = " << static_cast<const void*>(data_channel_.get());  //NOLINT
+    VLOG_LP(log_trace) << static_cast<const void*>(&stream_) << " data_channel_ = " << static_cast<const void*>(data_channel_.get());  //NOLINT
 
     if (auto dc = dynamic_cast<stream_data_channel*>(&ch); data_channel_.get() == dc) {
         auto slot = dc->get_slot();
-        stream_->send_result_set_bye(slot);
+        stream_.send_result_set_bye(slot);
         data_channel_ = nullptr;
         set_state(state::released);
         has_live_resultset_ = false;
@@ -191,10 +191,10 @@ tateyama::status stream_writer::commit() {
     VLOG_LP(log_trace) << static_cast<const void*>(this);  //NOLINT
 
     if (!buffer_.empty()) {
-        stream_->send(slot_, writer_id_, {buffer_.data(), buffer_.size()});
+        stream_.send(slot_, writer_id_, {buffer_.data(), buffer_.size()});
         buffer_.clear();
     } else {
-        stream_->send(slot_, writer_id_, {});
+        stream_.send(slot_, writer_id_, {});
     }
     return tateyama::status::ok;
 }

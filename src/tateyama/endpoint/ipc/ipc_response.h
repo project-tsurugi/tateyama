@@ -61,8 +61,8 @@ class alignas(64) ipc_data_channel : public tateyama::api::server::data_channel 
     friend ipc_response;
 
 public:
-    explicit ipc_data_channel(server_wire_container::unq_p_resultset_wires_conteiner resultset_wires, garbage_collector& gc, ipc_response* response)
-        : resultset_wires_(std::move(resultset_wires)), garbage_collector_(gc), envelope_(response) {
+    explicit ipc_data_channel(server_wire_container::unq_p_resultset_wires_conteiner resultset_wires, garbage_collector& gc)
+        : resultset_wires_(std::move(resultset_wires)), garbage_collector_(gc) {
     }
     ~ipc_data_channel() override {
         shutdown();
@@ -79,7 +79,6 @@ public:
 private:
     server_wire_container::unq_p_resultset_wires_conteiner resultset_wires_;
     garbage_collector& garbage_collector_;
-    ipc_response* envelope_;
 
     std::set<std::shared_ptr<ipc_writer>, tateyama::endpoint::common::pointer_comp<ipc_writer>> data_writers_{};
     mutable std::mutex mutex_{};
@@ -94,13 +93,13 @@ class alignas(64) ipc_response : public tateyama::endpoint::common::response {
     friend ipc_data_channel;
 
 public:
-  ipc_response(std::shared_ptr<server_wire_container> server_wire,
+  ipc_response(server_wire_container& server_wire,
                std::size_t index,
                std::function<void(void)> clean_up,
                const tateyama::endpoint::common::configuration& conf) :
         tateyama::endpoint::common::response(index, conf),
-        server_wire_(std::move(server_wire)),
-        garbage_collector_(*server_wire_->get_garbage_collector()),
+        server_wire_(server_wire),
+        garbage_collector_(*server_wire_.get_garbage_collector()),
         clean_up_(std::move(clean_up)) {
     }
     ~ipc_response() override {
@@ -122,7 +121,7 @@ public:
     tateyama::status release_channel(tateyama::api::server::data_channel& ch) override;
 
 private:
-    std::shared_ptr<server_wire_container> server_wire_;
+    server_wire_container& server_wire_;
     garbage_collector& garbage_collector_;
     const std::function<void(void)> clean_up_;
 

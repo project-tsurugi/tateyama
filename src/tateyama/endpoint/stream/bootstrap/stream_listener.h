@@ -159,7 +159,7 @@ public:
         arrive_and_wait();
         while(true) {
 
-            std::shared_ptr<stream_socket> stream{};
+            std::unique_ptr<stream_socket> stream{};
             try {
                 stream = connection_socket_->accept([this](){care_undertakers();});
                 if (!stream) {  // received termination request.
