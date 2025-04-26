@@ -102,7 +102,7 @@ TEST_F(result_set_test, normal) {
     EXPECT_EQ(request_wire->payload(), request_message);
 
     auto request = std::make_shared<ipc_request>(*wire_, h, resources_, 0, conf_);
-    auto response = std::make_shared<ipc_response>(wire_, h.get_idx(), [](){}, conf_);
+    auto response = std::make_shared<ipc_response>(*wire_, h.get_idx(), [](){}, conf_);
 
     test_service sv;
     sv(static_cast<std::shared_ptr<tateyama::api::server::request>>(request),
@@ -159,7 +159,7 @@ TEST_F(result_set_test, large) {
     EXPECT_EQ(request_wire->payload(), request_message);
 
     auto request = std::make_shared<ipc_request>(*wire_, h, resources_, 0, conf_);
-    auto response = std::make_shared<ipc_response>(wire_, h.get_idx(), [](){}, conf_);
+    auto response = std::make_shared<ipc_response>(*wire_, h.get_idx(), [](){}, conf_);
 
 
     // server side

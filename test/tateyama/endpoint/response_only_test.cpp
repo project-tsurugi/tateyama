@@ -85,7 +85,7 @@ TEST_F(response_only_test, normal) {
     EXPECT_EQ(request_wire->payload(), request_message);
 
     auto request = std::make_shared<ipc_request>(*wire_, h, resources_, 0, conf_);
-    auto response = std::make_shared<ipc_response>(wire_, h.get_idx(), [](){}, conf_);
+    auto response = std::make_shared<ipc_response>(*wire_, h.get_idx(), [](){}, conf_);
     EXPECT_EQ(request->session_id(), session_id);
     EXPECT_EQ(request->service_id(), 100);
 

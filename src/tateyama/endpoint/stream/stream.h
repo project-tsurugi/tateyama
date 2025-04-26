@@ -426,7 +426,7 @@ public:
     connection_socket& operator = (connection_socket const&) = delete;
     connection_socket& operator = (connection_socket&&) = delete;
 
-    std::shared_ptr<stream_socket> accept(const std::function<void(void)>& cleanup = [](){} ) {
+    std::unique_ptr<stream_socket> accept(const std::function<void(void)>& cleanup = [](){} ) {
         cleanup();
 
         while (true) {
@@ -452,7 +452,7 @@ public:
                 }
                 std::stringstream ss{};
                 ss << inet_ntoa(address.sin_addr) << ":" << ntohs(address.sin_port);
-                return std::make_shared<stream_socket>(ts, ss.str(), this);
+                return std::make_unique<stream_socket>(ts, ss.str(), this);
             }
             if (FD_ISSET(pair_[0], &fds_)) {  //  NOLINT
                 char trash{};

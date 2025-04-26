@@ -29,7 +29,7 @@ class alignas(64) stream_worker : public tateyama::endpoint::common::worker_comm
     stream_worker(tateyama::framework::routing_service& service,
                   const tateyama::endpoint::common::configuration& conf,
                   std::size_t session_id,
-                  std::shared_ptr<stream_socket> stream,
+                  std::unique_ptr<stream_socket> stream,
                   const bool decline)
         : worker_common(conf, session_id, stream->connection_info()),
           service_(service),
@@ -46,7 +46,7 @@ class alignas(64) stream_worker : public tateyama::endpoint::common::worker_comm
 
  private:
     tateyama::framework::routing_service& service_;
-    std::shared_ptr<stream_socket> session_stream_;
+    std::unique_ptr<stream_socket> session_stream_;
     const tateyama::endpoint::common::configuration& conf_;
     const bool decline_;
 
