@@ -63,11 +63,11 @@ public:
     }
 
     [[nodiscard]] bool is_completed() noexcept {
-        return completed_.load() && !data_channel_;
+        return completed_ && !data_channel_;
     }
 
     void set_completed() noexcept {
-        completed_.store(true);
+        completed_ = true;
     }
 
     [[nodiscard]] constexpr inline std::string_view state_label() noexcept {
@@ -123,7 +123,7 @@ protected:
 
     std::shared_ptr<tateyama::api::server::data_channel> data_channel_{};  // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes,misc-non-private-member-variables-in-classes)
 
-    std::atomic_bool completed_{};  // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes,misc-non-private-member-variables-in-classes)
+    std::atomic_bool complete_gate_{};  // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes,misc-non-private-member-variables-in-classes)
 
     std::set<std::unique_ptr<tateyama::api::server::blob_info>, pointer_comp<tateyama::api::server::blob_info>> blobs_{};  // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes,misc-non-private-member-variables-in-classes)
 
@@ -134,6 +134,7 @@ protected:
 private:
     const configuration& conf_;
     bool cancel_{};
+    bool completed_{};
 
     state state_{state::no_data_channel};
 };

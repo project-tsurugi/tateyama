@@ -29,7 +29,7 @@ namespace tateyama::endpoint::ipc {
 // class server_wire
 tateyama::status ipc_response::body(std::string_view body) {
     bool expected = false;
-    if (completed_.compare_exchange_strong(expected, true)) {
+    if (complete_gate_.compare_exchange_strong(expected, true)) {
         VLOG_LP(log_trace) << static_cast<const void*>(&server_wire_) << " length = " << body.length() << " slot = " << index_;  //NOLINT
         if (data_channel_) {
             std::dynamic_pointer_cast<ipc_data_channel>(data_channel_)->shutdown();  // Guard against improper operation
@@ -46,6 +46,7 @@ tateyama::status ipc_response::body(std::string_view body) {
         }
         auto s = ss.str();
         server_wire_.get_response_wire().write(s.data(), tateyama::common::wire::response_header(index_, s.length(), RESPONSE_BODY));
+        set_completed();
         return tateyama::status::ok;
     }
     LOG_LP(ERROR) << "response is already completed";
@@ -74,7 +75,7 @@ tateyama::status ipc_response::body_head(std::string_view body_head) {
 
 void ipc_response::error(proto::diagnostics::Record const& record) {
     bool expected = false;
-    if (completed_.compare_exchange_strong(expected, true)) {
+    if (complete_gate_.compare_exchange_strong(expected, true)) {
         VLOG_LP(log_trace) << static_cast<const void*>(&server_wire_) << " slot = " << index_;  //NOLINT
         if (data_channel_) {
             std::dynamic_pointer_cast<ipc_data_channel>(data_channel_)->shutdown();  // Guard against improper operation
@@ -88,6 +89,7 @@ void ipc_response::error(proto::diagnostics::Record const& record) {
             LOG_LP(ERROR) << "error formatting diagnostics message";
             server_diagnostics("");
         }
+        set_completed();
     } else {
         LOG_LP(ERROR) << "response is already completed";
     }
@@ -106,7 +108,7 @@ void ipc_response::server_diagnostics(std::string_view diagnostic_record) {
 }
 
 tateyama::status ipc_response::acquire_channel(std::string_view name, std::shared_ptr<tateyama::api::server::data_channel>& ch, std::size_t max_writer_count) {
-    if (completed_.load()) {
+    if (complete_gate_.load()) {
         LOG_LP(ERROR) << "response is already completed";
         set_state(state::acquire_failed);
         return tateyama::status::unknown;

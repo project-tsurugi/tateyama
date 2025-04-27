@@ -31,7 +31,7 @@ class stream_request;
 
 tateyama::status stream_response::body(std::string_view body) {
     bool expected = false;
-    if (completed_.compare_exchange_strong(expected, true)) {
+    if (complete_gate_.compare_exchange_strong(expected, true)) {
         VLOG_LP(log_trace) << static_cast<const void*>(&stream_) << " length = " << body.length();  //NOLINT
 
         std::stringstream ss{};
@@ -45,10 +45,10 @@ tateyama::status stream_response::body(std::string_view body) {
         auto s = ss.str();
         stream_.send(index_, s, true);
         clean_up_();
+        set_completed();
         return tateyama::status::ok;
     }
     LOG_LP(ERROR) << "response is already completed";
-    clean_up_();
     return status::unknown;        
 }
 
@@ -70,7 +70,7 @@ tateyama::status stream_response::body_head(std::string_view body_head) {
 
 void stream_response::error(proto::diagnostics::Record const& record) {
     bool expected = false;
-    if (completed_.compare_exchange_strong(expected, true)) {
+    if (complete_gate_.compare_exchange_strong(expected, true)) {
         VLOG_LP(log_trace) << static_cast<const void*>(&stream_);  //NOLINT
 
         std::string s{};
@@ -80,10 +80,11 @@ void stream_response::error(proto::diagnostics::Record const& record) {
             LOG_LP(ERROR) << "error formatting diagnostics message";
             server_diagnostics("");
         }
+        clean_up_();
+        set_completed();
     } else {
         LOG_LP(ERROR) << "response is already completed";
     }
-    clean_up_();
 }
 
 void stream_response::server_diagnostics(std::string_view diagnostic_record) {
