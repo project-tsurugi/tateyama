@@ -117,9 +117,9 @@ class ipc_lob_test : public ::testing::Test {
         std::string session_name{database_name};
         session_name += "-";
         session_name += std::to_string(my_session_id);
-        wire_ = std::make_shared<bootstrap::server_wire_container_impl>(session_name, "dummy_mutex_file_name", datachannel_buffer_size, 16);
+        wire_ = std::make_unique<bootstrap::server_wire_container_impl>(session_name, "dummy_mutex_file_name", datachannel_buffer_size, 16);
         conf_.allow_blob_privileged(true);
-        worker_ = std::make_unique<tateyama::endpoint::ipc::bootstrap::ipc_worker>(service_, conf_, my_session_id, wire_);
+        worker_ = std::make_unique<tateyama::endpoint::ipc::bootstrap::ipc_worker>(service_, conf_, my_session_id, std::move(wire_));
         tateyama::server::ipc_listener_for_test::run(*worker_);
 
         // client part
@@ -149,7 +149,7 @@ public:
     tateyama::status_info::resource::database_info_impl database_info_{database_name};
 
 protected:
-    std::shared_ptr<bootstrap::server_wire_container_impl> wire_{};
+    std::unique_ptr<bootstrap::server_wire_container_impl> wire_{};
     std::unique_ptr<tateyama::endpoint::ipc::bootstrap::ipc_worker> worker_{};
     std::unique_ptr<ipc_client> client_{};
     lob_service service_{};

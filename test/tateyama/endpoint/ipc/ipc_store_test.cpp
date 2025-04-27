@@ -87,10 +87,10 @@ class ipc_store_test : public ::testing::Test {
         std::string session_name{database_name};
         session_name += "-";
         session_name += std::to_string(my_session_id);
-        auto wire = std::make_shared<bootstrap::server_wire_container_impl>(session_name, "dummy_mutex_file_name", datachannel_buffer_size, 16);
+        auto wire = std::make_unique<bootstrap::server_wire_container_impl>(session_name, "dummy_mutex_file_name", datachannel_buffer_size, 16);
         session_bridge_ = std::make_shared<session::resource::bridge>();
         const tateyama::endpoint::common::configuration conf(tateyama::endpoint::common::connection_type::ipc, session_bridge_, database_info_);
-        worker_ = std::make_unique<tateyama::endpoint::ipc::bootstrap::ipc_worker>(service_, conf, my_session_id, wire);
+        worker_ = std::make_unique<tateyama::endpoint::ipc::bootstrap::ipc_worker>(service_, conf, my_session_id, std::move(wire));
         tateyama::server::ipc_listener_for_store_test::run(*worker_);
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
         client_ = std::make_unique<ipc_client>(database_name, my_session_id);

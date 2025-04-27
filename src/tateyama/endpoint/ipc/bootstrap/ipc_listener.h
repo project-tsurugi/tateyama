@@ -201,7 +201,7 @@ public:
                     std::string session_name = database_name_;
                     session_name += "-";
                     session_name += std::to_string(session_id);
-                    auto wire = std::make_shared<server_wire_container_impl>(session_name, proc_mutex_file_, datachannel_buffer_size_, max_datachannel_buffers_, [this, session_id, slot_index](){status_->remove_shm_entry(session_id, slot_index);});
+                    auto wire = std::make_unique<server_wire_container_impl>(session_name, proc_mutex_file_, datachannel_buffer_size_, max_datachannel_buffers_, [this, session_id, slot_index](){status_->remove_shm_entry(session_id, slot_index);});
                     VLOG_LP(log_trace) << "create session wire: " << session_name << " at index " << slot_index;
                     status_->add_shm_entry(session_id, slot_index);
 

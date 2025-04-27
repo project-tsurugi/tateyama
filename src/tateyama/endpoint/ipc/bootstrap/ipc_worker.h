@@ -30,7 +30,7 @@ public:
     ipc_worker(tateyama::framework::routing_service& service,
                const tateyama::endpoint::common::configuration& conf,
                std::size_t session_id,
-               std::shared_ptr<server_wire_container_impl> wire) :
+               std::unique_ptr<server_wire_container_impl> wire) :
         worker_common(conf, session_id, ""),
             service_(service),
             wire_(std::move(wire)),
@@ -46,7 +46,7 @@ public:
 
 private:
     tateyama::framework::routing_service& service_;
-    std::shared_ptr<server_wire_container_impl> wire_;
+    std::unique_ptr<server_wire_container_impl> wire_;
     server_wire_container_impl::wire_container_impl* request_wire_container_;
     const tateyama::endpoint::common::configuration& conf_;
 

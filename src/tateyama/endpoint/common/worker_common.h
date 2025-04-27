@@ -85,7 +85,13 @@ public:
     }
 
     [[nodiscard]] bool is_quiet() {
-        return !has_incomplete_response() && !has_incomplete_resultset() && is_terminated();
+        if (has_incomplete_response()) {  // should check before has_incomplete_resultset()
+            return false;
+        }
+        if (has_incomplete_resultset()) {
+            return false;
+        }
+        return is_terminated();
     }
 
     /**

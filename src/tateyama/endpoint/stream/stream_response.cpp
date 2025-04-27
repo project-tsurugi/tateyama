@@ -112,7 +112,6 @@ tateyama::status stream_response::acquire_channel(std::string_view name, std::sh
         if (ch = data_channel_; ch != nullptr) {
             stream_.send_result_set_hello(slot, name);
             set_state(state::acquired);
-            has_live_resultset_ = true;
             return tateyama::status::ok;
         }
         set_state(state::acquire_failed);
@@ -133,7 +132,6 @@ tateyama::status stream_response::release_channel(tateyama::api::server::data_ch
         stream_.send_result_set_bye(slot);
         data_channel_ = nullptr;
         set_state(state::released);
-        has_live_resultset_ = false;
         return tateyama::status::ok;
     }
     set_state(state::release_failed);
