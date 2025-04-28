@@ -279,9 +279,6 @@ protected:
         case tateyama::proto::endpoint::request::Request::kCancel:
         {
             VLOG_LP(log_trace) << "received cancel request, slot = " << slot;  //NOLINT
-            if (auto sp = std::dynamic_pointer_cast<tateyama::endpoint::common::response>(res); sp) {
-                sp->set_completed();
-            }
             {
                 std::lock_guard<std::mutex> lock(mtx_reqreses_);
                 if (auto itr = reqreses_.find(slot); itr != reqreses_.end()) {

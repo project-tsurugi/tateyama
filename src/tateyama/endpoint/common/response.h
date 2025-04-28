@@ -66,10 +66,6 @@ public:
         return completed_ && !data_channel_;
     }
 
-    void set_completed() noexcept {
-        completed_ = true;
-    }
-
     [[nodiscard]] constexpr inline std::string_view state_label() noexcept {
         using namespace std::string_view_literals;
 
@@ -127,7 +123,11 @@ protected:
 
     std::set<std::unique_ptr<tateyama::api::server::blob_info>, pointer_comp<tateyama::api::server::blob_info>> blobs_{};  // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes,misc-non-private-member-variables-in-classes)
 
-    void set_state(state s) {
+    inline void set_completed() noexcept {
+        completed_ = true;
+    }
+
+    inline void set_state(state s) noexcept {
         state_ = s;
     }
 
