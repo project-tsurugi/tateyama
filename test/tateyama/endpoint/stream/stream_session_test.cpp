@@ -59,14 +59,21 @@ public:
     }
 
     void accept_cancel() {
+        if (!res_) {
+            FAIL();
+        }
+        for (int i = 0; i < 10; i++) {
+            if (res_->check_cancel()) {
+                break;
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+        EXPECT_TRUE(res_->check_cancel());
+
         tateyama::proto::diagnostics::Record record{};
         record.set_code(tateyama::proto::diagnostics::Code::OPERATION_CANCELED);
         record.set_message("cancel succeeded (test message)");
-        if (res_) {
-            res_->error(record);
-        } else {
-            FAIL();
-        }
+        res_->error(record);
     }
     void dispose_reqres() {
         req_ = nullptr;

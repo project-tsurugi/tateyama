@@ -280,6 +280,7 @@ protected:
         {
             VLOG_LP(log_trace) << "received cancel request, slot = " << slot;  //NOLINT
             if (auto sp = std::dynamic_pointer_cast<tateyama::endpoint::common::response>(res); sp) {
+                // Do not respond to the cancellation request, but respond to the request to be cancelled.
                 sp->set_completed();
             }
             {
