@@ -62,6 +62,8 @@ private:
  * @brief data_channel object for stream_endpoint
  */
 class alignas(64) stream_data_channel : public tateyama::api::server::data_channel {
+    friend stream_response;
+
 public:
     stream_data_channel() = delete;
     explicit stream_data_channel(stream_socket& stream, unsigned int slot)
@@ -76,6 +78,8 @@ private:
     std::mutex mutex_{};
     unsigned int slot_;
     std::atomic_char writer_id_{};
+
+    void shutdown();
 };
 
 /**

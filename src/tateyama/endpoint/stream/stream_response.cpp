@@ -33,6 +33,10 @@ tateyama::status stream_response::body(std::string_view body) {
     bool expected = false;
     if (complete_gate_.compare_exchange_strong(expected, true)) {
         VLOG_LP(log_trace) << static_cast<const void*>(&stream_) << " length = " << body.length();  //NOLINT
+        if (data_channel_) {
+            std::dynamic_pointer_cast<stream_data_channel>(data_channel_)->shutdown();  // Guard against improper operation
+            data_channel_ = nullptr;
+        }
 
         std::stringstream ss{};
         endpoint::common::header_content arg{};
@@ -72,6 +76,10 @@ void stream_response::error(proto::diagnostics::Record const& record) {
     bool expected = false;
     if (complete_gate_.compare_exchange_strong(expected, true)) {
         VLOG_LP(log_trace) << static_cast<const void*>(&stream_);  //NOLINT
+        if (data_channel_) {
+            std::dynamic_pointer_cast<stream_data_channel>(data_channel_)->shutdown();  // Guard against improper operation
+            data_channel_ = nullptr;
+        }
 
         std::string s{};
         if(record.SerializeToString(&s)) {
@@ -129,8 +137,7 @@ tateyama::status stream_response::release_channel(tateyama::api::server::data_ch
     VLOG_LP(log_trace) << static_cast<const void*>(&stream_) << " data_channel_ = " << static_cast<const void*>(data_channel_.get());  //NOLINT
 
     if (auto dc = dynamic_cast<stream_data_channel*>(&ch); data_channel_.get() == dc) {
-        auto slot = dc->get_slot();
-        stream_.send_result_set_bye(slot);
+        dc->shutdown();
         data_channel_ = nullptr;
         set_state(state::released);
         return tateyama::status::ok;
@@ -171,6 +178,10 @@ tateyama::status stream_data_channel::release(tateyama::api::server::writer& wrt
         }
     }
     return tateyama::status::unknown;
+}
+
+void stream_data_channel::shutdown() {
+    stream_.send_result_set_bye(get_slot());
 }
 
 // class writer
