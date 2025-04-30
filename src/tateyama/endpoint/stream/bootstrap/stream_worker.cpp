@@ -28,6 +28,7 @@ namespace tateyama::endpoint::stream::bootstrap {
 void stream_worker::run()  // NOLINT(readability-function-cognitive-complexity)
 {
     while (true) {
+        pthread_setname_np(pthread_self(), "tcp_worker");
         std::uint16_t slot{};
         std::string payload{};
         switch (session_stream_->await(slot, payload)) {

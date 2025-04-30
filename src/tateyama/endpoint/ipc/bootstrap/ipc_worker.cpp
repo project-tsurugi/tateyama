@@ -25,6 +25,7 @@
 namespace tateyama::endpoint::ipc::bootstrap {
 
 void ipc_worker::run() {  // NOLINT(readability-function-cognitive-complexity)
+    pthread_setname_np(pthread_self(), "ipc_worker");
     tateyama::common::wire::message_header hdr{};
     while(true) {
         try {

@@ -178,6 +178,7 @@ public:
     }
 
     void operator()()  override {
+        pthread_setname_np(pthread_self(), "ipc_listener");
         auto& connection_queue = container_->get_connection_queue();
         proc_mutex_file_ = status_->mutex_file();
         arrive_and_wait();
