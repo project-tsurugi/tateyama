@@ -33,6 +33,7 @@ tateyama::status ipc_response::body(std::string_view body) {
         VLOG_LP(log_trace) << static_cast<const void*>(&server_wire_) << " length = " << body.length() << " slot = " << index_;  //NOLINT
         if (data_channel_) {
             std::dynamic_pointer_cast<ipc_data_channel>(data_channel_)->shutdown();  // Guard against improper operation
+            data_channel_ = nullptr;
         }
         clean_up_();
 
@@ -79,6 +80,7 @@ void ipc_response::error(proto::diagnostics::Record const& record) {
         VLOG_LP(log_trace) << static_cast<const void*>(&server_wire_) << " slot = " << index_;  //NOLINT
         if (data_channel_) {
             std::dynamic_pointer_cast<ipc_data_channel>(data_channel_)->shutdown();  // Guard against improper operation
+            data_channel_ = nullptr;
         }
         clean_up_();
 
