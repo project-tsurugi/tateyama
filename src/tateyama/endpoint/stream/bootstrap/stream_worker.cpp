@@ -169,9 +169,11 @@ void stream_worker::run()  // NOLINT(readability-function-cognitive-complexity)
                     break;
                 }
             }
-            if (is_expiration_time_over() && !notiry_expiration_time_over) {
-                request_shutdown(tateyama::session::shutdown_request_type::forceful);
-                notiry_expiration_time_over = true;
+            if (!notiry_expiration_time_over) {
+                if (is_expiration_time_over()) {
+                    request_shutdown(tateyama::session::shutdown_request_type::forceful);
+                    notiry_expiration_time_over = true;
+                }
             }
             continue;
 

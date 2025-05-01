@@ -60,10 +60,12 @@ void ipc_worker::run() {  // NOLINT(readability-function-cognitive-complexity)
                 VLOG_LP(log_trace) << "terminate worker thread for session " << session_id() << ", as it has received a shutdown request";
                 break;  // break the while loop
             }
-            if (is_expiration_time_over() && !notiry_expiration_time_over) {
-                wire_->expiration_time_over();
-                request_shutdown(tateyama::session::shutdown_request_type::forceful);
-                notiry_expiration_time_over = true;
+            if (!notiry_expiration_time_over) {
+                if (is_expiration_time_over()) {
+                    wire_->expiration_time_over();
+                    request_shutdown(tateyama::session::shutdown_request_type::forceful);
+                    notiry_expiration_time_over = true;
+                }
             }
             continue;
         }
