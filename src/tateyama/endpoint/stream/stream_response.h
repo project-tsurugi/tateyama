@@ -39,8 +39,8 @@ class alignas(64) stream_writer : public tateyama::api::server::writer {
     friend stream_data_channel;
 
 public:
-    explicit stream_writer(stream_socket& stream, std::uint16_t slot, unsigned char writer_id)
-        : stream_(stream), slot_(slot), writer_id_(writer_id) {}
+    explicit stream_writer(stream_socket& stream, std::uint16_t slot, unsigned char writer_id, stream_data_channel& dc)
+        : stream_(stream), slot_(slot), writer_id_(writer_id), data_channel_(dc) {}
     tateyama::status write(char const* data, std::size_t length) override;
     tateyama::status commit() override;
 
@@ -48,6 +48,7 @@ private:
     stream_socket& stream_;
     std::uint16_t slot_;
     unsigned char writer_id_;
+    stream_data_channel& data_channel_;
     std::vector<char> buffer_{};
     /**
      * @brief Buffer size for storing stream data.
@@ -62,7 +63,9 @@ private:
  * @brief data_channel object for stream_endpoint
  */
 class alignas(64) stream_data_channel : public tateyama::api::server::data_channel {
+    friend stream_socket;
     friend stream_response;
+    friend stream_writer;
 
 public:
     stream_data_channel() = delete;
@@ -78,14 +81,18 @@ private:
     std::mutex mutex_{};
     unsigned int slot_;
     std::atomic_char writer_id_{};
+    bool closed_{};
 
     void shutdown();
+    void set_closed() noexcept { closed_ = true; }
+    [[nodiscard]] bool is_closed() const noexcept { return closed_; }
 };
 
 /**
  * @brief response object for stream_endpoint
  */
 class alignas(64) stream_response : public tateyama::endpoint::common::response {
+    friend stream_socket;
     friend stream_data_channel;
 
 public:
@@ -96,6 +103,7 @@ public:
         tateyama::endpoint::common::response(index, conf),
         stream_(stream),
         clean_up_(std::move(clean_up)) {
+            stream_.response(index) = this;
     }
 
     tateyama::status body(std::string_view body) override;
@@ -108,6 +116,9 @@ private:
     stream_socket& stream_;
     const std::function<void(void)> clean_up_;
 
+    std::shared_ptr<stream_data_channel> data_channel() {
+        return std::dynamic_pointer_cast<stream_data_channel>(data_channel_);
+    }
     void server_diagnostics(std::string_view diagnostic_record);
 };
 

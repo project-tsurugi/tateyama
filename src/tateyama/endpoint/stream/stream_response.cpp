@@ -114,12 +114,11 @@ tateyama::status stream_response::acquire_channel(std::string_view name, std::sh
         return tateyama::status::unknown;
     }
     try {
-        auto slot = stream_.look_for_slot();
-        data_channel_ = std::make_unique<stream_data_channel>(stream_, slot);
+        data_channel_ = std::make_unique<stream_data_channel>(stream_, index_);
         VLOG_LP(log_trace) << static_cast<const void*>(&stream_) << " data_channel_ = " << static_cast<const void*>(data_channel_.get());  //NOLINT
 
         if (ch = data_channel_; ch != nullptr) {
-            stream_.send_result_set_hello(slot, name);
+            stream_.send_result_set_hello(index_, name);
             set_state(state::acquired);
             return tateyama::status::ok;
         }
@@ -150,7 +149,7 @@ tateyama::status stream_response::release_channel(tateyama::api::server::data_ch
 // class stream_data_channel
 tateyama::status stream_data_channel::acquire(std::shared_ptr<tateyama::api::server::writer>& wrt) {
     try {
-        if (auto stream_wrt = std::make_shared<stream_writer>(stream_, get_slot(), writer_id_.fetch_add(1)); stream_wrt != nullptr) {
+        if (auto stream_wrt = std::make_shared<stream_writer>(stream_, get_slot(), writer_id_.fetch_add(1), *this); stream_wrt != nullptr) {
             wrt = stream_wrt;
             VLOG_LP(log_trace) << " data_channel_ = " << static_cast<const void*>(this) << " writer = " << static_cast<const void*>(wrt.get());  //NOLINT
 
@@ -200,13 +199,25 @@ tateyama::status stream_writer::write(char const* data, std::size_t length) {
 tateyama::status stream_writer::commit() {
     VLOG_LP(log_trace) << static_cast<const void*>(this);  //NOLINT
 
-    if (!buffer_.empty()) {
-        stream_.send(slot_, writer_id_, {buffer_.data(), buffer_.size()});
-        buffer_.clear();
-    } else {
-        stream_.send(slot_, writer_id_, {});
+    try {
+        if (data_channel_.is_closed()) {
+            buffer_.clear();
+            return tateyama::status::ok;
+        }
+        if (!buffer_.empty()) {
+            stream_.send_resultset(slot_, writer_id_, {buffer_.data(), buffer_.size()});
+            buffer_.clear();
+        } else {
+            stream_.send_resultset(slot_, writer_id_, {});
+        }
+        return tateyama::status::ok;
+    } catch (std::runtime_error &ex) {
+        if (data_channel_.is_closed()) {
+            buffer_.clear();
+            return tateyama::status::ok;
+        }
+        return tateyama::status::unknown;
     }
-    return tateyama::status::ok;
 }
 
 }

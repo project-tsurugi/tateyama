@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2023 Project Tsurugi.
+ * Copyright 2018-2025 Project Tsurugi.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,6 @@
 #include <functional>
 #include <arpa/inet.h>
 
-
 #include <glog/logging.h>
 
 #include <tateyama/logging.h>
@@ -44,8 +43,7 @@
 namespace tateyama::endpoint::stream {
 
 class connection_socket;
-class stream_data_channel;
-class connection_socket;
+class stream_response;
 
 class stream_socket
 {
@@ -63,7 +61,8 @@ class stream_socket
     static constexpr unsigned char RESPONSE_SESSION_BODYHEAD = 7;
     static constexpr unsigned char RESPONSE_SESSION_BYE_OK = 8;
 
-    static constexpr unsigned int SLOT_SIZE = 16;
+    static constexpr unsigned int SLOT_SIZE = 16;  // mainly for test
+    static constexpr unsigned int SEND_TIMEOUT = 10;
 
     class recv_entry {
     public:
@@ -147,19 +146,25 @@ public:
         send_response(RESPONSE_SESSION_BYE_OK, 0, "", true);
     }
 
-    void send(std::uint16_t slot, unsigned char writer, std::string_view payload) { // for RESPONSE_RESULT_SET_PAYLOAD
+    void send_resultset(std::uint16_t slot, unsigned char writer, std::string_view payload) { // for RESPONSE_RESULT_SET_PAYLOAD
         DVLOG_LP(log_trace) << (payload.length() > 0 ? "<-- RESPONSE_RESULT_SET_PAYLOAD " : "<-- RESPONSE_RESULT_SET_COMMIT ") << static_cast<std::uint32_t>(slot) << ", " << static_cast<std::uint32_t>(writer);
         std::unique_lock<std::mutex> lock(mutex_);
         if (session_closed_) {
             return;
         }
         unsigned char info = RESPONSE_RESULT_SET_PAYLOAD;
-        ::send(socket_, &info, 1, MSG_NOSIGNAL);
+        if (auto rv = ::send(socket_, &info, 1, MSG_NOSIGNAL); rv != 1) {
+            throw std::runtime_error("send error");
+        }
         char buffer[sizeof(std::uint16_t)];  // NOLINT
         buffer[0] = slot & 0xff;  // NOLINT
         buffer[1] = (slot / 0x100) & 0xff;  // NOLINT
-        ::send(socket_, &buffer[0], sizeof(std::uint16_t), MSG_MORE | MSG_NOSIGNAL);
-        ::send(socket_, &writer, 1, MSG_MORE | MSG_NOSIGNAL);
+        if (auto rv = ::send(socket_, &buffer[0], sizeof(std::uint16_t), MSG_MORE | MSG_NOSIGNAL); rv != sizeof(std::uint16_t)) {
+            throw std::runtime_error("send error");
+        }
+        if (auto rv = ::send(socket_, &writer, 1, MSG_MORE | MSG_NOSIGNAL); rv != 1) {
+            throw std::runtime_error("send error");
+        }
         send_payload(payload);
     }
 
@@ -171,24 +176,13 @@ public:
         }
     }
 
-    unsigned int look_for_slot() {
-        std::unique_lock<std::mutex> lock(slot_mutex_);
-        for (unsigned int i = 0; i < slot_size_; i++) {  // FIXME more efficient
-            if (!in_use_.at(i)) {
-                in_use_.at(i) = true;
-                slot_using_++;
-                return i;
-            }
-        }
-        throw std::runtime_error("running out the slots for result set");
-    }
-
     void change_slot_size(std::size_t index) {
+        auto size = index + 1 + 2;  // '+ 2' is for compatibility
         std::unique_lock<std::mutex> lock(slot_mutex_);
-        if ((index + 1) > slot_size_) {
-            DVLOG_LP(log_trace) << "enlarge srot to " << (index + 1);
-            slot_size_ = index + 1;
-            in_use_.resize(slot_size_);
+        if (size > slot_size_) {
+            DVLOG_LP(log_trace) << "enlarge srot to " << size;
+            slot_size_ = size;
+            responses_.resize(slot_size_);
         }
     }
 
@@ -200,6 +194,10 @@ public:
         return owner_.exchange(owner, std::memory_order_acquire) == nullptr;
     }
 
+    stream_response*& response(unsigned int slot) {
+        return responses_.at(slot);
+    }
+
 private:
     int socket_;
     static constexpr std::size_t N_FDS = 1;
@@ -208,7 +206,7 @@ private:
 
     bool session_closed_{false};
     bool socket_closed_{false};
-    std::vector<bool> in_use_{};
+    std::vector<stream_response*> responses_{};
     std::atomic_uint slot_using_{};
     std::queue<recv_entry> queue_{};
     std::size_t slot_size_{SLOT_SIZE};
@@ -276,7 +274,7 @@ private:
                 DVLOG_LP(log_trace) << "--> REQUEST_RESULT_SET_BYE_OK " << static_cast<std::uint32_t>(slot);
                 std::string dummy;
                 if (recv(dummy)) {
-                    release_slot(slot);
+                    close_data_channel_by_client(slot);
                     break;
                 }
                 DVLOG_LP(log_trace) << "socket is closed by the client abnormally";
@@ -362,21 +360,20 @@ private:
         buffer[2] = (length / 0x10000) & 0xff;  // NOLINT
         buffer[3] = (length / 0x1000000) & 0xff;  // NOLINT
         if (length > 0) {
-            ::send(socket_, &buffer[0], sizeof(length), MSG_MORE | MSG_NOSIGNAL);
-            ::send(socket_, payload.data(), length, MSG_NOSIGNAL);
+            if (auto rv = ::send(socket_, &buffer[0], sizeof(length), MSG_MORE | MSG_NOSIGNAL); rv != sizeof(length)) {
+                throw std::runtime_error("send error");
+            }
+            if (auto rv = ::send(socket_, payload.data(), length, MSG_NOSIGNAL); rv != length) {
+                throw std::runtime_error("send error");
+            }
         } else {
-            ::send(socket_, &buffer[0], sizeof(length), MSG_NOSIGNAL);
+            if (auto rv = ::send(socket_, &buffer[0], sizeof(length), MSG_NOSIGNAL); rv != sizeof(length)) {
+                throw std::runtime_error("send error");
+            }
         }
     }
 
-    void release_slot(unsigned int slot) {
-        if (!in_use_.at(slot)) {
-            LOG_LP(ERROR) << "slot " << slot << " is not using";
-            return;
-        }
-        in_use_.at(slot) = false;
-        slot_using_--;
-    }
+    void close_data_channel_by_client(unsigned int slot);
 };
 
 // implements connect operation

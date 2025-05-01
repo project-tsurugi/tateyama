@@ -66,7 +66,7 @@ stream_client::send(const std::uint8_t type, const std::uint16_t slot, std::stri
     return true;
 }
 
-static constexpr std::size_t stream_test_index = 135;
+static constexpr std::size_t stream_test_index = 7;
 
 bool stream_client::send(const std::size_t tag, std::string_view message, std::size_t index_offset) {
     ::tateyama::proto::framework::request::Header hdr{};
