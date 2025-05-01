@@ -96,7 +96,7 @@ register_tests(
     TARGET tateyama
     INCLUDES
         ${CMAKE_CURRENT_SOURCE_DIR}
-        ${PROJECT_SOURCE_DIR}/build/src
+        ${CMAKE_BINARY_DIR}/src
     DEPENDS
         tateyama-impl
         limestone
