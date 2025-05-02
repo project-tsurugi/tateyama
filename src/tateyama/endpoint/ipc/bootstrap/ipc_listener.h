@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2024 Project Tsurugi.
+ * Copyright 2018-2025 Project Tsurugi.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -178,6 +178,7 @@ public:
     }
 
     void operator()()  override {
+        pthread_setname_np(pthread_self(), "ipc_listener");
         auto& connection_queue = container_->get_connection_queue();
         proc_mutex_file_ = status_->mutex_file();
         arrive_and_wait();
@@ -252,13 +253,20 @@ public:
 
     void print_diagnostic(std::ostream& os) override {
         os << "/:tateyama:ipc_endpoint print diagnostics start" << std::endl;
-
-        std::unique_lock<std::mutex> lock(mtx_workers_);
-        os << "  live sessions" << std::endl;
-        for (auto && e : workers_) {
-            if (std::shared_ptr<ipc_worker> worker = e; worker) {
-                if (!worker->is_terminated()) {
-                    worker->print_diagnostic(os);
+        {
+            std::unique_lock<std::mutex> lock(mtx_workers_);
+            os << "  live sessions" << std::endl;
+            for (auto && worker : workers_) {
+                if (worker) {
+                    worker->print_diagnostic(os, !worker->is_terminated());
+                }
+            }
+        }
+        {
+            std::unique_lock<std::mutex> lock(mtx_undertakers_);
+            for (auto && worker : undertakers_) {
+                if (worker) {
+                    worker->print_diagnostic(os, false);
                 }
             }
         }
