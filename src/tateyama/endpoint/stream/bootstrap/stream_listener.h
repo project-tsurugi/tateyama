@@ -244,13 +244,20 @@ public:
 
     void print_diagnostic(std::ostream& os) override {
         os << "/:tateyama:stream_endpoint print diagnostics start" << std::endl;
-
-        std::unique_lock<std::mutex> lock(mtx_workers_);
-        os << "  live sessions" << std::endl;
-        for (auto && e : workers_) {
-            if (std::shared_ptr<stream_worker> worker = e; worker) {
-                if (!worker->is_terminated()) {
-                    worker->print_diagnostic(os);
+        {
+            std::unique_lock<std::mutex> lock(mtx_workers_);
+            os << "  live sessions" << std::endl;
+            for (auto && worker : workers_) {
+                if (worker) {
+                    worker->print_diagnostic(os, !worker->is_terminated());
+                }
+            }
+        }
+        {
+            std::unique_lock<std::mutex> lock(mtx_undertakers_);
+            for (auto && worker : undertakers_) {
+                if (worker) {
+                    worker->print_diagnostic(os, false);
                 }
             }
         }

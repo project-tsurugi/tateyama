@@ -118,7 +118,7 @@ public:
     /**
      * @brief print diagnostics
      */
-    void print_diagnostic(std::ostream& os) {
+    void print_diagnostic(std::ostream& os, bool live) {
         os << "    session id = " << resources_.session_id() << std::endl;
         os << "      processing requests" << std::endl;
         std::lock_guard<std::mutex> lock(mtx_reqreses_);
@@ -130,6 +130,11 @@ public:
             dump_message(os, itr->second.first->payload());
             os << std::endl;
             os << "         data channel status = '" << itr->second.second->state_label() << "'" << std::endl;
+        }
+        if (!live) {
+            os << "       has_incomplete_response " << std::boolalpha << has_incomplete_response() << std::endl;
+            os << "       has_incomplete_resultset " << std::boolalpha << has_incomplete_resultset() << std::endl;
+            os << "       is_terminated " << std::boolalpha << is_terminated() << std::endl;
         }
     }
 
