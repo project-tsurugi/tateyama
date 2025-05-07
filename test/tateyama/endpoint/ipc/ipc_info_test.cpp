@@ -52,12 +52,12 @@ static constexpr std::size_t service_id_of_info_service = 101;
 
 class info_service : public tateyama::framework::routing_service {
 public:
-    bool setup(tateyama::framework::environment&) { return true; }
-    bool start(tateyama::framework::environment&) { return true; }
-    bool shutdown(tateyama::framework::environment&) { return true; }
-    std::string_view label() const noexcept { return __func__; }
+    bool setup(tateyama::framework::environment&) override { return true; }
+    bool start(tateyama::framework::environment&) override { return true; }
+    bool shutdown(tateyama::framework::environment&) override { return true; }
+    std::string_view label() const noexcept override { return __func__; }
 
-    id_type id() const noexcept { return service_id_of_info_service; }
+    id_type id() const noexcept override { return service_id_of_info_service; }
     bool operator ()(std::shared_ptr<tateyama::api::server::request> req,
                      std::shared_ptr<tateyama::api::server::response> res) override {
         req_ = req;

@@ -34,12 +34,12 @@ namespace tateyama::endpoint::stream {
 
 class info_service_for_test : public tateyama::framework::routing_service {
 public:
-    bool setup(tateyama::framework::environment&) { return true; }
-    bool start(tateyama::framework::environment&) { return true; }
-    bool shutdown(tateyama::framework::environment&) { return true; }
-    std::string_view label() const noexcept { return __func__; }
+    bool setup(tateyama::framework::environment&) override { return true; }
+    bool start(tateyama::framework::environment&) override { return true; }
+    bool shutdown(tateyama::framework::environment&) override { return true; }
+    std::string_view label() const noexcept override { return __func__; }
 
-    id_type id() const noexcept { return 100;  } // dummy
+    id_type id() const noexcept override { return 100;  } // dummy
     bool operator ()(std::shared_ptr<tateyama::api::server::request> req,
                      std::shared_ptr<tateyama::api::server::response> res) override {
         req_ = req;

@@ -26,8 +26,8 @@ public:
             server_client_base(cfg, nproc, nthread) {
     }
 
-    virtual std::shared_ptr<tateyama::framework::service> create_server_service() = 0;
-    virtual void client_thread() = 0;
+    virtual std::shared_ptr<tateyama::framework::service> create_server_service() override = 0;
+    virtual void client_thread() override = 0;
 
 protected:
     virtual void check_client_exitcode(int code) override {

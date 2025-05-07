@@ -56,11 +56,11 @@ static constexpr std::size_t service_id_of_session_service = 100;
 
 class service_for_ipc_session_test : public tateyama::framework::routing_service {
 public:
-    bool setup(tateyama::framework::environment&) { return true; }
-    bool start(tateyama::framework::environment&) { return true; }
-    bool shutdown(tateyama::framework::environment&) { return true; }
+    bool setup(tateyama::framework::environment&) override { return true; }
+    bool start(tateyama::framework::environment&) override { return true; }
+    bool shutdown(tateyama::framework::environment&) override { return true; }
 
-    id_type id() const noexcept { return service_id_of_session_service;  }
+    id_type id() const noexcept override { return service_id_of_session_service;  }
     bool operator ()(std::shared_ptr<tateyama::api::server::request> req,
                      std::shared_ptr<tateyama::api::server::response> res) override {
         req_ = req;

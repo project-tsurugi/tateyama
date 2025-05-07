@@ -132,7 +132,7 @@ public:
     }
 
     virtual bool operator ()(std::shared_ptr<tateyama::api::server::request> req,
-                             std::shared_ptr<tateyama::api::server::response> res) = 0;
+                             std::shared_ptr<tateyama::api::server::response> res) override = 0;
 
     [[nodiscard]] std::string_view label() const noexcept override {
         return "server_service_base";
