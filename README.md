@@ -63,6 +63,7 @@ available options:
 * `-DBUILD_EXAMPLES=OFF` - don't build example programs
 * `-DBUILD_BENCHMARK=OFF` - don't build benchmark programs
 * `-DBUILD_DOCUMENTS=OFF` - don't build documents by doxygen
+* `-DBUILD_STRICT=OFF` - don't treat compile warnings as build errors
 * `-DINSTALL_EXAMPLES=ON` - install example applications
 * `-DSHARKSFIN_IMPLEMENTATION=<implementation name>` - switch sharksfin implementation. Available options are `memory` and `shirakami` (default: `shirakami`)
 * `-DENABLE_ALTIMETER=ON` - turn on the `altimeter logging`.
