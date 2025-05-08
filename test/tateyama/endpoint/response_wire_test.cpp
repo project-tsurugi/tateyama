@@ -28,11 +28,11 @@ namespace tateyama::endpoint::ipc {
 class response_wire_test : public ::testing::Test {
     static constexpr std::size_t datachannel_buffer_size = 64 * 1024;
 
-    virtual void SetUp() {
+    void SetUp() override {
         rv_ = system("if [ -f /dev/shm/tateyama-response_wire_test ]; then rm -f /dev/shm/tateyama-response_wire_test; fi ");
         wire_ = std::make_unique<bootstrap::server_wire_container_impl>("tateyama-response_wire_test", "dummy_mutex_file_name", datachannel_buffer_size, 16);
     }
-    virtual void TearDown() {
+    void TearDown() override {
         rv_ = system("if [ -f /dev/shm/tateyama-response_wire_test ]; then rm -f /dev/shm/tateyama-response_wire_test*; fi ");
     }
 

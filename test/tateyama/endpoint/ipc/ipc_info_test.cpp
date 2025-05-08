@@ -74,11 +74,11 @@ private:
 };
 
 class ipc_info_test : public ::testing::Test {
-    virtual void SetUp() {
+    void SetUp() override {
         rv_ = system("if [ -f /dev/shm/ipc_info_test ]; then rm -f /dev/shm/ipc_info_test; fi");
     }
 
-    virtual void TearDown() {
+    void TearDown() override {
         rv_ = system("if [ -f /dev/shm/ipc_info_test ]; then rm -f /dev/shm/ipc_info_test; fi");
     }
 

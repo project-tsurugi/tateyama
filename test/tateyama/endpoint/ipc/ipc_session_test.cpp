@@ -120,7 +120,7 @@ private:
 class ipc_session_test : public ::testing::Test {
     static constexpr std::size_t writer_count = 8;
 
-    virtual void SetUp() {
+    void SetUp() override {
         rv_ = system("if [ -f /dev/shm/ipc_session_test ]; then rm -f /dev/shm/ipc_session_test; fi");
 
         // server part
@@ -136,7 +136,7 @@ class ipc_session_test : public ::testing::Test {
         client_ = std::make_unique<ipc_client>(database_name, my_session_id);
     }
 
-    virtual void TearDown() {
+    void TearDown() override {
         tateyama::server::ipc_listener_for_session_test::wait(*worker_);
 
         rv_ = system("if [ -f /dev/shm/ipc_session_test ]; then rm -f /dev/shm/ipc_session_test; fi");

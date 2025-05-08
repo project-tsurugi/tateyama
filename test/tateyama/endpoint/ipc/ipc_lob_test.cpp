@@ -109,7 +109,7 @@ private:
 };
 
 class ipc_lob_test : public ::testing::Test {
-    virtual void SetUp() {
+    void SetUp() override {
         auto rv = system("if [ -f /dev/shm/ipc_lob_test ]; then rm -f /dev/shm/ipc_lob_test; fi");
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
@@ -136,7 +136,7 @@ class ipc_lob_test : public ::testing::Test {
         hs.release_client_information();
     }
 
-    virtual void TearDown() {
+    void TearDown() override {
         worker_->terminate(tateyama::session::shutdown_request_type::forceful);
         tateyama::server::ipc_listener_for_test::wait(*worker_);
 

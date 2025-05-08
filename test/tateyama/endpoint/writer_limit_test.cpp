@@ -34,14 +34,14 @@
 namespace tateyama::endpoint::ipc {
 
 class writer_limit_test : public ::testing::Test {
-    virtual void SetUp() {
+    void SetUp() override {
 
         rv_ = system("if [ -f /dev/shm/tateyama-writer_limit_test ]; then rm -f /dev/shm/tateyama-writer_limit_test; fi ");
 
         wire_ = std::make_shared<bootstrap::server_wire_container_impl>("tateyama-writer_limit_test", "dummy_mutex_file_name", datachannel_buffer_size, writers);
         buffer.resize(value_size);
     }
-    virtual void TearDown() {
+    void TearDown() override {
         rv_ = system("if [ -f /dev/shm/tateyama-writer_limit_test ]; then rm -f /dev/shm/tateyama-writer_limit_test*; fi ");
     }
 

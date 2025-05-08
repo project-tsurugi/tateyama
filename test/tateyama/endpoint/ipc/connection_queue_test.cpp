@@ -77,14 +77,14 @@ class connection_queue_test : public ::testing::Test {
         bool reject_{};
     };
 
-    virtual void SetUp() {
+    void SetUp() override {
         rv_ = system("if [ -f /dev/shm/connection_queue_test ]; then rm -f /dev/shm/connection_queue_test; fi");
         container_ = std::make_unique < tateyama::endpoint::ipc::bootstrap::connection_container > (database_name, threads, admin_sessions);
         listener_ = std::make_unique < listener > (*container_);
         listener_thread_ = std::thread(std::ref(*listener_));
     }
 
-    virtual void TearDown() {
+    void TearDown() override {
         container_->get_connection_queue().request_terminate();
         listener_thread_.join();
         rv_ = system("if [ -f /dev/shm/connection_queue_test ]; then rm -f /dev/shm/connection_queue_test; fi");

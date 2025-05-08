@@ -93,11 +93,11 @@ private:
 namespace tateyama::api::endpoint::stream {
 
 class stream_decline_test : public ::testing::Test {
-    virtual void SetUp() {
+    void SetUp() override {
         thread_ = std::thread(std::ref(listener_));
     }
 
-    virtual void TearDown() {
+    void TearDown() override {
         thread_.join();
     }
 

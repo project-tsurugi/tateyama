@@ -100,14 +100,14 @@ private:
 namespace tateyama::api::endpoint::stream {
 
 class stream_store_test : public ::testing::Test {
-    virtual void SetUp() {
+    void SetUp() override {
         thread_ = std::thread(std::ref(listener_));
         client_ = std::make_unique<stream_client>();
 
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
     }
 
-    virtual void TearDown() {
+    void TearDown() override {
         thread_.join();
     }
 

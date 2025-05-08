@@ -143,7 +143,7 @@ private:
 namespace tateyama::api::endpoint::stream {
 
 class stream_session_test : public ::testing::Test {
-    virtual void SetUp() {
+    void SetUp() override {
         session_bridge_ = std::make_shared<session::resource::bridge>();
         listener_ = std::make_unique<tateyama::endpoint::stream::stream_listener_for_session_test>(service_, session_bridge_);
         thread_ = std::thread(std::ref(*listener_));
@@ -152,7 +152,7 @@ class stream_session_test : public ::testing::Test {
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
     }
 
-    virtual void TearDown() {
+    void TearDown() override {
         // terminate session
         client_->close();
 
