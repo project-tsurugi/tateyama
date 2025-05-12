@@ -170,6 +170,11 @@ tateyama::status ipc_data_channel::acquire(std::shared_ptr<tateyama::api::server
 
         LOG_LP(INFO) << ex.what();
         return tateyama::status::unknown;
+    } catch(const std::out_of_range& ex) {
+        wrt = nullptr;
+
+        LOG_LP(INFO) << "attempted to acquire more than the declared number of writers";
+        return tateyama::status::unknown;
     } catch (const std::exception &ex) {
         wrt = nullptr;
 

@@ -301,12 +301,15 @@ public:
         unq_p_resultset_wire_conteiner acquire() override {
             std::lock_guard<std::mutex> lock(mtx_shm_);
             try {
-                writers_++;
-                return std::unique_ptr<resultset_wire_container_impl, resultset_wire_deleter_type>{
+                auto rv = std::unique_ptr<resultset_wire_container_impl, resultset_wire_deleter_type>{
                     new resultset_wire_container_impl{shm_resultset_wires_->acquire(), *this, datachannel_buffer_size_}, resultset_wire_deleter_impl};
+                writers_++;
+                return rv;
             } catch(const boost::interprocess::interprocess_exception& ex) {
                 throw std::runtime_error(ex.what());
             } catch(const std::runtime_error& ex) {
+                throw ex;
+            } catch(const std::out_of_range& ex) {
                 throw ex;
             } catch (const std::exception &ex) {
                 LOG_LP(ERROR) << "unknown error in resultset_wires_container_impl::acquire: " << ex.what();
