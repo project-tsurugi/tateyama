@@ -84,6 +84,12 @@ class stream_socket
         std::string payload_;
     };
 
+    enum class sending_status : std::uint8_t {
+        finished,
+        closed,
+        sending
+    };
+
 public:
     enum class await_result : std::uint32_t {
         /**
@@ -127,40 +133,76 @@ public:
 
     void send(std::uint16_t slot, std::string_view payload, bool body) {  // for RESPONSE_SESSION_PAYLOAD
         if (body) {
-            DVLOG_LP(log_trace) << "<-- RESPONSE_SESSION_PAYLOAD " << static_cast<std::uint32_t>(slot);
+            VLOG_LP(log_trace) << "<-- RESPONSE_SESSION_PAYLOAD " << static_cast<std::uint32_t>(slot);
             send_response(RESPONSE_SESSION_PAYLOAD, slot, payload);
         } else {
-            DVLOG_LP(log_trace) << "<-- RESPONSE_SESSION_BODYHEAD " << static_cast<std::uint32_t>(slot);
+            VLOG_LP(log_trace) << "<-- RESPONSE_SESSION_BODYHEAD " << static_cast<std::uint32_t>(slot);
             send_response(RESPONSE_SESSION_BODYHEAD, slot, payload);
         }
     }
     void send_result_set_hello(std::uint16_t slot, std::string_view name) {  // for RESPONSE_RESULT_SET_HELLO
-        DVLOG_LP(log_trace)  << "<-- RESPONSE_RESULT_SET_HELLO " << static_cast<std::uint32_t>(slot) << ", " << name;
+        VLOG_LP(log_trace)  << "<-- RESPONSE_RESULT_SET_HELLO " << static_cast<std::uint32_t>(slot) << ", " << name;
+        sending_.at(slot) = sending_status::sending;
         send_response(RESPONSE_RESULT_SET_HELLO, slot, name);
     }
     void send_result_set_bye(std::uint16_t slot) {  // for RESPONSE_RESULT_SET_BYE
-        DVLOG_LP(log_trace) << "<-- RESPONSE_RESULT_SET_BYE " << static_cast<std::uint32_t>(slot);
-        send_response(RESPONSE_RESULT_SET_BYE, slot, "");
+        if (sending_.at(slot) != sending_status::finished) {
+            sending_.at(slot) = sending_status::finished;
+            VLOG_LP(log_trace) << "<-- RESPONSE_RESULT_SET_BYE " << static_cast<std::uint32_t>(slot);
+            send_response(RESPONSE_RESULT_SET_BYE, slot, "");
+        }
     }
     void send_session_bye_ok() {  // for RESPONSE_SESSION_BYE_OK
-        DVLOG_LP(log_trace) << "<-- RESPONSE_SESSION_BYE_OK ";
+        VLOG_LP(log_trace) << "<-- RESPONSE_SESSION_BYE_OK ";
         send_response(RESPONSE_SESSION_BYE_OK, 0, "", true);
     }
 
     void send(std::uint16_t slot, unsigned char writer, std::string_view payload) { // for RESPONSE_RESULT_SET_PAYLOAD
-        DVLOG_LP(log_trace) << (payload.length() > 0 ? "<-- RESPONSE_RESULT_SET_PAYLOAD " : "<-- RESPONSE_RESULT_SET_COMMIT ") << static_cast<std::uint32_t>(slot) << ", " << static_cast<std::uint32_t>(writer);
+        if (sending_.at(slot) != sending_status::sending) {
+            if (sending_.at(slot) == sending_status::closed) {
+                VLOG_LP(log_trace) << " == send early eor to the client as client closed the result set " << static_cast<std::uint32_t>(slot) << ", " << static_cast<std::uint32_t>(writer);
+                send_result_set_delimiter(slot, writer);
+                send_result_set_bye(slot);
+            }
+            return;
+        }
+        VLOG_LP(log_trace) << (payload.length() > 0 ? "<-- RESPONSE_RESULT_SET_PAYLOAD " : "<-- RESPONSE_RESULT_SET_COMMIT ") << static_cast<std::uint32_t>(slot) << ", " << static_cast<std::uint32_t>(writer);
         std::unique_lock<std::mutex> lock(mutex_);
         if (session_closed_) {
             return;
         }
+        if (payload.length() > 0) {
+            char buffer[sizeof(std::uint16_t)];  // NOLINT
+            unsigned char info = RESPONSE_RESULT_SET_PAYLOAD;
+
+            ::send(socket_, &info, 1, MSG_MORE | MSG_NOSIGNAL);
+
+            buffer[0] = slot & 0xff;  // NOLINT
+            buffer[1] = (slot / 0x100) & 0xff;  // NOLINT
+            ::send(socket_, &buffer[0], sizeof(std::uint16_t), MSG_MORE | MSG_NOSIGNAL);
+            ::send(socket_, &writer, 1, MSG_MORE | MSG_NOSIGNAL);
+
+            send_payload(payload, true);
+        }
+        // To preserve compatibility with previous editions
+        send_result_set_delimiter(slot, writer);
+    }
+    void send_result_set_delimiter(std::uint16_t slot, unsigned char writer) const {
+        char buffer[sizeof(std::uint32_t)];  // NOLINT
         unsigned char info = RESPONSE_RESULT_SET_PAYLOAD;
-        ::send(socket_, &info, 1, MSG_NOSIGNAL);
-        char buffer[sizeof(std::uint16_t)];  // NOLINT
+
+        ::send(socket_, &info, 1, MSG_MORE | MSG_NOSIGNAL);
+
         buffer[0] = slot & 0xff;  // NOLINT
         buffer[1] = (slot / 0x100) & 0xff;  // NOLINT
         ::send(socket_, &buffer[0], sizeof(std::uint16_t), MSG_MORE | MSG_NOSIGNAL);
         ::send(socket_, &writer, 1, MSG_MORE | MSG_NOSIGNAL);
-        send_payload(payload);
+
+        buffer[0] = 0;  // NOLINT
+        buffer[1] = 0;  // NOLINT
+        buffer[2] = 0;  // NOLINT
+        buffer[3] = 0;  // NOLINT
+        ::send(socket_, &buffer[0], sizeof(std::uint32_t), MSG_NOSIGNAL);
     }
 
     void close() {
@@ -171,24 +213,12 @@ public:
         }
     }
 
-    unsigned int look_for_slot() {
-        std::unique_lock<std::mutex> lock(slot_mutex_);
-        for (unsigned int i = 0; i < slot_size_; i++) {  // FIXME more efficient
-            if (!in_use_.at(i)) {
-                in_use_.at(i) = true;
-                slot_using_++;
-                return i;
-            }
-        }
-        throw std::runtime_error("running out the slots for result set");
-    }
-
     void change_slot_size(std::size_t index) {
         std::unique_lock<std::mutex> lock(slot_mutex_);
         if ((index + 1) > slot_size_) {
-            DVLOG_LP(log_trace) << "enlarge srot to " << (index + 1);
+            VLOG_LP(log_trace) << "enlarge srot to " << (index + 1);
             slot_size_ = index + 1;
-            in_use_.resize(slot_size_);
+            sending_.resize(slot_size_);
         }
     }
 
@@ -196,8 +226,8 @@ public:
         return connection_info_;
     }
 
-    bool set_owner(void* owner) {
-        return owner_.exchange(owner, std::memory_order_acquire) == nullptr;
+    [[nodiscard]] inline bool is_sending(std::uint16_t slot) const {
+        return sending_.at(slot) == sending_status::sending;
     }
 
 private:
@@ -208,14 +238,11 @@ private:
 
     bool session_closed_{false};
     bool socket_closed_{false};
-    std::vector<bool> in_use_{};
-    std::atomic_uint slot_using_{};
-    std::queue<recv_entry> queue_{};
+    std::vector<sending_status> sending_{};
     std::size_t slot_size_{SLOT_SIZE};
     std::string connection_info_{};
     std::mutex mutex_{};
     std::mutex slot_mutex_{};
-    std::atomic<void*> owner_{nullptr};
     connection_socket* envelope_;
 
     await_result await(unsigned char& info, std::uint16_t& slot, std::string& payload) {
@@ -223,15 +250,6 @@ private:
         fds_[0].events = POLLIN | POLLPRI;  // NOLINT
         fds_[0].revents = 0;                // NOLINT
         while (true) {
-            if (!queue_.empty() && slot_using_ < slot_size_) {
-                auto entry = queue_.front();
-                info = entry.info();
-                slot = entry.slot();
-                payload = entry.payload();
-                queue_.pop();
-                return await_result::payload;
-            }
-
             if (auto rv = poll(fds_, N_FDS, TIMEOUT_MS); !(rv > 0)) {  // NOLINT
                 if (rv == 0) {
                     return await_result::timeout;
@@ -248,38 +266,34 @@ private:
             }
             if (fds_[0].revents & POLLIN) {  // NOLINT
                 if (auto size_i = ::recv(socket_, &info, 1, 0); size_i == 0) {
-                    DVLOG_LP(log_trace) << "socket is closed by the client";
+                    VLOG_LP(log_trace) << "socket is closed by the client";
                     return await_result::socket_closed;
                 }
 
                 char buffer[sizeof(std::uint16_t)];  // NOLINT
                 if (!recv(&buffer[0], sizeof(std::uint16_t))) {
-                        DVLOG_LP(log_trace) << "socket is closed by the client abnormally";
+                        VLOG_LP(log_trace) << "socket is closed by the client abnormally";
                         return await_result::socket_closed;
                 }
                 slot = (strip(buffer[1]) << 8) | strip(buffer[0]);  // NOLINT
             }
             switch (info) {
             case REQUEST_SESSION_PAYLOAD:
-                DVLOG_LP(log_trace) << "--> REQUEST_SESSION_PAYLOAD " << static_cast<std::uint32_t>(slot);
+                VLOG_LP(log_trace) << "--> REQUEST_SESSION_PAYLOAD " << static_cast<std::uint32_t>(slot);
                 if (recv(payload)) {
-                    if (slot_using_ < slot_size_) {
-                        return await_result::payload;
-                    }
-                    queue_.push(recv_entry(info, slot, payload));
-                    break;
+                    return await_result::payload;
                 }
-                DVLOG_LP(log_trace) << "socket is closed by the client abnormally";
+                VLOG_LP(log_trace) << "socket is closed by the client abnormally";
                 return await_result::socket_closed;
             case REQUEST_RESULT_SET_BYE_OK:
             {
-                DVLOG_LP(log_trace) << "--> REQUEST_RESULT_SET_BYE_OK " << static_cast<std::uint32_t>(slot);
+                VLOG_LP(log_trace) << "--> REQUEST_RESULT_SET_BYE_OK " << static_cast<std::uint32_t>(slot);
                 std::string dummy;
                 if (recv(dummy)) {
                     release_slot(slot);
                     break;
                 }
-                DVLOG_LP(log_trace) << "socket is closed by the client abnormally";
+                VLOG_LP(log_trace) << "socket is closed by the client abnormally";
                 return await_result::socket_closed;
             }
             case REQUEST_SESSION_HELLO:  // for backward compatibility
@@ -287,18 +301,18 @@ private:
                     std::string session_name = std::to_string(-1);  // dummy as this session will be closed soon.
                     send_response(RESPONSE_SESSION_HELLO_OK, 0, session_name);
                 } else {
-                    DVLOG_LP(log_trace) << "socket is closed by the client abnormally";
+                    VLOG_LP(log_trace) << "socket is closed by the client abnormally";
                 }
                 continue;
             case REQUEST_SESSION_BYE:
-                DVLOG_LP(log_trace) << "--> REQUEST_SESSION_BYE ";
+                VLOG_LP(log_trace) << "--> REQUEST_SESSION_BYE ";
                 if (recv(payload)) {
                     do {std::unique_lock<std::mutex> lock(mutex_);
                         session_closed_ = true;
                     } while (false);
                     return await_result::termination_request;
                 }
-                DVLOG_LP(log_trace) << "socket is closed by the client abnormally";
+                VLOG_LP(log_trace) << "socket is closed by the client abnormally";
                 return await_result::socket_closed;
             default:
                 LOG_LP(ERROR) << "illegal message type " << static_cast<std::uint32_t>(info);
@@ -354,7 +368,7 @@ private:
         ::send(socket_, &buffer[0], sizeof(std::uint16_t), MSG_MORE | MSG_NOSIGNAL);
         send_payload(payload);
     }
-    void send_payload(std::string_view payload) const {  // a support function, assumes caller hold lock
+    void send_payload(std::string_view payload, bool msg_more = false) const {  // a support function, assumes caller hold lock
         unsigned int length = payload.length();
         char buffer[4];  // NOLINT
         buffer[0] = length & 0xff;  // NOLINT
@@ -363,19 +377,18 @@ private:
         buffer[3] = (length / 0x1000000) & 0xff;  // NOLINT
         if (length > 0) {
             ::send(socket_, &buffer[0], sizeof(length), MSG_MORE | MSG_NOSIGNAL);
-            ::send(socket_, payload.data(), length, MSG_NOSIGNAL);
+            ::send(socket_, payload.data(), length, msg_more ? (MSG_MORE | MSG_NOSIGNAL) : MSG_NOSIGNAL);
         } else {
-            ::send(socket_, &buffer[0], sizeof(length), MSG_NOSIGNAL);
+            ::send(socket_, &buffer[0], sizeof(length), msg_more ? (MSG_MORE | MSG_NOSIGNAL) : MSG_NOSIGNAL);
         }
     }
 
     void release_slot(unsigned int slot) {
-        if (!in_use_.at(slot)) {
-            LOG_LP(ERROR) << "slot " << slot << " is not using";
+        if (sending_.at(slot) != sending_status::sending) {
+            LOG_LP(ERROR) << "slot " << slot << " is already not sending";
             return;
         }
-        in_use_.at(slot) = false;
-        slot_using_--;
+        sending_.at(slot) = sending_status::closed;
     }
 };
 

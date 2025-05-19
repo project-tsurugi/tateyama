@@ -36,9 +36,6 @@ class alignas(64) stream_worker : public tateyama::endpoint::common::worker_comm
           session_stream_(std::move(stream)),
           conf_(conf),
           decline_(decline) {
-        if (!session_stream_->set_owner(static_cast<void*>(this))) {
-            throw std::runtime_error("the sesstion stream already has owner");
-        }
     }
 
     void run();

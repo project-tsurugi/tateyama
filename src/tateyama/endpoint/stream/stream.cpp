@@ -26,7 +26,7 @@ stream_socket::stream_socket(int socket, std::string_view info, connection_socke
     if (setsockopt(socket, SOL_TCP, TCP_NODELAY, &enable, sizeof(enable)) < 0) {
         LOG_LP(ERROR) << "setsockopt() fail";
     }
-    in_use_.resize(slot_size_);
+    sending_.resize(slot_size_);
     envelope_->num_open_.fetch_add(1);
 }
 
