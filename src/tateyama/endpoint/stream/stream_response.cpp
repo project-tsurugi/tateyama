@@ -114,12 +114,11 @@ tateyama::status stream_response::acquire_channel(std::string_view name, std::sh
         return tateyama::status::unknown;
     }
     try {
-        auto slot = stream_.look_for_slot();
-        data_channel_ = std::make_unique<stream_data_channel>(stream_, slot);
+        data_channel_ = std::make_unique<stream_data_channel>(stream_, index_);
         VLOG_LP(log_trace) << static_cast<const void*>(&stream_) << " data_channel_ = " << static_cast<const void*>(data_channel_.get());  //NOLINT
 
         if (ch = data_channel_; ch != nullptr) {
-            stream_.send_result_set_hello(slot, name);
+            stream_.send_result_set_hello(index_, name);
             set_state(state::acquired);
             return tateyama::status::ok;
         }
@@ -186,25 +185,33 @@ void stream_data_channel::shutdown() {
 
 // class writer
 tateyama::status stream_writer::write(char const* data, std::size_t length) {
-    VLOG_LP(log_trace) << static_cast<const void*>(this);  //NOLINT
+    if (stream_.is_sending(slot_)) {
+        VLOG_LP(log_trace) << static_cast<const void*>(this);  //NOLINT
 
-    if (data != nullptr && length > 0) {
-        if (buffer_.capacity() < buffer_.size() + length) {
-            buffer_.reserve(buffer_.size() + length + buffer_size);
+        if (data != nullptr && length > 0) {
+            if (buffer_.capacity() < buffer_.size() + length) {
+                buffer_.reserve(buffer_.size() + length + buffer_size);
+            }
+            buffer_.insert(buffer_.end(), data, data + length); //NOLINT
         }
-        buffer_.insert(buffer_.end(), data, data + length); //NOLINT
+    } else {
+        VLOG_LP(log_trace) << static_cast<const void*>(this) << " client already closed the result set channel";  //NOLINT
     }
     return tateyama::status::ok;
 }
 
 tateyama::status stream_writer::commit() {
-    VLOG_LP(log_trace) << static_cast<const void*>(this);  //NOLINT
+    if (stream_.is_sending(slot_)) {
+        VLOG_LP(log_trace) << static_cast<const void*>(this);  //NOLINT
 
-    if (!buffer_.empty()) {
-        stream_.send(slot_, writer_id_, {buffer_.data(), buffer_.size()});
-        buffer_.clear();
+        if (!buffer_.empty()) {
+            stream_.send(slot_, writer_id_, {buffer_.data(), buffer_.size()});
+            buffer_.clear();
+        } else {
+            stream_.send(slot_, writer_id_, {});
+        }
     } else {
-        stream_.send(slot_, writer_id_, {});
+        VLOG_LP(log_trace) << static_cast<const void*>(this) << " client already closed the result set channel";  //NOLINT
     }
     return tateyama::status::ok;
 }
