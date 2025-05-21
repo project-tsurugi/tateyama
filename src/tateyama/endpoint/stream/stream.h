@@ -85,9 +85,9 @@ class stream_socket
     };
 
     enum class sending_status : std::uint8_t {
-        finished,
+        sending = 0,
         closed,
-        sending
+        finished,
     };
 
 public:
@@ -141,16 +141,15 @@ public:
         }
     }
     void send_result_set_hello(std::uint16_t slot, std::string_view name) {  // for RESPONSE_RESULT_SET_HELLO
+        if (sending_.at(slot) != sending_status::sending) {
+            sending_.at(slot) = sending_status::sending;
+        }
         VLOG_LP(log_trace)  << "<-- RESPONSE_RESULT_SET_HELLO " << static_cast<std::uint32_t>(slot) << ", " << name;
-        sending_.at(slot) = sending_status::sending;
         send_response(RESPONSE_RESULT_SET_HELLO, slot, name);
     }
     void send_result_set_bye(std::uint16_t slot) {  // for RESPONSE_RESULT_SET_BYE
-        if (sending_.at(slot) != sending_status::finished) {
-            sending_.at(slot) = sending_status::finished;
-            VLOG_LP(log_trace) << "<-- RESPONSE_RESULT_SET_BYE " << static_cast<std::uint32_t>(slot);
-            send_response(RESPONSE_RESULT_SET_BYE, slot, "");
-        }
+        VLOG_LP(log_trace) << "<-- RESPONSE_RESULT_SET_BYE " << static_cast<std::uint32_t>(slot);
+        send_response(RESPONSE_RESULT_SET_BYE, slot, "");
     }
     void send_session_bye_ok() {  // for RESPONSE_SESSION_BYE_OK
         VLOG_LP(log_trace) << "<-- RESPONSE_SESSION_BYE_OK ";
@@ -163,6 +162,7 @@ public:
                 VLOG_LP(log_trace) << " == send early eor to the client as client closed the result set " << static_cast<std::uint32_t>(slot) << ", " << static_cast<std::uint32_t>(writer);
                 send_result_set_delimiter(slot, writer);
                 send_result_set_bye(slot);
+                sending_.at(slot) = sending_status::finished;
             }
             return;
         }
