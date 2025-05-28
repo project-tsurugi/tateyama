@@ -36,7 +36,8 @@ runs:
 
     - name: Checkout_Yakushima
       uses: actions/checkout@v4
-      if: ${{ inputs.checkout == 'true' }}
+      if: ${{ inputs.checkout == 'true' && inputs.sharksfin_implementation == 'shirakami' }}
+
       with:
         repository: project-tsurugi/yakushima
         path: ${{ inputs.path }}/yakushima
@@ -44,7 +45,7 @@ runs:
 
     - name: Checkout_Shirakami
       uses: actions/checkout@v4
-      if: ${{ inputs.checkout == 'true' }}
+      if: ${{ inputs.checkout == 'true' && inputs.sharksfin_implementation == 'shirakami' }}
       with:
         repository: project-tsurugi/shirakami
         path: ${{ inputs.path }}/shirakami
@@ -79,6 +80,7 @@ runs:
       shell: bash
 
     - name: Install_Yakushima
+      if: ${{ inputs.sharksfin_implementation == 'shirakami' }}
       run: |
         cd ${{ inputs.path }}/yakushima
         rm -fr build
@@ -89,6 +91,7 @@ runs:
       shell: bash
 
     - name: Install_Shirakami
+      if: ${{ inputs.sharksfin_implementation == 'shirakami' }}
       run: |
         cd ${{ inputs.path }}/shirakami
         rm -fr build
