@@ -18,11 +18,23 @@
 #include "ipc_test_env.h"
 #include "ipc_client.h"
 #include "server_client_gtest_base.h"
+#include <takatori/util/stacktrace.h>
 
 namespace tateyama::endpoint::ipc {
 
+static void sig_handler([[maybe_unused]] int sig) {
+    std::cerr << ::boost::stacktrace::stacktrace{};
+    FAIL();
+}
+
 class ipc_gtest_base: public ::testing::Test, public ipc_test_env {
     void SetUp() override {
+        if (signal(SIGSEGV, sig_handler) == SIG_ERR) {
+            std::cerr << "cannot register signal handler" << std::endl;
+        }
+        if (signal(SIGABRT, sig_handler) == SIG_ERR) {
+            std::cerr << "cannot register signal handler" << std::endl;
+        }
         ipc_test_env::setup();
     }
 
