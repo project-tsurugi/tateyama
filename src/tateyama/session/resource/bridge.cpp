@@ -320,7 +320,7 @@ std::optional<error_descriptor> bridge::get_valiable(std::string_view session_sp
                 }
                 return std::nullopt;
             }
-            return res.value();
+            return res;
         }
         return std::make_pair(tateyama::proto::session::diagnostic::ErrorCode::SESSION_NOT_FOUND, "");
     } catch (std::invalid_argument &ex) {

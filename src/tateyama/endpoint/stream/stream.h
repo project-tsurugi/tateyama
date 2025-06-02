@@ -166,12 +166,12 @@ public:
             }
             return;
         }
-        VLOG_LP(log_trace) << (payload.length() > 0 ? "<-- RESPONSE_RESULT_SET_PAYLOAD " : "<-- RESPONSE_RESULT_SET_COMMIT ") << static_cast<std::uint32_t>(slot) << ", " << static_cast<std::uint32_t>(writer);
+        VLOG_LP(log_trace) << (!payload.empty() ? "<-- RESPONSE_RESULT_SET_PAYLOAD " : "<-- RESPONSE_RESULT_SET_COMMIT ") << static_cast<std::uint32_t>(slot) << ", " << static_cast<std::uint32_t>(writer);
         std::unique_lock<std::mutex> lock(mutex_);
         if (session_closed_) {
             return;
         }
-        if (payload.length() > 0) {
+        if (!payload.empty()) {
             char buffer[sizeof(std::uint16_t)];  // NOLINT
             unsigned char info = RESPONSE_RESULT_SET_PAYLOAD;
 
@@ -307,9 +307,8 @@ private:
             case REQUEST_SESSION_BYE:
                 VLOG_LP(log_trace) << "--> REQUEST_SESSION_BYE ";
                 if (recv(payload)) {
-                    do {std::unique_lock<std::mutex> lock(mutex_);
-                        session_closed_ = true;
-                    } while (false);
+                    std::unique_lock<std::mutex> lock(mutex_);
+                    session_closed_ = true;
                     return await_result::termination_request;
                 }
                 VLOG_LP(log_trace) << "socket is closed by the client abnormally";

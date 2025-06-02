@@ -153,7 +153,7 @@ template<>
 
     std::optional<std::string> opt = get<std::string>(name);
     if (opt) {
-        auto str = opt.value();
+        const auto& str = opt.value();
         if (iequals(str, "true") || iequals(str, "yes") || str == "1") {
             return true;
         }
