@@ -369,7 +369,7 @@ template<>
 [[nodiscard]] inline std::optional<std::filesystem::path> section::get<std::filesystem::path>(std::string_view name) const {
     std::optional<std::string> opt = get<std::string>(name);
     if (opt) {
-        auto str = opt.value();
+        const auto& str = opt.value();
         if (str.empty()) {
             return std::filesystem::path{};
         }
