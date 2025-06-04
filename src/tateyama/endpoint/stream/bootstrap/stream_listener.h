@@ -243,10 +243,10 @@ public:
     }
 
     void print_diagnostic(std::ostream& os) override {
-        os << "/:tateyama:stream_endpoint print diagnostics start" << std::endl;
+        os << "/:tateyama:stream_endpoint print diagnostics start\n";
         {
             std::unique_lock<std::mutex> lock(mtx_workers_);
-            os << "  live sessions" << std::endl;
+            os << "  live sessions\n";
             for (auto && worker : workers_) {
                 if (worker) {
                     worker->print_diagnostic(os, !worker->is_terminated());
@@ -261,9 +261,9 @@ public:
                 }
             }
         }
-        os << "  connection status" << std::endl;
-        os << "    session_id accepted = " << session_id_ << std::endl;
-        os << "/:tateyama:stream_endpoint print diagnostics end" << std::endl;
+        os << "  connection status\n"
+              "    session_id accepted = " << session_id_ << "\n"
+              "/:tateyama:stream_endpoint print diagnostics end\n";
     }
 
     void foreach_request(const callback& func) override {

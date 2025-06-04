@@ -177,7 +177,7 @@ public:
             stream = std::ifstream{file_.c_str()};
             initialize(stream, default_property);
         } else {
-            vlog_info_ << "cannot find " << file_name << ", thus we use default property only." << std::endl;
+            vlog_info_ << "cannot find " << file_name << ", thus we use default property only." << std::endl;  // NOLINT
             std::stringstream empty_ss{};
             initialize(empty_ss, default_property);
         }
@@ -329,7 +329,7 @@ private:
         try {
             boost::property_tree::read_ini(content, property_tree_);
         } catch (boost::property_tree::ini_parser_error &e) {
-            vlog_info_ << "error reading input, thus we use default property only. msg:" << e.what() << std::endl;
+            vlog_info_ << "error reading input, thus we use default property only. msg:" << e.what() << std::endl;  // NOLINT
         }
         if (default_valid_) {
             BOOST_FOREACH(const boost::property_tree::ptree::value_type &v, default_tree_) {
@@ -339,7 +339,7 @@ private:
                     auto& pt = property_tree_.get_child(v.first);
                     map_.emplace(v.first, std::make_unique<section>(pt, dt, this, default_required));
                 } catch (boost::property_tree::ptree_error &e) {
-                    vlog_info_ << "cannot find " << v.first << " section in the input, thus we use default property only." << std::endl;
+                    vlog_info_ << "cannot find " << v.first << " section in the input, thus we use default property only." << std::endl;  // NOLINT
                     map_.emplace(v.first, std::make_unique<section>(dt, this, default_required));
                 }
             }
