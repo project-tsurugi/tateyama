@@ -25,7 +25,7 @@ namespace tateyama::datastore::resource {
 
 using namespace framework;
 
-limestone::api::datastore* get_datastore(transactional_kvs_resource& kvs) {
+static limestone::api::datastore* get_datastore(transactional_kvs_resource& kvs) {
     std::any ptr{};
     auto res = ::sharksfin::implementation_get_datastore(kvs.core_object(), std::addressof(ptr));
     if(res == ::sharksfin::StatusCode::OK) {

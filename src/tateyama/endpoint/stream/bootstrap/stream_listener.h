@@ -269,7 +269,7 @@ public:
     void foreach_request(const callback& func) override {
         std::unique_lock<std::mutex> lock(mtx_workers_);
         for (auto && e : workers_) {
-            if (std::shared_ptr<stream_worker> worker = e; worker) {
+            if (const std::shared_ptr<stream_worker>& worker = e; worker) {
                 if (!worker->is_terminated()) {
                     worker->foreach_request(func);
                 }
