@@ -44,11 +44,10 @@ class stream_metrics {
   private:
     tateyama::metrics::metrics_store& metrics_store_;
 
+    std::vector<std::tuple<std::string, std::string>> attributes_;
+    std::vector<std::string> group_keys_{"session_count"s};
     tateyama::metrics::metrics_metadata session_count_metadata_ {
-        "stream_session_count"s, "number of active ipc sessions"s,
-        std::vector<std::tuple<std::string, std::string>> {},
-        std::vector<std::string> {"session_count"s},
-        false
+        "stream_session_count"s, "number of active ipc sessions"s, attributes_, group_keys_, false
     };
 
     // have to be placed after corresponding metrics_metadata definition

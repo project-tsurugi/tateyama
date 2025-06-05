@@ -156,12 +156,9 @@ bool tateyama::datastore::service::core::operator()(const std::shared_ptr<reques
             {
                 std::vector<limestone::api::file_set_entry> entries{};
                 for (auto&& f: rb.entries().file_set_entry()) {
-                    entries.emplace_back(limestone::api::file_set_entry(
-                                             boost::filesystem::path(f.source_path()),
-                                             boost::filesystem::path(f.destination_path()),
-                                             f.detached()
-                                         )
-                    );
+                    entries.emplace_back(boost::filesystem::path(f.source_path()),
+                                         boost::filesystem::path(f.destination_path()),
+                                         f.detached());
                 }
                 rc = resource_->restore_backup(rb.entries().directory(), entries);
 #ifdef ENABLE_ALTIMETER

@@ -71,15 +71,16 @@ class ipc_metrics {
 
   public:
     explicit ipc_metrics(tateyama::framework::environment& env)
-        : metrics_store_(env.resource_repository().find<::tateyama::metrics::resource::bridge>()->metrics_store()),
+        : attributes_({}), group_keys_{"session_count"s, "ipc_buffer_size"s},
+          metrics_store_(env.resource_repository().find<::tateyama::metrics::resource::bridge>()->metrics_store()),
           session_count_slot_(metrics_store_.register_item(tateyama::metrics::metrics_metadata{"ipc_session_count"s, "number of active ipc sessions"s,
-                                                                                          std::vector<std::tuple<std::string, std::string>> {},
-                                                                                          std::vector<std::string> {"session_count"s, "ipc_buffer_size"s},
-                                                                                          false})) {
-            metrics_store_.register_aggregation(tateyama::metrics::metrics_aggregation{"session_count", "number of active sessions", [](){return std::make_unique<session_count_aggregator>();}});
-        }
+                                                                                               attributes_, group_keys_, false})) {
+        metrics_store_.register_aggregation(tateyama::metrics::metrics_aggregation{"session_count", "number of active sessions", [](){return std::make_unique<session_count_aggregator>();}});
+    }
 
   private:
+    std::vector<std::tuple<std::string, std::string>> attributes_{};
+    std::vector<std::string> group_keys_{"session_count"s, "ipc_buffer_size"s};
     tateyama::metrics::metrics_store& metrics_store_;
     tateyama::metrics::metrics_item_slot& session_count_slot_;
 

@@ -52,7 +52,7 @@ bool bridge::setup(environment& env) {
         return false;
     }
     auto admin_sessions_opt = ipc_section->get<std::size_t>("admin_sessions");
-    if (!threads_opt) {
+    if (!admin_sessions_opt) {
         LOG(ERROR) << "cannot find admin_sessions at the ipc_endpoint section in the configuration";
         return false;
     }
