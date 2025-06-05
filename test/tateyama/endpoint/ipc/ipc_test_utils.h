@@ -59,26 +59,26 @@ std::string_view get_message_part_without_len(const std::string_view message);
 void make_dummy_message(const std::string &part, const std::size_t len, std::string &message);
 bool check_dummy_message(const std::string_view message);
 
-inline void assert_failed() {
+inline void assert_failed(int code) {
     std::cout << boost::stacktrace::stacktrace();
-    std::exit(1);
+    std::exit(code);
 }
 
-inline void assert_true(bool result) {
+inline void assert_true(bool result, int code = 1) {
     if (!result) {
-        assert_failed();
+        assert_failed(code);
     }
 }
 
-inline void assert_eq(int v1, int v2) {
+inline void assert_eq(int v1, int v2, int code = 2) {
     if (v1 != v2) {
-        assert_failed();
+        assert_failed(code);
     }
 }
 
-inline void assert_gt(int v1, int v2) {
+inline void assert_gt(int v1, int v2, int code = 3) {
     if (v1 <= v2) {
-        assert_failed();
+        assert_failed(code);
     }
 }
 

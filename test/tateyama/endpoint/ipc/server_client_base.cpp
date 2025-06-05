@@ -111,7 +111,7 @@ void server_client_base::start_server_client() {
             client_exit();
             return; // not reached here
         } else {
-            assert_failed();
+            assert_failed(10);
         }
     }
     server();

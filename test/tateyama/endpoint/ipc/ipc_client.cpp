@@ -97,7 +97,7 @@ void ipc_client::receive(std::string &message, tateyama::proto::framework::respo
             std::cout << ex.what() << std::endl;
             ntry++;
             if (ntry >= 100) {
-                assert_failed();
+                assert_failed(11);
             }
         }
     } while (!ok);
