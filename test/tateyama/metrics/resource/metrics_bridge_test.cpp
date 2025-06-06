@@ -63,50 +63,49 @@ protected:
     std::unique_ptr<framework::server> sv_{};
     std::shared_ptr<metrics::resource::bridge> bridge_{};
 
-    std::vector<std::tuple<std::string, std::string>> session_count_attributes_{};
-    std::vector<std::string> session_count_group_keys_{};
-    std::vector<std::tuple<std::string, std::string>> storage_log_size_attributes_{};
-    std::vector<std::string> storage_log_size_group_keys_{};
-    std::vector<std::tuple<std::string, std::string>> ipc_buffer_size_attributes_{};
-    std::vector<std::string> ipc_buffer_size_group_keys_{};
-    std::vector<std::tuple<std::string, std::string>> sql_buffer_size_attributes_{};
-    std::vector<std::string> sql_buffer_size_group_keys_{};
-    std::vector<std::tuple<std::string, std::string>> table_A1_attributes_{
-        std::tuple<std::string, std::string> {"table_name"s, "A"s},
-        std::tuple<std::string, std::string> {"index_name"s, "IA1"}
-    };
-    std::vector<std::string> table_A1_group_keys_{"table_count"s};
-    std::vector<std::tuple<std::string, std::string>> table_A2_attributes_{
-        std::tuple<std::string, std::string> {"table_name"s, "A"s},
-        std::tuple<std::string, std::string> {"index_name"s, "IA2"}
-    };
-    std::vector<std::string> table_A2_group_keys_{"table_count"s};
-    std::vector<std::tuple<std::string, std::string>> table_B_attributes_{
-        std::tuple<std::string, std::string> {"table_name"s, "B"s},
-        std::tuple<std::string, std::string> {"index_name"s, "IB1"}
-    };
-    std::vector<std::string> table_B_group_keys_{"table_count"s};
-
     metrics_metadata const metadata_session_count_{
-        "session_count_4_test"s, "number of active sessions"s, session_count_attributes_, session_count_group_keys_
+        "session_count_4_test"s, "number of active sessions"s,
+        std::vector<std::tuple<std::string, std::string>> {},
+        std::vector<std::string> {}
     };
     metrics_metadata const metadata_storage_log_size_{
-        "storage_log_size_4_test"s, "transaction log disk usage"s, storage_log_size_attributes_, storage_log_size_group_keys_
+        "storage_log_size_4_test"s, "transaction log disk usage"s,
+        std::vector<std::tuple<std::string, std::string>> {},
+        std::vector<std::string> {}
     };
     metrics_metadata const metadata_ipc_buffer_size_{
-        "ipc_buffer_size_4_test"s, "allocated buffer size for all IPC sessions"s, ipc_buffer_size_attributes_, ipc_buffer_size_group_keys_
+        "ipc_buffer_size_4_test"s, "allocated buffer size for all IPC sessions"s,
+        std::vector<std::tuple<std::string, std::string>> {},
+        std::vector<std::string> {}
     };
     metrics_metadata const metadata_sql_buffer_size_{
-        "sql_buffer_size_4_test"s, "allocated buffer size for SQL execution engine"s, sql_buffer_size_attributes_, sql_buffer_size_group_keys_
+        "sql_buffer_size_4_test"s, "allocated buffer size for SQL execution engine"s,
+        std::vector<std::tuple<std::string, std::string>> {},
+        std::vector<std::string> {}
     };
     metrics_metadata const metadata_table_A1_{
-        "index_size_4_test"s, "estimated each index size"s, table_A1_attributes_, table_A1_group_keys_
+        "index_size_4_test"s, "estimated each index size"s,
+        std::vector<std::tuple<std::string, std::string>> {
+            std::tuple<std::string, std::string> {"table_name"s, "A"s},
+            std::tuple<std::string, std::string> {"index_name"s, "IA1"}
+        },
+        std::vector<std::string> {"table_count"s}
     };
     metrics_metadata const metadata_table_A2_{
-        "index_size_4_test"s, "estimated each index size"s, table_A2_attributes_, table_A2_group_keys_
+        "index_size_4_test"s, "estimated each index size"s,
+        std::vector<std::tuple<std::string, std::string>> {
+            std::tuple<std::string, std::string> {"table_name"s, "A"s},
+            std::tuple<std::string, std::string> {"index_name"s, "IA2"}
+        },
+        std::vector<std::string> {"table_count"s}
     };
     metrics_metadata const metadata_table_B_{
-        "index_size_4_test"s, "estimated each index size"s, table_B_attributes_, table_B_group_keys_
+        "index_size_4_test"s, "estimated each index size"s,
+        std::vector<std::tuple<std::string, std::string>> {
+            std::tuple<std::string, std::string> {"table_name"s, "B"s},
+            std::tuple<std::string, std::string> {"index_name"s, "IB1"}
+        },
+        std::vector<std::string> {"table_count"s}
     };
 };
 

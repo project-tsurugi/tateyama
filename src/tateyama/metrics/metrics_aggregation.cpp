@@ -20,10 +20,10 @@ namespace tateyama::metrics {
 
 metrics_aggregation::metrics_aggregation(std::string_view group_key,
                                          std::string_view description,
-                                         std::function<std::unique_ptr<metrics_aggregator>()>&& factory) noexcept :
+                                         std::function<std::unique_ptr<metrics_aggregator>()> factory) noexcept :
     group_key_(group_key),
     description_(description),
-    factory_(factory) {
+    factory_(std::move(factory)) {
 }
 
 std::string_view metrics_aggregation::group_key() const noexcept {

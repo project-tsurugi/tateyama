@@ -58,31 +58,30 @@ private:
     
 protected:
     std::unique_ptr<metrics_store> metrics_store_{};
-
-    std::vector<std::tuple<std::string, std::string>> table_A1_attributes_{
-        std::tuple<std::string, std::string> {"table_name"s, "A"s},
-        std::tuple<std::string, std::string> {"index_name"s, "IA1"}
-    };
-    std::vector<std::string> table_A1_group_keys_{"table_count"s};
-    std::vector<std::tuple<std::string, std::string>> table_A2_attributes_{
-        std::tuple<std::string, std::string> {"table_name"s, "A"s},
-        std::tuple<std::string, std::string> {"index_name"s, "IA2"}
-    };
-    std::vector<std::string> table_A2_group_keys_{"table_count"s};
-    std::vector<std::tuple<std::string, std::string>> table_B_attributes_{
-        std::tuple<std::string, std::string> {"table_name"s, "B"s},
-        std::tuple<std::string, std::string> {"index_name"s, "IB1"}
-    };
-    std::vector<std::string> table_B_group_keys_{"table_count"s};
     
     metrics_metadata const metadata_table_A1_{
-        "index_size"s, "estimated each index size"s, table_A1_attributes_,table_A1_group_keys_
+        "index_size"s, "estimated each index size"s,
+        std::vector<std::tuple<std::string, std::string>> {
+            std::tuple<std::string, std::string> {"table_name"s, "A"s},
+            std::tuple<std::string, std::string> {"index_name"s, "IA1"}
+        },
+        std::vector<std::string> {"table_count"s}
     };
     metrics_metadata const metadata_table_A2_{
-        "index_size"s, "estimated each index size"s, table_A2_attributes_, table_A2_group_keys_
+        "index_size"s, "estimated each index size"s,
+        std::vector<std::tuple<std::string, std::string>> {
+            std::tuple<std::string, std::string> {"table_name"s, "A"s},
+            std::tuple<std::string, std::string> {"index_name"s, "IA2"}
+        },
+        std::vector<std::string> {"table_count"s}
     };
     metrics_metadata const metadata_table_B_{
-        "index_size"s, "estimated each index size"s, table_B_attributes_, table_B_group_keys_
+        "index_size"s, "estimated each index size"s,
+        std::vector<std::tuple<std::string, std::string>> {
+            std::tuple<std::string, std::string> {"table_name"s, "B"s},
+            std::tuple<std::string, std::string> {"index_name"s, "IB1"}
+        },
+        std::vector<std::string> {"table_count"s}
     };
 };
 
