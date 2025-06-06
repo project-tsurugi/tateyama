@@ -56,7 +56,7 @@ public:
     metrics_aggregation(
         std::string_view group_key,
         std::string_view description,
-        std::function<std::unique_ptr<metrics_aggregator>()>&& factory) noexcept;
+        std::function<std::unique_ptr<metrics_aggregator>()> factory) noexcept;
 
 private:
     const std::string group_key_{};

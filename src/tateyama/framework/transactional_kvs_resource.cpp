@@ -25,7 +25,7 @@
 
 namespace tateyama::framework {
 
-bool extract_config(environment& env, sharksfin::DatabaseOptions& options) {
+static bool extract_config(environment& env, sharksfin::DatabaseOptions& options) {
     if(env.mode() == boot_mode::maintenance_server || env.mode() == boot_mode::maintenance_standalone) {
         static constexpr std::string_view KEY_STARTUP_MODE{"startup_mode"};
         options.attribute(KEY_STARTUP_MODE, "maintenance");

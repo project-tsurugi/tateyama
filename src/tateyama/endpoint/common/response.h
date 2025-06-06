@@ -94,7 +94,7 @@ protected:
         /**
          * @brief response::body_head() has been executed, response::acqure_channel() has not been executed.
          */
-        to_be_used,
+        to_be_used = 1,
 
         /**
          * @brief response::acqure_channel() has been successfully executed.

@@ -80,16 +80,6 @@ public:
      */
     [[nodiscard]] std::string_view label() const noexcept override;
 
-#if 0
-    /**
-     * @brief bridge to the limestone::api::datastore
-     */
-    std::vector<std::string> list_tags();
-    void add_tag(std::string_view name, std::string_view comment);
-    bool get_tag(std::string_view name, tag_info& out);
-    bool remove_tag(std::string_view name);
-#endif
-
 private:
     limestone::api::datastore* datastore_{};
     bool deactivated_{false};

@@ -43,7 +43,7 @@ public:
      * @brief iterate over added components
      * @param reverse_order indicates whether the iteration is done in reverse order
      */
-    void each(std::function<void(T&)> consumer, bool reverse_order = false) {
+    void each(const std::function<void(T&)>& consumer, bool reverse_order = false) {
         if(! reverse_order) {
             for(auto&& e : entity_) {
                 consumer(*e);

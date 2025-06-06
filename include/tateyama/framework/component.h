@@ -21,7 +21,6 @@
 #include <type_traits>
 
 #include <tateyama/utils/cache_align.h>
-#include <tateyama/framework/component.h>
 
 namespace tateyama::framework {
 

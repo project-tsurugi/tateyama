@@ -26,7 +26,7 @@ metrics_item_slot& metrics_store::register_item(const metrics_metadata& metadata
 }
 
 void metrics_store::register_aggregation(const metrics_aggregation& aggregation) {
-    return body_->register_aggregation(aggregation);
+    body_->register_aggregation(aggregation);
 }
 
 bool metrics_store::unregister_element(std::string_view key) {
@@ -34,11 +34,11 @@ bool metrics_store::unregister_element(std::string_view key) {
 }
 
 void metrics_store::enumerate_items(std::function<void(metrics_metadata const&, double)> const& acceptor) {
-    return body_->enumerate_items(acceptor);
+    body_->enumerate_items(acceptor);
 }
 
 void metrics_store::enumerate_aggregations(std::function<void(metrics_aggregation const&)> const& acceptor) const {
-    return body_->enumerate_aggregations(acceptor);
+    body_->enumerate_aggregations(acceptor);
 }
 
 }
