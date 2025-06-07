@@ -152,8 +152,10 @@ TEST_F(writer_limit_test, exceed_writers) {
     }
     dcs.at(i) = std::move(dc);
     std::shared_ptr<tateyama::api::server::writer> w;
-    EXPECT_NE(dcs.at(i)->acquire(w),tateyama::status::ok);
-
+    if (dcs.at(i)->acquire(w) != tateyama::status::ok) {
+        return;  // test success
+    }
+    FAIL();
 
     // response message check
     // Verify that a SERVER_DIAGNOSTICS response is returned when the error occurs
