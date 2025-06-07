@@ -121,7 +121,9 @@ tateyama::status ipc_response::acquire_channel(std::string_view name, std::share
         return tateyama::status::unknown;
     }
     try {
-        data_channel_ = std::make_shared<ipc_data_channel>(server_wire_.create_resultset_wires(name, max_writer_count), garbage_collector_);
+        auto dc = std::make_shared<ipc_data_channel>(server_wire_, name, garbage_collector_);
+        dc->set_max_writer_count(max_writer_count);
+        data_channel_ = std::move(dc);
     } catch (std::exception &ex) {
         ch = nullptr;
 
@@ -155,8 +157,26 @@ tateyama::status ipc_response::release_channel(tateyama::api::server::data_chann
 }
 
 // class ipc_data_channel
+tateyama::status ipc_data_channel::set_max_writer_count(std::size_t max_writer_count) {
+    if (!resultset_wires_) {
+        max_writer_count_ = max_writer_count;
+        return tateyama::status::ok;
+    }
+    // max_writer_count cannot be set after resultset_wires_ creation.
+    return tateyama::status::unknown;
+}
+
 tateyama::status ipc_data_channel::acquire(std::shared_ptr<tateyama::api::server::writer>& wrt) {
     try {
+        if (!resultset_wires_) {
+            std::unique_lock lock{mutex_};
+            if (!resultset_wires_) {
+                resultset_wires_ = server_wire_.create_resultset_wires(name_, max_writer_count_);
+                if (!resultset_wires_) {  // fail to create_resultset_wires
+                    return tateyama::status::unknown;
+                }
+            }
+        }
         auto ipc_wrt = std::make_shared<ipc_writer>(resultset_wires_->acquire());
         wrt = std::dynamic_pointer_cast<tateyama::api::server::writer>(ipc_wrt);
         VLOG_LP(log_trace) << " data_channel_ = " << static_cast<const void*>(this) << " writer = " << static_cast<const void*>(wrt.get());  //NOLINT
