@@ -2,6 +2,7 @@
 Checks: "-*,\
 abseil-*,\
 boost-*,\
+-boost-use-ranges,\
 bugprone-*,\
 -bugprone-branch-clone,\
 -bugprone-easily-swappable-parameters,\
@@ -10,6 +11,7 @@ cert-*,\
 cppcoreguidelines-*,\
 -cppcoreguidelines-pro-type-const-cast,\
 -cppcoreguidelines-avoid-magic-numbers,\
+-cppcoreguidelines-avoid-const-or-ref-data-members,\
 fuchsia-*,\
 -fuchsia-default-arguments,\
 -fuchsia-default-arguments-calls,\
@@ -31,16 +33,23 @@ llvm-*,\
 -llvm-namespace-comment,\
 -llvm-qualified-auto,\
 misc-*,\
+-misc-const-correctness,\
+-misc-include-cleaner,\
 -misc-unused-parameters,\
+-misc-use-anonymous-namespace,\
 modernize-*,\
 -modernize-use-trailing-return-type,\
 performance-*,\
+-performance-enum-size,\
 readability-*,\
 -readability-braces-around-statements,\
 -readability-identifier-length,\
+-readability-math-missing-parentheses,\
 -readability-named-parameter,\
 -readability-magic-numbers,\
 -readability-qualified-auto,\
+-readability-redundant-inline-specifier,\
+-readability-redundant-member-init,\
 -readability-convert-member-functions-to-static,\
 "
 CheckOptions:

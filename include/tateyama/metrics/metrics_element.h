@@ -20,8 +20,6 @@
 #include <tuple>
 #include <memory>
 
-#include <tateyama/metrics/metrics_element.h>
-
 namespace tateyama::metrics::resource {
 class metrics_element_impl;
 }

@@ -41,7 +41,7 @@ public:
      */
     template<class T> // static_assert(std::is_base_of_v<session_element, T>)
     bool put(id_type element_id, std::shared_ptr<T> element) {
-        static_assert(std::is_base_of<session_element, T>::value, "T is not a derived class of session_element");
+        static_assert(std::is_base_of<session_element, T>::value, "T is not a derived class of session_element");  // NOLINT(modernize-type-traits)
         boost::unique_lock<boost::upgrade_mutex> lock(mtx_);
 
         if (auto itr = element_map_.find(element_id); itr != element_map_.end()) {
@@ -60,7 +60,7 @@ public:
      */
     template<class T> // static_assert(std::is_base_of_v<session_element, T>)
     [[nodiscard]] std::shared_ptr<T> find(id_type element_id) const {
-        static_assert(std::is_base_of<session_element, T>::value, "T is not a derived class of session_element");
+        static_assert(std::is_base_of<session_element, T>::value, "T is not a derived class of session_element");  // NOLINT(modernize-type-traits)
         boost::shared_lock<boost::upgrade_mutex> lock(mtx_);
 
         if (auto itr = element_map_.find(element_id); itr != element_map_.end()) {
@@ -83,7 +83,7 @@ public:
      */
     template<class T, class... Args> // static_assert(std::is_base_of_v<session_element, T>)
     [[nodiscard]] std::shared_ptr<T> find_or_emplace(id_type element_id, Args&&...args) {
-        static_assert(std::is_base_of<session_element, T>::value, "T is not a derived class of session_element");
+        static_assert(std::is_base_of<session_element, T>::value, "T is not a derived class of session_element");  // NOLINT(modernize-type-traits)
         boost::upgrade_lock<boost::upgrade_mutex> ug_lock(mtx_);
         
         if (auto itr = element_map_.find(element_id); itr != element_map_.end()) {
@@ -105,7 +105,7 @@ public:
      */
     template<class T> // static_assert(std::is_base_of_v<session_element, T>)
     bool remove(id_type element_id) {
-        static_assert(std::is_base_of<session_element, T>::value, "T is not a derived class of session_element");
+        static_assert(std::is_base_of<session_element, T>::value, "T is not a derived class of session_element");  // NOLINT(modernize-type-traits)
         boost::unique_lock<boost::upgrade_mutex> lock(mtx_);
 
         if (auto itr = element_map_.find(element_id); itr != element_map_.end()) {

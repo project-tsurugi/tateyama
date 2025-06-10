@@ -124,17 +124,6 @@ bool tateyama::datastore::service::core::operator()(const std::shared_ptr<reques
             }
             break;
         }
-#if 0
-        case ns::Request::kBackupContine: {
-            tateyama::proto::datastore::response::BackupContinue rp{};
-            rp.mutable_success();
-            res->session_id(req->session_id());
-            auto body = rp.SerializeAsString();
-            res->body(body);
-            rp.clear_success();
-            break;
-        }
-#endif
         case ns::Request::kBackupEstimate: {
             tateyama::proto::datastore::response::BackupEstimate rp{};
             auto success = rp.mutable_success();
@@ -167,12 +156,9 @@ bool tateyama::datastore::service::core::operator()(const std::shared_ptr<reques
             {
                 std::vector<limestone::api::file_set_entry> entries{};
                 for (auto&& f: rb.entries().file_set_entry()) {
-                    entries.emplace_back(limestone::api::file_set_entry(
-                                             boost::filesystem::path(f.source_path()),
-                                             boost::filesystem::path(f.destination_path()),
-                                             f.detached()
-                                         )
-                    );
+                    entries.emplace_back(boost::filesystem::path(f.source_path()),
+                                         boost::filesystem::path(f.destination_path()),
+                                         f.detached());
                 }
                 rc = resource_->restore_backup(rb.entries().directory(), entries);
 #ifdef ENABLE_ALTIMETER
@@ -212,93 +198,10 @@ bool tateyama::datastore::service::core::operator()(const std::shared_ptr<reques
             break;
         }
 
-#if 0
-        case ns::Request::kTagList: {
-            auto tags = resource_->list_tags();
-            tateyama::proto::datastore::response::TagList rp{};
-            auto success = rp.mutable_success();
-            auto t = success->mutable_tags();
-            for(auto&& tag : tags) {
-                t->Add()->set_name(tag);
-            }
-            res->session_id(req->session_id());
-            auto body = rp.SerializeAsString();
-            res->body(body);
-            success->clear_tags();
-            rp.clear_success();
-            break;
-        }
-        case ns::Request::kTagAdd: {
-            auto& ta = rq.tag_add();
-            auto info = resource_->add_tag(ta.name(), ta.comment());
-            tateyama::proto::datastore::response::TagAdd rp{};
-            auto success = rp.mutable_success();
-            auto t = success->mutable_tag();
-            t->set_name(info.name_);
-            t->set_comment(info.comment_);
-            t->set_author(info.author_);
-            t->set_timestamp(info.timestamp_);
-            res->session_id(req->session_id());
-            auto body = rp.SerializeAsString();
-            res->body(body);
-            success->clear_tag();
-            rp.clear_success();
-            break;
-        }
-        case ns::Request::kTagGet: {
-            auto& tg = rq.tag_get();
-            resource::tag_info info{};
-            auto found = resource_->get_tag(tg.name(), info);
-            tateyama::proto::datastore::response::TagGet rp{};
-            if(found) {
-                auto success = rp.mutable_success();
-                auto t = success->mutable_tag();
-                t->set_name(info.name_);
-                t->set_comment(info.comment_);
-                t->set_author(info.author_);
-                t->set_timestamp(info.timestamp_);
-                res->session_id(req->session_id());
-                auto body = rp.SerializeAsString();
-                res->body(body);
-                success->clear_tag();
-                rp.clear_success();
-            } else {
-                auto not_found = rp.mutable_not_found();
-                not_found->set_name(tg.name());
-                res->session_id(req->session_id());
-                auto body = rp.SerializeAsString();
-                res->body(body);
-                rp.clear_not_found();
-            }
-            break;
-        }
-        case ns::Request::kTagRemove: {
-            auto& tr = rq.tag_remove();
-            auto found = resource_->remove_tag(tr.name());
-            tateyama::proto::datastore::response::TagRemove rp{};
-            if(found) {
-                auto success = rp.mutable_success();
-                success->set_name(tr.name());
-                res->session_id(req->session_id());
-                auto body = rp.SerializeAsString();
-                res->body(body);
-                rp.clear_success();
-            } else {
-                auto not_found = rp.mutable_not_found();
-                not_found->set_name(tr.name());
-                res->session_id(req->session_id());
-                auto body = rp.SerializeAsString();
-                res->body(body);
-                rp.clear_not_found();
-            }
-            break;
-        }
-#else
     case ns::Request::kTagList:
     case ns::Request::kTagAdd:
     case ns::Request::kTagGet:
     case ns::Request::kTagRemove:
-#endif
     case ns::Request::kRestoreStatus:
     case ns::Request::kRestoreCancel:
     case ns::Request::kRestoreDispose:

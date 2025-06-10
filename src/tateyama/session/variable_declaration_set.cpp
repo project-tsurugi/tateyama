@@ -44,6 +44,7 @@ session_variable_declaration const* session_variable_declaration_set::find(std::
 std::vector<std::string> session_variable_declaration_set::enumerate_variable_names() const {
     std::vector<std::string> rv{};
     
+    rv.reserve(declarations_.size());
     for (const auto& e : declarations_) {
         rv.emplace_back(e.name());
     }
@@ -53,6 +54,7 @@ std::vector<std::string> session_variable_declaration_set::enumerate_variable_na
 session_variable_set session_variable_declaration_set::make_variable_set() const {
     std::vector<std::tuple<std::string, session_variable_set::variable_type, session_variable_set::value_type>> declarations{};
 
+    declarations.reserve(declarations_.size());
     for (const auto& e : declarations_) {
         declarations.emplace_back(e.name(), e.type(), e.initial_value_);
     }

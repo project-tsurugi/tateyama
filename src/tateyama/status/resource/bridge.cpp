@@ -41,7 +41,7 @@ bool bridge::setup(environment& env) {
         LOG(ERROR) << "cannot find database_name at the ipc_endpoint section in the configuration";
         return false;
     }
-    auto name = database_name_opt.value();
+    const auto& name = database_name_opt.value();
     auto dbinfo = std::make_unique<database_info_impl>();
     dbinfo->name(name);
     database_info_ = std::move(dbinfo);
@@ -52,7 +52,7 @@ bool bridge::setup(environment& env) {
         return false;
     }
     auto admin_sessions_opt = ipc_section->get<std::size_t>("admin_sessions");
-    if (!threads_opt) {
+    if (!admin_sessions_opt) {
         LOG(ERROR) << "cannot find admin_sessions at the ipc_endpoint section in the configuration";
         return false;
     }
@@ -129,19 +129,19 @@ std::string_view bridge::database_name() const {
 
 void bridge::set_maximum_sessions(std::size_t n) {
     if (resource_status_memory_) {
-        return resource_status_memory_->set_maximum_sessions(n);
+        resource_status_memory_->set_maximum_sessions(n);
     }
 }
 
 void bridge::add_shm_entry(std::size_t session_id, std::size_t index) {
     if (resource_status_memory_) {
-        return resource_status_memory_->add_shm_entry(session_id, index);
+        resource_status_memory_->add_shm_entry(session_id, index);
     }
 }
 
 void bridge::remove_shm_entry(std::size_t session_id, std::size_t index) {
     if (resource_status_memory_) {
-        return resource_status_memory_->remove_shm_entry(session_id, index);
+        resource_status_memory_->remove_shm_entry(session_id, index);
     }
 }
 
