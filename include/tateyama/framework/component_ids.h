@@ -30,6 +30,7 @@ constexpr inline component::id_type resource_id_status = 5;
 constexpr inline component::id_type resource_id_diagnostic = 7;
 constexpr inline component::id_type resource_id_remote_kvs = 8;
 constexpr inline component::id_type resource_id_metrics = 9;
+constexpr inline component::id_type resource_id_authentication = 10;
 
 // service
 constexpr inline component::id_type service_id_routing = 0;
@@ -45,5 +46,6 @@ constexpr inline component::id_type service_id_metrics = 8;
 constexpr inline component::id_type service_id_altimeter = 9;
 #endif
 constexpr inline component::id_type service_id_request = 10;
+constexpr inline component::id_type service_id_authentication = 11;
 
 }

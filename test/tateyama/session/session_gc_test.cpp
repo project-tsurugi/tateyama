@@ -26,6 +26,18 @@
 
 namespace tateyama::session {
 
+class session_info_for_sessiopn_gc_test : public tateyama::endpoint::common::session_info_impl {
+public:
+    session_info_for_sessiopn_gc_test(std::size_t id, std::string_view con_type, std::string_view con_info)
+        : session_info_impl(id, con_type, con_info) {
+    }
+    void set_appendix(const std::string& l, const std::string& a, const std::string& u) {
+        label(l);
+        application_name(a);
+        user_name(u);
+    }
+};
+
 class session_gc_test :
     public ::testing::Test,
     public test_utils::utility
@@ -34,13 +46,14 @@ public:
     void SetUp() override {
         temporary_.prepare();
         session_context_ = std::make_shared<tateyama::session::resource::session_context_impl>(session_info_for_existing_session_, session_variable_set);
+        session_info_for_existing_session_.set_appendix("label_fot_test", "application_for_test", "user_fot_test");
     }
     void TearDown() override {
         temporary_.clean();
     }
 
 private:
-    tateyama::endpoint::common::session_info_impl session_info_for_existing_session_{111, "IPC", "9999", "label_fot_test", "application_for_test", "user_fot_test"};
+    session_info_for_sessiopn_gc_test session_info_for_existing_session_{111, "IPC", "9999"};
     std::vector<std::tuple<std::string, tateyama::session::session_variable_set::variable_type, tateyama::session::session_variable_set::value_type>> variable_declarations_ {
         {"test_integer", tateyama::session::session_variable_type::signed_integer, static_cast<std::int64_t>(123)}
     };

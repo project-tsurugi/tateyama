@@ -46,6 +46,8 @@ file(GLOB SOURCES
         "tateyama/metrics/service/*.cpp"
         "tateyama/metrics/resource/*.cpp"
         "tateyama/request/service/*.cpp"
+        "tateyama/authentication/resource/*.cpp"
+        "tateyama/authentication/service/*.cpp"
 )
 
 if (ENABLE_ALTIMETER)
@@ -112,6 +114,7 @@ target_link_libraries(${ENGINE}
         PRIVATE protobuf::libprotobuf # temporary
         PRIVATE rt # for shm
         PRIVATE crypto
+        PRIVATE jwt
 )
 
 if(MC_QUEUE)

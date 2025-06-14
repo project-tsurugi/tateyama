@@ -40,10 +40,14 @@ void ipc_worker::run() {  // NOLINT(readability-function-cognitive-complexity)
 
         ipc_request request_obj{*wire_, hdr, resources(), local_id_++, conf_};
         ipc_response response_obj{*wire_, hdr.get_idx(), [](){}, conf_};
-        if (! handshake(static_cast<tateyama::api::server::request*>(&request_obj), static_cast<tateyama::api::server::response*>(&response_obj))) {
-            return;
+        try {
+            if (! handshake(static_cast<tateyama::api::server::request*>(&request_obj), static_cast<tateyama::api::server::response*>(&response_obj))) {
+                return;
+            }
+            break;
+        } catch (psudo_exception_of_continue &ex) {
+            continue;
         }
-        break;
     }
 
     VLOG(log_debug_timing_event) << "/:tateyama:timing:session:started " << session_id();

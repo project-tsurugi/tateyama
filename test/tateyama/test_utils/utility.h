@@ -95,6 +95,11 @@ static constexpr std::string_view default_configuration_for_tests {  // NOLINT
     "[system]\n"
         "pid_directory = /tmp\n"
 
+    "[authentication]\n"
+        "enabled=false\n"
+        "url=http://localhost:8080/harinoki\n"
+        "request_timeout=0\n"
+
     "[glog]\n"
         "dummy=\n"  // just for retain glog section in default configuration
 };
