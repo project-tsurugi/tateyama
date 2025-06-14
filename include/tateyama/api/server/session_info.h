@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2023 Project Tsurugi.
+ * Copyright 2018-2025 Project Tsurugi.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -103,6 +103,13 @@ public:
      * @returns the connection information
      */
     [[nodiscard]] virtual std::string_view connection_information() const noexcept = 0;
+
+    /**
+     * @brief returns the authenticated user name.
+     * @return the authenticated user name
+     * @return std::nullopt if authentication is not enabled
+     */
+    [[nodiscard]] virtual std::optional<std::string_view> username() const noexcept = 0;
 };
 
 }

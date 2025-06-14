@@ -22,6 +22,9 @@
 
 #include <tateyama/api/server/request.h>
 
+#include "tateyama/authentication/resource/bridge.h"
+#include "session_info_impl.h"
+
 namespace tateyama::endpoint::common {
 
 class listener_common {
@@ -38,10 +41,10 @@ public:
      */
     virtual ~listener_common() = default;
 
-    listener_common(listener_common const& other) = default;
-    listener_common& operator=(listener_common const& other) = default;
-    listener_common(listener_common&& other) noexcept = default;
-    listener_common& operator=(listener_common&& other) noexcept = default;
+    listener_common(listener_common const& other) = delete;
+    listener_common& operator=(listener_common const& other) = delete;
+    listener_common(listener_common&& other) noexcept = delete;
+    listener_common& operator=(listener_common&& other) noexcept = delete;
 
     /**
      * @brief body of the process executed by the listener thread
@@ -69,6 +72,10 @@ public:
      * @param func the callback function that receives session_id and request
      */
     virtual void foreach_request(const callback& func) = 0;
+
+private:
+    // auth resource
+    const std::shared_ptr<authentication::resource::bridge> auth_;
 };
 
 }  // tateyama::endpoint::common
