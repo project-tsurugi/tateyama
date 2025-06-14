@@ -48,6 +48,8 @@
 #include <tateyama/altimeter/service/bridge.h>
 #endif
 #include <tateyama/request/service/bridge.h>
+#include <tateyama/authentication/service/bridge.h>
+#include <tateyama/authentication/resource/bridge.h>
 
 namespace tateyama::framework {
 
@@ -188,6 +190,7 @@ void add_core_components(server& svr) {
     svr.add_resource(std::make_shared<framework::transactional_kvs_resource>());
     svr.add_resource(std::make_shared<datastore::resource::bridge>());
     svr.add_resource(std::make_shared<session::resource::bridge>());
+    svr.add_resource(std::make_shared<authentication::resource::bridge>());
 
     svr.add_service(std::make_shared<framework::routing_service>());
     svr.add_service(std::make_shared<metrics::service::bridge>());
@@ -200,6 +203,7 @@ void add_core_components(server& svr) {
     svr.add_service(std::make_shared<altimeter::service::bridge>());
 #endif
     svr.add_service(std::make_shared<tateyama::request::service::bridge>());
+    svr.add_service(std::make_shared<tateyama::authentication::service::bridge>());
 
     svr.add_endpoint(std::make_shared<framework::ipc_endpoint>());
     svr.add_endpoint(std::make_shared<framework::stream_endpoint>());

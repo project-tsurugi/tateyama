@@ -56,7 +56,8 @@ public:
           session_context_(std::make_shared<tateyama::session::resource::session_context_impl>(resources_.session_info(), resources_.session_variable_set())),
           enable_timeout_(config.enable_timeout_),
           refresh_timeout_(config.refresh_timeout_),
-          max_refresh_timeout_(config.max_refresh_timeout_) {
+          max_refresh_timeout_(config.max_refresh_timeout_),
+          auth_(config.auth_.get()) {
         if (session_) {
             session_->register_session(session_context_);
         }
@@ -64,6 +65,10 @@ public:
     }
     virtual ~worker_common() {
         if(thread_.joinable()) thread_.join();
+        auto& session_info = resources_.session_info();
+        if (auto name_opt = session_info.username(); name_opt) {
+            LOG_LP(INFO) << "session (" << resources_.session_id() << ") of the authenticated user (" << name_opt.value() << ") end";
+        }
     }
 
     /**
@@ -192,19 +197,50 @@ protected:
         }
         auto data = req->payload();
         tateyama::proto::endpoint::request::Request rq{};
-        if(! rq.ParseFromArray(data.data(), static_cast<int>(data.size()))) {
+        if(!rq.ParseFromArray(data.data(), static_cast<int>(data.size()))) {
             std::string error_message{"request parse error"};
             LOG_LP(INFO) << error_message;
             notify_client(res, tateyama::proto::diagnostics::Code::INVALID_REQUEST, error_message);
             return false;
         }
-        if(rq.command_case() != tateyama::proto::endpoint::request::Request::kHandshake) {
+        switch (rq.command_case()) {
+        case tateyama::proto::endpoint::request::Request::kEncryptionKey:
+        {
+            tateyama::proto::endpoint::response::EncryptionKey rp{};
+            if (auth_) {
+                if (auto key_opt = auth_->get_encryption_key(); key_opt) {
+                    auto rs = rp.mutable_success();
+                    rs->set_encryption_key(key_opt.value());
+                    res->body(rp.SerializeAsString());
+                    rp.clear_success();
+                    throw psudo_exception_of_continue();
+                }
+                auto re = rp.mutable_error();
+                re->set_code(tateyama::proto::diagnostics::Code::SYSTEM_ERROR);
+                re->set_message("encryptionKey is not available");
+                res->body(rp.SerializeAsString());
+                rp.clear_error();
+                return false;
+            }
+            auto re = rp.mutable_error();
+            re->set_code(tateyama::proto::diagnostics::Code::UNSUPPORTED_OPERATION);
+            re->set_message("authentication is off");
+            res->body(rp.SerializeAsString());
+            rp.clear_error();
+            throw psudo_exception_of_continue();
+        }
+        case tateyama::proto::endpoint::request::Request::kHandshake:
+            break;
+
+        default:
             std::stringstream ss;
             ss << "bad request (handshake in endpoint): " << rq.command_case();
             LOG_LP(INFO) << ss.str();
             notify_client(res, tateyama::proto::diagnostics::Code::INVALID_REQUEST, ss.str());
             return false;
         }
+
+        // case tateyama::proto::endpoint::request::Request::kHandshake:
         auto ci = rq.handshake().client_information();
         std::string connection_label = ci.connection_label();
         if (!connection_label.empty()) {
@@ -216,7 +252,36 @@ protected:
         auto& session_info = resources_.session_info();
         session_info.label(connection_label);
         session_info.application_name(ci.application_name());
-        // FIXME handle userName when a credential specification is fixed.
+
+        auto& credential = ci.credential();
+        if (auth_) {
+            switch (credential.credential_opt_case()) {
+            case tateyama::proto::endpoint::request::Credential::CredentialOptCase::kEncryptedCredential:
+            {
+                if (auto username_opt = auth_->verify_encrypted(credential.encrypted_credential()); username_opt) {
+                    session_info.user_name(username_opt.value());
+                } else {
+                    notify_client(res, tateyama::proto::diagnostics::Code::AUTHENTICATION_ERROR, "user or password is incorrect");
+                    return false;
+                }
+            }
+            break;
+            case tateyama::proto::endpoint::request::Credential::CredentialOptCase::kRememberMeCredential:
+            {
+                if (auto username_opt = auth_->verify_token(credential.remember_me_credential()); username_opt) {
+                    session_info.user_name(username_opt.value());
+                } else {
+                    notify_client(res, tateyama::proto::diagnostics::Code::AUTHENTICATION_ERROR, "token is incorrect");
+                    return false;
+                }
+            }
+            break;
+            default: 
+                notify_client(res, tateyama::proto::diagnostics::Code::INVALID_REQUEST, "no valid credential");
+                return false;
+            }
+            LOG_LP(INFO) << "session (" << resources_.session_id() << ") of an authenticated user (" << session_info.user_name() << ") begin";
+        }
 
         auto wi = rq.handshake().wire_information();
         switch (connection_type_) {
@@ -258,6 +323,10 @@ protected:
         return true;
     }
 
+    class psudo_exception_of_continue : public std::exception {
+        // no special member
+    };
+
     static void notify_client(tateyama::api::server::response* res,
                        tateyama::proto::diagnostics::Code code,
                        const std::string& message) {
@@ -272,7 +341,7 @@ protected:
                           std::size_t slot) {
         auto data = req->payload();
         tateyama::proto::endpoint::request::Request rq{};
-        if(! rq.ParseFromArray(data.data(), static_cast<int>(data.size()))) {
+        if(!rq.ParseFromArray(data.data(), static_cast<int>(data.size()))) {
             std::string error_message{"request parse error"};
             LOG_LP(INFO) << error_message;
             notify_client(res.get(), tateyama::proto::diagnostics::Code::INVALID_REQUEST, error_message);
@@ -313,7 +382,7 @@ protected:
                                std::size_t index) {
         auto data = req->payload();
         tateyama::proto::core::request::Request rq{};
-        if(! rq.ParseFromArray(data.data(), static_cast<int>(data.size()))) {
+        if(!rq.ParseFromArray(data.data(), static_cast<int>(data.size()))) {
             std::string error_message{"request parse error"};
             LOG_LP(INFO) << error_message;
             notify_client(res.get(), tateyama::proto::diagnostics::Code::INVALID_REQUEST, error_message);
@@ -546,6 +615,7 @@ private:
     bool enable_timeout_;
     std::chrono::seconds refresh_timeout_;
     std::chrono::seconds max_refresh_timeout_;
+    authentication::resource::bridge* auth_;
     std::map<std::size_t, std::pair<std::shared_ptr<tateyama::endpoint::common::request>, std::shared_ptr<tateyama::endpoint::common::response>>> reqreses_{};
     std::mutex mtx_reqreses_{};
     std::map<std::size_t, std::shared_ptr<tateyama::api::server::response>> shutdown_response_{};
