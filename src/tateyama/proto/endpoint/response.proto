@@ -49,7 +49,7 @@ message EncryptionKey {
         // request is successfully completed.
         Success success = 11;
 
-        // unknown error was occurred.
+        // an unknown error occurred.
         Error error = 12;
     }
 

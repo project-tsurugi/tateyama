@@ -33,7 +33,7 @@ message Request {
         UpdateCredential update_credential = 14;
 
         // get the expiration time of the current session credential
-        GetCredentialsExpirationTime get_credential_xpiration_time = 15;
+        GetCredentialsExpirationTime get_credential_expiration_time = 15;
     }
     reserved 16 to 99;
 }
@@ -64,9 +64,10 @@ message ClientInformation {
 
 // the credential
 message Credential {
+    // credential_opt may be empty
     oneof credential_opt {
-        // the file_credential consists of encrypted and base64 encoded username and password
-        string file_credential = 1;
+        // the encrypted_credential consists of encrypted and base64 encoded username and password
+        string encrypted_credential = 1;
 
         // the token issued by authentication manager
         string remember_me_credential = 2;
