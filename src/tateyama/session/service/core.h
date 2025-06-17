@@ -51,7 +51,7 @@ private:
     template<typename T> 
     void send_error(
         const std::shared_ptr<response>& res,
-        tateyama::session::resource::error_descriptor err
+        const tateyama::session::resource::error_descriptor& err
     ) {
         T rs{};
         auto* error = rs.mutable_error();

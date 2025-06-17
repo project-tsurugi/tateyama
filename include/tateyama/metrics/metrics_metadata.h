@@ -71,13 +71,13 @@ public:
     metrics_metadata(
         std::string_view key,
         std::string_view description,
-        std::vector<std::tuple<std::string, std::string>>&& attributes,
-        std::vector<std::string>&& group_keys,
+        std::vector<std::tuple<std::string, std::string>> attributes,
+        std::vector<std::string> group_keys,
         bool visible = true) :
         key_(key),
         description_(description),
-        attributes_(attributes),
-        group_keys_(group_keys),
+        attributes_(std::move(attributes)),
+        group_keys_(std::move(group_keys)),
         visible_(visible) {
     }
 

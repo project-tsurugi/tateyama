@@ -771,7 +771,7 @@ public:
                 }
             }
         } catch (std::exception &e) {
-            std::cerr << e.what() << std::endl;
+            std::cerr << e.what() << std::endl;  // NOLINT
         }
     }
 
@@ -828,7 +828,7 @@ public:
             timeout = watch_interval * 1000 * 1000;
         }
 
-        do {
+        while (true) {
             for (auto&& wire: unidirectional_simple_wires_) {
                 if(wire.has_record()) {
                     return &wire;
@@ -864,9 +864,10 @@ public:
                     return active_wire;
                 }
             }
-        } while(!is_eor());
-
-        return nullptr;
+            if (is_eor()) {
+                return nullptr;
+            }
+        }
     }
 
     /**

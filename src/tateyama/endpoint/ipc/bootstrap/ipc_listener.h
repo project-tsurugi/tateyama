@@ -252,10 +252,10 @@ public:
     }
 
     void print_diagnostic(std::ostream& os) override {
-        os << "/:tateyama:ipc_endpoint print diagnostics start" << std::endl;
+        os << "/:tateyama:ipc_endpoint print diagnostics start\n";
         {
             std::unique_lock<std::mutex> lock(mtx_workers_);
-            os << "  live sessions" << std::endl;
+            os << "  live sessions\n";
             for (auto && worker : workers_) {
                 if (worker) {
                     worker->print_diagnostic(os, !worker->is_terminated());
@@ -270,16 +270,16 @@ public:
                 }
             }
         }
-        os << "  connection queue status" << std::endl;
-        os << "    session_id accepted = " << container_->session_id_accepted() << std::endl;
-        os << "    pending requests = " << container_->pending_requests() << std::endl;
-        os << "/:tateyama:ipc_endpoint print diagnostics end" << std::endl;
+        os << "  connection queue status\n"
+              "    session_id accepted = " << container_->session_id_accepted() << "\n"
+              "    pending requests = " << container_->pending_requests() << "\n"
+              "/:tateyama:ipc_endpoint print diagnostics end\n";
     }
 
     void foreach_request(const callback& func) override {
         std::unique_lock<std::mutex> lock(mtx_workers_);
         for (auto && e : workers_) {
-            if (std::shared_ptr<ipc_worker> worker = e; worker) {
+            if (const std::shared_ptr<ipc_worker>& worker = e; worker) {
                 if (!worker->is_terminated()) {
                     worker->foreach_request(func);
                 }

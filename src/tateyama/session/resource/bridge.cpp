@@ -94,7 +94,7 @@ std::optional<error_descriptor> bridge::get(std::string_view session_specifier, 
     try {
         auto opt = find_only_one_session(session_specifier, numeric_id);
         if (opt) {
-            return opt.value();
+            return opt;
         }
     } catch (std::invalid_argument &ex) {
         return std::make_pair(tateyama::proto::session::diagnostic::ErrorCode::SESSION_VARIABLE_INVALID_VALUE, ex.what());
@@ -118,7 +118,7 @@ std::optional<error_descriptor> bridge::session_shutdown(std::string_view sessio
     try {
         auto opt = find_only_one_session(session_specifier, numeric_id);
         if (opt) {
-            return opt.value();
+            return opt;
         }
     } catch (std::invalid_argument &ex) {
         return std::make_pair(tateyama::proto::session::diagnostic::ErrorCode::SESSION_NOT_FOUND, "cannot find session by that session specifier");
@@ -161,7 +161,7 @@ std::optional<error_descriptor> bridge::set_valiable(std::string_view session_sp
     try {
         auto opt = find_only_one_session(session_specifier, numeric_id);
         if (opt) {
-            return opt.value();
+            return opt;
         }
     } catch (std::invalid_argument &ex) {
         return std::make_pair(tateyama::proto::session::diagnostic::ErrorCode::SESSION_NOT_FOUND, ex.what());
@@ -239,7 +239,7 @@ std::optional<error_descriptor> bridge::unset_valiable(std::string_view session_
     try {
         auto opt = find_only_one_session(session_specifier, numeric_id);
         if (opt) {
-            return opt.value();
+            return opt;
         }
     } catch (std::invalid_argument &ex) {
         return std::make_pair(tateyama::proto::session::diagnostic::ErrorCode::SESSION_NOT_FOUND, ex.what());
@@ -293,7 +293,7 @@ std::optional<error_descriptor> bridge::get_valiable(std::string_view session_sp
     try {
         auto opt = find_only_one_session(session_specifier, numeric_id);
         if (opt) {
-            return opt.value();
+            return opt;
         }
     } catch (std::invalid_argument &ex) {
         return std::make_pair(tateyama::proto::session::diagnostic::ErrorCode::SESSION_NOT_FOUND, "");
@@ -320,7 +320,7 @@ std::optional<error_descriptor> bridge::get_valiable(std::string_view session_sp
                 }
                 return std::nullopt;
             }
-            return res.value();
+            return res;
         }
         return std::make_pair(tateyama::proto::session::diagnostic::ErrorCode::SESSION_NOT_FOUND, "");
     } catch (std::invalid_argument &ex) {

@@ -119,22 +119,22 @@ public:
      * @brief print diagnostics
      */
     void print_diagnostic(std::ostream& os, bool live) {
-        os << "    session id = " << resources_.session_id() << std::endl;
-        os << "      processing requests" << std::endl;
+        os << "    session id = " << resources_.session_id() << "\n";
+        os << "      processing requests" << "\n";
         std::lock_guard<std::mutex> lock(mtx_reqreses_);
         for (auto itr{reqreses_.begin()}, end{reqreses_.end()}; itr != end; ++itr) {
-            os << "       slot " << std::dec << itr->first << std::endl;
-            os << "         service id = " << itr->second.first->service_id() << std::endl;
-            os << "         local id = " << itr->second.first->local_id() << std::endl;
+            os << "       slot " << std::dec << itr->first << "\n";
+            os << "         service id = " << itr->second.first->service_id() << "\n";
+            os << "         local id = " << itr->second.first->local_id() << "\n";
             os << "         request message = ";
             dump_message(os, itr->second.first->payload());
-            os << std::endl;
-            os << "         data channel status = '" << itr->second.second->state_label() << "'" << std::endl;
+            os << "\n";
+            os << "         data channel status = '" << itr->second.second->state_label() << "'" << "\n";
         }
         if (!live) {
-            os << "       has_incomplete_response " << std::boolalpha << has_incomplete_response() << std::endl;
-            os << "       has_incomplete_resultset " << std::boolalpha << has_incomplete_resultset() << std::endl;
-            os << "       is_terminated " << std::boolalpha << is_terminated() << std::endl;
+            os << "       has_incomplete_response " << std::boolalpha << has_incomplete_response() << "\n";
+            os << "       has_incomplete_resultset " << std::boolalpha << has_incomplete_resultset() << "\n";
+            os << "       is_terminated " << std::boolalpha << is_terminated() << "\n";
         }
     }
 
@@ -185,8 +185,8 @@ protected:
         if (req->service_id() != tateyama::framework::service_id_endpoint_broker) {
             LOG_LP(INFO) << "request received is not handshake";
             std::stringstream ss;
-            ss << "handshake operation is required to establish sessions (service ID=" << req->service_id() << ")." << std::endl;
-            ss << "see https://github.com/project-tsurugi/tsurugidb/blob/master/docs/upgrade-guide.md#handshake-required";
+            ss << "handshake operation is required to establish sessions (service ID=" << req->service_id() << ").\n"
+                  "see https://github.com/project-tsurugi/tsurugidb/blob/master/docs/upgrade-guide.md#handshake-required";
             notify_client(res, tateyama::proto::diagnostics::Code::ILLEGAL_STATE, ss.str());
             return false;
         }
@@ -206,7 +206,7 @@ protected:
             return false;
         }
         auto ci = rq.handshake().client_information();
-        std::string connection_label = ci.connection_label();
+        const std::string& connection_label = ci.connection_label();
         if (!connection_label.empty()) {
             if (connection_label.at(0) == ':') {
                 notify_client(res, tateyama::proto::diagnostics::Code::INVALID_REQUEST, "invalid connection label");
