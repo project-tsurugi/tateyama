@@ -145,10 +145,10 @@ public:
     }
 
     /**
-     * @brief replace authentication_adapter, provided for test purpose
+     * @brief preset authentication_adapter, provided for test purpose
      * @param adapter the adapter object to replace
      */
-    void replace_authentication_adapter(std::unique_ptr<authentication_adapter> adapter) {
+    void preset_authentication_adapter(std::unique_ptr<authentication_adapter> adapter) {
         authentication_adapter_ = std::move(adapter);
     }
 

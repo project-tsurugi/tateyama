@@ -25,6 +25,7 @@ namespace tateyama::endpoint::ipc {
 static void sig_handler([[maybe_unused]] int sig) {
     std::cerr << ::boost::stacktrace::stacktrace{};
     FAIL();
+    exit(-1);
 }
 
 class ipc_gtest_base: public ::testing::Test, public ipc_test_env {

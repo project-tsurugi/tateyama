@@ -27,14 +27,16 @@ using namespace framework;
 
 bool bridge::setup(environment& env) {
     try {
-        auto auth_conf = env.configuration()->get_section("authentication");
+        if (!authentication_adapter_) {  // In case of test, authentication_adapter_ is pre-set.
+            auto auth_conf = env.configuration()->get_section("authentication");
 
-        bool enabled = false;
-        auto enabled_option = auth_conf->get<bool>("enabled");
-        if (enabled_option) {
-            enabled = enabled_option.value();
+            bool enabled = false;
+            auto enabled_option = auth_conf->get<bool>("enabled");
+            if (enabled_option) {
+                enabled = enabled_option.value();
+            }
+            authentication_adapter_ = std::make_unique<authentication_adapter_mock>(enabled);
         }
-        authentication_adapter_ = std::make_unique<authentication_adapter_mock>(enabled);
     } catch (std::runtime_error &ex) {
         LOG(ERROR) << "error in authentication setup: " << ex.what();
         return false;

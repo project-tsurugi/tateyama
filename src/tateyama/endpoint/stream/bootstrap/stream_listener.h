@@ -64,7 +64,7 @@ public:
           session_(env.resource_repository().find<session::resource::bridge>()),
           conf_(tateyama::endpoint::common::connection_type::stream, session_,
                 status_->database_info(),
-                cfg_->get_section("authentication")->get<bool>("enabled").value() ? env.resource_repository().find<authentication::resource::bridge>() : nullptr),
+                cfg_->get_section("authentication")->get<bool>("enabled").value() ? env.resource_repository().find<tateyama::authentication::resource::bridge>() : nullptr),
           stream_metrics_(env) {
 
         auto endpoint_config = cfg_->get_section("stream_endpoint");

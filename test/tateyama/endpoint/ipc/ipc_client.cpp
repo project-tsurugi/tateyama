@@ -17,7 +17,7 @@
 
 namespace tateyama::endpoint::ipc {
 
-ipc_client::ipc_client(std::shared_ptr<tateyama::api::configuration::whole> const &cfg, tateyama::proto::endpoint::request::Handshake& hs)
+ipc_client::ipc_client(std::shared_ptr<tateyama::api::configuration::whole> const &cfg, tateyama::proto::endpoint::request::Handshake& hs, bool skip_handshake)
     : endpoint_handshake_(hs) {
     get_ipc_database_name(cfg, database_name_);
     container_ = std::make_unique < tsubakuro::common::wire::connection_container > (database_name_);
@@ -29,7 +29,9 @@ ipc_client::ipc_client(std::shared_ptr<tateyama::api::configuration::whole> cons
     request_wire_ = &swc_->get_request_wire();
     response_wire_ = &swc_->get_response_wire();
 
-    handshake();
+    if (!skip_handshake) {
+        handshake();
+    }
 }
 
 ipc_client::ipc_client(std::string_view name, std::size_t session_id, tateyama::proto::endpoint::request::Handshake& hs)

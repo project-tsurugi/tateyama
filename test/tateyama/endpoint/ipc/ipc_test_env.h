@@ -16,15 +16,20 @@
 
 #pragma once
 
+#include <string>
+#include <sstream>
+
 #include "ipc_test_utils.h"
 
 namespace tateyama::endpoint::ipc {
 
 class ipc_test_env: public test_utils::utility {
 public:
-    void setup() {
+    void setup(std::string config = "") {
         temporary_.prepare();
-        cfg_ = tateyama::api::configuration::create_configuration("", tateyama::test_utils::default_configuration_for_tests);
+        std::stringstream ss{};
+        ss << config;
+        cfg_ = std::make_shared<tateyama::api::configuration::whole>(ss, tateyama::test_utils::default_configuration_for_tests);
         set_dbpath(*cfg_);
         get_ipc_max_session(cfg_, ipc_max_session_);
     }

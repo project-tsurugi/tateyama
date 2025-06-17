@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 #pragma once
+#include <functional>
 #include <tateyama/framework/server.h>
 #include "ipc_test_utils.h"
 #include <sys/types.h>
@@ -33,6 +34,7 @@ public:
 
     virtual std::shared_ptr<tateyama::framework::service> create_server_service() = 0;
     virtual void start_server_client();
+    virtual void server(std::function<void(tateyama::framework::server&, std::shared_ptr<tateyama::api::configuration::whole> const &)> f);
     virtual void server();
     virtual void server_dump(const std::size_t msg_num, const std::size_t len_sum);
     virtual void client();
