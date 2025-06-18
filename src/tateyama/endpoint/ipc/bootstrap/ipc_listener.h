@@ -56,7 +56,7 @@ public:
           conf_(tateyama::endpoint::common::connection_type::ipc,
                 session_,
                 status_->database_info(),
-                cfg_->get_section("authentication")->get<bool>("enabled").value() ? env.resource_repository().find<tateyama::authentication::resource::bridge>() : nullptr),
+                authentication_bridge(env)),
           ipc_metrics_(env) {
 
         auto* endpoint_config = cfg_->get_section("ipc_endpoint");

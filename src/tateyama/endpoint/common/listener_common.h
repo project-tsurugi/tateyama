@@ -73,6 +73,16 @@ public:
      */
     virtual void foreach_request(const callback& func) = 0;
 
+protected:
+    static std::shared_ptr<tateyama::authentication::resource::bridge> authentication_bridge(tateyama::framework::environment& env) {
+        if (auto enabled_opt = env.configuration()->get_section("authentication")->get<bool>("enabled"); enabled_opt) {
+            if (enabled_opt.value()) {
+                return env.resource_repository().find<tateyama::authentication::resource::bridge>();
+            }
+        }
+        return nullptr;
+    }
+
 private:
     // auth resource
     const std::shared_ptr<authentication::resource::bridge> auth_;
