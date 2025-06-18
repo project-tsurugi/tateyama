@@ -57,9 +57,7 @@ class authentication_adapter_mock : public authentication_adapter {
     [[nodiscard]] std::optional<std::string> verify_token(std::string_view token) const override {
         if (enabled_) {
             auto handler = std::make_unique<jwt::token_handler>(token, rsa_->public_key());
-            if (auto auth_name_opt = handler->tsurugi_auth_name(); auth_name_opt) {
-                return auth_name_opt.value();
-            }
+            return handler->tsurugi_auth_name();
         }
         return std::nullopt;
     }
