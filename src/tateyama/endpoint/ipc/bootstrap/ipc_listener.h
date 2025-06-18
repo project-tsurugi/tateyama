@@ -261,16 +261,7 @@ public:
             os << "  live sessions\n";
             for (auto && worker : workers_) {
                 if (worker) {
-                    worker->print_diagnostic(os, !worker->is_terminated());
-                }
-            }
-        }
-        {
-            std::unique_lock<std::mutex> lock(mtx_undertakers_);
-            os << "  zombie sessions\n";
-            for (auto && worker : undertakers_) {
-                if (worker) {
-                    worker->print_diagnostic(os, false);
+                    worker->print_diagnostic(os);
                 }
             }
         }
