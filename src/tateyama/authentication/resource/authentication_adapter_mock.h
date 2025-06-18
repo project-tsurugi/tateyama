@@ -18,6 +18,7 @@
 #include <string_view>
 #include <memory>
 #include <map>
+#include <cstdint>
 
 #include "crypto/rsa.h"
 #include "authentication_adapter.h"
