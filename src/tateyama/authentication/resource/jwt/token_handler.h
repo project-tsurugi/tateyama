@@ -29,7 +29,7 @@ public:
     token_handler(std::string_view token, const std::string& public_key) {
         const std::string token_string(token);
 
-        if (jwt_decode(&jwtp_, token_string.c_str(), reinterpret_cast<const unsigned char*>(public_key.c_str()), static_cast<std::int32_t>( public_key.length())) == 0) {
+        if (jwt_decode(&jwtp_, token_string.c_str(), reinterpret_cast<const unsigned char*>(public_key.c_str()), static_cast<std::int32_t>( public_key.length())) == 0) {  // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast) due to jwt API
             return;
         }
         jwtp_ = nullptr;
