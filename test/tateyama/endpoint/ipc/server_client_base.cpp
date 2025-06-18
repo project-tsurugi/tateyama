@@ -47,10 +47,13 @@ void server_client_base::wait_client_exit() {
     }
 }
 
-void server_client_base::server() {
+void server_client_base::server(std::function<void(tateyama::framework::server&, std::shared_ptr<tateyama::api::configuration::whole> const &)> f) {
     tateyama::framework::server sv { tateyama::framework::boot_mode::database_server, cfg_ };
     tateyama::test_utils::add_core_components_for_test(sv);
-    sv.add_service(create_server_service());
+    if (auto server_service = create_server_service(); server_service) {
+        sv.add_service(server_service);
+    }
+    f(sv, cfg_);
     assert_true(sv.setup());
     assert_true(sv.start());
     server_startup_end();
@@ -58,6 +61,9 @@ void server_client_base::server() {
     wait_client_exit();
     server_elapse_.stop();
     assert_true(sv.shutdown());
+}
+void server_client_base::server() {
+    server([](tateyama::framework::server&, std::shared_ptr<tateyama::api::configuration::whole> const &){});
 }
 
 void server_client_base::server_dump(const std::size_t msg_num, const std::size_t len_sum) {

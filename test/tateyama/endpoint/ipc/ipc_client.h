@@ -34,11 +34,14 @@ using resultset_wires_container = tsubakuro::common::wire::session_wire_containe
 
 class ipc_client {
 public:
-    ipc_client(std::shared_ptr<tateyama::api::configuration::whole> const &cfg, tateyama::proto::endpoint::request::Handshake& hs);
-    explicit ipc_client(std::shared_ptr<tateyama::api::configuration::whole> const &cfg) : ipc_client(cfg, default_endpoint_handshake_) {
-    }
     ipc_client(std::string_view database_name, std::size_t session_id, tateyama::proto::endpoint::request::Handshake& hs);
     ipc_client(std::string_view database_name, std::size_t session_id) : ipc_client(database_name, session_id, default_endpoint_handshake_) {
+    }
+
+    ipc_client(std::shared_ptr<tateyama::api::configuration::whole> const &cfg, tateyama::proto::endpoint::request::Handshake& hs, bool skip_handshake);
+    explicit ipc_client(std::shared_ptr<tateyama::api::configuration::whole> const &cfg) : ipc_client(cfg, default_endpoint_handshake_, false) {
+    }
+    ipc_client(std::shared_ptr<tateyama::api::configuration::whole> const &cfg, bool skip_handshake) : ipc_client(cfg, default_endpoint_handshake_, skip_handshake) {
     }
     ~ipc_client() { disconnect(); }
 

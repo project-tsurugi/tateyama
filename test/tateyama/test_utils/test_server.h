@@ -29,6 +29,8 @@
 #endif
 #include <tateyama/request/service/bridge.h>
 #include <tateyama/endpoint/ipc/bootstrap/ipc_endpoint.h>
+#include <tateyama/authentication/service/bridge.h>
+#include <tateyama/authentication/resource/bridge.h>
 
 namespace tateyama::test_utils {
 
@@ -36,6 +38,7 @@ namespace tateyama::test_utils {
         svr.add_resource(std::make_shared<tateyama::metrics::resource::bridge>());
         svr.add_resource(std::make_shared<tateyama::status_info::resource::bridge>());
         svr.add_resource(std::make_shared<tateyama::session::resource::bridge>());
+        svr.add_resource(std::make_shared<authentication::resource::bridge>());
 
         svr.add_service(std::make_shared<tateyama::framework::routing_service>());
         svr.add_service(std::make_shared<tateyama::metrics::service::bridge>());
@@ -44,6 +47,7 @@ namespace tateyama::test_utils {
         svr.add_service(std::make_shared<altimeter::service::bridge>());
 #endif
         svr.add_service(std::make_shared<tateyama::request::service::bridge>());
+        svr.add_service(std::make_shared<tateyama::authentication::service::bridge>());
 
         svr.add_endpoint(std::make_shared<tateyama::framework::ipc_endpoint>());
     }

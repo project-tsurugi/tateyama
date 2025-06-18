@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2024 Project Tsurugi.
+ * Copyright 2018-2025 Project Tsurugi.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,12 +49,16 @@ void stream_worker::run()  // NOLINT(readability-function-cognitive-complexity)
                 return;
             }
 
-            if (! handshake(static_cast<tateyama::api::server::request*>(&request_obj), static_cast<tateyama::api::server::response *>(&response_obj))) {
-                if (session_stream_->await(slot, payload) == tateyama::endpoint::stream::stream_socket::await_result::payload) {
-                    LOG_LP(INFO) << "illegal termination of the session due to handshake error";  // should not reach here
+            try {
+                if (! handshake(static_cast<tateyama::api::server::request*>(&request_obj), static_cast<tateyama::api::server::response *>(&response_obj))) {
+                    if (session_stream_->await(slot, payload) == tateyama::endpoint::stream::stream_socket::await_result::payload) {
+                        LOG_LP(INFO) << "illegal termination of the session due to handshake error";  // should not reach here
+                    }
+                    session_stream_->close();
+                    return;
                 }
-                session_stream_->close();
-                return;
+            } catch (psudo_exception_of_continue &ex) {
+                continue;
             }
 
             session_stream_->change_slot_size(max_result_sets_);

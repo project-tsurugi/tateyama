@@ -132,6 +132,7 @@ parameter=value
 |refresh_timeout | 整数 | 通信によるセッションのライフタイム延長時間(秒)、デフォルト値は300
 |max_refresh_timeout | 整数 | 明示的な要求によるセッションのライフタイム延長時間の最大値(秒)、デフォルト値は10800
 |zone_offset | 文字列 | セッションのデフォルトタイムゾーンオフセットを指定するISO8601規定の文字列 (`±[hh]:[mm]`形式 や `Z` など) 。デフォルトはUTCを示す文字列。 | 
+|authentication_timeout | 整数 | 認証有効期限 (秒), 0 で有効期限なし、デフォルト値は0  |
 
 ## systemセクション
 
@@ -144,6 +145,20 @@ parameter=value
 |パラメーター名 | 型 | 値 |備考|
 |---:| :---: | :--- |---|
 |pid_directory | 文字列 | .pidファイル([プロセスの排他制御について](https://github.com/project-tsurugi/tateyama/blob/master/docs/process-mutex-ja.md)を参照)等のlockファイルを作成する一時ディレクトリを指定する、デフォルト値は/var/lock。 | 同一サーバ上で複数のtsurugidbインスタンスを稼働させる場合は、全tsurugidbインスタンスの構成ファイルについて本パラメータは同じ値に設定する必要がある。なお、lockファイルはサーバ死活監視のためtsubakuroのIPC接続からも参照される。
+
+## authenticationセクション
+
+セクション名
+  - authentication
+
+対象コンポーネント
+  - authentication(tateyama)
+
+|パラメーター名 | 型 | 値 |備考|
+|---:| :---: | :--- |---|
+| enabled | ブール(true/false) | 認証機構を有効にするかどうか、デフォルト値はtrue |
+| url | 文字列 | 認証サービスの URL、デフォルト値は'http://localhost:8080/harinoki' |
+| request_timeout | 実数 | 認証サービスのタイムアウト (秒), 0 でタイムアウトなし、デフォルト値は0 |
 
 ## glogセクション
 

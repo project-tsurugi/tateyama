@@ -34,10 +34,12 @@ target_link_libraries(${test_target}
         PUBLIC gtest
         PRIVATE tbb
         PRIVATE takatori
+        PRIVATE limestone
         PRIVATE atomic
         PRIVATE moodycamel
         PRIVATE rt
-        PRIVATE limestone
+        PRIVATE crypto
+        PRIVATE jwt
         )
 
 function (add_test_executable source_file)

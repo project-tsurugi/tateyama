@@ -34,6 +34,7 @@
 #include <tateyama/framework/routing_service.h>
 #include <tateyama/api/configuration.h>
 #include <tateyama/session/resource/bridge.h>
+#include "tateyama/authentication/resource/bridge.h"
 
 #include "tateyama/endpoint/common/listener_common.h"
 #include "tateyama/endpoint/common/logging.h"
@@ -62,7 +63,9 @@ public:
           router_(env.service_repository().find<framework::routing_service>()),
           status_(env.resource_repository().find<status_info::resource::bridge>()),
           session_(env.resource_repository().find<session::resource::bridge>()),
-          conf_(tateyama::endpoint::common::connection_type::stream, session_, status_->database_info()),
+          conf_(tateyama::endpoint::common::connection_type::stream, session_,
+                status_->database_info(),
+                authentication_bridge(env)),
           stream_metrics_(env) {
 
         auto endpoint_config = cfg_->get_section("stream_endpoint");

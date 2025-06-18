@@ -53,7 +53,10 @@ public:
           router_(env.service_repository().find<framework::routing_service>()),
           status_(env.resource_repository().find<status_info::resource::bridge>()),
           session_(env.resource_repository().find<session::resource::bridge>()),
-          conf_(tateyama::endpoint::common::connection_type::ipc, session_, status_->database_info()),
+          conf_(tateyama::endpoint::common::connection_type::ipc,
+                session_,
+                status_->database_info(),
+                authentication_bridge(env)),
           ipc_metrics_(env) {
 
         auto* endpoint_config = cfg_->get_section("ipc_endpoint");

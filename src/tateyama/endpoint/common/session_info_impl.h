@@ -31,9 +31,6 @@ public:
     session_info_impl(std::size_t id, std::string_view con_type, std::string_view con_info)
         : id_(id), connection_type_name_(con_type), connection_information_(con_info) {
     }
-    session_info_impl(std::size_t id, std::string_view con_type, std::string_view con_info, std::string_view label, std::string_view application_name, std::string_view user_name)
-        : id_(id), connection_type_name_(con_type), connection_information_(con_info), connection_label_(label), application_name_(application_name), user_name_(user_name) {
-    }
     session_info_impl() : session_info_impl(0, "", "") {
     }
 
@@ -51,6 +48,8 @@ public:
 
     [[nodiscard]] std::string_view connection_information() const noexcept override { return connection_information_; }
 
+    [[nodiscard]] std::optional<std::string_view> username() const noexcept override { return user_name_opt_; }
+
 private:
     // server internal info.
     const id_type id_;
@@ -67,18 +66,21 @@ private:
     std::string application_name_{};
 
     std::string user_name_{};
+    std::optional<std::string_view> user_name_opt_{std::nullopt};
 
+protected:
     void label(std::string_view str) {
         connection_label_ = str;
     }
     void application_name(std::string_view name) {
         application_name_ = name;
     }
-    void user_name(std::string_view name) {
-        user_name_ = name;
-    }
     void connection_information(std::string_view info) {
         connection_information_ = info;
+    }
+    void user_name(const std::string& name) {
+        user_name_ = name;
+        user_name_opt_ = user_name_;
     }
 
     friend class worker_common;
