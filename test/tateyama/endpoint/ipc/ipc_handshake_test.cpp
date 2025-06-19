@@ -19,7 +19,7 @@
 #include <tateyama/proto/endpoint/request.pb.h>
 #include <tateyama/proto/endpoint/response.pb.h>
 
-#include "authentication/authentication_adapter_test.h"
+#include "tateyama/authentication/resource/authentication_adapter_test.h"
 #include "ipc_client.h"
 
 #include "ipc_gtest_base.h"
@@ -60,7 +60,7 @@ public:
                 if (cfg->get_section("authentication")->get<bool>("enabled").value()) {
                     auto auth = sv.find_resource<tateyama::authentication::resource::bridge>();
                     if (auth) {
-                        auth->preset_authentication_adapter(std::make_unique<tateyama::endpoint::ipc::authentication::authentication_adapter_test>(true));
+                        auth->preset_authentication_adapter(std::make_unique<tateyama::authentication::resource::authentication_adapter_test>(true));
                     }
                 }
             }
