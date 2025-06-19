@@ -126,15 +126,17 @@ public:
     void print_diagnostic(std::ostream& os, bool live) {
         os << "    session id = " << resources_.session_id() << "\n";
         os << "      processing requests" << "\n";
-        std::lock_guard<std::mutex> lock(mtx_reqreses_);
-        for (auto itr{reqreses_.begin()}, end{reqreses_.end()}; itr != end; ++itr) {
-            os << "       slot " << std::dec << itr->first << "\n";
-            os << "         service id = " << itr->second.first->service_id() << "\n";
-            os << "         local id = " << itr->second.first->local_id() << "\n";
-            os << "         request message = ";
-            dump_message(os, itr->second.first->payload());
-            os << "\n";
-            os << "         data channel status = '" << itr->second.second->state_label() << "'" << "\n";
+        {
+            std::lock_guard<std::mutex> lock(mtx_reqreses_);
+            for (auto itr{reqreses_.begin()}, end{reqreses_.end()}; itr != end; ++itr) {
+                os << "       slot " << std::dec << itr->first << "\n";
+                os << "         service id = " << itr->second.first->service_id() << "\n";
+                os << "         local id = " << itr->second.first->local_id() << "\n";
+                os << "         request message = ";
+                dump_message(os, itr->second.first->payload());
+                os << "\n";
+                os << "         data channel status = '" << itr->second.second->state_label() << "'" << "\n";
+            }
         }
         if (!live) {
             os << "       has_incomplete_response " << std::boolalpha << has_incomplete_response() << "\n";
