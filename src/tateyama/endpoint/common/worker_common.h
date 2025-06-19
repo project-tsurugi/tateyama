@@ -90,10 +90,7 @@ public:
     }
 
     [[nodiscard]] bool is_quiet() {
-        if (has_incomplete_response()) {  // should check before has_incomplete_resultset()
-            return false;
-        }
-        if (has_incomplete_resultset()) {
+        if (!is_all_request_completed()) {
             return false;
         }
         return is_terminated();
@@ -123,7 +120,7 @@ public:
     /**
      * @brief print diagnostics
      */
-    void print_diagnostic(std::ostream& os, bool live) {
+    void print_diagnostic(std::ostream& os) {
         os << "    session id = " << resources_.session_id() << "\n";
         os << "      processing requests" << "\n";
         {
@@ -138,10 +135,14 @@ public:
                 os << "         data channel status = '" << itr->second.second->state_label() << "'" << "\n";
             }
         }
-        if (!live) {
-            os << "       has_incomplete_response " << std::boolalpha << has_incomplete_response() << "\n";
-            os << "       has_incomplete_resultset " << std::boolalpha << has_incomplete_resultset() << "\n";
-            os << "       is_terminated " << std::boolalpha << is_terminated() << "\n";
+        if (has_incomplete_response()) {
+            os << "      it has incomplete response\n";
+        }
+        if (has_incomplete_resultset()) {
+            os << "      it has incomplete resultset\n";
+        }
+        if (is_terminated()) {
+            os << "      it is terminated\n";
         }
     }
 
@@ -532,6 +533,10 @@ protected:
     }
 
     bool is_completed() {
+        if (!is_all_request_completed()) {
+            return false;
+        }
+
         std::lock_guard<std::mutex> lock(mtx_reqreses_);
         if (shutdown_response_.empty()) {
             return reqreses_.empty();
@@ -625,6 +630,15 @@ private:
     bool dispose_done_{};
     bool complete_shutdown_from_client_{};
 
+    bool is_all_request_completed() {
+        if (has_incomplete_response()) {  // should check before has_incomplete_resultset()
+            return false;
+        }
+        if (has_incomplete_resultset()) {
+            return false;
+        }
+        return true;
+    }
     void dump_message(std::ostream& os, std::string_view message) {
         for (auto&& c: message) {
             os << std::hex << std::setw(2) << std::setfill('0') << (static_cast<std::uint32_t>(c) & 0xffU) << " ";
