@@ -533,7 +533,7 @@ protected:
     }
 
     bool is_completed() {
-        if (!is_all_request_completed()) {
+        if (has_incomplete_resultset()) {
             return false;
         }
 
