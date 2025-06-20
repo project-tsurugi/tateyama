@@ -412,6 +412,7 @@ protected:
             default: // error
                 return false;
             }
+            resultset_force_close();
             request_shutdown(shutdown_type);
             {
                 std::lock_guard<std::mutex> lock(mtx_reqreses_);
@@ -588,6 +589,7 @@ protected:
         return rv;
     }
 
+    virtual void resultset_force_close() = 0;
     virtual bool has_incomplete_resultset() = 0;
 
     void update_expiration_time(bool force = false) {

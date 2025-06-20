@@ -50,6 +50,10 @@ private:
     server_wire_container_impl::wire_container_impl* request_wire_container_;
     const tateyama::endpoint::common::configuration& conf_;
 
+    void resultset_force_close() override {
+        wire_->get_garbage_collector()->force_close();
+    }
+
     bool has_incomplete_resultset() override {
         auto* gc = wire_->get_garbage_collector();
         gc->dump();

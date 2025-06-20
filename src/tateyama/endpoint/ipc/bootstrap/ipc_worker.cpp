@@ -67,7 +67,7 @@ void ipc_worker::run() {  // NOLINT(readability-function-cognitive-complexity)
             }
             if (!notiry_expiration_time_over) {
                 if (is_expiration_time_over()) {
-                    wire_->expiration_time_over();
+                    wire_->force_close();
                     request_shutdown(tateyama::session::shutdown_request_type::forceful);
                     notiry_expiration_time_over = true;
                 }

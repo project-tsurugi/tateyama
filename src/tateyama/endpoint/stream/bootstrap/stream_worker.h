@@ -56,6 +56,8 @@ class alignas(64) stream_worker : public tateyama::endpoint::common::worker_comm
         rp.clear_error();
     }
 
+    void resultset_force_close() override {
+    }
     bool has_incomplete_resultset() override {
         return false;
     }

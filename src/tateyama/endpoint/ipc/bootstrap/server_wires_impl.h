@@ -281,7 +281,7 @@ public:
         }
         ~resultset_wires_container_impl() override {
             try {
-                if (server_ && !expiration_time_over_) {
+                if (server_ && !force_close_) {
                     std::lock_guard<std::mutex> lock(mtx_shm_);
                     managed_shm_ptr_->destroy<tateyama::common::wire::shm_resultset_wires>(rsw_name_.c_str());
                 }
@@ -332,10 +332,10 @@ public:
             }
             return true;
         }
-        // in case lost client
-        void expiration_time_over() override {
+        // in case lost client or shutdown request
+        void force_close() override {
             shm_resultset_wires_->set_closed();
-            expiration_time_over_ = true;
+            force_close_ = true;
         }
 
         void add_released_writer(unq_p_resultset_wire_conteiner resultset_wire) {
@@ -379,7 +379,7 @@ public:
         std::string rsw_name_;
         tateyama::common::wire::shm_resultset_wires* shm_resultset_wires_{};
         bool server_;
-        bool expiration_time_over_{};
+        bool force_close_{};
         std::mutex& mtx_shm_;
         std::size_t datachannel_buffer_size_;
 
@@ -429,13 +429,13 @@ public:
 
         void put(unq_p_resultset_wires_conteiner wires) override {
             std::lock_guard<std::mutex> lock(mtx_put_);
-            if (expiration_time_over_) {
-                wires->expiration_time_over();
+            if (force_close_) {
+                wires->force_close();
             }
             resultset_wires_set_.emplace(std::move(wires));
         }
         void dump() override {
-            if (!expiration_time_over_) {
+            if (!force_close_) {
                 if (mtx_dump_.try_lock()) {
                     std::lock_guard<std::mutex> lock(mtx_put_);
 
@@ -453,19 +453,19 @@ public:
         }
         bool empty() override {
             std::lock_guard<std::mutex> lock(mtx_put_);
-            return resultset_wires_set_.empty() || expiration_time_over_;
+            return resultset_wires_set_.empty() || force_close_;
         }
-        void expiration_time_over() override {
+        void force_close() override {
             std::lock_guard<std::mutex> lock(mtx_put_);
             for (const auto& it : resultset_wires_set_) {
-                it->expiration_time_over();
+                it->force_close();
             }
-            expiration_time_over_ = true;
+            force_close_ = true;
         }
 
     private:
         std::set<unq_p_resultset_wires_conteiner> resultset_wires_set_{};
-        bool expiration_time_over_{};
+        bool force_close_{};
         mutable std::mutex mtx_put_{};
         mutable std::mutex mtx_dump_{};
     };
@@ -615,8 +615,8 @@ public:
         return (datachannel_buffer_size + data_channel_overhead) * max_datachannel_buffers + (request_buffer_size + response_buffer_size) + total_overhead;
     }
 
-    void expiration_time_over() override {
-        garbage_collector_impl_->expiration_time_over();
+    void force_close() override {
+        garbage_collector_impl_->force_close();
     }
 
     // for client
