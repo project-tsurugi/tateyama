@@ -45,6 +45,17 @@ cmake --build . --target install
 
 see https://github.com/cameron314/concurrentqueue
 
+#### restclient-cpp
+
+```sh
+mkdir -p build-third_party/restclient-cpp
+cd build-third_party/restclient-cpp
+cmake -G Ninja -DCMAKE_INSTALL_PREFIX=[/path/to/install-prefix] ../../third_party/restclient-cpp
+cmake --build . --target install
+```
+
+see https://github.com/mrtazz/restclient-cpp
+
 ## How to build
 
 ```sh
