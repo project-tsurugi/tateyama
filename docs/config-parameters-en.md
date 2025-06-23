@@ -161,6 +161,7 @@ Target component
 | enabled | Boolean(true/false) | Whether to enable the certification mechanism. The default value is true. |
 | url | String | URL of the authentication service. The default value is 'http://localhost:8080/harinoki' |
 | request_timeout | Number | Authentication service timeout in seconds, 0 for no timeout. The default value is 0. |
+| administrators | String | List of administrative users (separated by ’ where * makes all login users administrative users. Default value is *.A. |
 
 ## glog section
 
