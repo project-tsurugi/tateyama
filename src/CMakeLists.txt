@@ -115,6 +115,8 @@ target_link_libraries(${ENGINE}
         PRIVATE rt # for shm
         PRIVATE crypto
         PRIVATE jwt
+        PRIVATE json-c
+        PRIVATE restclient-cpp
 )
 
 if(MC_QUEUE)

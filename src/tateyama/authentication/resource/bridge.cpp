@@ -17,7 +17,7 @@
 
 #include <glog/logging.h>
 
-#include "authentication_adapter_mock.h"
+#include "authentication_adapter_impl.h"
 
 #include "bridge.h"
 
@@ -35,7 +35,11 @@ bool bridge::setup(environment& env) {
             if (enabled_option) {
                 enabled = enabled_option.value();
             }
-            authentication_adapter_ = std::make_unique<authentication_adapter_mock>(enabled);
+            if (auto url_option = auth_conf->get<std::string>("url"); url_option) {
+                authentication_adapter_ = std::make_unique<authentication_adapter_impl>(enabled, url_option.value());
+            } else {
+                authentication_adapter_ = std::make_unique<authentication_adapter_impl>(enabled, "");
+            }
         }
     } catch (std::runtime_error &ex) {
         LOG(ERROR) << "error in authentication setup: " << ex.what();
