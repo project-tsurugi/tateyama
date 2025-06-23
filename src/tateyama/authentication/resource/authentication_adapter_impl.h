@@ -1,0 +1,83 @@
+/*
+ * Copyright 2018-2025 Project Tsurugi.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+#include <string>
+#include <string_view>
+#include <memory>
+#include <map>
+#include <cstdint>
+#include <stdexcept>
+
+#include "rest/client.h"
+#include "authentication_adapter.h"
+#include "jwt/token_handler.h"
+
+namespace tateyama::authentication::resource {
+
+/**
+ * @brief authentication_adapter_impl
+ * @details This mock does not issue tokens, but verifies that it is signed with the correct private key.
+ * And this mock authenticates encrypted_credential whose username/password combination are  admin-test and user-pass.
+ */
+class authentication_adapter_impl : public authentication_adapter {
+  public:
+    explicit authentication_adapter_impl(bool enabled, const std::string& url) : enabled_(enabled), client_(enabled_ ? std::make_unique<rest::client>(url) : nullptr) {
+        if (enabled_) {
+            if (encryption_key_ = client_->get_encryption_key(); !encryption_key_) {
+                throw std::runtime_error(std::string("cannot get encryption_key from ") + url);
+            }
+        }
+    }
+
+    [[nodiscard]] bool is_enabled() const noexcept override {
+        return enabled_;
+    }
+
+    [[nodiscard]] std::optional<encryption_key_type> get_encryption_key() const override {
+        return encryption_key_;
+    }
+
+    [[nodiscard]] std::optional<std::string> verify_token(std::string_view token) const override {
+        if (enabled_) {
+            if (auto token_opt = client_->verify_token(token); token_opt) {
+                return get_username(token_opt.value());
+            }
+        }
+        return std::nullopt;
+    }
+
+    [[nodiscard]] std::optional<std::string> verify_encrypted(std::string_view username, std::string_view password) const override {
+        if (enabled_) {
+            if (auto token_opt = client_->verify_encrypted(username, password); token_opt) {
+                return get_username(token_opt.value());
+            }
+        }
+        return std::nullopt;
+    }
+
+private:
+    bool enabled_;
+    std::unique_ptr<rest::client> client_;
+    std::optional<std::pair<std::string, std::string>> encryption_key_{};
+    [[nodiscard]] std::optional<std::string> get_username(const std::string& token) const {
+        if (encryption_key_) {
+            auto handler = std::make_unique<jwt::token_handler>(token, encryption_key_.value().second);
+            return handler->tsurugi_auth_name();
+        }
+        return std::nullopt;
+    }
+};
+
+}
