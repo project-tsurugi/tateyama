@@ -13,32 +13,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <strings.h>
 #include <string>
+#include <string_view>
 #include <optional>
 
-#include <restclient-cpp/restclient.h>
-#include <restclient-cpp/connection.h>
-
-#include <json-c/json.h>
+#include <cpprest/http_client.h>
 
 namespace tateyama::authentication::resource::rest {
 
 class client {
 public:
-    explicit client(const std::string& url) : connection_(std::make_unique<RestClient::Connection>(url)) {
+    explicit client(const std::string& loc) {
+        utility::string_t address = U(loc);
+        web::http::uri uri = web::http::uri(address);
+        client_ = std::make_unique<web::http::client::http_client>(web::http::uri_builder(uri).to_uri());
     }
 
     std::optional<std::pair<std::string, std::string>> get_encryption_key() {
-        auto res = connection_->get("/encryption-key");
-        
-        std::string type{};
-        std::string data{};
-        if (parse(res.body, type, "key_type", data, "key_data")) {
-            if (!type.empty() && !data.empty()) {
-                if (type == "RSA") {
-                    return std::make_pair(std::move(type), std::move(data));
-                }
+        auto response = client_->request(web::http::methods::GET, web::http::uri_builder(U("/encryption-key")).to_string()).get();
+        web::json::value body = response.extract_json(true).get();
+
+        std::string type = body.at("key_type").as_string();
+        std::string data = body.at("key_data").as_string();
+
+        if (!type.empty() && !data.empty()) {
+            if (type == "RSA") {
+                return std::make_pair(type, data);
             }
         }
         return std::nullopt;
@@ -48,15 +48,16 @@ public:
         std::string t("Bearer ");
         t += token_given;
 
-        connection_->AppendHeader("Authorization", t);
+        web::http::http_request req(web::http::methods::GET);
+        req.set_request_uri(web::http::uri_builder(U("/verify")).to_string());
+        req.headers().add(U("Authorization"), t);
 
-        auto res = connection_->get("/verify");
+        auto response = client_->request(req).get();
+        web::json::value body = response.extract_json(true).get();
 
-        std::string token{};
-        if (parse(res.body, token, "token")) {
-            if (!token.empty()) {
-                return token;
-            }
+        std::string token = body.at("token").as_string();
+        if (!token.empty()) {
+            return token;
         }
         return std::nullopt;
     }
@@ -65,53 +66,23 @@ public:
         std::string e(username);
         e += ".";
         e += password;
-        connection_->AppendHeader("X-Encrypted-Credentials", e);
 
-        auto res = connection_->get("/issue-encrypted");
+        web::http::http_request req(web::http::methods::GET);
+        req.set_request_uri(web::http::uri_builder(U("/issue-encrypted")).to_string());
+        req.headers().add(U("X-Encrypted-Credentials"), e);
 
-        std::string token{};
-        if (parse(res.body, token, "token")) {
-            if (!token.empty()) {
-                return token;
-            }
+        auto response = client_->request(req).get();
+        web::json::value body = response.extract_json(true).get();
+
+        std::string token = body.at("token").as_string();
+        if (!token.empty()) {
+            return token;
         }
         return std::nullopt;
     }
 
   private:
-    std::unique_ptr<RestClient::Connection> connection_;
-
-    bool parse(std::string& body, std::string& p1s, const char p1n[]) {  // NOLINT
-        struct json_object *jobj = json_tokener_parse(body.c_str());
-        json_object_object_foreach(jobj, key, val) {
-            if (strcmp("type", key) == 0) {
-                if (strcasecmp("ok", json_object_to_json_string(val)) != 0) {
-                    return false;
-                }
-            }
-            if (strcmp(p1n, key) == 0) {
-                p1s = json_object_to_json_string(val);
-            }
-        }
-        return true;
-    }
-    bool parse(std::string& body, std::string& p1s, const char p1n[], std::string& p2s, const char p2n[]) {  // NOLINT
-        struct json_object *jobj = json_tokener_parse(body.c_str());
-        json_object_object_foreach(jobj, key, val) {
-            if (strcmp("type", key) == 0) {
-                if (strcasecmp("ok", json_object_to_json_string(val)) != 0) {
-                    return false;
-                }
-            }
-            if (strcmp(p1n, key) == 0) {
-                p1s = json_object_to_json_string(val);
-            }
-            if (strcmp(p2n, key) == 0) {
-                p2s = json_object_to_json_string(val);
-            }
-        }
-        return true;
-    }
+    std::unique_ptr<web::http::client::http_client> client_{};
 };
 
 } // namespace
