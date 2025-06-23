@@ -16,7 +16,7 @@ git submodule update --init --recursive
 ```dockerfile
 FROM ubuntu:22.04
 
-RUN apt update -y && apt install -y git build-essential cmake ninja-build libboost-filesystem-dev libboost-system-dev libboost-container-dev libboost-thread-dev libboost-stacktrace-dev libgoogle-glog-dev libgflags-dev doxygen libtbb-dev libnuma-dev libssl-dev libjwt-dev
+RUN apt update -y && apt install -y git build-essential cmake ninja-build libboost-filesystem-dev libboost-system-dev libboost-container-dev libboost-thread-dev libboost-stacktrace-dev libgoogle-glog-dev libgflags-dev doxygen libtbb-dev libnuma-dev libssl-dev libjwt-dev libcpprest-dev
 ```
 
 optional packages:
@@ -44,17 +44,6 @@ cmake --build . --target install
 ```
 
 see https://github.com/cameron314/concurrentqueue
-
-#### restclient-cpp
-
-```sh
-mkdir -p build-third_party/restclient-cpp
-cd build-third_party/restclient-cpp
-cmake -G Ninja -DCMAKE_INSTALL_PREFIX=[/path/to/install-prefix] ../../third_party/restclient-cpp
-cmake --build . --target install
-```
-
-see https://github.com/mrtazz/restclient-cpp
 
 ## How to build
 
