@@ -206,6 +206,15 @@ protected:
             notify_client(res, tateyama::proto::diagnostics::Code::INVALID_REQUEST, error_message);
             return false;
         }
+
+        // check service mesage version;
+        std::uint64_t smvm = rq.service_message_version_major();
+        if (smvm > SERVICE_MESSAGE_VERSION_MAJOR ||
+            (smvm == SERVICE_MESSAGE_VERSION_MAJOR && rq.service_message_version_minor() > SERVICE_MESSAGE_VERSION_MINOR)) {
+            notify_client(res, tateyama::proto::diagnostics::Code::INVALID_REQUEST, "unsupported service message version");
+            return false;
+        }
+
         switch (rq.command_case()) {
         case tateyama::proto::endpoint::request::Request::kEncryptionKey:
         {
@@ -352,7 +361,6 @@ protected:
         }
 
         switch (rq.command_case()) {
-
         case tateyama::proto::endpoint::request::Request::kCancel:
         {
             VLOG_LP(log_trace) << "received cancel request, slot = " << slot;  //NOLINT
@@ -619,6 +627,9 @@ protected:
     }
 
 private:
+    constexpr static std::uint64_t SERVICE_MESSAGE_VERSION_MAJOR = 1;
+    constexpr static std::uint64_t SERVICE_MESSAGE_VERSION_MINOR = 2;
+
     tateyama::endpoint::common::resources resources_;
     const std::shared_ptr<tateyama::session::resource::session_context_impl> session_context_;
     bool enable_timeout_;
