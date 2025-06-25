@@ -527,6 +527,9 @@ public:
         void notify_shutdown() override {
             wire_->notify_shutdown();
         }
+        void force_close() {
+            wire_->force_close();
+        }
 
         // for client
         tateyama::common::wire::response_header await() {
@@ -615,7 +618,11 @@ public:
         return (datachannel_buffer_size + data_channel_overhead) * max_datachannel_buffers + (request_buffer_size + response_buffer_size) + total_overhead;
     }
 
+    /**
+     * @brief notify worker thread of the client timeout
+     */
     void force_close() override {
+        response_wire_.force_close();
         garbage_collector_impl_->force_close();
     }
 

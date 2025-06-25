@@ -560,6 +560,16 @@ public:
             c_empty_.notify_one();
         }
     }
+    /**
+     * @brief notify server of the client timeout
+     */
+    void force_close() {
+        closed_.store(true);
+        if (wait_for_write_) {
+            boost::interprocess::scoped_lock lock(m_mutex_);
+            c_full_.notify_one();
+        }
+    }
 
 private:
     std::atomic_bool closed_{};
