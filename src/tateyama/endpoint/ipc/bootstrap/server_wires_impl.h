@@ -520,10 +520,53 @@ public:
             wire_ = wire;
             bip_buffer_ = bip_buffer;
         }
-        void write(const char* from, tateyama::common::wire::response_header header) override {
-            std::lock_guard<std::mutex> lock(mtx_);
-            wire_->write(bip_buffer_, from, header);
+        void write(const char* from, tateyama::common::wire::response_header header, bool blockable) override {
+            if (thread_active_) {
+                std::lock_guard<std::mutex> lock(thread_mtx_);
+                if (thread_active_) {
+                    responses_.emplace(std::string(from, header.get_length()), header);
+                    return;
+                }
+            }
+            {
+                std::lock_guard<std::mutex> lock(write_mtx_);
+                if (blockable || wire_->is_writable(header)) {
+                    wire_->write(bip_buffer_, from, header);
+                    return;
+                }
+            }
+            {
+                std::lock_guard<std::mutex> lock(thread_mtx_);
+                responses_.emplace(std::string(from, header.get_length()), header);
+                writer_thread_ = std::thread(std::ref(*this));
+                writer_thread_.detach();
+                std::atomic_thread_fence(std::memory_order_acq_rel);
+                thread_active_ = true;
+            }
         }
+        void operator()() {
+            while (true) {
+                std::string r{};
+                tateyama::common::wire::response_header h{};
+                {
+                    std::lock_guard<std::mutex> lock(thread_mtx_);
+                    if (responses_.empty()) {
+                        thread_active_ = false;
+                        break;
+                    }
+
+                    const auto response = responses_.front();
+                    r = response.first;
+                    h = response.second;
+                    responses_.pop();
+                }
+                {
+                    std::lock_guard<std::mutex> lock(write_mtx_);
+                    wire_->write(bip_buffer_, r.data(), h);
+                }
+            }
+        }
+
         void notify_shutdown() override {
             wire_->notify_shutdown();
         }
@@ -554,7 +597,11 @@ public:
     private:
         tateyama::common::wire::unidirectional_response_wire* wire_{};
         char* bip_buffer_{};
-        mutable std::mutex mtx_{};
+        mutable std::mutex write_mtx_{};
+        mutable std::mutex thread_mtx_{};
+        std::thread writer_thread_{};
+        std::queue<std::pair<std::string, tateyama::common::wire::response_header>> responses_{};
+        std::atomic_bool thread_active_{};
     };
 
     server_wire_container_impl(std::string_view name, std::string_view mutex_file, std::size_t datachannel_buffer_size, std::size_t max_datachannel_buffers, std::function<void(void)> clean_up)

@@ -46,7 +46,7 @@ tateyama::status ipc_response::body(std::string_view body) {
             return status::unknown;
         }
         auto s = ss.str();
-        server_wire_.get_response_wire().write(s.data(), tateyama::common::wire::response_header(index_, s.length(), RESPONSE_BODY));
+        server_wire_.get_response_wire().write(s.data(), tateyama::common::wire::response_header(index_, s.length(), RESPONSE_BODY), worker_ != std::this_thread::get_id());
         set_completed();
         return tateyama::status::ok;
     }
@@ -69,7 +69,7 @@ tateyama::status ipc_response::body_head(std::string_view body_head) {
         return status::unknown;
     }
     auto s = ss.str();
-    server_wire_.get_response_wire().write(s.data(), tateyama::common::wire::response_header(index_, s.length(), RESPONSE_BODYHEAD));
+    server_wire_.get_response_wire().write(s.data(), tateyama::common::wire::response_header(index_, s.length(), RESPONSE_BODYHEAD), worker_ != std::this_thread::get_id());
     set_state(state::to_be_used);
     return tateyama::status::ok;
 }
@@ -106,7 +106,7 @@ void ipc_response::server_diagnostics(std::string_view diagnostic_record) {
         return;
     }
     auto s = ss.str();
-    server_wire_.get_response_wire().write(s.data(), tateyama::common::wire::response_header(index_, s.length(), RESPONSE_BODY));
+    server_wire_.get_response_wire().write(s.data(), tateyama::common::wire::response_header(index_, s.length(), RESPONSE_BODY), worker_ != std::this_thread::get_id());
 }
 
 tateyama::status ipc_response::acquire_channel(std::string_view name, std::shared_ptr<tateyama::api::server::data_channel>& ch, std::size_t max_writer_count) {

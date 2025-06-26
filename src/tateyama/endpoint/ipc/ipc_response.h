@@ -20,6 +20,7 @@
 #include <mutex>
 #include <atomic>
 #include <functional>
+#include <thread>
 
 #include "tateyama/endpoint/common/response.h"
 #include "tateyama/endpoint/common/pointer_comp.h"
@@ -96,11 +97,13 @@ public:
   ipc_response(server_wire_container& server_wire,
                std::size_t index,
                std::function<void(void)> clean_up,
-               const tateyama::endpoint::common::configuration& conf) :
+               const tateyama::endpoint::common::configuration& conf,
+               std::thread::id worker) :
         tateyama::endpoint::common::response(index, conf),
         server_wire_(server_wire),
         garbage_collector_(*server_wire_.get_garbage_collector()),
-        clean_up_(std::move(clean_up)) {
+        clean_up_(std::move(clean_up)),
+        worker_(worker) {
     }
     ~ipc_response() override {
         data_channel_ = nullptr;
@@ -124,6 +127,7 @@ private:
     server_wire_container& server_wire_;
     garbage_collector& garbage_collector_;
     const std::function<void(void)> clean_up_;
+    const std::thread::id worker_;
 
     void server_diagnostics(std::string_view diagnostic_record);
 };

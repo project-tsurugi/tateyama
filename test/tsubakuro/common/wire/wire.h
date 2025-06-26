@@ -354,9 +354,19 @@ private:
     std::unique_ptr<std::string> copy_of_payload_{};  // in case of ring buffer wrap around
 };
 
-static constexpr std::int64_t MAX_TIMEOUT_US = 10L * 365L * 24L * 3600L * 1000L * 1000L;
-inline static std::int64_t u_cap(std::int64_t timeout_us) {
-    return (timeout_us > MAX_TIMEOUT_US) ? MAX_TIMEOUT_US : timeout_us;
+static constexpr std::int64_t MAX_TIMEOUT = 10L * 365L * 24L * 3600L * 1000L * 1000L;
+
+inline static std::int64_t u_cap(std::int64_t timeout) {
+    return (timeout > MAX_TIMEOUT) ? MAX_TIMEOUT : timeout;
+}
+inline static std::int64_t u_round(std::int64_t timeout) {
+    if (timeout == 0) {
+        return timeout;
+    }
+    return (((timeout-500)/1000)+1) * 1000;
+}
+inline static std::int64_t n_cap(std::int64_t timeout) {
+    return (timeout > (MAX_TIMEOUT * 1000)) ? (MAX_TIMEOUT * 1000) : timeout;
 }
 
 // for request
@@ -391,7 +401,7 @@ public:
             wait_for_read_ = true;
             std::atomic_thread_fence(std::memory_order_acq_rel);
             if (!c_empty_.timed_wait(lock,
-                                     boost::get_system_time() + boost::posix_time::microseconds(u_cap(watch_interval * 1000 * 1000)),
+                                     boost::get_system_time() + boost::posix_time::microseconds(u_cap(u_round(watch_interval * 1000 * 1000))),
                                      [this](){ return (stored() >= message_header::size) || termination_requested_.load() || onetime_notification_.load(); })) {
                 wait_for_read_ = false;
                 throw std::runtime_error("request has not been received within the specified time");
@@ -460,9 +470,9 @@ public:
     /**
      * @brief wait for response arrival and return its header.
      */
-    response_header await(const char* base, std::int64_t timeout_us = 0) {
-        if (timeout_us == 0) {
-            timeout_us = watch_interval * 1000 * 1000;
+    response_header await(const char* base, std::int64_t timeout = 0) {
+        if (timeout == 0) {
+            timeout = watch_interval * 1000 * 1000;
         }
 
         while (true) {
@@ -480,9 +490,7 @@ public:
                 wait_for_read_ = true;
                 std::atomic_thread_fence(std::memory_order_acq_rel);
 
-                if (!c_empty_.timed_wait(lock,
-                                         boost::get_system_time() + boost::posix_time::microseconds(u_cap(timeout_us)),
-                                         [this](){ return (stored() >= response_header::size) || closed_.load() || shutdown_.load(); })) {
+                if (!c_empty_.timed_wait(lock, boost::get_system_time() + boost::posix_time::microseconds(u_cap(u_round(timeout))), [this](){ return (stored() >= response_header::size) || closed_.load() || shutdown_.load(); })) {
                     wait_for_read_ = false;
                     throw std::runtime_error("response has not been received within the specified time");
                 }
@@ -543,6 +551,14 @@ public:
         simple_wire<response_header>::write(base, from, header, closed_);
     }
     /**
+     * @brief check buffer has space for the response message
+     * @param header the header of the response message
+     * @return true if the buffer has space for the response message
+     */
+    bool is_writable(response_header header) {
+        return room() >= header.get_length();
+    }
+    /**
      * @brief notify client of the client of the shutdown
      */
     void notify_shutdown() {
@@ -550,6 +566,16 @@ public:
         if (wait_for_read_) {
             boost::interprocess::scoped_lock lock(m_mutex_);
             c_empty_.notify_one();
+        }
+    }
+    /**
+     * @brief notify server of the client timeout
+     */
+    void force_close() {
+        closed_.store(true);
+        if (wait_for_write_) {
+            boost::interprocess::scoped_lock lock(m_mutex_);
+            c_full_.notify_one();
         }
     }
 
@@ -763,7 +789,7 @@ public:
                 }
             }
         } catch (std::exception &e) {
-            std::cerr << e.what() << std::endl;
+            std::cerr << e.what() << std::endl;  // NOLINT
         }
     }
 
@@ -815,12 +841,12 @@ public:
      * @brief search a wire that has record sent by the server
      *  used by clinet
      */
-    unidirectional_simple_wire* active_wire(std::int64_t timeout_us = 0) {
-        if (timeout_us == 0) {
-            timeout_us = watch_interval * 1000 * 1000;
+    unidirectional_simple_wire* active_wire(std::int64_t timeout = 0) {
+        if (timeout == 0) {
+            timeout = watch_interval * 1000 * 1000;
         }
 
-        do {
+        while (true) {
             for (auto&& wire: unidirectional_simple_wires_) {
                 if(wire.has_record()) {
                     return &wire;
@@ -832,7 +858,11 @@ public:
                 std::atomic_thread_fence(std::memory_order_acq_rel);
                 unidirectional_simple_wire* active_wire = nullptr;
                 if (!c_record_.timed_wait(lock,
-                                          boost::get_system_time() + boost::posix_time::microseconds(u_cap(timeout_us)),
+#ifdef BOOST_DATE_TIME_HAS_NANOSECONDS
+                                          boost::get_system_time() + boost::posix_time::nanoseconds(n_cap(timeout)),
+#else
+                                          boost::get_system_time() + boost::posix_time::microseconds(u_cap(u_round(timeout))),
+#endif
                                           [this, &active_wire](){
                                               bool eor = is_eor();
                                               std::atomic_thread_fence(std::memory_order_acq_rel);
@@ -852,9 +882,10 @@ public:
                     return active_wire;
                 }
             }
-        } while(!is_eor());
-
-        return nullptr;
+            if (is_eor()) {
+                return nullptr;
+            }
+        }
     }
 
     /**
@@ -1044,7 +1075,7 @@ public:
             boost::interprocess::scoped_lock lock(mutex_);
             std::atomic_thread_fence(std::memory_order_acq_rel);
             return condition_.timed_wait(lock,
-                                         boost::get_system_time() + boost::posix_time::microseconds(u_cap(watch_interval * 1000 * 1000)),
+                                         boost::get_system_time() + boost::posix_time::microseconds(u_cap(u_round(watch_interval * 1000 * 1000))),
                                          [this, &terminate](){ return (pushed_.load() > poped_.load()) || terminate.load(); });
         }
         // thread unsafe (assume single listener thread)
@@ -1097,16 +1128,20 @@ public:
             session_id_ = session_id_indicating_error;
             notify();
         }
-        [[nodiscard]] std::size_t wait(std::int64_t timeout_us = 0) {
+        [[nodiscard]] std::size_t wait(std::int64_t timeout = 0) {
             std::atomic_thread_fence(std::memory_order_acq_rel);
-            if (timeout_us <= 0) {
+            if (timeout <= 0) {
                 boost::interprocess::scoped_lock lock(m_accepted_);
                 c_accepted_.wait(lock, [this](){ return (session_id_ != 0); });
             } else {
                 boost::interprocess::scoped_lock lock(m_accepted_);
                 if (!c_accepted_.timed_wait(lock,
-                                            boost::get_system_time() + boost::posix_time::microseconds(u_cap(timeout_us)),
-                                            [this](){ return (session_id_ != 0); })) {
+#ifdef BOOST_DATE_TIME_HAS_NANOSECONDS
+                                        boost::get_system_time() + boost::posix_time::nanoseconds(n_cap(timeout)),
+#else
+                                        boost::get_system_time() + boost::posix_time::microseconds(u_cap(u_round(timeout))),
+#endif
+                                        [this](){ return (session_id_ != 0); })) {
                     throw std::runtime_error("connection response has not been accepted within the specified time");
                 }
             }
@@ -1167,10 +1202,10 @@ public:
         q_requested_.push(sid);
         return sid;
     }
-    std::size_t wait(std::size_t sid, std::int64_t timeout_us = 0) {
+    std::size_t wait(std::size_t sid, std::int64_t timeout = 0) {
         auto& entry = v_requested_.at(reset_admin(sid));
         try {
-            auto rtnv = entry.wait(timeout_us);
+            auto rtnv = entry.wait(timeout);
             entry.reuse();
             return rtnv;
         } catch (std::runtime_error &ex) {

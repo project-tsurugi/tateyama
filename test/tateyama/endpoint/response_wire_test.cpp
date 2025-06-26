@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 #include <thread>
+#include <future>
 
 #include <tateyama/status.h>
 #include <tateyama/api/server/request.h>
@@ -43,6 +44,7 @@ public:
     std::unique_ptr<bootstrap::server_wire_container_impl> wire_;
 };
 
+
 TEST_F(response_wire_test, large_messege) {
     static constexpr std::size_t string_length = 132397;
 
@@ -56,8 +58,8 @@ TEST_F(response_wire_test, large_messege) {
     tateyama::common::wire::message_header::index_type index = 11;
 
     std::thread th([this, &response_wire, index]{
-                       response_wire.write(response_test_message_.data(), tateyama::common::wire::response_header(index, response_test_message_.length(), 1));
-                   });
+        response_wire.write(response_test_message_.data(), tateyama::common::wire::response_header(index, response_test_message_.length(), 1), false);
+    });
 
     response_wire.await();
     EXPECT_EQ(index, response_wire.get_idx());
@@ -69,7 +71,97 @@ TEST_F(response_wire_test, large_messege) {
     response_wire.read(recv_message.data());
     EXPECT_EQ(memcmp(response_test_message_.data(), recv_message.data(), length), 0);
 
+    response_wire.close();
     th.join();
+}
+
+TEST_F(response_wire_test, large_messege_not_worker) {
+    static constexpr std::size_t string_length = 132397;
+
+    auto& response_wire = dynamic_cast<bootstrap::server_wire_container_impl::response_wire_container_impl&>(wire_->get_response_wire());
+
+    response_test_message_.resize(string_length);
+    char *p = response_test_message_.data();
+    for (std::size_t i = 0; i < response_test_message_.length(); i++) {
+        *(p++) = (i * 7)  % 255;
+    }
+    tateyama::common::wire::message_header::index_type index = 11;
+
+    std::thread th([this, &response_wire, index]{
+        response_wire.write(response_test_message_.data(), tateyama::common::wire::response_header(index, response_test_message_.length(), 1), true);
+    });
+
+    response_wire.await();
+    EXPECT_EQ(index, response_wire.get_idx());
+    auto length = response_wire.get_length();
+    EXPECT_EQ(response_test_message_.length(), length);
+
+    std::string recv_message;
+    recv_message.resize(length);
+    response_wire.read(recv_message.data());
+    EXPECT_EQ(memcmp(response_test_message_.data(), recv_message.data(), length), 0);
+
+    response_wire.close();
+    th.join();
+}
+
+
+#define TEST_TIMEOUT_BEGIN                           \
+  std::promise<bool> promisedFinished;               \
+  auto futureResult = promisedFinished.get_future(); \
+                              std::thread([this](std::promise<bool>& finished) {
+
+#define TEST_TIMEOUT_FAIL_END(X)                                            \
+  finished.set_value(true);                                                 \
+  }, std::ref(promisedFinished)).detach(); \
+  EXPECT_TRUE(futureResult.wait_for(std::chrono::milliseconds(X)) != std::future_status::timeout);
+
+#define TEST_TIMEOUT_SUCCESS_END(X)                                         \
+  finished.set_value(true);                                                 \
+  }, std::ref(promisedFinished)).detach(); \
+  EXPECT_FALSE(futureResult.wait_for(std::chrono::milliseconds(X)) != std::future_status::timeout);
+
+
+TEST_F(response_wire_test, large_messege_does_not_receive) {
+    TEST_TIMEOUT_BEGIN
+
+    static constexpr std::size_t string_length = 132397;
+
+    auto& response_wire = dynamic_cast<bootstrap::server_wire_container_impl::response_wire_container_impl&>(wire_->get_response_wire());
+
+    response_test_message_.resize(string_length);
+    char *p = response_test_message_.data();
+    for (std::size_t i = 0; i < response_test_message_.length(); i++) {
+        *(p++) = (i * 7)  % 255;
+    }
+    tateyama::common::wire::message_header::index_type index = 11;
+
+    response_wire.write(response_test_message_.data(), tateyama::common::wire::response_header(index, response_test_message_.length(), 1), false);
+    // client does not receive the response
+
+    response_wire.force_close();
+    TEST_TIMEOUT_FAIL_END(1000)
+}
+
+TEST_F(response_wire_test, large_messege_does_not_receive_timeout) {
+    TEST_TIMEOUT_BEGIN
+
+    static constexpr std::size_t string_length = 132397;
+
+    auto& response_wire = dynamic_cast<bootstrap::server_wire_container_impl::response_wire_container_impl&>(wire_->get_response_wire());
+
+    response_test_message_.resize(string_length);
+    char *p = response_test_message_.data();
+    for (std::size_t i = 0; i < response_test_message_.length(); i++) {
+        *(p++) = (i * 7)  % 255;
+    }
+    tateyama::common::wire::message_header::index_type index = 11;
+
+    response_wire.write(response_test_message_.data(), tateyama::common::wire::response_header(index, response_test_message_.length(), 1), true);
+    // client does not receive the response
+
+    response_wire.force_close();
+    TEST_TIMEOUT_SUCCESS_END(1000)
 }
 
 }  // namespace tateyama::api::endpoint::ipc
