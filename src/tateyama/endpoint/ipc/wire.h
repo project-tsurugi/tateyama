@@ -551,6 +551,14 @@ public:
         simple_wire<response_header>::write(base, from, header, closed_);
     }
     /**
+     * @brief check buffer has space for the response message
+     * @param header the header of the response message
+     * @return true if the buffer has space for the response message
+     */
+    bool is_writable(response_header header) {
+        return room() >= header.get_length();
+    }
+    /**
      * @brief notify client of the client of the shutdown
      */
     void notify_shutdown() {

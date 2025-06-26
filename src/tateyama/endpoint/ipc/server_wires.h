@@ -47,7 +47,7 @@ public:
         response_wire_container& operator = (response_wire_container const&) = default;
         response_wire_container& operator = (response_wire_container&&) = default;
 
-        virtual void write(const char*, tateyama::common::wire::response_header) = 0;
+        virtual void write(const char*, tateyama::common::wire::response_header, bool) = 0;
         virtual void notify_shutdown() = 0;
     };
     class resultset_wire_container;
