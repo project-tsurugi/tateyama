@@ -40,8 +40,6 @@ public:
 
     [[nodiscard]] std::string_view application_name() const noexcept override { return application_name_; }
 
-    [[nodiscard]] std::string_view user_name() const noexcept override { return user_name_; }
-
     [[nodiscard]] time_type start_at() const noexcept override { return start_at_; }
 
     [[nodiscard]] std::string_view connection_type_name() const noexcept override { return connection_type_name_; }
@@ -88,14 +86,15 @@ protected:
 
 inline std::ostream& operator<<(std::ostream& out, const session_info_impl& info) {
     std::stringstream ss;
+    auto name_opt = info.username();
     ss << "session_info["
-        << static_cast<std::size_t>(info.id()) << ","
-        << info.connection_type_name() << ", "
-        << info.connection_information() << ": "
-        << info.label() << ","
-        << info.application_name() << ","
-        << info.user_name()
-        << "]";
+       << static_cast<std::size_t>(info.id()) << ","
+       << info.connection_type_name() << ", "
+       << info.connection_information() << ": "
+       << info.label() << ","
+       << info.application_name() << ","
+       << (name_opt ? name_opt.value() : "")
+       << "]";
     return out << ss.str();
 }
 

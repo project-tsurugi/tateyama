@@ -75,13 +75,6 @@ public:
     [[nodiscard]] virtual std::string_view application_name() const noexcept = 0;
 
     /**
-     * @brief return the authenticated user name of this session.
-     * @returns the user name
-     * @returns empty if the authenticated user is not sure
-     */
-    [[nodiscard]] virtual std::string_view user_name() const noexcept = 0;
-
-    /**
      * @brief returns the time point when the current session was started.
      * @returns the session started time
      */

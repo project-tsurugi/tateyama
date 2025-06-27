@@ -54,7 +54,9 @@ static void set_entry(::tateyama::proto::session::response::SessionInfo* entry, 
     entry->set_session_id(sid);
     entry->set_label(std::string(info.label()));
     entry->set_application(std::string(info.application_name()));
-    entry->set_user(std::string(info.user_name()));
+    if (auto name_opt = info.username(); name_opt) {
+        entry->set_user(std::string(name_opt.value()));
+    }
     entry->set_start_at(std::chrono::duration_cast<std::chrono::milliseconds>(info.start_at().time_since_epoch()).count());
     entry->set_connection_type(std::string(info.connection_type_name()));
     entry->set_connection_info(std::string(info.connection_information()));
