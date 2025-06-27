@@ -292,7 +292,9 @@ protected:
                 notify_client(res, tateyama::proto::diagnostics::Code::INVALID_REQUEST, "no valid credential");
                 return false;
             }
-            LOG_LP(INFO) << "session (" << resources_.session_id() << ") of an authenticated user (" << session_info.user_name() << ") begin";
+            if (auto name_opt = session_info.username(); name_opt) {
+                LOG_LP(INFO) << "session (" << resources_.session_id() << ") of an authenticated user (" << name_opt.value() << ") begin";
+            }
         }
 
         auto wi = rq.handshake().wire_information();
