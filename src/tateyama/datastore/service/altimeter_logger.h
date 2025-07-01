@@ -37,8 +37,8 @@ static inline void backup(const std::shared_ptr<request>& req, std::string_view 
         log_item.category(::altimeter::audit::category);
         log_item.type(::altimeter::audit::type::backup);
         log_item.level(::altimeter::audit::level::info);
-        if (auto user = req->session_info().user_name(); !user.empty()) {
-            log_item.add(::altimeter::audit::item::user, user);
+        if (auto user_opt = req->session_info().username(); user_opt) {
+            log_item.add(::altimeter::audit::item::user, user_opt.value());
         }
         if (auto dbname = req->database_info().name(); !dbname.empty()) {
             log_item.add(::altimeter::audit::item::dbname, dbname);
@@ -64,8 +64,8 @@ static inline void restore(const std::shared_ptr<request>& req, std::string_view
         log_item.category(::altimeter::audit::category);
         log_item.type(::altimeter::audit::type::restore);
         log_item.level(::altimeter::audit::level::info);
-        if (auto user = req->session_info().user_name(); !user.empty()) {
-            log_item.add(::altimeter::audit::item::user, user);
+        if (auto user_opt = req->session_info().username(); user_opt) {
+            log_item.add(::altimeter::audit::item::user, user_opt.value());
         }
         if (auto dbname = req->database_info().name(); !dbname.empty()) {
             log_item.add(::altimeter::audit::item::dbname, dbname);
