@@ -190,14 +190,33 @@ public:
             try {
                 care_undertakers();
                 auto session_id = connection_queue.listen();
-                if (session_id == 0) {  // means timeout
+                if (session_id == 0) {  // means timeout or terminate
+                    if (connection_queue.is_terminated()) {
+                        VLOG_LP(log_trace) << "receive terminate request";
+                        terminate_workers();
+                        {
+                            bool can_exit{true};
+                            std::unique_lock<std::mutex> lock(mtx_workers_);
+                            for (auto& worker : workers_) {
+                                if (worker) {
+                                    can_exit = false;
+                                    break;
+                                }
+                            }
+                            if (!can_exit) {
+                                continue;
+                            }
+                        }
+                        {
+                            std::unique_lock<std::mutex> lock(mtx_undertakers_);
+                            if (!undertakers_.empty()) {
+                                continue;
+                            }
+                        }
+                        connection_queue.confirm_terminated();
+                        break;    // shutdown the ipc_listener
+                    }
                     continue;
-                }
-                if (connection_queue.is_terminated()) {
-                    VLOG_LP(log_trace) << "receive terminate request";
-                    terminate_workers();
-                    connection_queue.confirm_terminated();
-                    break;    // shutdown the ipc_listener
                 }
                 auto slot_id = connection_queue.slot();
                 auto slot_index = tateyama::common::wire::connection_queue::reset_admin(slot_id);
@@ -214,6 +233,10 @@ public:
                     worker_entry = std::make_shared<ipc_worker>(*router_, conf_, session_id, std::move(wire));
                     connection_queue.accept(slot_id, session_id);
                     ipc_metrics_.increase();
+                    if (connection_queue.is_terminated()) {
+                        // connection request made after tsurugi shutdown request
+                        worker_entry->shutdown_already_requested();
+                    }
                     worker_entry->invoke([this, slot_id, slot_index, &connection_queue]{
                         auto& worker = workers_.at(slot_index);
                         worker->register_worker_in_context(worker);
@@ -250,6 +273,7 @@ public:
         sync.wait();
     }
 
+    // invoked from tateyama::framework::ipc_endpoint::shutdown()
     void terminate() override {
         container_->get_connection_queue().request_terminate();
     }

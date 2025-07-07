@@ -1074,9 +1074,10 @@ public:
         [[nodiscard]] bool wait(std::atomic_bool& terminate) {
             boost::interprocess::scoped_lock lock(mutex_);
             std::atomic_thread_fence(std::memory_order_acq_rel);
-            return condition_.timed_wait(lock,
-                                         boost::get_system_time() + boost::posix_time::microseconds(u_cap(u_round(watch_interval * 1000 * 1000))),
-                                         [this, &terminate](){ return (pushed_.load() > poped_.load()) || terminate.load(); });
+            condition_.timed_wait(lock,
+                                  boost::get_system_time() + boost::posix_time::microseconds(u_cap(u_round(watch_interval * 1000 * 1000))),
+                                  [this, &terminate](){ return (pushed_.load() > poped_.load()) || terminate.load(); });
+            return pushed_.load() > poped_.load();
         }
         // thread unsafe (assume single listener thread)
         void pop() {

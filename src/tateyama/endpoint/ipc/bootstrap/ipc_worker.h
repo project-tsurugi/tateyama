@@ -43,6 +43,9 @@ public:
     }
     void run();
     bool terminate(tateyama::session::shutdown_request_type type);
+    void shutdown_already_requested() {
+        request_shutdown(tateyama::session::shutdown_request_type::forceful);
+    }
 
 private:
     tateyama::framework::routing_service& service_;

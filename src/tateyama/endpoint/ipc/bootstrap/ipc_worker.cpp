@@ -131,7 +131,7 @@ void ipc_worker::run() {  // NOLINT(readability-function-cognitive-complexity)
             default:
             {
                 auto response = std::make_shared<ipc_response>(*wire_, hdr.get_idx(), [this, index](){remove_reqres(index);}, conf_, std::this_thread::get_id());
-                if (!check_shutdown_request()) {
+                if (!check_shutdown_request() || (request->service_id() == tateyama::framework::service_id_session)) {
                     if (!register_reqres(index,
                                          std::dynamic_pointer_cast<tateyama::endpoint::common::request>(request),
                                          std::dynamic_pointer_cast<tateyama::endpoint::common::response>(response))) {
