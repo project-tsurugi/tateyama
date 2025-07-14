@@ -65,6 +65,13 @@ static bool extract_config(environment& env, sharksfin::DatabaseOptions& options
                     options.attribute(KEY_WAITING_RESOLVER_THREADS, std::to_string(sz));
                 }
             }
+            if(auto res = ds->get<int>("recover_max_parallelism"); res) {
+                auto sz = res.value();
+                if(sz > 0) {
+                    static constexpr std::string_view KEY_CC_RECOVER_MAX_PARALLELISM{"cc_recover_max_parallelism"};
+                    options.attribute(KEY_CC_RECOVER_MAX_PARALLELISM, std::to_string(sz));
+                }
+            }
         }
     } catch(std::exception const& e) {
         // error log should have been made
