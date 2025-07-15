@@ -13,6 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <sstream>
+#include <string_view>
+#include <vector>
+
 #include <tateyama/api/configuration.h>
 
 #include <gtest/gtest.h>
@@ -267,6 +271,25 @@ TEST_F(configuration_test, not_exist) {
 
     auto value = section->get<bool>("property_not_exist");
     ASSERT_FALSE(value);
+}
+
+TEST_F(configuration_test, vector) {
+    std::string content{
+        "[authentication]\n"
+          "administrators=root,admin\n"
+    };
+    std::stringstream ss0{content};
+    configuration::whole cfg{ss0, tateyama::test_utils::default_configuration_for_tests};
+
+    auto section = cfg.get_section("authentication");
+    ASSERT_TRUE(section);
+
+    auto value = section->get<std::vector<std::string>>("administrators");
+    ASSERT_TRUE(value);
+    auto administrators = value.value();
+    ASSERT_EQ(administrators.size(), 2);
+    ASSERT_EQ(administrators.at(0), "root");
+    ASSERT_EQ(administrators.at(1), "admin");
 }
 
 }

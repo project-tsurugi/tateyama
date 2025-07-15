@@ -166,6 +166,34 @@ template<>
     return std::nullopt;
 }
 
+template<>
+[[nodiscard]] inline std::optional<std::vector<std::string>> section::get<std::vector<std::string>>(std::string_view name) const {
+    std::optional<std::string> opt = get<std::string>(name);
+    if (opt) {
+        const auto& str = opt.value();
+
+        std::size_t first = 0;
+        std::size_t last = str.find_first_of(',');
+
+        std::vector<std::string> result;
+
+        while (first < str.size()) {
+            std::string subStr(str, first, last - first);
+
+            result.push_back(subStr);
+
+            first = last + 1;
+            last = str.find_first_of(',', first);
+
+            if (last == std::string::npos) {
+                last = str.size();
+            }
+        }
+
+        return result;
+    }
+    return std::nullopt;
+}
 
 class whole {
 public:
