@@ -29,6 +29,7 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/foreach.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/algorithm/string/trim.hpp>
 
 #include <glog/logging.h>
 #include <tateyama/logging.h>
@@ -166,6 +167,21 @@ template<>
     return std::nullopt;
 }
 
+template<>
+[[nodiscard]] inline std::optional<std::vector<std::string>> section::get<std::vector<std::string>>(std::string_view name) const {
+    std::optional<std::string> opt = get<std::string>(name);
+    if (opt) {
+        const auto& str = opt.value();
+
+        std::vector<std::string> result;
+        boost::algorithm::split(result, str, boost::is_any_of(","));
+        for (auto& e: result) {
+            boost::algorithm::trim(e);
+        }
+        return result;
+    }
+    return std::nullopt;
+}
 
 class whole {
 public:
