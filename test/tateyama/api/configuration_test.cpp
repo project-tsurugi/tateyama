@@ -276,7 +276,7 @@ TEST_F(configuration_test, not_exist) {
 TEST_F(configuration_test, vector) {
     std::string content{
         "[authentication]\n"
-          "administrators=root,admin\n"
+          "administrators=root , admin , manager\n"
     };
     std::stringstream ss0{content};
     configuration::whole cfg{ss0, tateyama::test_utils::default_configuration_for_tests};
@@ -287,9 +287,10 @@ TEST_F(configuration_test, vector) {
     auto value = section->get<std::vector<std::string>>("administrators");
     ASSERT_TRUE(value);
     auto administrators = value.value();
-    ASSERT_EQ(administrators.size(), 2);
+    ASSERT_EQ(administrators.size(), 3);
     ASSERT_EQ(administrators.at(0), "root");
     ASSERT_EQ(administrators.at(1), "admin");
+    ASSERT_EQ(administrators.at(2), "manager");
 }
 
 }
