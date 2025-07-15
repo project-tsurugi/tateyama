@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2023 Project Tsurugi.
+ * Copyright 2018-2025 Project Tsurugi.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,6 +63,13 @@ static bool extract_config(environment& env, sharksfin::DatabaseOptions& options
                 if(sz > 0) {
                     static constexpr std::string_view KEY_WAITING_RESOLVER_THREADS{"waiting_resolver_threads"};
                     options.attribute(KEY_WAITING_RESOLVER_THREADS, std::to_string(sz));
+                }
+            }
+            if(auto res = cc->get<std::size_t>("index_restore_threads"); res) {
+                auto sz = res.value();
+                if(sz > 0) {
+                    static constexpr std::string_view KEY_INDEX_RESTORE_THREADS{"index_restore_threads"};
+                    options.attribute(KEY_INDEX_RESTORE_THREADS, std::to_string(sz));
                 }
             }
         }
