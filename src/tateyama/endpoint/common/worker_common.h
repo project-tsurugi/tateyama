@@ -345,6 +345,7 @@ protected:
         error->set_message(message);
         error->set_code(code);
         res->body(response.SerializeAsString());
+        response.clear_error();
     }
 
     class psudo_exception_of_continue : public std::exception {
