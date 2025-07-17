@@ -195,7 +195,7 @@ protected:
             std::stringstream ss;
             ss << "handshake operation is required to establish sessions (service ID=" << req->service_id() << ").\n"
                   "see https://github.com/project-tsurugi/tsurugidb/blob/master/docs/upgrade-guide.md#handshake-required";
-            notify_client(res, tateyama::proto::diagnostics::Code::ILLEGAL_STATE, ss.str());
+            handshake_error(res, tateyama::proto::diagnostics::Code::ILLEGAL_STATE, ss.str());
             return false;
         }
         auto data = req->payload();
@@ -203,7 +203,7 @@ protected:
         if(!rq.ParseFromArray(data.data(), static_cast<int>(data.size()))) {
             std::string error_message{"request parse error"};
             LOG_LP(INFO) << error_message;
-            notify_client(res, tateyama::proto::diagnostics::Code::INVALID_REQUEST, error_message);
+            handshake_error(res, tateyama::proto::diagnostics::Code::INVALID_REQUEST, error_message);
             return false;
         }
 
@@ -211,7 +211,7 @@ protected:
         std::uint64_t smvm = rq.service_message_version_major();
         if (smvm > SERVICE_MESSAGE_VERSION_MAJOR ||
             (smvm == SERVICE_MESSAGE_VERSION_MAJOR && rq.service_message_version_minor() > SERVICE_MESSAGE_VERSION_MINOR)) {
-            notify_client(res, tateyama::proto::diagnostics::Code::INVALID_REQUEST, "unsupported service message version");
+            handshake_error(res, tateyama::proto::diagnostics::Code::INVALID_REQUEST, "unsupported service message version");
             return false;
         }
 
@@ -248,7 +248,7 @@ protected:
             std::stringstream ss;
             ss << "bad request (handshake in endpoint): " << rq.command_case();
             LOG_LP(INFO) << ss.str();
-            notify_client(res, tateyama::proto::diagnostics::Code::INVALID_REQUEST, ss.str());
+            handshake_error(res, tateyama::proto::diagnostics::Code::INVALID_REQUEST, ss.str());
             return false;
         }
 
@@ -257,7 +257,7 @@ protected:
         const std::string& connection_label = ci.connection_label();
         if (!connection_label.empty()) {
             if (connection_label.at(0) == ':') {
-                notify_client(res, tateyama::proto::diagnostics::Code::INVALID_REQUEST, "invalid connection label");
+                handshake_error(res, tateyama::proto::diagnostics::Code::INVALID_REQUEST, "invalid connection label");
                 return false;
             }
         }
@@ -273,7 +273,7 @@ protected:
                 if (auto username_opt = auth_->verify_encrypted(credential.encrypted_credential()); username_opt) {
                     session_info.user_name(username_opt.value());
                 } else {
-                    notify_client(res, tateyama::proto::diagnostics::Code::AUTHENTICATION_ERROR, "user or password is incorrect");
+                    handshake_error(res, tateyama::proto::diagnostics::Code::AUTHENTICATION_ERROR, "user or password is incorrect");
                     return false;
                 }
             }
@@ -283,13 +283,13 @@ protected:
                 if (auto username_opt = auth_->verify_token(credential.remember_me_credential()); username_opt) {
                     session_info.user_name(username_opt.value());
                 } else {
-                    notify_client(res, tateyama::proto::diagnostics::Code::AUTHENTICATION_ERROR, "token is incorrect");
+                    handshake_error(res, tateyama::proto::diagnostics::Code::AUTHENTICATION_ERROR, "token is incorrect");
                     return false;
                 }
             }
             break;
             default: 
-                notify_client(res, tateyama::proto::diagnostics::Code::INVALID_REQUEST, "no valid credential");
+                handshake_error(res, tateyama::proto::diagnostics::Code::INVALID_REQUEST, "no valid credential");
                 return false;
             }
             if (auto name_opt = session_info.username(); name_opt) {
@@ -304,7 +304,7 @@ protected:
                 std::stringstream ss;
                 ss << "bad wire information (handshake in endpoint): " << wi.wire_information_case();
                 LOG_LP(INFO) << ss.str();
-                notify_client(res, tateyama::proto::diagnostics::Code::INVALID_REQUEST, ss.str());
+                handshake_error(res, tateyama::proto::diagnostics::Code::INVALID_REQUEST, ss.str());
                 return false;
             }
             session_info.connection_information(wi.ipc_information().connection_information());
@@ -314,7 +314,7 @@ protected:
                 std::stringstream ss;
                 ss << "bad wire information (handshake in endpoint): " << wi.wire_information_case();
                 LOG_LP(INFO) << ss.str();
-                notify_client(res, tateyama::proto::diagnostics::Code::INVALID_REQUEST, ss.str());
+                handshake_error(res, tateyama::proto::diagnostics::Code::INVALID_REQUEST, ss.str());
                 return false;
             }
             max_result_sets_ = wi.stream_information().maximum_concurrent_result_sets();  // for Stream
@@ -323,7 +323,7 @@ protected:
             std::stringstream ss;
             ss << "illegal connection type: " << static_cast<std::uint32_t>(connection_type_);
             LOG_LP(INFO) << ss.str();
-            notify_client(res, tateyama::proto::diagnostics::Code::INVALID_REQUEST, ss.str());
+            handshake_error(res, tateyama::proto::diagnostics::Code::INVALID_REQUEST, ss.str());
             return false;
         }
         VLOG_LP(log_trace) << session_info;  //NOLINT
@@ -335,6 +335,16 @@ protected:
         res->body(body);
         rp.clear_success();
         return true;
+    }
+
+    static void handshake_error(tateyama::api::server::response* res,
+                       tateyama::proto::diagnostics::Code code,
+                       const std::string& message) {
+        tateyama::proto::endpoint::response::Handshake response{};
+        auto* error = response.mutable_error();
+        error->set_message(message);
+        error->set_code(code);
+        res->body(response.SerializeAsString());
     }
 
     class psudo_exception_of_continue : public std::exception {
