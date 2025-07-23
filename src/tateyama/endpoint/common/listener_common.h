@@ -93,11 +93,11 @@ protected:
                 if (auto names_opt = section->get<std::string>("administrators"); names_opt) {
                     return names_opt.value();
                 }
-                throw std::runtime_error("cannot fine authentication.administrators in tsurugi.ini");
+                throw std::runtime_error("cannot find authentication.administrators in tsurugi.ini");
             }
             return "*";
         }
-        throw std::runtime_error("cannot fine authentication.enabled in tsurugi.ini");
+        throw std::runtime_error("cannot find authentication.enabled in tsurugi.ini");
     }
 };
 

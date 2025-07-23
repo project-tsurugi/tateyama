@@ -46,4 +46,4 @@ TEST_F(administrators_test, asterisk) {
     EXPECT_TRUE(names.is_administrator(dmy_user));
 }
 
-} // namespace tateyama::endpoint::ipc
+} // namespace tateyama::endpoint::common
