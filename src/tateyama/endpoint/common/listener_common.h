@@ -34,7 +34,8 @@ public:
     /**
      * @brief create empty object
      */
-    listener_common() = default;
+    explicit listener_common(const std::string& name) : administrators_(name) {
+    }
 
     /**
      * @brief destruct the object
@@ -74,6 +75,8 @@ public:
     virtual void foreach_request(const callback& func) = 0;
 
 protected:
+    administrators administrators_;  // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes,misc-non-private-member-variables-in-classes)
+
     static std::shared_ptr<tateyama::authentication::resource::bridge> authentication_bridge(tateyama::framework::environment& env) {
         if (auto enabled_opt = env.configuration()->get_section("authentication")->get<bool>("enabled"); enabled_opt) {
             if (enabled_opt.value()) {
@@ -83,9 +86,19 @@ protected:
         return nullptr;
     }
 
-private:
-    // auth resource
-    const std::shared_ptr<authentication::resource::bridge> auth_;
+    static std::string administrator_names(tateyama::framework::environment& env) {
+        auto* section = env.configuration()->get_section("authentication");
+        if (auto enabled_opt = section->get<bool>("enabled"); enabled_opt) {
+            if (enabled_opt.value()) {
+                if (auto names_opt = section->get<std::string>("administrators"); names_opt) {
+                    return names_opt.value();
+                }
+                throw std::runtime_error("cannot fine authentication.administrators in tsurugi.ini");
+            }
+            return "*";
+        }
+        throw std::runtime_error("cannot fine authentication.enabled in tsurugi.ini");
+    }
 };
 
 }  // tateyama::endpoint::common

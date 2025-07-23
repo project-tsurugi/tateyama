@@ -79,7 +79,9 @@ private:
 
 class ipc_handshake_test: public ipc_gtest_base {
     void SetUp() override {
-        ipc_test_env::setup("[authentication]\nenabled=true\n");
+        ipc_test_env::setup("[authentication]\n"
+                            "  enabled=true\n"
+                            "  administrators=*\n");
     }
 
     void TearDown() override {

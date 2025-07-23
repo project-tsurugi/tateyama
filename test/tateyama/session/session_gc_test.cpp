@@ -29,13 +29,16 @@ namespace tateyama::session {
 class session_info_for_sessiopn_gc_test : public tateyama::endpoint::common::session_info_impl {
 public:
     session_info_for_sessiopn_gc_test(std::size_t id, std::string_view con_type, std::string_view con_info)
-        : session_info_impl(id, con_type, con_info) {
+        : session_info_impl(id, con_type, con_info, administrators_) {
     }
     void set_appendix(const std::string& l, const std::string& a, const std::string& u) {
         label(l);
         application_name(a);
         user_name(u);
     }
+
+private:
+    tateyama::endpoint::common::administrators administrators_{"*"};
 };
 
 class session_gc_test :

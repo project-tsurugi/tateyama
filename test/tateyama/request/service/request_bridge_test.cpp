@@ -33,6 +33,7 @@ namespace tateyama::request {
 
 class listener_fot_test : public tateyama::endpoint::common::listener_common {
 public:
+    listener_fot_test() : listener_common("*") {}
     void operator()() {}
     void arrive_and_wait() {}
     void terminate() {}

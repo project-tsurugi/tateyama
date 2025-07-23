@@ -62,6 +62,7 @@ file(GLOB SRCS
         "tateyama/endpoint/ipc/*.cpp"
         "tateyama/endpoint/loopback/*.cpp"
         "tateyama/endpoint/stream/*.cpp"
+        "tateyama/endpoint/common/*.cpp"
         "tateyama/task_scheduler/*.cpp"
         "tateyama/registry/*.cpp"
         "tateyama/common/*.cpp"

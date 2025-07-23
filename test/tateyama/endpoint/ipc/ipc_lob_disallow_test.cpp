@@ -143,7 +143,7 @@ class ipc_lob_disallow_test : public ::testing::Test {
         auto rv = system("if [ -f /dev/shm/ipc_lob_disallow_test ]; then rm -f /dev/shm/ipc_lob_disallow_test; fi");
     }
 
-    tateyama::endpoint::common::configuration conf_{tateyama::endpoint::common::connection_type::ipc, database_info_};
+    tateyama::endpoint::common::configuration conf_{tateyama::endpoint::common::connection_type::ipc, nullptr, database_info_, nullptr, administrators_};
 
 public:
     tateyama::status_info::resource::database_info_impl database_info_{database_name};
@@ -169,6 +169,9 @@ protected:
             FAIL();
         }
     }
+
+private:
+    tateyama::endpoint::common::administrators administrators_{"*"};
 };
 
 TEST_F(ipc_lob_disallow_test, receive) {

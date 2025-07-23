@@ -21,6 +21,23 @@
 namespace tateyama::api::server {
 
 /**
+ * @brief represents the login user type.
+ */
+enum class user_type {
+    /**
+     * @brief administrators.
+     * @details administrators have access to all resources without authorization restrictions.
+     */
+    administrator,
+
+    /**
+     * @brief standard users.
+     * @details standard users are restricted to only authorized operations on their respective resources.
+     */
+    standard,
+};
+
+/**
  * @brief session_info
  */
 class session_info {
@@ -103,6 +120,13 @@ public:
      * @return std::nullopt if authentication is not enabled
      */
     [[nodiscard]] virtual std::optional<std::string_view> username() const noexcept = 0;
+
+    /**
+     * @brief returns the user type.
+     * @return the login user type
+     * @return user_type::administrator if authentication is not enabled
+     */
+    [[nodiscard]] virtual tateyama::api::server::user_type user_type() const noexcept = 0;
 };
 
 }

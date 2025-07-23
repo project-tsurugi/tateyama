@@ -52,7 +52,7 @@ public:
     worker_common(const configuration& config, std::size_t session_id, std::string_view conn_info)
         : connection_type_(config.con_),
           session_(config.session_),
-          resources_(config, session_id, conn_info),
+          resources_(config, session_id, conn_info, config.administrators_),
           session_context_(std::make_shared<tateyama::session::resource::session_context_impl>(resources_.session_info(), resources_.session_variable_set())),
           enable_timeout_(config.enable_timeout_),
           refresh_timeout_(config.refresh_timeout_),

@@ -18,6 +18,7 @@
 #include <sstream>
 
 #include <tateyama/api/server/session_info.h>
+#include "administrators.h"
 
 namespace tateyama::endpoint::common {
 
@@ -28,10 +29,8 @@ class worker_common;
  */
 class session_info_impl : public tateyama::api::server::session_info {
 public:
-    session_info_impl(std::size_t id, std::string_view con_type, std::string_view con_info)
-        : id_(id), connection_type_name_(con_type), connection_information_(con_info) {
-    }
-    session_info_impl() : session_info_impl(0, "", "") {
+    session_info_impl(std::size_t id, std::string_view con_type, std::string_view con_info, const tateyama::endpoint::common::administrators& administrators)
+        : id_(id), connection_type_name_(con_type), connection_information_(con_info), administrators_(administrators) {
     }
 
     [[nodiscard]] id_type id() const noexcept override { return id_; }
@@ -48,6 +47,13 @@ public:
 
     [[nodiscard]] std::optional<std::string_view> username() const noexcept override { return user_name_opt_; }
 
+    [[nodiscard]] tateyama::api::server::user_type user_type() const noexcept override {
+        if (user_name_opt_) {
+            return administrators_.is_administrator(user_name_opt_.value()) ? tateyama::api::server::user_type::administrator : tateyama::api::server::user_type::standard;
+        }
+        return tateyama::api::server::user_type::administrator;
+    }
+
 private:
     // server internal info.
     const id_type id_;
@@ -57,6 +63,8 @@ private:
     const time_type start_at_{std::chrono::system_clock::now()};
 
     std::string connection_information_;
+
+    const administrators& administrators_;
 
     // provided by the client
     std::string connection_label_{};
