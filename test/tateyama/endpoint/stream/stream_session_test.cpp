@@ -183,7 +183,7 @@ TEST_F(stream_session_test, cancel_request_reply) {
         tateyama::proto::endpoint::request::Request endpoint_request{};
         endpoint_request.set_allocated_cancel(&cancel);
         EXPECT_TRUE(client_->send(tateyama::framework::service_id_endpoint_broker, endpoint_request.SerializeAsString()));
-        endpoint_request.release_cancel();
+        (void)endpoint_request.release_cancel();
 
         service_.wait_request_arrival();
         // server part (send cancel success by error)
@@ -215,7 +215,7 @@ TEST_F(stream_session_test, cancel_request_noreply) {
         tateyama::proto::endpoint::request::Request endpoint_request{};
         endpoint_request.set_allocated_cancel(&cancel);
         EXPECT_TRUE(client_->send(tateyama::framework::service_id_endpoint_broker, endpoint_request.SerializeAsString()));
-        endpoint_request.release_cancel();
+        (void)endpoint_request.release_cancel();
 
         service_.wait_request_arrival();
         // server part (send cancel success by error)
