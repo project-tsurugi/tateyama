@@ -66,8 +66,11 @@ public:
                 listener_ = std::make_shared<tateyama::endpoint::stream::bootstrap::stream_listener>(env);
             }
             return true;
+        } catch (std::runtime_error &err) {
+            LOG_LP(ERROR) << "cannot launch tsurugidb as " << err.what();
+            return false;
         } catch (std::exception &ex) {
-            LOG_LP(ERROR) << ex.what();
+            LOG_LP(ERROR) << "cannot launch tsurugidb as " << ex.what();
             return false;
         }
     }
