@@ -59,15 +59,17 @@ class stream_listener : public tateyama::endpoint::common::listener_common {
 
 public:
     explicit stream_listener(tateyama::framework::environment& env)
-        : cfg_(env.configuration()),
+        : listener_common(administrator_names(env)),
+          cfg_(env.configuration()),
           router_(env.service_repository().find<framework::routing_service>()),
           status_(env.resource_repository().find<status_info::resource::bridge>()),
           session_(env.resource_repository().find<session::resource::bridge>()),
-          conf_(tateyama::endpoint::common::connection_type::stream, session_,
+          conf_(tateyama::endpoint::common::connection_type::stream,
+                session_,
                 status_->database_info(),
-                authentication_bridge(env)),
+                authentication_bridge(env),
+                administrators_),
           stream_metrics_(env) {
-
         auto endpoint_config = cfg_->get_section("stream_endpoint");
         if (endpoint_config == nullptr) {
             LOG_LP(ERROR) << "cannot find stream_endpoint section in the configuration";

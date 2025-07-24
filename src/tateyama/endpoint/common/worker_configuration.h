@@ -46,10 +46,8 @@ enum class connection_type : std::uint32_t {
 
 class alignas(64) configuration {
 public:
-    configuration(connection_type con, std::shared_ptr<tateyama::session::resource::bridge> session, const tateyama::api::server::database_info& database_info, std::shared_ptr<authentication::resource::bridge> auth) :
-        con_(con), session_(std::move(session)), database_info_(database_info), auth_(std::move(auth)) {
-    }
-    explicit configuration(connection_type con, tateyama::api::server::database_info& database_info) : configuration(con, nullptr, database_info, nullptr) {  // for tests
+    configuration(connection_type con, std::shared_ptr<tateyama::session::resource::bridge> session, const tateyama::api::server::database_info& database_info, std::shared_ptr<authentication::resource::bridge> auth, const tateyama::endpoint::common::administrators& administrators) :
+        con_(con), session_(std::move(session)), database_info_(database_info), auth_(std::move(auth)), administrators_(administrators) {
     }
     void set_timeout(std::size_t refresh_timeout, std::size_t max_refresh_timeout) {
         if (refresh_timeout < 120) {
@@ -74,6 +72,7 @@ private:
     const std::shared_ptr<tateyama::session::resource::bridge> session_;
     const tateyama::api::server::database_info& database_info_;
     const std::shared_ptr<authentication::resource::bridge> auth_;
+    const tateyama::endpoint::common::administrators& administrators_;
     bool enable_timeout_{};
     bool allow_blob_privileged_{};
     std::size_t refresh_timeout_{};
@@ -88,9 +87,9 @@ private:
 
 class resources {
 public:
-    resources(const configuration& config, std::size_t session_id, std::string_view conn_info)
+    resources(const configuration& config, std::size_t session_id, std::string_view conn_info, const tateyama::endpoint::common::administrators& administrators)
       : session_id_(session_id),
-        session_info_(session_id_, connection_label(config.con_), conn_info),
+        session_info_(session_id_, connection_label(config.con_), conn_info, administrators),
         session_variable_set_(config.session_ ? config.session_->sessions_core().variable_declarations().make_variable_set() : tateyama::session::session_variable_set{}) {
     }
 

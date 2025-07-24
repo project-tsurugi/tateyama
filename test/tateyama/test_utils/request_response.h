@@ -91,7 +91,8 @@ public:
     std::string payload_{};
 
     tateyama::status_info::resource::database_info_impl database_info_{};
-    tateyama::endpoint::common::session_info_impl session_info_{};
+    tateyama::endpoint::common::administrators administrators_{"*"};
+    tateyama::endpoint::common::session_info_impl session_info_{0, "", "", administrators_};
     tateyama::api::server::session_store session_store_{};
     tateyama::session::session_variable_set session_variable_set_{};
 };

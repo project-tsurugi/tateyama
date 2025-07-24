@@ -100,7 +100,8 @@ private:
     const std::string payload_;
 
     const tateyama::status_info::resource::database_info_impl database_info_{};
-    const tateyama::endpoint::common::session_info_impl session_info_{};
+    const tateyama::endpoint::common::administrators administrators_{"*"};
+    const tateyama::endpoint::common::session_info_impl session_info_{session_id_, "loopback", "", administrators_};
     tateyama::api::server::session_store session_store_{};
     tateyama::session::session_variable_set session_variable_set_{};
 };

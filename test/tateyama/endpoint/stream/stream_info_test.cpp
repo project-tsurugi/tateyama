@@ -57,7 +57,7 @@ private:
 
 class stream_listener_for_info_test {
 public:
-    stream_listener_for_info_test(info_service_for_test& service, tateyama::status_info::resource::database_info_impl& database_info) : service_(service), conf_(tateyama::endpoint::common::connection_type::stream, database_info) {
+    stream_listener_for_info_test(info_service_for_test& service, tateyama::status_info::resource::database_info_impl& database_info) : service_(service), conf_(tateyama::endpoint::common::connection_type::stream, nullptr, database_info, nullptr, administrators_) {
     }
     void operator()() {
         while (true) {
@@ -84,6 +84,7 @@ private:
     tateyama::endpoint::common::configuration conf_;
     connection_socket connection_socket_{tateyama::api::endpoint::stream::stream_client::PORT_FOR_TEST};
     std::unique_ptr<tateyama::endpoint::stream::bootstrap::stream_worker> worker_{};
+    tateyama::endpoint::common::administrators administrators_{"*"};
 };
 }
 
