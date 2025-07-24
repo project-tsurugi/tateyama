@@ -158,8 +158,8 @@ void stream_client::handshake() {
     } catch (std::exception &ex) {
         std::cout << ex.what() << std::endl;
     }
-    endpoint_request.release_handshake();
-    endpoint_handshake_.release_wire_information();
+    (void)endpoint_request.release_handshake();
+    (void)endpoint_handshake_.release_wire_information();
 
     try {
         receive(handshake_response_);

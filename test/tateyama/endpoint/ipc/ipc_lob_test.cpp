@@ -132,8 +132,8 @@ class ipc_lob_test : public ::testing::Test {
         tateyama::proto::endpoint::request::Handshake hs{};
         hs.set_allocated_client_information(&cci);
         client_ = std::make_unique<ipc_client>(database_name, my_session_id, hs);
-        cci.release_credential();
-        hs.release_client_information();
+        (void)cci.release_credential();
+        (void)hs.release_client_information();
     }
 
     void TearDown() override {

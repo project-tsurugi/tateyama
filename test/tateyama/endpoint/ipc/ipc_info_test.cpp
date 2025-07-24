@@ -116,8 +116,8 @@ TEST_F(ipc_info_test, basic) {
     tateyama::proto::endpoint::request::Handshake hs{};
     hs.set_allocated_client_information(&cci);
     auto client = std::make_unique<ipc_client>(database_name, my_session_id, hs);
-    cci.release_credential();
-    hs.release_client_information();
+    (void)cci.release_credential();
+    (void)hs.release_client_information();
 
     client->send(service_id_of_info_service, std::string(request_test_message));  // we do not care service_id nor request message here
     std::string res{};
