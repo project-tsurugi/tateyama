@@ -122,8 +122,8 @@ TEST_F(stream_info_test, basic) {
         hs.set_allocated_client_information(&cci);
         auto client = std::make_unique<stream_client>(hs);
         client->send(service_id_of_info_service, request_test_message);  // we do not care service_id nor request message here
-        cci.release_credential();
-        hs.release_client_information();
+        (void)cci.release_credential();
+        (void)hs.release_client_information();
 
         // client  part
         client->receive();
