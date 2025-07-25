@@ -27,4 +27,6 @@ static constexpr std::string_view stream_endpoint_config_prefix = "/:tateyama:st
 
 static constexpr std::string_view session_config_prefix = "/:tateyama:session:config: "sv;
 
+static constexpr std::string_view authentication_config_prefix = "/:tateyama:authentication:config: "sv;
+
 } // namespace

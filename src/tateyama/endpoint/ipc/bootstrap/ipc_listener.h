@@ -143,8 +143,9 @@ public:
                   << "admin_sessions: " << admin_sessions << ", "
                   << "the number of maximum admin sessions.";
 
-        // session timeout
+        // session
         if (auto* session_config = cfg_->get_section("session"); session_config) {
+            // enable_timeout
             auto enable_timeout_opt = session_config->get<bool>("enable_timeout");
             if (!enable_timeout_opt) {
                 throw std::runtime_error("cannot find enable_timeout at the session section in the configuration");
@@ -156,18 +157,20 @@ public:
                       << "whether timeout is enabled or not.";
 
             if (enable_timeout) {
+                // refresh_timeout
                 auto refresh_timeout_opt = session_config->get<std::size_t>("refresh_timeout");
                 if (!refresh_timeout_opt) {
-                    throw std::runtime_error("cannot find thread_pool_size at the session section in the configuration");
+                    throw std::runtime_error("cannot find refresh_timeout at the session section in the configuration");
                 }
                 auto refresh_timeout = refresh_timeout_opt.value();
+                // max_refresh_timeout
                 auto max_refresh_timeout_opt = session_config->get<std::size_t>("max_refresh_timeout");
                 if (!max_refresh_timeout_opt) {
-                    throw std::runtime_error("cannot find thread_pool_size at the session section in the configuration");
+                    throw std::runtime_error("cannot find max_refresh_timeout_opt at the session section in the configuration");
                 }
                 auto  max_refresh_timeout = max_refresh_timeout_opt.value();
-                conf_.set_timeout(refresh_timeout, max_refresh_timeout);
 
+                conf_.set_timeout(refresh_timeout, max_refresh_timeout);
                 LOG(INFO) << tateyama::endpoint::common::session_config_prefix
                           << "refresh_timeout: " << refresh_timeout << ", "
                           << "refresh timeout in seconds.";
@@ -175,6 +178,18 @@ public:
                           << "max_refresh_timeout: " << max_refresh_timeout << ", "
                           << "maximum refresh timeout in seconds.";
             }
+
+            // authentication_timeout
+            auto authentication_timeout_opt = session_config->get<std::size_t>("authentication_timeout");
+            if (!authentication_timeout_opt) {
+                throw std::runtime_error("cannot find authentication_timeout_opt at the session section in the configuration");
+            }
+            auto  authentication_timeout = authentication_timeout_opt.value();
+            conf_.set_authentication_timeout(authentication_timeout);
+
+            LOG(INFO) << tateyama::endpoint::common::session_config_prefix
+                      << "authentication_timeout: " << authentication_timeout << ", "
+                      << "authentication timeout in seconds.";
         }
 
         LOG(INFO) << tateyama::endpoint::common::ipc_endpoint_config_prefix

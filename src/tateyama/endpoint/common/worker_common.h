@@ -44,6 +44,7 @@
 #include "response.h"
 #include "listener_common.h"
 #include "worker_configuration.h"
+#include "alive_timer.h"
 
 namespace tateyama::endpoint::common {
 
@@ -57,7 +58,8 @@ public:
           enable_timeout_(config.enable_timeout_),
           refresh_timeout_(config.refresh_timeout_),
           max_refresh_timeout_(config.max_refresh_timeout_),
-          auth_(config.auth_.get()) {
+          auth_(config.auth_.get()),
+          authentication_timer_(config.authentication_timeout_) {
         if (session_) {
             session_->register_session(session_context_);
         }
@@ -411,6 +413,67 @@ protected:
             return true;
         }
 
+        case tateyama::proto::endpoint::request::Request::kUpdateCredential:
+        {
+            tateyama::proto::endpoint::response::UpdateCredential rp{};
+            std::string error_message{};
+
+            if (auth_) {
+                auto& credential = rq.update_credential().credential();
+                switch (credential.credential_opt_case()) {
+                case tateyama::proto::endpoint::request::Credential::CredentialOptCase::kEncryptedCredential:
+                    if (auto username_opt = auth_->verify_encrypted(credential.encrypted_credential()); !username_opt) {
+                        error_message = "user or password is incorrect";
+                    }
+                    break;
+                case tateyama::proto::endpoint::request::Credential::CredentialOptCase::kRememberMeCredential:
+                    if (auto username_opt = auth_->verify_token(credential.remember_me_credential()); !username_opt) {
+                        error_message = "token is incorrect";
+                    }
+                    break;
+                case tateyama::proto::endpoint::request::Credential::CredentialOptCase::CREDENTIAL_OPT_NOT_SET:
+                    error_message = "no credential";
+                    break;
+                }
+                if (error_message.empty()) {
+                    authentication_timer_.update_expiration_time();
+                }
+            }
+            if (error_message.empty()) {
+                rp.mutable_success();
+                auto body = rp.SerializeAsString();
+                res->body(body);
+                rp.clear_success();
+            } else {
+                auto* error = rp.mutable_error();
+                error->set_message(error_message);
+                error->set_code(tateyama::proto::diagnostics::Code::AUTHENTICATION_ERROR);
+                res->body(rp.SerializeAsString());
+                rp.clear_error();
+            }
+            return true;
+        }
+
+        case tateyama::proto::endpoint::request::Request::kGetCredentialExpirationTime:
+        {
+            tateyama::proto::endpoint::response::GetCredentialsExpirationTime rp{};
+
+            if (auth_) {
+                auto* error = rp.mutable_error();
+                error->set_code(tateyama::proto::diagnostics::Code::UNSUPPORTED_OPERATION);
+                error->set_message("GetCredentialsExpirationTime is not supported now");
+                res->body(rp.SerializeAsString());
+                rp.clear_error();
+            } else {
+                auto* error = rp.mutable_error();
+                error->set_code(tateyama::proto::diagnostics::Code::UNSUPPORTED_OPERATION);
+                error->set_message("authentication is off");
+                res->body(rp.SerializeAsString());
+                rp.clear_error();
+            }
+            return true;
+        }
+
         default: // error
         {
             std::stringstream ss;
@@ -647,14 +710,21 @@ protected:
         }
     }
     bool is_expiration_time_over() {
+        bool time_over{false};
         if (auto expiration_time_opt = session_context_->expiration_time(); expiration_time_opt) {
-            bool rv = tateyama::session::session_context::expiration_time_type::clock::now() > expiration_time_opt.value();
-            if (rv) {
+            time_over |= tateyama::session::session_context::expiration_time_type::clock::now() > expiration_time_opt.value();
+            if (time_over) {
                 LOG_LP(INFO) << "expiration time over, session = " << resources_.session_id();
             }
-            return rv;
         }
-        return false;
+        if (auth_) {
+            bool auth_time_over = authentication_timer_.is_expiration_time_over();
+            if (auth_time_over) {
+                LOG_LP(INFO) << "authentication refresh time over, session = " << resources_.session_id();
+            }
+            time_over |= auth_time_over;
+        }
+        return time_over;
     }
     inline tateyama::endpoint::common::resources& resources() {
         return resources_;
@@ -670,6 +740,7 @@ private:
     std::chrono::seconds refresh_timeout_;
     std::chrono::seconds max_refresh_timeout_;
     authentication::resource::bridge* auth_;
+    alive_timer authentication_timer_;
     std::map<std::size_t, std::pair<std::shared_ptr<tateyama::endpoint::common::request>, std::shared_ptr<tateyama::endpoint::common::response>>> reqreses_{};
     std::mutex mtx_reqreses_{};
     std::map<std::size_t, std::shared_ptr<tateyama::api::server::response>> shutdown_response_{};
