@@ -81,6 +81,7 @@ static constexpr std::string_view default_configuration_for_tests {  // NOLINT
         "refresh_timeout=300\n"
         "max_refresh_timeout=86400\n"
         "zone_offset=\n"
+        "authentication_timeout=0\n"
 
     "[datastore]\n"
         "log_location=\n"

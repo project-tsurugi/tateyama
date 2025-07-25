@@ -18,6 +18,7 @@
 #include <optional>
 #include <utility>
 #include <string>
+#include <chrono>
 
 #include <tateyama/framework/component_ids.h>
 #include <tateyama/framework/environment.h>
@@ -154,6 +155,7 @@ public:
 
 private:
     std::unique_ptr<authentication_adapter> authentication_adapter_{};
+    std::chrono::milliseconds refresh_{};
 
     [[nodiscard]] std::vector<std::string> split(const std::string& str, char del) const {
         std::size_t first = 0;
