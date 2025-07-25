@@ -143,6 +143,7 @@ public:
                   << "admin_sessions: " << admin_sessions << ", "
                   << "the number of maximum admin sessions.";
 
+        std::size_t authentication_timeout{};
         // session timeout
         if (auto* session_config = cfg_->get_section("session"); session_config) {
             auto enable_timeout_opt = session_config->get<bool>("enable_timeout");
@@ -175,6 +176,26 @@ public:
                           << "max_refresh_timeout: " << max_refresh_timeout << ", "
                           << "maximum refresh timeout in seconds.";
             }
+
+            if (auto authentication_timeout_opt = session_config->get<std::size_t>("authentication_timeout"); authentication_timeout_opt) {
+                authentication_timeout = authentication_timeout_opt.value();
+                LOG(INFO) << tateyama::endpoint::common::session_config_prefix
+                          << "authentication_timeout: " << authentication_timeout << ", "
+                          << "authentication timeout in seconds.";
+            }
+        }
+
+        double authentication_request_timeout{};
+        if (auto* authentication_config = cfg_->get_section("authentication"); authentication_config) {
+            if (auto authentication_request_timeout_opt = authentication_config->get<double>("request_timeout"); authentication_request_timeout_opt) {
+                authentication_request_timeout = authentication_request_timeout_opt.value();
+                LOG(INFO) << tateyama::endpoint::common::authentication_config_prefix
+                          << "request_timeout: " << authentication_request_timeout << ", "
+                          << "authentication request timeout in seconds.";
+            }
+        }
+        if (authentication_timeout > 0 && authentication_request_timeout > 0) {
+            conf_.set_authentication_timeout(authentication_request_timeout, authentication_timeout);
         }
 
         LOG(INFO) << tateyama::endpoint::common::ipc_endpoint_config_prefix
