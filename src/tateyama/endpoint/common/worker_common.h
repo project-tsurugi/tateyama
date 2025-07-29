@@ -331,6 +331,9 @@ protected:
         tateyama::proto::endpoint::response::Handshake rp{};
         auto rs = rp.mutable_success();
         rs->set_session_id(resources_.session_id());
+        if (auto name_opt = session_info.username(); name_opt) {
+            rs->set_user_name(std::string(name_opt.value()));
+        }
         auto body = rp.SerializeAsString();
         res->body(body);
         rp.clear_success();
