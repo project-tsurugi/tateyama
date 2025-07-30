@@ -44,7 +44,8 @@ private:
 
 class ipc_administrators_test_server_client: public server_client_gtest_base {
 public:
-    ipc_administrators_test_server_client(std::shared_ptr<tateyama::api::configuration::whole> const &cfg, std::function<void(ipc_client&)> f, std::function<void(const tateyama::api::server::user_type type)> g) : server_client_gtest_base(cfg), f_(std::move(f)), g_(std::move(g))  {
+    ipc_administrators_test_server_client(std::shared_ptr<tateyama::api::configuration::whole> const &cfg, std::function<void(ipc_client&)> f, std::function<void(const tateyama::api::server::user_type type)> g)
+        : server_client_gtest_base(cfg), f_(std::move(f)), g_(std::move(g)) {
     }
 
     std::shared_ptr<tateyama::framework::service> create_server_service() override {
@@ -84,9 +85,12 @@ class ipc_administrators_test: public ipc_gtest_base {
 protected:
     bool called_{};
     tateyama::api::server::user_type type_{};
+    tateyama::proto::endpoint::response::Handshake_Success::UserNameOptCase expected_case_;
+    std::string expected_name_;
 
+    // Works on forked process.
     std::function<void(ipc_client&)> client_{
-        [](ipc_client& client){
+        [this](ipc_client& client){
             tateyama::proto::endpoint::request::Handshake endpoint_handshake{};
             tateyama::proto::endpoint::request::ClientInformation client_information{};
             tateyama::proto::endpoint::request::Credential credential{};
@@ -118,8 +122,11 @@ protected:
             if(!response.ParseFromString(res)) {
                 FAIL();
             }
-            EXPECT_EQ(response.result_case(), tateyama::proto::endpoint::response::EncryptionKey::kSuccess);
-
+            EXPECT_EQ(response.result_case(), tateyama::proto::endpoint::response::Handshake::kSuccess);
+            EXPECT_EQ(expected_case_, response.success().user_name_opt_case());
+            if (response.success().user_name_opt_case() == tateyama::proto::endpoint::response::Handshake_Success::kUserName) {
+                EXPECT_EQ(expected_name_, response.success().user_name());
+            }
             std::string dmy_message{"dummy message"};
             client.send(post_administrators_service::tag, dmy_message);
             client.receive(res);
@@ -139,6 +146,10 @@ TEST_F(ipc_administrators_test, inclusive) {
                         "  enabled=true\n"
                         "  administrators=admin,user\n");
 
+    // Expectations must be set in advance, as clients are forked,
+    expected_case_ = tateyama::proto::endpoint::response::Handshake_Success::kUserName;
+    expected_name_ = "user";
+
     ipc_administrators_test_server_client sc { cfg_, client_, check_ };
     sc.start_server_client();
 
@@ -150,6 +161,9 @@ TEST_F(ipc_administrators_test, exclusive) {
     ipc_test_env::setup("[authentication]\n"
                         "  enabled=true\n"
                         "  administrators=admin\n");
+
+    expected_case_ = tateyama::proto::endpoint::response::Handshake_Success::kUserName;
+    expected_name_ = "user";
 
     ipc_administrators_test_server_client sc { cfg_, client_, check_ };
     sc.start_server_client();
@@ -163,6 +177,9 @@ TEST_F(ipc_administrators_test, asterisk) {
                         "  enabled=true\n"
                         "  administrators=*\n");
 
+    expected_case_ = tateyama::proto::endpoint::response::Handshake_Success::kUserName;
+    expected_name_ = "user";
+
     ipc_administrators_test_server_client sc { cfg_, client_, check_ };
     sc.start_server_client();
 
@@ -173,6 +190,9 @@ TEST_F(ipc_administrators_test, asterisk) {
 TEST_F(ipc_administrators_test, no_auth) {
     ipc_test_env::setup("[authentication]\n"
                         "  enabled=false\n");
+
+    expected_case_ = tateyama::proto::endpoint::response::Handshake_Success::USER_NAME_OPT_NOT_SET;
+    expected_name_ = "";
 
     ipc_administrators_test_server_client sc { cfg_, client_, check_ };
     sc.start_server_client();
