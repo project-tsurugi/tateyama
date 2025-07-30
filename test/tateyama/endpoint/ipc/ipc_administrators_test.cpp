@@ -146,7 +146,7 @@ TEST_F(ipc_administrators_test, inclusive) {
                         "  enabled=true\n"
                         "  administrators=admin,user\n");
 
-    // Expectations must be set in advance, as clients are forked, 
+    // Expectations must be set in advance, as clients are forked,
     expected_case_ = tateyama::proto::endpoint::response::Handshake_Success::kUserName;
     expected_name_ = "user";
 
