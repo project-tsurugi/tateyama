@@ -95,9 +95,7 @@ protected:
             tateyama::proto::endpoint::request::ClientInformation client_information{};
             tateyama::proto::endpoint::request::Credential credential{};
             credential.set_encrypted_credential(
-                "UD+3QtfHwytM80uzyN4/GbUqOUjO8wZLomAaSGTlRhcfMdovmsxM1mU4cbST7IZVaFAnhRmytIIJ/5oi/nhZ3aiM6JK2DEkM0ySC4aEgOhOh//QfcsnGZzu9ACuukVPVoCbU42KQ1TRmXGh8iQUwBQDicNSX9RwJP+IOO3M5eBTlzyPG/y0mEaaAQAhhmXUPEqdqKgifezELyB7Z2SbgZ92lcsIxoEOqSVUnK0QjF1jDFF6pnCxKwVY14q8uGmc3hbXEInbV3cWO0XehDLodKosNVxwbW+dbwFGlKBRFkOquE2nOtNgmp9gd+KEEkGjL1Q/wXwiUeZHjvVajkCm7aQ"
-                "."
-                "Qcot0fhaWRXvGBxoX1p1OmRgwBzcVPcLTJWKW1q3PZzCDEdr+c/ZROxdayWCIi/m6XUwZVzUOMgiu/UMFoGgO0kzv9KFDIPLn2/ccC91gV246EJKsi8vYYwreIVuSMf6cq4KYlS+HEWLlmIFreKY/udBkBO/CuePzl1ywCs4OrLPGMuJ07xS8//j42g9q9wVbhgjVTJMZhKWrWetzbP2OKo8ay2FM9jPJb/9mtDmkbsxtGEkNT2GaHQGmix+ne7JFTJNpF2nm93TI67gwT0TVW86wlqbYj2XkirA/qLaTLzwKeyMb5JjImMZMklYPQNAZvIAh6aVvSFG6dbABYJW4Q"
+                "d0drnP3jNXzUsdlkWTdB3clYs/TeVz84WmHH0JbtO130nFiUGmFKnMWgHsQG9ziIW21Oj2pIImVH9B83NzJz1/GrFRam47xtDO5ho/SVBeW1PJEE9eHd2DIo3UlP+VHKNt6g8++k+zECAic6gBemCvrP4WdeJYGcjYFhG9SeFvpZbyrZU3Tato/ZKcOYd8j3qyKCdoCWMNn5JkWxUN1K2OFgMc1Xs9/NZJ24muXLVgts9RKs5LSvBbDDGg8BVMlUTtJZ/GZbT8ZpAHse3AxSgCRLSIJYekPBdGvmTStTv/Cdme6YhIphsHDMPimTsRvg6oiYbAvLy+oTkJcGNwwoOQ"
             );
             client_information.set_allocated_credential(&credential);
             endpoint_handshake.set_allocated_client_information(&client_information);

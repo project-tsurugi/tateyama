@@ -13,6 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#pragma once
+
 #include <iostream>
 #include <string>
 #include <string_view>
@@ -62,17 +64,25 @@ class authentication_adapter_mock : public authentication_adapter {
         return std::nullopt;
     }
 
-    [[nodiscard]] std::optional<std::string> verify_encrypted(std::string_view username, std::string_view password) const override {
+    [[nodiscard]] std::optional<std::string> verify_encrypted(std::string_view encrypted_credential) const override {
         if (enabled_) {
-            std::string username_p;
-            std::string password_p;
-            rsa_->decrypt(crypto::base64_decode(username), username_p);
-            rsa_->decrypt(crypto::base64_decode(password), password_p);
+            std::string credential = decrypt(encrypted_credential);
+            std::vector<std::string> splited = split(credential, '\n');
 
-            if (auto itr = users_.find(username_p); itr != users_.end()) {
-                if (itr->second == password_p) {
-                    return username_p;
+            if (splited.size() < 2) {
+                LOG(INFO) << "encripted_credentialword is invalid format";
+                return std::nullopt;
+            }
+            try {
+                std::string& username = splited.at(0);
+                std::string& password = splited.at(1);
+                if (auto itr = users_.find(username); itr != users_.end()) {
+                    if (itr->second == password) {
+                        return username;
+                    }
                 }
+            } catch (std::runtime_error &ex) {
+                LOG(INFO) << ex.what();
             }
         }
         return std::nullopt;
@@ -88,6 +98,32 @@ private:
         { "user", "pass" }
     };
 
+    [[nodiscard]] std::string decrypt(std::string_view encrypted) const {
+        std::string decrypted{};
+        rsa_->decrypt(crypto::base64_decode(encrypted), decrypted);
+        return decrypted;
+    }
+
+    [[nodiscard]] static std::vector<std::string> split(const std::string& str, char del) {
+        std::size_t first = 0;
+        std::size_t last = str.find_first_of(del);
+
+        std::vector<std::string> result;
+
+        while (first < str.size()) {
+            std::string subStr(str, first, last - first);
+
+            result.push_back(subStr);
+
+            first = last + 1;
+            last = str.find_first_of(del, first);
+
+            if (last == std::string::npos) {
+                last = str.size();
+            }
+        }
+        return result;
+    }
 };
 
 }

@@ -58,15 +58,14 @@ public:
 
     /**
      * @brief verify the encrypted credentials.
-     * @param username the encrypted username
-     * @param password the encrypted password
+     * @param encrypted_credential the encrypted credentials
      * @return the authenticated username the credentials are valid
      * @return std::nullopt if the username or the password is invalid
      * @throws authentication_exception if the credentials are malformed
      * @throws authentication_exception if the authentication service is not available
      * @throws authentication_exception if I/O error occurred while verifying the credentials
      */
-    [[nodiscard]] virtual std::optional<std::string> verify_encrypted(std::string_view username, std::string_view password) const = 0;
+    [[nodiscard]] virtual std::optional<std::string> verify_encrypted(std::string_view encrypted_credential) const = 0;
 
     /**
      * @brief returns the key for encrypting username and password.

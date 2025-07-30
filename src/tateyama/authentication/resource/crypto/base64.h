@@ -29,13 +29,13 @@ using EncodeItr = base64_from_binary<transform_width<InputItr, 6, 8>>;
 using DecodeItr = transform_width<binary_from_base64<InputItr>, 8, 6, char>;
 
 template <typename InputStream, typename OutputStream>
-inline OutputStream& encode(InputStream& is, OutputStream& os) {
+static inline OutputStream& encode(InputStream& is, OutputStream& os) {
     std::copy(static_cast<EncodeItr>(InputItr(is)), static_cast<EncodeItr>(InputItr()), OutputItr(os));
     return os;
 }
 
 template <typename InputStream, typename OutputStream>
-inline OutputStream& decode(InputStream& is, OutputStream& os) {
+static inline OutputStream& decode(InputStream& is, OutputStream& os) {
     std::copy(static_cast<DecodeItr>(InputItr(is)), static_cast<DecodeItr>(InputItr()), OutputItr(os));
     return os;
 }
