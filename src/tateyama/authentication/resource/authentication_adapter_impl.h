@@ -58,9 +58,9 @@ class authentication_adapter_impl : public authentication_adapter {
         return std::nullopt;
     }
 
-    [[nodiscard]] std::optional<std::string> verify_encrypted(std::string_view username, std::string_view password) const override {
+    [[nodiscard]] std::optional<std::string> verify_encrypted(std::string_view encrypted_credential) const override {
         if (enabled_) {
-            if (auto token_opt = client_->verify_encrypted(username, password); token_opt) {
+            if (auto token_opt = client_->verify_encrypted(encrypted_credential); token_opt) {
                 return get_username(token_opt.value());
             }
         }

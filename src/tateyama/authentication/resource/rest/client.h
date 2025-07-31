@@ -31,14 +31,16 @@ public:
 
     std::optional<std::pair<std::string, std::string>> get_encryption_key() {
         auto response = client_->request(web::http::methods::GET, web::http::uri_builder(U("/encryption-key")).to_string()).get();
-        web::json::value body = response.extract_json(true).get();
+        if (response.status_code() == web::http::status_codes::OK) {
+            web::json::value body = response.extract_json(true).get();
 
-        std::string type = body.at("key_type").as_string();
-        std::string data = body.at("key_data").as_string();
+            std::string type = body.at("key_type").as_string();
+            std::string data = body.at("key_data").as_string();
 
-        if (!type.empty() && !data.empty()) {
-            if (type == "RSA") {
-                return std::make_pair(type, data);
+            if (!type.empty() && !data.empty()) {
+                if (type == "RSA") {
+                    return std::make_pair(type, data);
+                }
             }
         }
         return std::nullopt;
@@ -53,30 +55,30 @@ public:
         req.headers().add(U("Authorization"), t);
 
         auto response = client_->request(req).get();
-        web::json::value body = response.extract_json(true).get();
+        if (response.status_code() == web::http::status_codes::OK) {
+            web::json::value body = response.extract_json(true).get();
 
-        std::string token = body.at("token").as_string();
-        if (!token.empty()) {
-            return token;
+            std::string token = body.at("token").as_string();
+            if (!token.empty()) {
+                return token;
+            }
         }
         return std::nullopt;
     }
 
-    std::optional<std::string> verify_encrypted(std::string_view username, std::string_view password) {
-        std::string e(username);
-        e += ".";
-        e += password;
-
+    std::optional<std::string> verify_encrypted(std::string_view encrypted_credential) {
         web::http::http_request req(web::http::methods::GET);
         req.set_request_uri(web::http::uri_builder(U("/issue-encrypted")).to_string());
-        req.headers().add(U("X-Encrypted-Credentials"), e);
+        req.headers().add(U("X-Encrypted-Credentials"), encrypted_credential);
 
         auto response = client_->request(req).get();
-        web::json::value body = response.extract_json(true).get();
+        if (response.status_code() == web::http::status_codes::OK) {
+            web::json::value body = response.extract_json(true).get();
 
-        std::string token = body.at("token").as_string();
-        if (!token.empty()) {
-            return token;
+            std::string token = body.at("token").as_string();
+            if (!token.empty()) {
+                return token;
+            }
         }
         return std::nullopt;
     }
