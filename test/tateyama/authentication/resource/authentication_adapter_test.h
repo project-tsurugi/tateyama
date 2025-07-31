@@ -22,15 +22,15 @@
 #include "tateyama/authentication/resource/crypto/rsa.h"
 #include "tateyama/authentication/resource/jwt/token_handler.h"
 
+#include "tateyama/authentication/resource/crypto/key.h"
+
 namespace tateyama::authentication::resource {
 
 class authentication_adapter_test : public tateyama::authentication::resource::authentication_adapter {
   public:
     explicit authentication_adapter_test(bool enabled) : enabled_(enabled) {
         if (enabled_) {
-            rsa_ = std::make_unique<tateyama::authentication::resource::crypto::rsa>(
-                "-----BEGIN PRIVATE KEY-----MIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQCVXTeYEcg4rrQFWeBRuil7+ZQ4O5EJqh5SNyFiULfRNqVqIUge/gsOmP9ksPYW5PQ9ILg3OJq6x3guEKLPIMjpN7fXlZ3GojK68U9bI62Qu7zevmduuM4mOJ5fClPPsq85tt2MXlxdYkXKxJT+F2k/s3XhhTGJUmdDodk3NThHrloPuRJIz9zf5fGzWC0kRL0IcTAZjVIGBE/xCW9ZnoEPeMxUGbVBjZwzUoiSBMJ1EwR1FiSEzVFs4NIQaDRbvAeK2JAhTw7vcHmkhCk7P2xUoTHujYjL391qjlKGdsTsZgq9L1Z6qKWnXZrJJknKI+MgqxSDWDnuwDQQL7ip2EaVAgMBAAECggEAQsQDaM9yD5xQTiAJvJ6ZkphSn/xIbeiEWz3Xh2oLcNKbiGBOK8RlTuYnK2xK5Jr9biGlFtIPoDQvzW+UR0AhbtaAMDbp6vNv986MKXI+UHcLCwpTk9O6Gq2uZU9pfWsjFopeaDN52ChoiCXtb9MpMddXdzKhnP+ft0SuoxYADVH8fXuY2xZKebnTCy6O2DMUwBwDU5eshnBMhOjpFglwCBayZMfB2+xIFi0bo3FjwIXW4crMjra68JezGFfvlH2gztCoL4RyjTQzNnWBji4slf91Kf9xSY/M6fnA+Z6DGkG6OIFjU9/jDTfWQENMEdPpH3Yh//4W8N7znPGHo/OsNQKBgQC96SovBg01RFtpWuRwUz7Wl/Rl5ZOcG9TuAF9/m3gUltJRgtQjPRQW/o6uVIh5nr+AOmu1vgnf8dD5KKvRnzjncQ43DSDRstDhqIcEhCn9er2i2JtAHeZuhs2ZhBQLDk1gMVUhadaN3pZ/XU8BBbpir4LIW3E378W1GYrLdDdwBwKBgQDJV9FBUW5tIMt7Bxbw76lbmytXaAFvQLMeZZwn1j8wRkqmPGFut0javsPIwgrfP5Qgeu7RlJDd495CCAQu9vIuzdjc6MLiPmz+NmjSS2htKb4hM5C2wsfI1IqqYt/AwXPQuT6bisRq4S1ava7JRwDY+q0NOjoEaIIFJaGFq1O1gwKBgBQA1j+jvIpqy9IaD8vBCPJjiQueleCwkcoL4gM35fsNM9QAGsYnbdFKOM8l+kYNMZCZFrVK8hFTkDZeUVLAGadPIjcsO9O6qQPL04TnQuD/J7BabmfffmEP8+ICpnXPqNjD+XqOglnpIyMBOgwahVpVsEnYT+GbcNC1gwgRErHLAoGAQE0ddSDOhWeN1JKlDvlbOvhJVTbQDnm5OqH0xvwzXfV07bYm37cFO2blG/5sfnPNmLnp/2DVCyg02R26SE1xduUitxpW8u5A3Mb/nvmaNhK4t93B/7whFdBbIKNHFkYx+JzQk9gzdnbHh01AvuNAMAuOrMTFtpaxv3cPKKNYroUCgYArBfveStNE1cLtZEAInagSrmcwowVfYP2TFCtIe0oG5iMNE9jy5b5nYjRRyD/2PJ0VGSCm0ptTP3sIETmMlFWPGydXIVid9ihuLipFfaJVzpO8Uzf1bcU/aboWEm6v9+jcst2zzpBblieoIQcB49/u5uwEdGRmMaUqV3LOZInfyw==-----END PRIVATE KEY-----"
-                );
+            rsa_ = std::make_unique<tateyama::authentication::resource::crypto::rsa>(tateyama::authentication::resource::crypto::base64_decode(tateyama::authentication::resource::crypto::private_key));
         }
     }
 

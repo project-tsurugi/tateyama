@@ -220,16 +220,22 @@ protected:
         {
             tateyama::proto::endpoint::response::EncryptionKey rp{};
             if (auth_) {
-                if (auto key_opt = auth_->get_encryption_key(); key_opt) {
-                    auto rs = rp.mutable_success();
-                    rs->set_encryption_key(key_opt.value());
-                    res->body(rp.SerializeAsString());
-                    rp.clear_success();
-                    throw psudo_exception_of_continue();
+                std::string err_msg{};
+                try {
+                    if (auto key_opt = auth_->get_encryption_key(); key_opt) {
+                        auto rs = rp.mutable_success();
+                        rs->set_encryption_key(key_opt.value());
+                        res->body(rp.SerializeAsString());
+                        rp.clear_success();
+                        throw psudo_exception_of_continue();
+                    }
+                    err_msg = "get_encryption_key() failed";
+                } catch (std::runtime_error &ex) {
+                    err_msg = ex.what();
                 }
                 auto re = rp.mutable_error();
                 re->set_code(tateyama::proto::diagnostics::Code::SYSTEM_ERROR);
-                re->set_message("encryptionKey is not available");
+                re->set_message(err_msg);
                 res->body(rp.SerializeAsString());
                 rp.clear_error();
                 return false;
@@ -270,24 +276,35 @@ protected:
             switch (credential.credential_opt_case()) {
             case tateyama::proto::endpoint::request::Credential::CredentialOptCase::kEncryptedCredential:
             {
-                if (auto username_opt = auth_->verify_encrypted(credential.encrypted_credential()); username_opt) {
-                    session_info.user_name(username_opt.value());
-                } else {
-                    handshake_error(res, tateyama::proto::diagnostics::Code::AUTHENTICATION_ERROR, "user or password is incorrect");
+                try {
+                    if (auto username_opt = auth_->verify_encrypted(credential.encrypted_credential()); username_opt) {
+                        session_info.user_name(username_opt.value());
+                    } else {
+                        handshake_error(res, tateyama::proto::diagnostics::Code::AUTHENTICATION_ERROR, "user or password is incorrect");
+                    }
+                } catch (std::runtime_error &ex) {
+                    handshake_error(res, tateyama::proto::diagnostics::Code::AUTHENTICATION_ERROR, ex.what());
                     return false;
                 }
             }
             break;
+
             case tateyama::proto::endpoint::request::Credential::CredentialOptCase::kRememberMeCredential:
             {
-                if (auto username_opt = auth_->verify_token(credential.remember_me_credential()); username_opt) {
-                    session_info.user_name(username_opt.value());
-                } else {
-                    handshake_error(res, tateyama::proto::diagnostics::Code::AUTHENTICATION_ERROR, "token is incorrect");
+                try {
+                    if (auto username_opt = auth_->verify_token(credential.remember_me_credential()); username_opt) {
+                        session_info.user_name(username_opt.value());
+                    } else {
+                        handshake_error(res, tateyama::proto::diagnostics::Code::AUTHENTICATION_ERROR, "token is incorrect");
+                        return false;
+                    }
+                } catch (std::runtime_error &ex) {
+                    handshake_error(res, tateyama::proto::diagnostics::Code::AUTHENTICATION_ERROR, ex.what());
                     return false;
                 }
             }
             break;
+
             default: 
                 handshake_error(res, tateyama::proto::diagnostics::Code::INVALID_REQUEST, "no valid credential");
                 return false;

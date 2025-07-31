@@ -82,4 +82,17 @@ public:
     authentication_adapter& operator=(authentication_adapter&& other) noexcept = delete;
 };
 
-}
+/**
+ * @brief authentication_exception
+ */
+class authentication_exception : public std::runtime_error {
+public:
+    /**
+     * @brief create exception object.
+     * @param message the error message
+     */
+    explicit authentication_exception(const std::string& message) : std::runtime_error(message) {
+    }
+};
+
+}  // namespace tateyama::authentication::resource

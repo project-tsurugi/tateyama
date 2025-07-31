@@ -102,7 +102,7 @@ public:
                 }
             }
         }
-        return std::nullopt;
+        throw authentication_exception("authentication service is not available");
     }
 
     /**
@@ -118,7 +118,7 @@ public:
         if (authentication_adapter_) {
             return authentication_adapter_->verify_token(token);
         }
-        return std::nullopt;
+        throw authentication_exception("authentication service is not available");
     }
 
     /**
@@ -129,13 +129,9 @@ public:
      */
     [[nodiscard]] std::optional<std::string> verify_encrypted(const std::string& encripted_credential) const {
         if (authentication_adapter_) {
-            try {
-                return authentication_adapter_->verify_encrypted(encripted_credential);
-            } catch (std::runtime_error &ex) {
-                LOG(INFO) << ex.what();
-            }
+            return authentication_adapter_->verify_encrypted(encripted_credential);
         }
-        return std::nullopt;
+        throw authentication_exception("authentication service is not available");
     }
 
     /**
