@@ -44,7 +44,8 @@ private:
 
 class ipc_administrators_test_server_client: public server_client_gtest_base {
 public:
-    ipc_administrators_test_server_client(std::shared_ptr<tateyama::api::configuration::whole> const &cfg, std::function<void(ipc_client&)> f, std::function<void(const tateyama::api::server::user_type type)> g) : server_client_gtest_base(cfg), f_(std::move(f)), g_(std::move(g))  {
+    ipc_administrators_test_server_client(std::shared_ptr<tateyama::api::configuration::whole> const &cfg, std::function<void(ipc_client&)> f, std::function<void(const tateyama::api::server::user_type type)> g)
+        : server_client_gtest_base(cfg), f_(std::move(f)), g_(std::move(g)) {
     }
 
     std::shared_ptr<tateyama::framework::service> create_server_service() override {
@@ -84,16 +85,17 @@ class ipc_administrators_test: public ipc_gtest_base {
 protected:
     bool called_{};
     tateyama::api::server::user_type type_{};
+    tateyama::proto::endpoint::response::Handshake_Success::UserNameOptCase expected_case_;
+    std::string expected_name_;
 
+    // Works on forked process.
     std::function<void(ipc_client&)> client_{
-        [](ipc_client& client){
+        [this](ipc_client& client){
             tateyama::proto::endpoint::request::Handshake endpoint_handshake{};
             tateyama::proto::endpoint::request::ClientInformation client_information{};
             tateyama::proto::endpoint::request::Credential credential{};
             credential.set_encrypted_credential(
-                "UD+3QtfHwytM80uzyN4/GbUqOUjO8wZLomAaSGTlRhcfMdovmsxM1mU4cbST7IZVaFAnhRmytIIJ/5oi/nhZ3aiM6JK2DEkM0ySC4aEgOhOh//QfcsnGZzu9ACuukVPVoCbU42KQ1TRmXGh8iQUwBQDicNSX9RwJP+IOO3M5eBTlzyPG/y0mEaaAQAhhmXUPEqdqKgifezELyB7Z2SbgZ92lcsIxoEOqSVUnK0QjF1jDFF6pnCxKwVY14q8uGmc3hbXEInbV3cWO0XehDLodKosNVxwbW+dbwFGlKBRFkOquE2nOtNgmp9gd+KEEkGjL1Q/wXwiUeZHjvVajkCm7aQ"
-                "."
-                "Qcot0fhaWRXvGBxoX1p1OmRgwBzcVPcLTJWKW1q3PZzCDEdr+c/ZROxdayWCIi/m6XUwZVzUOMgiu/UMFoGgO0kzv9KFDIPLn2/ccC91gV246EJKsi8vYYwreIVuSMf6cq4KYlS+HEWLlmIFreKY/udBkBO/CuePzl1ywCs4OrLPGMuJ07xS8//j42g9q9wVbhgjVTJMZhKWrWetzbP2OKo8ay2FM9jPJb/9mtDmkbsxtGEkNT2GaHQGmix+ne7JFTJNpF2nm93TI67gwT0TVW86wlqbYj2XkirA/qLaTLzwKeyMb5JjImMZMklYPQNAZvIAh6aVvSFG6dbABYJW4Q"
+                "d0drnP3jNXzUsdlkWTdB3clYs/TeVz84WmHH0JbtO130nFiUGmFKnMWgHsQG9ziIW21Oj2pIImVH9B83NzJz1/GrFRam47xtDO5ho/SVBeW1PJEE9eHd2DIo3UlP+VHKNt6g8++k+zECAic6gBemCvrP4WdeJYGcjYFhG9SeFvpZbyrZU3Tato/ZKcOYd8j3qyKCdoCWMNn5JkWxUN1K2OFgMc1Xs9/NZJ24muXLVgts9RKs5LSvBbDDGg8BVMlUTtJZ/GZbT8ZpAHse3AxSgCRLSIJYekPBdGvmTStTv/Cdme6YhIphsHDMPimTsRvg6oiYbAvLy+oTkJcGNwwoOQ"
             );
             client_information.set_allocated_credential(&credential);
             endpoint_handshake.set_allocated_client_information(&client_information);
@@ -118,8 +120,11 @@ protected:
             if(!response.ParseFromString(res)) {
                 FAIL();
             }
-            EXPECT_EQ(response.result_case(), tateyama::proto::endpoint::response::EncryptionKey::kSuccess);
-
+            EXPECT_EQ(response.result_case(), tateyama::proto::endpoint::response::Handshake::kSuccess);
+            EXPECT_EQ(expected_case_, response.success().user_name_opt_case());
+            if (response.success().user_name_opt_case() == tateyama::proto::endpoint::response::Handshake_Success::kUserName) {
+                EXPECT_EQ(expected_name_, response.success().user_name());
+            }
             std::string dmy_message{"dummy message"};
             client.send(post_administrators_service::tag, dmy_message);
             client.receive(res);
@@ -139,6 +144,10 @@ TEST_F(ipc_administrators_test, inclusive) {
                         "  enabled=true\n"
                         "  administrators=admin,user\n");
 
+    // Expectations must be set in advance, as clients are forked,
+    expected_case_ = tateyama::proto::endpoint::response::Handshake_Success::kUserName;
+    expected_name_ = "user";
+
     ipc_administrators_test_server_client sc { cfg_, client_, check_ };
     sc.start_server_client();
 
@@ -150,6 +159,9 @@ TEST_F(ipc_administrators_test, exclusive) {
     ipc_test_env::setup("[authentication]\n"
                         "  enabled=true\n"
                         "  administrators=admin\n");
+
+    expected_case_ = tateyama::proto::endpoint::response::Handshake_Success::kUserName;
+    expected_name_ = "user";
 
     ipc_administrators_test_server_client sc { cfg_, client_, check_ };
     sc.start_server_client();
@@ -163,6 +175,9 @@ TEST_F(ipc_administrators_test, asterisk) {
                         "  enabled=true\n"
                         "  administrators=*\n");
 
+    expected_case_ = tateyama::proto::endpoint::response::Handshake_Success::kUserName;
+    expected_name_ = "user";
+
     ipc_administrators_test_server_client sc { cfg_, client_, check_ };
     sc.start_server_client();
 
@@ -173,6 +188,9 @@ TEST_F(ipc_administrators_test, asterisk) {
 TEST_F(ipc_administrators_test, no_auth) {
     ipc_test_env::setup("[authentication]\n"
                         "  enabled=false\n");
+
+    expected_case_ = tateyama::proto::endpoint::response::Handshake_Success::USER_NAME_OPT_NOT_SET;
+    expected_name_ = "";
 
     ipc_administrators_test_server_client sc { cfg_, client_, check_ };
     sc.start_server_client();

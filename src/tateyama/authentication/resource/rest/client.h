@@ -62,14 +62,10 @@ public:
         return std::nullopt;
     }
 
-    std::optional<std::string> verify_encrypted(std::string_view username, std::string_view password) {
-        std::string e(username);
-        e += ".";
-        e += password;
-
+    std::optional<std::string> verify_encrypted(std::string_view encrypted_credential) {
         web::http::http_request req(web::http::methods::GET);
         req.set_request_uri(web::http::uri_builder(U("/issue-encrypted")).to_string());
-        req.headers().add(U("X-Encrypted-Credentials"), e);
+        req.headers().add(U("X-Encrypted-Credentials"), encrypted_credential);
 
         auto response = client_->request(req).get();
         web::json::value body = response.extract_json(true).get();
