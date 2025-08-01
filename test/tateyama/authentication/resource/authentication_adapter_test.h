@@ -117,4 +117,4 @@ private:
     }
 };
 
-}
+}  // namespace tateyama::authentication::resource
