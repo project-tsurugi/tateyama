@@ -62,7 +62,7 @@ parameter=value
 |worker_try_count| 整数 | タスクスケジューラのワーカーがサスペンド前にタスクキューを確認する回数。busy_worker=falseの場合のみ有効。デフォルトは1000|開発用のため将来的に削除/変更される可能性あり|
 |worker_suspend_timeout| 整数 | タスクスケジューラのワーカーがサスペンドしてから復帰するまでの時間(us)。busy_worker=falseの場合のみ有効。デフォルトは1000000|開発用のため将来的に削除/変更される可能性あり|
 |commit_response| 文字列 | commit待ち合わせの既定値。次のいずれかから選択 (ACCEPTED, AVAILABLE, STORED, PROPAGATED)。デフォルトはSTORED|クライアントからコミット時に明示的に指定することで、トランザクションごとに上記設定を上書き可能|
-|dev_update_skips_deletion| ブール(true/false) | UPDATE文の更新対象列が主キーや索引列でない場合はレコードの削除を可能な限りスキップする。デフォルトはfalse|開発用のため将来的に削除される可能性あり|
+|dev_update_skips_deletion| ブール(true/false) | UPDATE文の更新対象列が主キーや索引列でない場合はレコードの削除を可能な限りスキップする。デフォルトはtrue|削除予定|
 |dev_profile_commits| ブール(true/false) | コミット処理の性能計測のためのプロファイリング情報を出力するか。デフォルトはfalse|開発用のため将来的に削除される可能性あり|
 |dev_return_os_pages| ブール(true/false) | メモリ管理用のページプールに返却されたページをOSに返却するか。デフォルトはfalse|開発用のため将来的に削除される可能性あり|
 |dev_omit_task_when_idle| ブール(true/false) | durable待ちトランザクションがない場合にdurability callback処理を行うタスクのスケジュールをスキップするか。デフォルトはtrue|開発用のため将来的に削除される可能性あり|
