@@ -44,4 +44,4 @@ bool bridge::setup(environment& env) {
     return true;
 }
 
-}
+} //  namespace tateyama::authentication::resource

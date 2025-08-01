@@ -102,7 +102,7 @@ public:
                 }
             }
         }
-        return std::nullopt;
+        throw authentication_exception("authentication service is not available");
     }
 
     /**
@@ -118,30 +118,20 @@ public:
         if (authentication_adapter_) {
             return authentication_adapter_->verify_token(token);
         }
-        return std::nullopt;
+        throw authentication_exception("authentication service is not available");
     }
 
     /**
      * @brief verify the encrypted credentials.
-     * @param user_pass the encrypted username and password
+     * @param encrypted_credential the encrypted credential
      * @return the authenticated username if the token is valid
      * @return std::nullopt if the credential is invalid
      */
-    [[nodiscard]] std::optional<std::string> verify_encrypted(const std::string& user_pass) const {
+    [[nodiscard]] std::optional<std::string> verify_encrypted(const std::string& encrypted_credential) const {
         if (authentication_adapter_) {
-            std::vector<std::string> splited = split(user_pass, '.');
-
-            if (splited.size() != 2) {
-                LOG(INFO) << "user_password is invalid format";
-                return std::nullopt;
-            }
-            try {
-                return authentication_adapter_->verify_encrypted(splited.at(0), splited.at(1));
-            } catch (std::runtime_error &ex) {
-                LOG(INFO) << ex.what();
-            }
+            return authentication_adapter_->verify_encrypted(encrypted_credential);
         }
-        return std::nullopt;
+        throw authentication_exception("authentication service is not available");
     }
 
     /**
@@ -154,28 +144,6 @@ public:
 
 private:
     std::unique_ptr<authentication_adapter> authentication_adapter_{};
-
-    [[nodiscard]] std::vector<std::string> split(const std::string& str, char del) const {
-        std::size_t first = 0;
-        std::size_t last = str.find_first_of(del);
-
-        std::vector<std::string> result;
-
-        while (first < str.size()) {
-            std::string subStr(str, first, last - first);
-
-            result.push_back(subStr);
-
-            first = last + 1;
-            last = str.find_first_of(del, first);
-
-            if (last == std::string::npos) {
-                last = str.size();
-            }
-        }
-        
-        return result;
-    }
 };
 
 }
