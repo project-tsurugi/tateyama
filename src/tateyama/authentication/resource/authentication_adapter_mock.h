@@ -74,13 +74,13 @@ class authentication_adapter_mock : public authentication_adapter {
                 std::string credential = decrypt(encrypted_credential);
                 splited = split(credential, '\n');
             } catch (boost::archive::iterators::dataflow_exception &ex) {
-                LOG(INFO) << "encripted credential is not encoded correctly";
-                throw authentication_exception("encripted credential is not encoded correctly");
+                LOG(INFO) << "encrypted credential is not encoded correctly";
+                throw authentication_exception("encrypted credential is not encoded correctly");
             }
 
             if (splited.size() < 2) {
-                LOG(INFO) << "encripted credential is not formatted correctly";
-                throw authentication_exception("encripted credential is not formatted correctly");
+                LOG(INFO) << "encrypted credential is not formatted correctly";
+                throw authentication_exception("encrypted credential is not formatted correctly");
             }
             try {
                 std::string& username = splited.at(0);
