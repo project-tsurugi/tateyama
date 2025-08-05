@@ -93,11 +93,14 @@ private:
             }
         }
 
+    private:
         std::string protocol{};
         std::string domain{};
         std::string port{};
         std::string path{};
         std::string query{};
+
+        friend class authentication_adapter_impl;
     };
 
     [[nodiscard]] std::optional<std::string> get_username(const std::string& token) const {

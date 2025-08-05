@@ -25,13 +25,13 @@ namespace tateyama::authentication::resource::rest {
 
 class client {
 public:
-    client(const std::string& host, int port, const std::string& path) :
+    client(const std::string& host, int port, std::string path) :
         client_(std::make_unique<httplib::Client>(host, port)),
-        path_(path) {
+        path_(std::move(path)) {
     }
 
     std::optional<std::pair<std::string, std::string>> get_encryption_key() {
-        auto response = client_->Get((path_ + "/encryption-key").c_str());
+        auto response = client_->Get((path_ + "/encryption-key").c_str());  // NOLINT libcpp-httplib-dev 0.10.3 does not privide Get(std::string) API
         if (response && response->status == 200) {
             nlohmann::json j = nlohmann::json::parse(response->body);
 
@@ -54,7 +54,7 @@ public:
         httplib::Headers headers = {
             { "Authorization", t.c_str() }
         };
-        auto response = client_->Get((path_ + "/verify").c_str(), headers);
+        auto response = client_->Get((path_ + "/verify").c_str(), headers);  // NOLINT libcpp-httplib-dev 0.10.3 does not privide Get(std::string) API
         if (response && response->status == 200) {
             nlohmann::json j = nlohmann::json::parse(response->body);
 
@@ -72,7 +72,7 @@ public:
             { "X-Encrypted-Credentials", ec.c_str() }
         };
 
-        auto response = client_->Get((path_ + "/issue-encrypted").c_str(), headers);
+        auto response = client_->Get((path_ + "/issue-encrypted").c_str(), headers);  // NOLINT libcpp-httplib-dev 0.10.3 does not privide Get(std::string) API
         if (response && response->status == 200) {
             nlohmann::json j = nlohmann::json::parse(response->body);
 
