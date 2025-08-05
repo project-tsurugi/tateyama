@@ -1,4 +1,4 @@
-# Copyright 2018-2024 Project Tsurugi.
+# Copyright 2018-2025 Project Tsurugi.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -71,6 +71,7 @@ if (ENABLE_ALTIMETER)
     find_package(altimeter REQUIRED)
     find_package(fmt REQUIRED)
 endif()
+find_package(httplib)
 
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)

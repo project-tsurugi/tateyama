@@ -116,8 +116,19 @@ target_link_libraries(${ENGINE}
         PRIVATE rt # for shm
         PRIVATE crypto
         PRIVATE jwt
-        PRIVATE cpp-httplib
 )
+
+if(httplib_FOUND)
+    # use httplibConfig.cmake
+    target_link_libraries(${ENGINE}
+        PRIVATE httplib::httplib
+    )
+else()
+    # use libcpp-httplib.so
+    target_link_libraries(${ENGINE}
+        PRIVATE cpp-httplib
+    )
+endif()
 
 if(MC_QUEUE)
     target_compile_definitions(${ENGINE} PUBLIC MC_QUEUE)
