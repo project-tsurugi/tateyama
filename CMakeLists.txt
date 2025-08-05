@@ -61,7 +61,7 @@ find_package(glog REQUIRED)
 find_package(gflags REQUIRED)
 find_package(Threads REQUIRED)
 find_package(Boost
-        COMPONENTS filesystem thread system container
+        COMPONENTS filesystem thread system container regex
         REQUIRED
         )
 find_package(TBB REQUIRED)
@@ -71,7 +71,6 @@ if (ENABLE_ALTIMETER)
     find_package(altimeter REQUIRED)
     find_package(fmt REQUIRED)
 endif()
-find_package(cpprestsdk REQUIRED)
 
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)

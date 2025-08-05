@@ -33,10 +33,16 @@ namespace tateyama::authentication::resource {
  */
 class authentication_adapter_impl : public authentication_adapter {
   public:
-    explicit authentication_adapter_impl(bool enabled, const std::string& url) : enabled_(enabled), client_(enabled_ ? std::make_unique<rest::client>(url) : nullptr) {
+    explicit authentication_adapter_impl(bool enabled, const std::string& url_string) : enabled_(enabled) {
         if (enabled_) {
+            url_parser url(url_string);
+
+            std::string& port = url.port;
+            if (client_ = std::make_unique<rest::client>(url.domain, port.empty() ? 80 : stoi(port), url.path); !client_) {
+                throw std::runtime_error(std::string("cannot establish connection with ") + url_string);
+            }
             if (encryption_key_ = client_->get_encryption_key(); !encryption_key_) {
-                throw std::runtime_error(std::string("cannot get encryption_key from ") + url);
+                throw std::runtime_error(std::string("cannot get encryption_key from ") + url_string);
             }
         }
     }
@@ -71,6 +77,29 @@ private:
     bool enabled_;
     std::unique_ptr<rest::client> client_;
     std::optional<std::pair<std::string, std::string>> encryption_key_{};
+
+    class url_parser {
+    public:
+        explicit url_parser(const std::string& url) {
+            boost::regex ex("(http|https)://([^/ :]+):?([^/ ]*)(/?[^ #?]*)\\x3f?([^ #]*)#?([^ ]*)");
+            boost::cmatch what;
+
+            if(regex_match(url.c_str(), what, ex)) {
+                protocol = std::string(what[1].first, what[1].second);
+                domain   = std::string(what[2].first, what[2].second);
+                port     = std::string(what[3].first, what[3].second);
+                path     = std::string(what[4].first, what[4].second);
+                query    = std::string(what[5].first, what[5].second);
+            }
+        }
+
+        std::string protocol{};
+        std::string domain{};
+        std::string port{};
+        std::string path{};
+        std::string query{};
+    };
+
     [[nodiscard]] std::optional<std::string> get_username(const std::string& token) const {
         if (encryption_key_) {
             auto handler = std::make_unique<jwt::token_handler>(token, encryption_key_.value().second);

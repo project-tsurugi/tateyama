@@ -17,25 +17,26 @@
 #include <string_view>
 #include <optional>
 
-#include <cpprest/http_client.h>
+#include <boost/regex.hpp>
+#include <httplib.h>
+#include <nlohmann/json.hpp>
 
 namespace tateyama::authentication::resource::rest {
 
 class client {
 public:
-    explicit client(const std::string& loc) {
-        utility::string_t address = U(loc);
-        web::http::uri uri = web::http::uri(address);
-        client_ = std::make_unique<web::http::client::http_client>(web::http::uri_builder(uri).to_uri());
+    client(const std::string& host, int port, const std::string& path) :
+        client_(std::make_unique<httplib::Client>(host, port)),
+        path_(path) {
     }
 
     std::optional<std::pair<std::string, std::string>> get_encryption_key() {
-        auto response = client_->request(web::http::methods::GET, web::http::uri_builder(U("/encryption-key")).to_string()).get();
-        if (response.status_code() == web::http::status_codes::OK) {
-            web::json::value body = response.extract_json(true).get();
+        auto response = client_->Get((path_ + "/encryption-key").c_str());
+        if (response && response->status == 200) {
+            nlohmann::json j = nlohmann::json::parse(response->body);
 
-            std::string type = body.at("key_type").as_string();
-            std::string data = body.at("key_data").as_string();
+            std::string type = j.find("key_type").value();
+            std::string data = j.find("key_data").value();
 
             if (!type.empty() && !data.empty()) {
                 if (type == "RSA") {
@@ -50,15 +51,14 @@ public:
         std::string t("Bearer ");
         t += token_given;
 
-        web::http::http_request req(web::http::methods::GET);
-        req.set_request_uri(web::http::uri_builder(U("/verify")).to_string());
-        req.headers().add(U("Authorization"), t);
+        httplib::Headers headers = {
+            { "Authorization", t.c_str() }
+        };
+        auto response = client_->Get((path_ + "/verify").c_str(), headers);
+        if (response && response->status == 200) {
+            nlohmann::json j = nlohmann::json::parse(response->body);
 
-        auto response = client_->request(req).get();
-        if (response.status_code() == web::http::status_codes::OK) {
-            web::json::value body = response.extract_json(true).get();
-
-            std::string token = body.at("token").as_string();
+            std::string token = j.find("token").value();
             if (!token.empty()) {
                 return token;
             }
@@ -67,15 +67,16 @@ public:
     }
 
     std::optional<std::string> verify_encrypted(std::string_view encrypted_credential) {
-        web::http::http_request req(web::http::methods::GET);
-        req.set_request_uri(web::http::uri_builder(U("/issue-encrypted")).to_string());
-        req.headers().add(U("X-Encrypted-Credentials"), encrypted_credential);
+        std::string ec{encrypted_credential};
+        httplib::Headers headers = {
+            { "X-Encrypted-Credentials", ec.c_str() }
+        };
 
-        auto response = client_->request(req).get();
-        if (response.status_code() == web::http::status_codes::OK) {
-            web::json::value body = response.extract_json(true).get();
+        auto response = client_->Get((path_ + "/issue-encrypted").c_str(), headers);
+        if (response && response->status == 200) {
+            nlohmann::json j = nlohmann::json::parse(response->body);
 
-            std::string token = body.at("token").as_string();
+            std::string token = j.find("token").value();
             if (!token.empty()) {
                 return token;
             }
@@ -83,8 +84,9 @@ public:
         return std::nullopt;
     }
 
-  private:
-    std::unique_ptr<web::http::client::http_client> client_{};
+private:
+    std::unique_ptr<httplib::Client> client_{};
+    std::string path_{};
 };
 
 } // namespace

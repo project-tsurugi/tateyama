@@ -108,6 +108,7 @@ target_link_libraries(${ENGINE}
         PRIVATE Boost::filesystem
         PRIVATE Boost::thread
         PRIVATE Boost::container
+        PRIVATE Boost::regex
         PRIVATE glog::glog
         PRIVATE atomic
         PRIVATE moodycamel
@@ -115,7 +116,7 @@ target_link_libraries(${ENGINE}
         PRIVATE rt # for shm
         PRIVATE crypto
         PRIVATE jwt
-        PRIVATE cpprestsdk::cpprest
+        PRIVATE cpp-httplib
 )
 
 if(MC_QUEUE)
