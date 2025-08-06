@@ -123,13 +123,13 @@ public:
 
     /**
      * @brief verify the encrypted credentials.
-     * @param encripted_credential the encrypted credential
+     * @param encrypted_credential the encrypted credential
      * @return the authenticated username if the token is valid
      * @return std::nullopt if the credential is invalid
      */
-    [[nodiscard]] std::optional<std::string> verify_encrypted(const std::string& encripted_credential) const {
+    [[nodiscard]] std::optional<std::string> verify_encrypted(const std::string& encrypted_credential) const {
         if (authentication_adapter_) {
-            return authentication_adapter_->verify_encrypted(encripted_credential);
+            return authentication_adapter_->verify_encrypted(encrypted_credential);
         }
         throw authentication_exception("authentication service is not available");
     }

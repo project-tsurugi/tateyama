@@ -9,7 +9,7 @@
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
-
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
@@ -38,9 +38,7 @@ class authentication_adapter_impl : public authentication_adapter {
             url_parser url(url_string);
 
             std::string& port = url.port;
-            if (client_ = std::make_unique<rest::client>(url.domain, port.empty() ? 80 : stoi(port), url.path); !client_) {
-                throw std::runtime_error(std::string("cannot establish connection with ") + url_string);
-            }
+            client_ = std::make_unique<rest::client>(url.domain, port.empty() ? 80 : stoi(port), url.path);
             if (encryption_key_ = client_->get_encryption_key(); !encryption_key_) {
                 throw std::runtime_error(std::string("cannot get encryption_key from ") + url_string);
             }
