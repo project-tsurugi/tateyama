@@ -21,6 +21,8 @@
 #include <httplib.h>
 #include <nlohmann/json.hpp>
 
+#include "tateyama/authentication/resource/authentication_adapter.h"  // for authentication_exception
+
 namespace tateyama::authentication::resource::rest {
 
 class client {
@@ -43,8 +45,9 @@ public:
                     return std::make_pair(type, data);
                 }
             }
+            throw authentication_exception("the authentication service malfunction");
         }
-        return std::nullopt;
+        throw authentication_exception("the authentication service is not available");
     }
 
     std::optional<std::string> verify_token(std::string_view token_given) {
@@ -55,15 +58,19 @@ public:
             { "Authorization", t.c_str() }
         };
         auto response = client_->Get((path_ + "/verify").c_str(), headers);  // NOLINT libcpp-httplib-dev 0.10.3 does not privide Get(std::string) API
-        if (response && response->status == 200) {
-            nlohmann::json j = nlohmann::json::parse(response->body);
+        if (response) {
+            if (response->status == 200) {
+                nlohmann::json j = nlohmann::json::parse(response->body);
 
-            std::string token = j.find("token").value();
-            if (!token.empty()) {
-                return token;
+                std::string token = j.find("token").value();
+                if (!token.empty()) {
+                    return token;
+                }
+                throw authentication_exception("the authentication service malfunction");
             }
+            throw authentication_exception("the token is malformed");
         }
-        return std::nullopt;
+        throw authentication_exception("the authentication service is not available");
     }
 
     std::optional<std::string> verify_encrypted(std::string_view encrypted_credential) {
@@ -73,15 +80,19 @@ public:
         };
 
         auto response = client_->Get((path_ + "/issue-encrypted").c_str(), headers);  // NOLINT libcpp-httplib-dev 0.10.3 does not privide Get(std::string) API
-        if (response && response->status == 200) {
-            nlohmann::json j = nlohmann::json::parse(response->body);
+        if (response) {
+            if (response->status == 200) {
+                nlohmann::json j = nlohmann::json::parse(response->body);
 
-            std::string token = j.find("token").value();
-            if (!token.empty()) {
-                return token;
+                std::string token = j.find("token").value();
+                if (!token.empty()) {
+                    return token;
+                }
+                throw authentication_exception("the authentication service malfunction");
             }
+            throw authentication_exception("the credential is malformed");
         }
-        return std::nullopt;
+        throw authentication_exception("the authentication service is not available");
     }
 
 private:

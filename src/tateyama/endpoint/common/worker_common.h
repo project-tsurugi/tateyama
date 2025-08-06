@@ -202,7 +202,6 @@ protected:
         tateyama::proto::endpoint::request::Request rq{};
         if(!rq.ParseFromArray(data.data(), static_cast<int>(data.size()))) {
             std::string error_message{"request parse error"};
-            LOG_LP(INFO) << error_message;
             handshake_error(res, tateyama::proto::diagnostics::Code::INVALID_REQUEST, error_message);
             return false;
         }
@@ -233,6 +232,7 @@ protected:
                 } catch (std::runtime_error &ex) {
                     err_msg = ex.what();
                 }
+                LOG_LP(INFO) << "error in get encryption key: " << err_msg;
                 auto re = rp.mutable_error();
                 re->set_code(tateyama::proto::diagnostics::Code::SYSTEM_ERROR);
                 re->set_message(err_msg);
@@ -360,6 +360,7 @@ protected:
     static void handshake_error(tateyama::api::server::response* res,
                        tateyama::proto::diagnostics::Code code,
                        const std::string& message) {
+        LOG_LP(INFO) << message;
         tateyama::proto::endpoint::response::Handshake response{};
         auto* error = response.mutable_error();
         error->set_message(message);
