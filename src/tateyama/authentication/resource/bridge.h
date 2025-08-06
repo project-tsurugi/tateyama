@@ -92,7 +92,7 @@ public:
     /**
      * @brief returns a RSA public key for encrypting username and password.
      * @return a RSA public key in pem format
-     * @return std::nullopt if the encryption key is not available
+     * @throws authentication_exception if the authentication service is not available
      */
     [[nodiscard]] std::optional<std::string> get_encryption_key() const {
         if (authentication_adapter_) {

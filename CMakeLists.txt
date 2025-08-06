@@ -1,4 +1,4 @@
-# Copyright 2018-2024 Project Tsurugi.
+# Copyright 2018-2025 Project Tsurugi.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -61,7 +61,7 @@ find_package(glog REQUIRED)
 find_package(gflags REQUIRED)
 find_package(Threads REQUIRED)
 find_package(Boost
-        COMPONENTS filesystem thread system container
+        COMPONENTS filesystem thread system container regex
         REQUIRED
         )
 find_package(TBB REQUIRED)
@@ -71,6 +71,7 @@ if (ENABLE_ALTIMETER)
     find_package(altimeter REQUIRED)
     find_package(fmt REQUIRED)
 endif()
+
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 include(CompileOptions)

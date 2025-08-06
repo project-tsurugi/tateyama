@@ -94,6 +94,7 @@ set_target_properties(${ENGINE}
 target_include_directories(${ENGINE}
         PRIVATE
         PRIVATE ${CMAKE_BINARY_DIR}/src
+        PRIVATE ${CMAKE_SOURCE_DIR}/third_party/cpp-httplib
         PRIVATE .
 )
 
@@ -108,6 +109,7 @@ target_link_libraries(${ENGINE}
         PRIVATE Boost::filesystem
         PRIVATE Boost::thread
         PRIVATE Boost::container
+        PRIVATE Boost::regex
         PRIVATE glog::glog
         PRIVATE atomic
         PRIVATE moodycamel
