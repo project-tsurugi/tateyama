@@ -71,7 +71,6 @@ if (ENABLE_ALTIMETER)
     find_package(altimeter REQUIRED)
     find_package(fmt REQUIRED)
 endif()
-find_package(httplib)
 
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)

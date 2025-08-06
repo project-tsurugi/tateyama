@@ -94,6 +94,7 @@ set_target_properties(${ENGINE}
 target_include_directories(${ENGINE}
         PRIVATE
         PRIVATE ${CMAKE_BINARY_DIR}/src
+        PRIVATE ${CMAKE_SOURCE_DIR}/third_party/cpp-httplib
         PRIVATE .
 )
 
@@ -117,18 +118,6 @@ target_link_libraries(${ENGINE}
         PRIVATE crypto
         PRIVATE jwt
 )
-
-if(httplib_FOUND)
-    # use httplibConfig.cmake
-    target_link_libraries(${ENGINE}
-        PRIVATE httplib::httplib
-    )
-else()
-    # use libcpp-httplib.so
-    target_link_libraries(${ENGINE}
-        PRIVATE cpp-httplib
-    )
-endif()
 
 if(MC_QUEUE)
     target_compile_definitions(${ENGINE} PUBLIC MC_QUEUE)
