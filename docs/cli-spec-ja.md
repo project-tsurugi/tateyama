@@ -440,8 +440,6 @@ OLTP サービスプロセスと通信する全てのサブコマンドは、以
 
 ### 認証情報ファイルの作成
 
-TODO - 検討中
-
 ```sh
 tgctl credentials [/path/to/credentials.json] [--user <user-name>] [--overwrite|--no-overwrite] [--conf </path/to/conf>]
 ```
@@ -459,7 +457,7 @@ tgctl credentials [/path/to/credentials.json] [--user <user-name>] [--overwrite|
   * 当該コマンドでは `--credentials` や `--auth-token` を **指定できない**
     * 既定の認証情報ファイルも利用しない
     * `--user` を入力しなかった場合、他のあらゆる認証に関する設定を無視してユーザー名のプロンプトを表示する
-  * `--overwrite`, `--no-overwrite` のいずれの指定もない場合、上書きを行うかプロンプトを表示する
+  * `--overwrite`, `--no-overwrite` のいずれの指定もない場合、上書きを行う
 * impl memo
   * if service is present
     * retrieve public key from the service (via `control_service`?)
