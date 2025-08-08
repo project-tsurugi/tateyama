@@ -461,7 +461,7 @@ protected:
             if (auth_) {
                 auto* error = rp.mutable_error();
                 error->set_code(tateyama::proto::diagnostics::Code::UNSUPPORTED_OPERATION);
-                error->set_message("GetCredentialsExpirationTime is not supported now");
+                error->set_message("GetCredentialsExpirationTime is not currently supported");
                 res->body(rp.SerializeAsString());
                 rp.clear_error();
             } else {

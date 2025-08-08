@@ -37,6 +37,8 @@ public:
             if (force) {
                 expiration_time_opt_ = new_until_time;
             } else if (expiration_time_opt_) {
+                // Only update if the new expiration time is further in the future than the current one,
+                // i.e., we only extend the timeout, never shorten it.
                 if (expiration_time_opt_.value() < new_until_time) {
                     expiration_time_opt_ = new_until_time;
                 }
