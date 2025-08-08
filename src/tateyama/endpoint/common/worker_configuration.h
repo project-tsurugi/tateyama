@@ -60,6 +60,9 @@ public:
         refresh_timeout_ = refresh_timeout;
         max_refresh_timeout_ = max_refresh_timeout;
     }
+    void set_authentication_timeout(std::size_t timeout) {
+        authentication_timeout_ = timeout;
+    }
     void allow_blob_privileged(bool allow) {
         allow_blob_privileged_ = allow;
     }
@@ -76,7 +79,8 @@ private:
     bool enable_timeout_{};
     bool allow_blob_privileged_{};
     std::size_t refresh_timeout_{};
-    std::size_t max_refresh_timeout_ {};
+    std::size_t max_refresh_timeout_{};
+    std::size_t authentication_timeout_{};
 
     friend class worker_common;
     friend class request;

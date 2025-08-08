@@ -18,6 +18,7 @@
 #include <optional>
 #include <utility>
 #include <string>
+#include <chrono>
 
 #include <tateyama/framework/component_ids.h>
 #include <tateyama/framework/environment.h>
@@ -144,6 +145,7 @@ public:
 
 private:
     std::unique_ptr<authentication_adapter> authentication_adapter_{};
+    std::chrono::milliseconds refresh_{};
 };
 
 }

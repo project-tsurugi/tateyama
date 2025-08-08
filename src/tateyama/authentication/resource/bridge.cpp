@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 #include <stdexcept>
+#include <cmath>
 
 #include <glog/logging.h>
 
@@ -27,18 +28,30 @@ using namespace framework;
 
 bool bridge::setup(environment& env) {
     try {
-        if (!authentication_adapter_) {  // In case of test, authentication_adapter_ is pre-set.
+        if (!authentication_adapter_) {  // In case of test, where authentication_adapter_ is pre-set.
             auto auth_conf = env.configuration()->get_section("authentication");
 
-            bool enabled = false;
-            auto enabled_option = auth_conf->get<bool>("enabled");
-            if (enabled_option) {
-                enabled = enabled_option.value();
-            }
-            if (auto url_option = auth_conf->get<std::string>("url"); url_option) {
-                authentication_adapter_ = std::make_unique<authentication_adapter_impl>(enabled, url_option.value());
+            if (auto enabled_option = auth_conf->get<bool>("enabled"); enabled_option) {
+                bool enabled = enabled_option.value();
+                if (enabled) {
+                    if (auto url_option = auth_conf->get<std::string>("url"); url_option) {
+                        if (auto request_timeout_opt = auth_conf->get<double>("request_timeout"); request_timeout_opt) {
+                            refresh_ = static_cast<std::chrono::milliseconds>(lround(request_timeout_opt.value() * 1000));
+                            authentication_adapter_ = std::make_unique<authentication_adapter_impl>(enabled, url_option.value());
+                        } else {
+                            LOG(ERROR) << "cannot find authentication.request_timeout in the configuration";
+                            return false;
+                        }
+                    } else {
+                        LOG(ERROR) << "cannot find authentication.url in the configuration";
+                        return false;
+                    }
+                } else {
+                    authentication_adapter_ = std::make_unique<authentication_adapter_impl>(enabled, "");
+                }
             } else {
-                authentication_adapter_ = std::make_unique<authentication_adapter_impl>(enabled, "");
+                LOG(ERROR) << "cannot find authentication.enabled in the configuration";
+                return false;
             }
         }
     } catch (std::runtime_error &ex) {

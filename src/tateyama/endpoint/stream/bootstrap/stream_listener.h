@@ -142,6 +142,19 @@ public:
                           << "max_refresh_timeout: " << max_refresh_timeout << ", "
                           << "maximum refresh timeout in seconds.";
             }
+
+            // authentication_timeout
+            auto authentication_timeout_opt = session_config->get<std::size_t>("authentication_timeout");
+            if (!authentication_timeout_opt) {
+                throw std::runtime_error("cannot find authentication_timeout at the session section in the configuration");
+            }
+            auto  authentication_timeout = authentication_timeout_opt.value();
+            conf_.set_authentication_timeout(authentication_timeout);
+
+            LOG(INFO) << tateyama::endpoint::common::session_config_prefix
+                      << "authentication_timeout: " << authentication_timeout << ", "
+                      << "authentication timeout in seconds.";
+
         }
 
         LOG(INFO) << tateyama::endpoint::common::ipc_endpoint_config_prefix
