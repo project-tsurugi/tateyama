@@ -19,6 +19,7 @@
 #include <map>
 #include <cstdint>
 #include <stdexcept>
+#include <chrono>
 
 #include "rest/client.h"
 #include "authentication_adapter.h"
@@ -33,12 +34,12 @@ namespace tateyama::authentication::resource {
  */
 class authentication_adapter_impl : public authentication_adapter {
   public:
-    explicit authentication_adapter_impl(bool enabled, const std::string& url_string) : enabled_(enabled) {
+    explicit authentication_adapter_impl(bool enabled, const std::string& url_string, std::chrono::milliseconds request_timeout) : enabled_(enabled) {
         if (enabled_) {
             url_parser url(url_string);
 
             std::string& port = url.port;
-            client_ = std::make_unique<rest::client>(url.domain, port.empty() ? 80 : stoi(port), url.path);
+            client_ = std::make_unique<rest::client>(url.domain, port.empty() ? 80 : stoi(port), url.path, request_timeout);
             if (encryption_key_ = client_->get_encryption_key(); !encryption_key_) {
                 throw std::runtime_error(std::string("cannot get encryption_key from ") + url_string);
             }

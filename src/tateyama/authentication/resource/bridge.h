@@ -145,7 +145,6 @@ public:
 
 private:
     std::unique_ptr<authentication_adapter> authentication_adapter_{};
-    std::chrono::milliseconds refresh_{};
 };
 
 }
