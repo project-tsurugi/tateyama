@@ -16,6 +16,7 @@
 #include <string>
 #include <string_view>
 #include <optional>
+#include <chrono>
 
 #include <boost/regex.hpp>
 #include <httplib.h>
@@ -27,13 +28,17 @@ namespace tateyama::authentication::resource::rest {
 
 class client {
 public:
-    client(const std::string& host, int port, std::string path) :
+    client(const std::string& host, int port, std::string path, std::chrono::milliseconds request_timeout) :
         client_(std::make_unique<httplib::Client>(host, port)),
         path_(std::move(path)) {
+        if (request_timeout.count() != 0) {
+            client_->set_connection_timeout(request_timeout);
+            client_->set_read_timeout(request_timeout);
+        }
     }
 
     std::optional<std::pair<std::string, std::string>> get_encryption_key() {
-        auto response = client_->Get((path_ + "/encryption-key").c_str());  // NOLINT libcpp-httplib-dev 0.10.3 does not privide Get(std::string) API
+        auto response = client_->Get((path_ + "/encryption-key"));
         if (response && response->status == 200) {
             nlohmann::json j = nlohmann::json::parse(response->body);
 
@@ -47,7 +52,7 @@ public:
             }
             throw authentication_exception("the authentication service malfunction");
         }
-        throw authentication_exception("the authentication service is not available");
+        throw authentication_exception("cannot obtain encryption key from the authentication service due to timeout or service unavailable");
     }
 
     std::optional<std::string> verify_token(std::string_view token_given) {
@@ -57,7 +62,7 @@ public:
         httplib::Headers headers = {
             { "Authorization", t.c_str() }
         };
-        auto response = client_->Get((path_ + "/verify").c_str(), headers);  // NOLINT libcpp-httplib-dev 0.10.3 does not privide Get(std::string) API
+        auto response = client_->Get((path_ + "/verify"), headers);
         if (response) {
             if (response->status == 200) {
                 nlohmann::json j = nlohmann::json::parse(response->body);
@@ -70,7 +75,7 @@ public:
             }
             throw authentication_exception("the token is malformed");
         }
-        throw authentication_exception("the authentication service is not available");
+        throw authentication_exception("cannot verify token by the authentication service due to timeout or service unavailable");
     }
 
     std::optional<std::string> verify_encrypted(std::string_view encrypted_credential) {
@@ -92,12 +97,12 @@ public:
             }
             throw authentication_exception("the credential is malformed");
         }
-        throw authentication_exception("the authentication service is not available");
+        throw authentication_exception("cannot verify encrypted credential by the authentication service due to timeout or service unavailable");
     }
 
 private:
-    std::unique_ptr<httplib::Client> client_{};
-    std::string path_{};
+    std::unique_ptr<httplib::Client> client_;
+    std::string path_;
 };
 
 } // namespace

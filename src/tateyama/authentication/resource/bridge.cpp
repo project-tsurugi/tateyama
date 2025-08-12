@@ -36,8 +36,8 @@ bool bridge::setup(environment& env) {
                 if (enabled) {
                     if (auto url_option = auth_conf->get<std::string>("url"); url_option) {
                         if (auto request_timeout_opt = auth_conf->get<double>("request_timeout"); request_timeout_opt) {
-                            refresh_ = static_cast<std::chrono::milliseconds>(lround(request_timeout_opt.value() * 1000));
-                            authentication_adapter_ = std::make_unique<authentication_adapter_impl>(enabled, url_option.value());
+                            auto request_timeout = static_cast<std::chrono::milliseconds>(lround(request_timeout_opt.value() * 1000));
+                            authentication_adapter_ = std::make_unique<authentication_adapter_impl>(enabled, url_option.value(), request_timeout);
                         } else {
                             LOG(ERROR) << "cannot find authentication.request_timeout in the configuration";
                             return false;
@@ -47,7 +47,7 @@ bool bridge::setup(environment& env) {
                         return false;
                     }
                 } else {
-                    authentication_adapter_ = std::make_unique<authentication_adapter_impl>(enabled, "");
+                    authentication_adapter_ = std::make_unique<authentication_adapter_impl>(enabled, "", std::chrono::milliseconds(0));
                 }
             } else {
                 LOG(ERROR) << "cannot find authentication.enabled in the configuration";
