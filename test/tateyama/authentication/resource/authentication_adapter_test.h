@@ -18,6 +18,8 @@
 #include <memory>
 #include <map>
 
+#include <nlohmann/json.hpp>
+
 #include "tateyama/authentication/resource/authentication_adapter.h"
 #include "tateyama/authentication/resource/crypto/rsa.h"
 #include "tateyama/authentication/resource/jwt/token_handler.h"
@@ -57,15 +59,20 @@ class authentication_adapter_test : public tateyama::authentication::resource::a
 
     [[nodiscard]] std::optional<std::string> verify_encrypted(std::string_view encrypted_credential) const override {
         if (enabled_) {
-            std::string credential = decrypt(encrypted_credential);
-            std::vector<std::string> splited = split(credential, '\n');
-
-            if (splited.size() < 2) {
-                return std::nullopt;
-            }
             try {
-                std::string& username = splited.at(0);
-                std::string& password = splited.at(1);
+                std::string credential = decrypt(encrypted_credential);
+
+                nlohmann::json j = nlohmann::json::parse(credential);
+                std::string username{};
+                std::string password{};
+                for (auto& [key, value] : j.items()) {
+                    if (key == "user") {
+                        username = value;
+                    } else if (key == "password") {
+                        password = value;
+                    }
+                }
+
                 if (auto itr = users_.find(username); itr != users_.end()) {
                     if (itr->second == password) {
                         return username;
@@ -93,27 +100,6 @@ private:
         std::string decrypted{};
         rsa_->decrypt(crypto::base64_decode(encrypted), decrypted);
         return decrypted;
-    }
-
-    [[nodiscard]] static std::vector<std::string> split(const std::string& str, char del) {
-        std::size_t first = 0;
-        std::size_t last = str.find_first_of(del);
-
-        std::vector<std::string> result;
-
-        while (first < str.size()) {
-            std::string subStr(str, first, last - first);
-
-            result.push_back(subStr);
-
-            first = last + 1;
-            last = str.find_first_of(del, first);
-
-            if (last == std::string::npos) {
-                last = str.size();
-            }
-        }
-        return result;
     }
 };
 

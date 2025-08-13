@@ -39,16 +39,21 @@ public:
 
     std::optional<std::pair<std::string, std::string>> get_encryption_key() {
         auto response = client_->Get((path_ + "/encryption-key"));
-        if (response && response->status == 200) {
+        if (response) {
             nlohmann::json j = nlohmann::json::parse(response->body);
 
-            std::string type = j.find("key_type").value();
-            std::string data = j.find("key_data").value();
+            if (response->status == 200) {
+                std::string type = j.find("key_type").value();
+                std::string data = j.find("key_data").value();
 
-            if (!type.empty() && !data.empty()) {
-                if (type == "RSA") {
-                    return std::make_pair(type, data);
+                if (!type.empty() && !data.empty()) {
+                    if (type == "RSA") {
+                        return std::make_pair(type, data);
+                    }
                 }
+            }
+            if (std::string message = j.value("message", ""); !message.empty()) {
+                throw authentication_exception(message);
             }
             throw authentication_exception("the authentication service malfunction");
         }
@@ -64,14 +69,17 @@ public:
         };
         auto response = client_->Get((path_ + "/verify"), headers);
         if (response) {
-            if (response->status == 200) {
-                nlohmann::json j = nlohmann::json::parse(response->body);
+            nlohmann::json j = nlohmann::json::parse(response->body);
 
+            if (response->status == 200) {
                 std::string token = j.find("token").value();
                 if (!token.empty()) {
                     return token;
                 }
                 throw authentication_exception("the authentication service malfunction");
+            }
+            if (std::string message = j.value("message", ""); !message.empty()) {
+                throw authentication_exception(message);
             }
             throw authentication_exception("the token is malformed");
         }
@@ -84,16 +92,19 @@ public:
             { "X-Encrypted-Credentials", ec.c_str() }
         };
 
-        auto response = client_->Get((path_ + "/issue-encrypted").c_str(), headers);  // NOLINT libcpp-httplib-dev 0.10.3 does not privide Get(std::string) API
+        auto response = client_->Get((path_ + "/issue-encrypted"), headers);
         if (response) {
-            if (response->status == 200) {
-                nlohmann::json j = nlohmann::json::parse(response->body);
+            nlohmann::json j = nlohmann::json::parse(response->body);
 
+            if (response->status == 200) {
                 std::string token = j.find("token").value();
                 if (!token.empty()) {
                     return token;
                 }
                 throw authentication_exception("the authentication service malfunction");
+            }
+            if (std::string message = j.value("message", ""); !message.empty()) {
+                throw authentication_exception(message);
             }
             throw authentication_exception("the credential is malformed");
         }

@@ -18,6 +18,7 @@
 #include "ipc_test_env.h"
 #include "ipc_client.h"
 #include "server_client_gtest_base.h"
+#include <nlohmann/json.hpp>
 #include <takatori/util/stacktrace.h>
 
 namespace tateyama::endpoint::ipc {
@@ -41,6 +42,19 @@ class ipc_gtest_base: public ::testing::Test, public ipc_test_env {
 
     void TearDown() override {
         ipc_test_env::teardown();
+    }
+
+protected:
+    std::string get_json_text(const std::string& user, const std::string& password) {
+        nlohmann::json j;
+        std::stringstream ss;
+
+        j["format_version"] = 1;
+        j["user"] = user;
+        j["password"] = password;
+
+        ss << j;
+        return ss.str();
     }
 };
 
