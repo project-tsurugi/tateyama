@@ -15,13 +15,17 @@
  */
 
 #include <functional>
+#include <sstream>
+#include <nlohmann/json.hpp>
 
 #include <tateyama/proto/endpoint/request.pb.h>
 #include <tateyama/proto/endpoint/response.pb.h>
 
 #include "tateyama/authentication/resource/authentication_adapter_test.h"
-#include "ipc_client.h"
+#include "tateyama/authentication/resource/crypto/key.h"
+#include "crypto/rsa.h"
 
+#include "ipc_client.h"
 #include "ipc_gtest_base.h"
 
 namespace tateyama::endpoint::ipc {
@@ -86,6 +90,19 @@ class ipc_handshake_test: public ipc_gtest_base {
 
     void TearDown() override {
     }
+
+protected:
+    std::string get_json_text(const std::string& user, const std::string& password) {
+        nlohmann::json j;
+        std::stringstream ss;
+
+        j["format_version"] = 1;
+        j["user"] = user;
+        j["password"] = password;
+
+        ss << j;
+        return ss.str();
+    }
 };
 
 TEST_F(ipc_handshake_test, encryption_key) {
@@ -116,13 +133,17 @@ TEST_F(ipc_handshake_test, encryption_key) {
 
 TEST_F(ipc_handshake_test, user_pass) {
     ipc_handshake_test_server_client sc { cfg_,
-        [](ipc_client& client){
+        [this](ipc_client& client){
+            crypto::rsa_encrypter rsa{crypto::base64_decode(std::string(tateyama::authentication::resource::crypto::public_key))};
+
+            std::string c{};
+            rsa.encrypt(get_json_text("user", "pass"), c);
+            std::string encrypted_credential = crypto::base64_encode(c);
+
             tateyama::proto::endpoint::request::Handshake endpoint_handshake{};
             tateyama::proto::endpoint::request::ClientInformation client_information{};
             tateyama::proto::endpoint::request::Credential credential{};
-            credential.set_encrypted_credential(
-                "d0drnP3jNXzUsdlkWTdB3clYs/TeVz84WmHH0JbtO130nFiUGmFKnMWgHsQG9ziIW21Oj2pIImVH9B83NzJz1/GrFRam47xtDO5ho/SVBeW1PJEE9eHd2DIo3UlP+VHKNt6g8++k+zECAic6gBemCvrP4WdeJYGcjYFhG9SeFvpZbyrZU3Tato/ZKcOYd8j3qyKCdoCWMNn5JkWxUN1K2OFgMc1Xs9/NZJ24muXLVgts9RKs5LSvBbDDGg8BVMlUTtJZ/GZbT8ZpAHse3AxSgCRLSIJYekPBdGvmTStTv/Cdme6YhIphsHDMPimTsRvg6oiYbAvLy+oTkJcGNwwoOQ"
-            );
+            credential.set_encrypted_credential(encrypted_credential);
             client_information.set_allocated_credential(&credential);
             endpoint_handshake.set_allocated_client_information(&client_information);
             
