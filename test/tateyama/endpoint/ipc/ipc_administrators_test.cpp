@@ -16,7 +16,6 @@
 
 #include <functional>
 #include <optional>
-#include <nlohmann/json.hpp>
 
 #include <tateyama/proto/endpoint/request.pb.h>
 #include <tateyama/proto/endpoint/response.pb.h>
@@ -144,18 +143,6 @@ protected:
             type_ = type;
         }
     };
-
-    std::string get_json_text(const std::string& user, const std::string& password) {
-        nlohmann::json j;
-        std::stringstream ss;
-
-        j["format_version"] = 1;
-        j["user"] = user;
-        j["password"] = password;
-
-        ss << j;
-        return ss.str();
-    }
 };
 
 TEST_F(ipc_administrators_test, inclusive) {

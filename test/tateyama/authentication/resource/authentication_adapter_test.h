@@ -65,11 +65,11 @@ class authentication_adapter_test : public tateyama::authentication::resource::a
                 nlohmann::json j = nlohmann::json::parse(credential);
                 std::string username{};
                 std::string password{};
-                for (nlohmann::json::iterator it = j.begin(); it != j.end(); ++it) {
-                    if (it.key() == "user") {
-                        username = it.value();
-                    } else if (it.key() == "password") {
-                        password = it.value();
+                for (auto& [key, value] : j.items()) {
+                    if (key == "user") {
+                        username = value;
+                    } else if (key == "password") {
+                        password = value;
                     }
                 }
 

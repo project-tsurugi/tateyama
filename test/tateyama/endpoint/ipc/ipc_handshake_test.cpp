@@ -16,7 +16,6 @@
 
 #include <functional>
 #include <sstream>
-#include <nlohmann/json.hpp>
 
 #include <tateyama/proto/endpoint/request.pb.h>
 #include <tateyama/proto/endpoint/response.pb.h>
@@ -89,19 +88,6 @@ class ipc_handshake_test: public ipc_gtest_base {
     }
 
     void TearDown() override {
-    }
-
-protected:
-    std::string get_json_text(const std::string& user, const std::string& password) {
-        nlohmann::json j;
-        std::stringstream ss;
-
-        j["format_version"] = 1;
-        j["user"] = user;
-        j["password"] = password;
-
-        ss << j;
-        return ss.str();
     }
 };
 

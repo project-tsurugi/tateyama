@@ -25,8 +25,8 @@ namespace tateyama::endpoint::ipc::crypto {
 using namespace boost::archive::iterators;
 using InputItr  = std::istreambuf_iterator<char>;
 using OutputItr = std::ostream_iterator<char>;
-using EncodeItr = base64_from_binary<transform_width<InputItr, 6, 8>>;
-using DecodeItr = transform_width<binary_from_base64<InputItr>, 8, 6, char>;
+using EncodeItr = boost::archive::iterators::base64_from_binary<boost::archive::iterators::transform_width<InputItr, 6, 8>>;
+using DecodeItr = boost::archive::iterators::transform_width<boost::archive::iterators::binary_from_base64<InputItr>, 8, 6, char>;
 
 template <typename InputStream, typename OutputStream>
 static inline OutputStream& encode(InputStream& is, OutputStream& os) {

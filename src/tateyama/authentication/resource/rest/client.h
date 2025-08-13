@@ -52,7 +52,7 @@ public:
                     }
                 }
             }
-            if (std::string message = j.find("message").value(); !message.empty()) {
+            if (std::string message = j.value("message", ""); !message.empty()) {
                 throw authentication_exception(message);
             }
             throw authentication_exception("the authentication service malfunction");
@@ -78,7 +78,7 @@ public:
                 }
                 throw authentication_exception("the authentication service malfunction");
             }
-            if (std::string message = j.find("message").value(); !message.empty()) {
+            if (std::string message = j.value("message", ""); !message.empty()) {
                 throw authentication_exception(message);
             }
             throw authentication_exception("the token is malformed");
@@ -103,7 +103,7 @@ public:
                 }
                 throw authentication_exception("the authentication service malfunction");
             }
-            if (std::string message = j.find("message").value(); !message.empty()) {
+            if (std::string message = j.value("message", ""); !message.empty()) {
                 throw authentication_exception(message);
             }
             throw authentication_exception("the credential is malformed");
