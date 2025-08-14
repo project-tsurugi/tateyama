@@ -53,7 +53,7 @@ public:
         return false;
     }
 
-    [[nodiscard]] std::size_t next_expiration() const noexcept {
+    [[nodiscard]] std::uint64_t next_expiration() const noexcept {
         if (enable_timeout_ && expiration_time_opt_) {
             return std::chrono::duration_cast<std::chrono::milliseconds>(expiration_time_opt_.value().time_since_epoch()).count();
         }

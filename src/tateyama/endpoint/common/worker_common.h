@@ -227,7 +227,6 @@ protected:
                         auto rs = rp.mutable_success();
                         rs->set_encryption_key(key_opt.value());
                         res->body(rp.SerializeAsString());
-                        rp.clear_success();
                         throw psudo_exception_of_continue();
                     }
                     err_msg = "get_encryption_key() failed";
@@ -239,14 +238,12 @@ protected:
                 re->set_code(tateyama::proto::diagnostics::Code::SYSTEM_ERROR);
                 re->set_message(err_msg);
                 res->body(rp.SerializeAsString());
-                rp.clear_error();
                 return false;
             }
             auto re = rp.mutable_error();
             re->set_code(tateyama::proto::diagnostics::Code::UNSUPPORTED_OPERATION);
             re->set_message("authentication is off");
             res->body(rp.SerializeAsString());
-            rp.clear_error();
             throw psudo_exception_of_continue();
         }
         case tateyama::proto::endpoint::request::Request::kHandshake:
@@ -355,7 +352,6 @@ protected:
         }
         auto body = rp.SerializeAsString();
         res->body(body);
-        rp.clear_success();
         return true;
     }
 
@@ -368,7 +364,6 @@ protected:
         error->set_message(message);
         error->set_code(code);
         res->body(response.SerializeAsString());
-        response.clear_error();
     }
 
     class psudo_exception_of_continue : public std::exception {
@@ -443,13 +438,11 @@ protected:
                 rp.mutable_success();
                 auto body = rp.SerializeAsString();
                 res->body(body);
-                rp.clear_success();
             } else {
                 auto* error = rp.mutable_error();
                 error->set_message(error_message);
                 error->set_code(tateyama::proto::diagnostics::Code::AUTHENTICATION_ERROR);
                 res->body(rp.SerializeAsString());
-                rp.clear_error();
             }
             return true;
         }
@@ -463,20 +456,17 @@ protected:
                     auto* success = rp.mutable_success();
                     success->set_expiration_time(ne);
                     res->body(rp.SerializeAsString());
-                    rp.clear_success();
                 } else {
                     auto* error = rp.mutable_error();
                     error->set_code(tateyama::proto::diagnostics::Code::ILLEGAL_STATE);
                     error->set_message("expiration timer is off");
                     res->body(rp.SerializeAsString());
-                    rp.clear_error();
                 }
             } else {
                 auto* error = rp.mutable_error();
                 error->set_code(tateyama::proto::diagnostics::Code::UNSUPPORTED_OPERATION);
                 error->set_message("authentication is off");
                 res->body(rp.SerializeAsString());
-                rp.clear_error();
             }
             return true;
         }
@@ -558,7 +548,6 @@ protected:
             res->session_id(req->session_id());
             auto body = rp.SerializeAsString();
             res->body(body);
-            rp.clear_success();
             return true;
         }
 
