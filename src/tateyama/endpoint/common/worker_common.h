@@ -459,11 +459,18 @@ protected:
             tateyama::proto::endpoint::response::GetCredentialsExpirationTime rp{};
 
             if (auth_) {
-                auto* error = rp.mutable_error();
-                error->set_code(tateyama::proto::diagnostics::Code::UNSUPPORTED_OPERATION);
-                error->set_message("GetCredentialsExpirationTime is not currently supported");
-                res->body(rp.SerializeAsString());
-                rp.clear_error();
+                if (auto ne = authentication_timer_.next_expiration(); ne > 0) {
+                    auto* success = rp.mutable_success();
+                    success->set_expiration_time(ne);
+                    res->body(rp.SerializeAsString());
+                    rp.clear_success();
+                } else {
+                    auto* error = rp.mutable_error();
+                    error->set_code(tateyama::proto::diagnostics::Code::ILLEGAL_STATE);
+                    error->set_message("expiration timer is off");
+                    res->body(rp.SerializeAsString());
+                    rp.clear_error();
+                }
             } else {
                 auto* error = rp.mutable_error();
                 error->set_code(tateyama::proto::diagnostics::Code::UNSUPPORTED_OPERATION);
