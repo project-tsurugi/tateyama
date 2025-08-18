@@ -409,7 +409,7 @@ tgctl tag [--help]（1.0.0では未実装）
     * 認証情報ファイルは、 [認証情報ファイルの作成](#認証情報ファイルの作成) コマンドで作成できる
     * 認証情報はサービスプロセスが提供する公開鍵によって暗号化され、サービスプロセス上の秘密鍵で複合化される
 * 備考
-  * 認証情報ファイルを既定のパス (`$HOME/.tsurugidb/credentials.json`) に配置すると、ユーザー名とパスワードの入力を省略できる
+  * 認証情報ファイルを既定のパス (`$HOME/.tsurugidb/credentials.key`) に配置すると、ユーザー名とパスワードの入力を省略できる
   * 認証情報ファイルは、 `user`, `password` のフィールドを持つ JSON ファイルで、各フィールドは公開鍵による暗号化済み
 
 ### 認証オプション
@@ -420,7 +420,7 @@ OLTP サービスプロセスと通信する全てのサブコマンドは、以
 <auth-options>:
     --user <user-name> |
     --auth-token <token> |
-    --credentials </path/to/credentials.json> |
+    --credentials </path/to/credentials.key> |
     --no-auth |
 
 ```
@@ -441,12 +441,12 @@ OLTP サービスプロセスと通信する全てのサブコマンドは、以
 ### 認証情報ファイルの作成
 
 ```sh
-tgctl credentials [/path/to/credentials.json] [--user <user-name>] [--overwrite|--no-overwrite] [--conf </path/to/conf>]
+tgctl credentials [/path/to/credentials.key] [--user <user-name>] [--overwrite|--no-overwrite] [--conf </path/to/conf>]
 ```
 
 * overview
 * options
-  * `/path/to/credentials.json` - 出力先の認証情報ファイルパス
+  * `/path/to/credentials.key` - 出力先の認証情報ファイルパス
     * 未指定の場合は既定の認証情報ファイルパスを利用する
   * `--user` - ユーザー名
     * 未指定の場合は実行後にユーザー名プロンプトが表示される
