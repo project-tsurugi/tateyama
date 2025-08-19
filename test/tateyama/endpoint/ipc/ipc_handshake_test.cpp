@@ -16,6 +16,7 @@
 
 #include <functional>
 #include <sstream>
+#include <chrono>
 
 #include <tateyama/proto/endpoint/request.pb.h>
 #include <tateyama/proto/endpoint/response.pb.h>
@@ -23,6 +24,7 @@
 #include "tateyama/authentication/resource/authentication_adapter_test.h"
 #include "tateyama/authentication/resource/crypto/key.h"
 #include "crypto/rsa.h"
+#include "jwt/token_creator.h"
 
 #include "ipc_client.h"
 #include "ipc_gtest_base.h"
@@ -82,23 +84,25 @@ private:
 
 class ipc_handshake_test: public ipc_gtest_base {
     void SetUp() override {
+        handler_ = std::make_unique<jwt::token_creator>(crypto::base64_decode(std::string(tateyama::authentication::resource::crypto::private_key)));
         ipc_test_env::setup("[authentication]\n"
-                            "  enabled=true\n"
-                            "  administrators=*\n");
+                            "  enabled=true\n");
     }
 
     void TearDown() override {
     }
+
+protected:
+    crypto::rsa_encrypter rsa_{crypto::base64_decode(std::string(tateyama::authentication::resource::crypto::public_key))};
+    std::unique_ptr<jwt::token_creator> handler_{};
 };
 
 TEST_F(ipc_handshake_test, encryption_key) {
     ipc_handshake_test_server_client sc { cfg_,
         [](ipc_client& client){
-            tateyama::proto::endpoint::request::EncryptionKey encryption_key{};
-            tateyama::proto::endpoint::request::Request endpoint_request{};
-            endpoint_request.set_allocated_encryption_key(&encryption_key);            
-            client.send(tateyama::framework::service_id_endpoint_broker, endpoint_request.SerializeAsString());
-            (void) endpoint_request.release_encryption_key();
+            tateyama::proto::endpoint::request::Request request{};
+            request.mutable_encryption_key();
+            client.send(tateyama::framework::service_id_endpoint_broker, request.SerializeAsString());
 
             std::string res{};
             tateyama::proto::framework::response::Header::PayloadType type{};
@@ -120,30 +124,18 @@ TEST_F(ipc_handshake_test, encryption_key) {
 TEST_F(ipc_handshake_test, user_pass) {
     ipc_handshake_test_server_client sc { cfg_,
         [this](ipc_client& client){
-            crypto::rsa_encrypter rsa{crypto::base64_decode(std::string(tateyama::authentication::resource::crypto::public_key))};
-
             std::string c{};
-            rsa.encrypt(get_json_text("user", "pass"), c);
+            rsa_.encrypt(get_json_text("user", "pass"), c);
             std::string encrypted_credential = crypto::base64_encode(c);
 
-            tateyama::proto::endpoint::request::Handshake endpoint_handshake{};
-            tateyama::proto::endpoint::request::ClientInformation client_information{};
-            tateyama::proto::endpoint::request::Credential credential{};
-            credential.set_encrypted_credential(encrypted_credential);
-            client_information.set_allocated_credential(&credential);
-            endpoint_handshake.set_allocated_client_information(&client_information);
-            
-            tateyama::proto::endpoint::request::WireInformation wire_information{};
-            wire_information.mutable_ipc_information();
-            endpoint_handshake.set_allocated_wire_information(&wire_information);
-
-            tateyama::proto::endpoint::request::Request endpoint_request{};
-            endpoint_request.set_allocated_handshake(&endpoint_handshake);
-            client.send(tateyama::framework::service_id_endpoint_broker, endpoint_request.SerializeAsString());
-            (void) endpoint_request.release_handshake();
-            (void) endpoint_handshake.release_wire_information();
-            (void) endpoint_handshake.release_client_information();
-            (void) client_information.release_credential();
+            tateyama::proto::endpoint::request::Request request{};
+            auto* endpoint_handshake = request.mutable_handshake();
+            auto* client_information = endpoint_handshake->mutable_client_information();
+            auto* credential = client_information->mutable_credential();
+            credential->set_encrypted_credential(encrypted_credential);
+            auto* wire_information = endpoint_handshake->mutable_wire_information();
+            wire_information->mutable_ipc_information();
+            client.send(tateyama::framework::service_id_endpoint_broker, request.SerializeAsString());
 
             std::string res{};
             tateyama::proto::framework::response::Header::PayloadType type{};
@@ -166,29 +158,25 @@ TEST_F(ipc_handshake_test, user_pass) {
     sc.start_server_client();
 }
 
-TEST_F(ipc_handshake_test, token) {
-    ipc_handshake_test_server_client sc { cfg_,
-        [](ipc_client& client){
-            tateyama::proto::endpoint::request::Handshake endpoint_handshake{};
-            tateyama::proto::endpoint::request::ClientInformation client_information{};
-            tateyama::proto::endpoint::request::Credential credential{};
-            credential.set_remember_me_credential(
-                "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJyZWZyZXNoIiwiYXVkIjoiYXV0aGVudGljYXRpb24tbWFuYWdlciIsInRzdXJ1Z2kvYXV0aC9uYW1lIjoidXNlciIsImlzcyI6ImF1dGhlbnRpY2F0aW9uLW1hbmFnZXIiLCJleHAiOjE3NDk4MjAzODgsImlhdCI6MTc0OTczMzk4OCwianRpIjoiMjJhMWMxZTQtY2IyZC00ZWRiLTk5ZmItYTg1YWYwNWU4ZTA2In0.TZVHZTPv8ojKot8mIq5R_khikX8dMUTJEJGDMkmnuoqcoN4-PYJZPjJU5EUh1-qk9WrIhMfzTLHcMneMNb4_It1RDUPd4DXScvOK9annT7xf8PZ2xIaGdui3Uyw1MSfRIgdIZMuxeuRRGgmBZTpKGPDNQkCGnVpxVIH0THC6km3IacitJ2SmOcUmrdmUVdbSmtK6xgBgG2IMA-CkDYza2wyXl212kpoecvm1FWDqC3iAkc-NOgyEnKYNlh44bp44_q5NMdtBemfb3Y_kQ2Xn8tYM0LFpIewxGo29ImgNg2RjmHNPNvhXZp0XybtpE-7JFhizdWzBM7c5UK_pFfFcyQ"
-            );
-            client_information.set_allocated_credential(&credential);
-            endpoint_handshake.set_allocated_client_information(&client_information);
-            
-            tateyama::proto::endpoint::request::WireInformation wire_information{};
-            wire_information.mutable_ipc_information();
-            endpoint_handshake.set_allocated_wire_information(&wire_information);
+TEST_F(ipc_handshake_test, token_valid) {
+    auto ns = std::chrono::system_clock::now().time_since_epoch();
+    std::string token{};
+    if (auto token_opt = handler_->create_token("user", std::chrono::duration_cast<std::chrono::seconds>(ns).count() + 10); token_opt) {
+        token = token_opt.value();
+    } else {
+        FAIL();
+    }
 
-            tateyama::proto::endpoint::request::Request endpoint_request{};
-            endpoint_request.set_allocated_handshake(&endpoint_handshake);
-            client.send(tateyama::framework::service_id_endpoint_broker, endpoint_request.SerializeAsString());
-            (void) endpoint_request.release_handshake();
-            (void) endpoint_handshake.release_wire_information();
-            (void) endpoint_handshake.release_client_information();
-            (void) client_information.release_credential();
+    ipc_handshake_test_server_client sc { cfg_,
+        [token](ipc_client& client){
+            tateyama::proto::endpoint::request::Request request{};
+            auto* endpoint_handshake = request.mutable_handshake();
+            auto* client_information = endpoint_handshake->mutable_client_information();
+            auto* credential = client_information->mutable_credential();
+            credential->set_remember_me_credential(token);
+            auto* wire_information = endpoint_handshake->mutable_wire_information();
+            wire_information->mutable_ipc_information();
+            client.send(tateyama::framework::service_id_endpoint_broker, request.SerializeAsString());
 
             std::string res{};
             tateyama::proto::framework::response::Header::PayloadType type{};
@@ -198,7 +186,7 @@ TEST_F(ipc_handshake_test, token) {
             if(!response.ParseFromString(res)) {
                 FAIL();
             }
-            EXPECT_EQ(response.result_case(), tateyama::proto::endpoint::response::EncryptionKey::kSuccess);
+            EXPECT_EQ(response.result_case(), tateyama::proto::endpoint::response::Handshake::kSuccess);
 
             std::string dmy_message{"dummy message"};
             client.send(post_handshake_service::tag, dmy_message);
@@ -207,6 +195,41 @@ TEST_F(ipc_handshake_test, token) {
         [](const std::string user_name) {
             EXPECT_EQ(user_name, "user");
         }
+    };
+    sc.start_server_client();
+}
+
+TEST_F(ipc_handshake_test, token_expired) {
+    auto ns = std::chrono::system_clock::now().time_since_epoch();
+    std::string token{};
+    if (auto token_opt = handler_->create_token("user", std::chrono::duration_cast<std::chrono::seconds>(ns).count() - 10); token_opt) {
+        token = token_opt.value();
+    } else {
+        FAIL();
+    }
+
+    ipc_handshake_test_server_client sc { cfg_,
+        [token](ipc_client& client){
+            tateyama::proto::endpoint::request::Request request{};
+            auto* endpoint_handshake = request.mutable_handshake();
+            auto* client_information = endpoint_handshake->mutable_client_information();
+            auto* credential = client_information->mutable_credential();
+            credential->set_remember_me_credential(token);
+            auto* wire_information = endpoint_handshake->mutable_wire_information();
+            wire_information->mutable_ipc_information();
+            client.send(tateyama::framework::service_id_endpoint_broker, request.SerializeAsString());
+
+            std::string res{};
+            tateyama::proto::framework::response::Header::PayloadType type{};
+            client.receive(res, type);
+            EXPECT_EQ(type, tateyama::proto::framework::response::Header::SERVICE_RESULT);
+            tateyama::proto::endpoint::response::Handshake response{};
+            if(!response.ParseFromString(res)) {
+                FAIL();
+            }
+            EXPECT_EQ(response.result_case(), tateyama::proto::endpoint::response::Handshake::kError);
+        },
+        [](const std::string){}
     };
     sc.start_server_client();
 }

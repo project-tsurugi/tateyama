@@ -50,9 +50,14 @@ class authentication_adapter_test : public tateyama::authentication::resource::a
     [[nodiscard]] std::optional<std::string> verify_token(std::string_view token) const override {
         if (enabled_) {
             auto handler = std::make_unique<tateyama::authentication::resource::jwt::token_handler>(token, rsa_->public_key());
-            if (auto auth_name_opt = handler->tsurugi_auth_name(); auth_name_opt) {
-                return auth_name_opt.value();
+            auto ns = std::chrono::system_clock::now().time_since_epoch();
+            if (std::chrono::duration_cast<std::chrono::seconds>(ns).count() < handler->expiration_time()) {
+                if (auto auth_name_opt = handler->tsurugi_auth_name(); auth_name_opt) {
+                    return auth_name_opt.value();
+                }
+                throw authentication_exception("token in invalid");
             }
+            throw authentication_exception("token already expired");
         }
         return std::nullopt;
     }

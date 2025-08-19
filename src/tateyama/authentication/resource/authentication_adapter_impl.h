@@ -57,7 +57,14 @@ class authentication_adapter_impl : public authentication_adapter {
     [[nodiscard]] std::optional<std::string> verify_token(std::string_view token) const override {
         if (enabled_) {
             if (auto token_opt = client_->verify_token(token); token_opt) {
-                return get_username(token_opt.value());
+                if (encryption_key_) {
+                    auto handler = std::make_unique<jwt::token_handler>(token, encryption_key_.value().second);
+                    auto ns = std::chrono::system_clock::now().time_since_epoch();
+                    if (std::chrono::duration_cast<std::chrono::seconds>(ns).count() < handler->expiration_time()) {
+                        return handler->tsurugi_auth_name();
+                    }
+                    throw authentication_exception("token already expired");
+                }
             }
         }
         return std::nullopt;
@@ -66,7 +73,10 @@ class authentication_adapter_impl : public authentication_adapter {
     [[nodiscard]] std::optional<std::string> verify_encrypted(std::string_view encrypted_credential) const override {
         if (enabled_) {
             if (auto token_opt = client_->verify_encrypted(encrypted_credential); token_opt) {
-                return get_username(token_opt.value());
+                if (encryption_key_) {
+                    auto handler = std::make_unique<jwt::token_handler>(token_opt.value(), encryption_key_.value().second);
+                    return handler->tsurugi_auth_name();
+                }
             }
         }
         return std::nullopt;
@@ -101,14 +111,6 @@ private:
 
         friend class authentication_adapter_impl;
     };
-
-    [[nodiscard]] std::optional<std::string> get_username(const std::string& token) const {
-        if (encryption_key_) {
-            auto handler = std::make_unique<jwt::token_handler>(token, encryption_key_.value().second);
-            return handler->tsurugi_auth_name();
-        }
-        return std::nullopt;
-    }
 };
 
 }
