@@ -19,6 +19,7 @@
 #include <string>
 #include <string_view>
 #include <optional>
+#include <errno.h>
 
 #include <jwt.h>
 
@@ -51,6 +52,16 @@ public:
         }
         return std::nullopt;
     }
+    std::optional<std::int64_t> expiration_time() {
+        if (jwtp_) {
+            auto rv = jwt_get_grant_int(jwtp_, "exp");
+            if (errno != ENOENT) {
+                return rv;
+            }
+        }
+        return std::nullopt;
+    }
+
 
   private:
     jwt_t *jwtp_;
