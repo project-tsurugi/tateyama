@@ -452,7 +452,8 @@ tgctl credentials [/path/to/credentials.key] [--user <user-name>] [--overwrite|-
     * 未指定の場合は実行後にユーザー名プロンプトが表示される
     * パスワードは起動後に別途プロンプトに入力する
   * `--overwrite` - 出力先に既にファイルが存在していた場合、上書きする
-  * `--no-overwrite` - 出力先にファイルが存在していた場合、エラー終了する
+  * `--nooverwrite` - 出力先にファイルが存在していた場合、エラー終了する
+  * `--expiration` - 認証情報ファイルの有効期間、単位は日。未指定の場合は90日、0の場合は無期限となる。
 * note
   * 当該コマンドでは `--credentials` や `--auth-token` を **指定できない**
     * 既定の認証情報ファイルも利用しない
