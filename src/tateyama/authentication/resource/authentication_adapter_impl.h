@@ -63,9 +63,17 @@ class authentication_adapter_impl : public authentication_adapter {
                     if (std::chrono::duration_cast<std::chrono::seconds>(ns).count() < handler->expiration_time()) {
                         return handler->tsurugi_auth_name();
                     }
-                    throw authentication_exception("token already expired");
+                    switch (handler->token_type()) {
+                    case jwt::token_type::access:
+                        throw authentication_exception("access token already expired", tateyama::proto::diagnostics::Code::ACCESS_EXPIRED);
+                    case jwt::token_type::refresh:
+                        throw authentication_exception("refresh token already expired", tateyama::proto::diagnostics::Code::REFRESH_EXPIRED);
+                    default:
+                        throw authentication_exception("token already expired");
+                    }
                 }
             }
+            throw authentication_exception("verify failed");
         }
         return std::nullopt;
     }
