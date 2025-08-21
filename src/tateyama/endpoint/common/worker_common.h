@@ -297,8 +297,9 @@ protected:
                         handshake_error(res, tateyama::proto::diagnostics::Code::AUTHENTICATION_ERROR, "token is incorrect");
                         return false;
                     }
-                } catch (std::runtime_error &ex) {
-                    handshake_error(res, tateyama::proto::diagnostics::Code::AUTHENTICATION_ERROR, ex.what());
+                } catch (tateyama::authentication::resource::authentication_exception &ex) {
+                    auto code_opt = ex.code();
+                    handshake_error(res, code_opt ? code_opt.value() : tateyama::proto::diagnostics::Code::AUTHENTICATION_ERROR, ex.what());
                     return false;
                 }
             }

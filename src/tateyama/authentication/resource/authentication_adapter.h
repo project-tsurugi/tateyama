@@ -19,6 +19,8 @@
 #include <utility>
 #include <string>
 
+#include <tateyama/proto/diagnostics.pb.h>
+
 namespace tateyama::authentication::resource {
 
 /**
@@ -91,8 +93,27 @@ public:
      * @brief create exception object.
      * @param message the error message
      */
-    explicit authentication_exception(const std::string& message) : std::runtime_error(message) {
+    explicit authentication_exception(const std::string& message) : std::runtime_error(message), code_(std::nullopt) {
     }
+
+    /**
+     * @brief create exception object.
+     * @param message the error message
+     * @param code the CoreServiceCode
+     */
+    authentication_exception(const std::string& message, const tateyama::proto::diagnostics::Code code) : std::runtime_error(message), code_(code) {
+    }
+
+    /**
+     * @brief returns diagnostics code.
+     * @return tateyama::proto::diagnostics::Code
+     */
+    std::optional<tateyama::proto::diagnostics::Code> code() {
+        return code_;
+    }
+
+private:
+    std::optional<tateyama::proto::diagnostics::Code> code_;
 };
 
 }  // namespace tateyama::authentication::resource

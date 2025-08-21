@@ -56,6 +56,9 @@ public:
             if (jwt_add_grant_int(jwtp_, "exp", exp) != 0) {
                 return std::nullopt;
             }
+            if (jwt_add_grant(jwtp_, "sub", "access") != 0) {
+                return std::nullopt;
+            }
             if (token_) {
                 free(token_);
             }

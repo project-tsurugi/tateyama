@@ -20,10 +20,17 @@
 #include <string_view>
 #include <optional>
 #include <errno.h>
+#include <string.h>
 
 #include <jwt.h>
 
 namespace tateyama::authentication::resource::jwt {
+
+enum class token_type {
+    none,
+    access,
+    refresh,
+};
 
 class token_handler {
 public:
@@ -61,7 +68,20 @@ public:
         }
         return std::nullopt;
     }
-
+    tateyama::authentication::resource::jwt::token_type token_type() {
+        if (jwtp_) {
+            auto rv = jwt_get_grant(jwtp_, "sub");
+            if (errno != ENOENT) {
+                if (strcmp(rv, "access") == 0) {
+                    return token_type::access;
+                }
+                if (strcmp(rv, "refresh") == 0) {
+                    return token_type::refresh;
+                }
+            }
+        }
+        return token_type::none;
+    }
 
   private:
     jwt_t *jwtp_;
