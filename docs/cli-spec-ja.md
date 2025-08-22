@@ -410,7 +410,7 @@ tgctl tag [--help]（1.0.0では未実装）
     * 認証情報はサービスプロセスが提供する公開鍵によって暗号化され、サービスプロセス上の秘密鍵で複合化される
 * 備考
   * 認証情報ファイルを既定のパス (`$HOME/.tsurugidb/credentials.key`) に配置すると、ユーザー名とパスワードの入力を省略できる
-  * 認証情報ファイルは、 `user`, `password` のフィールドを持つ JSON ファイルで、各フィールドは公開鍵による暗号化済み
+  * 認証情報ファイルの形式は、1行目が暗号化された認証情報、2行目以降はコメント。
 
 ### 認証オプション
 
@@ -441,7 +441,7 @@ OLTP サービスプロセスと通信する全てのサブコマンドは、以
 ### 認証情報ファイルの作成
 
 ```sh
-tgctl credentials [/path/to/credentials.key] [--user <user-name>] [--overwrite|--no-overwrite] [--conf </path/to/conf>]
+tgctl credentials [/path/to/credentials.key] [--user <user-name>] [--overwrite|--nooverwrite] [--expiration <days>][--conf </path/to/conf>]
 ```
 
 * overview
@@ -453,12 +453,16 @@ tgctl credentials [/path/to/credentials.key] [--user <user-name>] [--overwrite|-
     * パスワードは起動後に別途プロンプトに入力する
   * `--overwrite` - 出力先に既にファイルが存在していた場合、上書きする
   * `--nooverwrite` - 出力先にファイルが存在していた場合、エラー終了する
-  * `--expiration` - 認証情報ファイルの有効期間、単位は日。未指定の場合は90日、0の場合は無期限となる。
+  * `--expiration` - 認証情報ファイルの有効期間、単位は日。未指定の場合は90、0の場合は無期限となる。指定可能な最大値は365。
+  * `--conf` - 設定ファイルのパス。未指定の場合は下記の順で設定ファイルを探す。
+    * 環境変数TSURUGI_CONFが設定されていたら、TSURUGI_CONFを設定ファイルのパスに使用する。TSURUGI_CONFで指定される設定ファイルが存在しない場合はエラーとする。
+    * 環境変数TSURUGI_CONFが設定されていない場合は、${TSURUGI_HOME}/var/etc/tsurugi.iniを使用する。環境変数TSURUGI_HOMEが設定されていない場合やTSURUGI_HOME/conf/tsurugi.ini が存在しない場合はエラーとする。
 * note
   * 当該コマンドでは `--credentials` や `--auth-token` を **指定できない**
     * 既定の認証情報ファイルも利用しない
     * `--user` を入力しなかった場合、他のあらゆる認証に関する設定を無視してユーザー名のプロンプトを表示する
-  * `--overwrite`, `--no-overwrite` のいずれの指定もない場合、上書きを行う
+  * `--overwrite`, `--nooverwrite` のいずれの指定もない場合、上書きを行う
+  * 有効期限を設定した場合（`--expiration 0`としない場合）は、認証情報ファイルの2行目（コメント部分）に参考情報として有効期限が入るようになっている
 * impl memo
   * if service is present
     * retrieve public key from the service (via `control_service`?)
