@@ -380,9 +380,9 @@ protected:
         res->error(record);
     }
 
-    bool endpoint_service(const std::shared_ptr<tateyama::api::server::request>& req,
+    bool endpoint_service(const std::shared_ptr<tateyama::api::server::request>& req,    //NOLINT(readability-function-cognitive-complexity)
                           const std::shared_ptr<tateyama::api::server::response>& res,
-                          std::size_t slot) {  //NOLINT(readability-function-cognitive-complexity)
+                          std::size_t slot) {
         auto data = req->payload();
         tateyama::proto::endpoint::request::Request rq{};
         if(!rq.ParseFromArray(data.data(), static_cast<int>(data.size()))) {
