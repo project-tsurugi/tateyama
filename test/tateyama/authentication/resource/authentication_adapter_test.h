@@ -55,9 +55,8 @@ class authentication_adapter_test : public tateyama::authentication::resource::a
                 if (auto auth_name_opt = handler->tsurugi_auth_name(); auth_name_opt) {
                     return auth_name_opt.value();
                 }
-                throw authentication_exception("token in invalid");
             }
-            throw authentication_exception("token already expired");
+            throw authentication_exception("token for the test is invalid");
         }
         return std::nullopt;
     }

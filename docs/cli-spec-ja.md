@@ -414,7 +414,7 @@ tgctl tag [--help]（1.0.0では未実装）
 
 ### 認証オプション
 
-OLTP サービスプロセスと通信する全てのサブコマンドは、以下の認証オプション `<auth-options>` を指定できる
+OLTP サービスプロセスとの間でセッションを開設する全てのサブコマンド（backup, restore）は、以下の認証オプション `<auth-options>` を指定できる
 
 ```sh
 <auth-options>:
