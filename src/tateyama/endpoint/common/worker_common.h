@@ -411,30 +411,53 @@ protected:
 
         case tateyama::proto::endpoint::request::Request::kUpdateCredential:
         {
-            tateyama::proto::endpoint::response::UpdateCredential rp{};
             std::string error_message{};
+            tateyama::proto::diagnostics::Code code{};
 
             if (auth_) {
+                std::optional<std::string> username_opt{};
+                code = tateyama::proto::diagnostics::Code::AUTHENTICATION_ERROR;
+
                 auto& credential = rq.update_credential().credential();
                 switch (credential.credential_opt_case()) {
                 case tateyama::proto::endpoint::request::Credential::CredentialOptCase::kEncryptedCredential:
-                    if (auto username_opt = auth_->verify_encrypted(credential.encrypted_credential()); !username_opt) {
-                        error_message = "user or password is incorrect";
+                    try {
+                        if (username_opt = auth_->verify_encrypted(credential.encrypted_credential()); !username_opt) {
+                            error_message = "user or password is incorrect";
+                        }
+                    } catch (std::runtime_error &ex) {
+                        error_message = ex.what();
                     }
                     break;
                 case tateyama::proto::endpoint::request::Credential::CredentialOptCase::kRememberMeCredential:
-                    if (auto username_opt = auth_->verify_token(credential.remember_me_credential()); !username_opt) {
-                        error_message = "token is incorrect";
+                    try {
+                        if (username_opt = auth_->verify_token(credential.remember_me_credential()); !username_opt) {
+                            error_message = "token is incorrect";
+                        }
+                    } catch (tateyama::authentication::resource::authentication_exception &ex) {
+                        if (auto code_opt = ex.code(); code_opt) {
+                            code = code_opt.value();
+                            error_message = std::string("token is incorrect: ") + ex.what();
+                        }
                     }
                     break;
                 case tateyama::proto::endpoint::request::Credential::CredentialOptCase::CREDENTIAL_OPT_NOT_SET:
                     error_message = "no credential";
                     break;
                 }
+                if (username_opt) {
+                    if (username_opt.value() != resources_.session_info().username()) {
+                        error_message = "UpdateCredential with differnt user";
+                    }
+                }
                 if (error_message.empty()) {
                     authentication_timer_.update_expiration_time();
                 }
+            } else {
+                code = tateyama::proto::diagnostics::Code::ILLEGAL_STATE;
             }
+
+            tateyama::proto::endpoint::response::UpdateCredential rp{};
             if (error_message.empty()) {
                 rp.mutable_success();
                 auto body = rp.SerializeAsString();
@@ -442,7 +465,7 @@ protected:
             } else {
                 auto* error = rp.mutable_error();
                 error->set_message(error_message);
-                error->set_code(tateyama::proto::diagnostics::Code::AUTHENTICATION_ERROR);
+                error->set_code(code);
                 res->body(rp.SerializeAsString());
             }
             return true;
