@@ -34,6 +34,14 @@ using tateyama::api::server::request;
 using tateyama::api::server::response;
 
 bool tateyama::session::service::core::operator()(const std::shared_ptr<request>& req, const std::shared_ptr<response>& res) {
+    if (req->session_info().user_type() != tateyama::api::server::user_type::administrator) {
+        tateyama::proto::diagnostics::Record error{};
+        error.set_code(tateyama::proto::diagnostics::Code::PERMISSION_ERROR);
+        error.set_message("administrator privilege is required");
+        res->error(error);
+        return false;
+    }
+
     bool return_code =true;
     tateyama::proto::session::request::Request rq{};
 

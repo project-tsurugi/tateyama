@@ -52,6 +52,14 @@ bool bridge::shutdown(environment&) {
 }
 
 bool bridge::operator()(std::shared_ptr<request> req, std::shared_ptr<response> res) {
+    if (req->session_info().user_type() != tateyama::api::server::user_type::administrator) {
+        tateyama::proto::diagnostics::Record error{};
+        error.set_code(tateyama::proto::diagnostics::Code::PERMISSION_ERROR);
+        error.set_message("administrator privilege is required");
+        res->error(error);
+        return false;
+    }
+
     tateyama::proto::request::request::Request rq{};
     auto data = req->payload();
     if(!rq.ParseFromArray(data.data(), static_cast<int>(data.size()))) {
