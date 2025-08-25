@@ -17,6 +17,7 @@
 #include <string_view>
 #include <optional>
 #include <chrono>
+#include <stdexcept>
 
 #include <boost/regex.hpp>
 #include <httplib.h>
@@ -38,26 +39,35 @@ public:
     }
 
     std::optional<std::pair<std::string, std::string>> get_encryption_key() {
-        auto response = client_->Get((path_ + "/encryption-key"));
-        if (response) {
-            nlohmann::json j = nlohmann::json::parse(response->body);
+        try {
+            auto response = client_->Get((path_ + "/encryption-key"));
+            if (response) {
+                if (response->status == 200) {
+                    try {
+                        nlohmann::json j = nlohmann::json::parse(response->body);
 
-            if (response->status == 200) {
-                std::string type = j.find("key_type").value();
-                std::string data = j.find("key_data").value();
+                        std::string type = j.find("key_type").value();
+                        std::string data = j.find("key_data").value();
 
-                if (!type.empty() && !data.empty()) {
-                    if (type == "RSA") {
-                        return std::make_pair(type, data);
+                        if (!type.empty() && !data.empty()) {
+                            if (type == "RSA") {
+                                return std::make_pair(type, data);
+                            }
+                        }
+
+                        if (std::string message = j.value("message", ""); !message.empty()) {
+                            throw authentication_exception(message);
+                        }
+                        throw authentication_exception("the authentication service malfunction");
+                    } catch (nlohmann::detail::exception &jex) {
+                        throw authentication_exception(std::string("invalid reply from the authentication server, ") + jex.what());
                     }
                 }
             }
-            if (std::string message = j.value("message", ""); !message.empty()) {
-                throw authentication_exception(message);
-            }
-            throw authentication_exception("the authentication service malfunction");
+            throw authentication_exception("cannot obtain encryption key from the authentication service due to timeout or service unavailable");
+        } catch (std::invalid_argument &ex) {
+            throw authentication_exception(std::string("cannot obtain encryption key from the authentication service, reason is le ") + ex.what());
         }
-        throw authentication_exception("cannot obtain encryption key from the authentication service due to timeout or service unavailable");
     }
 
     std::optional<std::string> verify_token(std::string_view token_given) {
@@ -67,23 +77,32 @@ public:
         httplib::Headers headers = {
             { "Authorization", t.c_str() }
         };
-        auto response = client_->Get((path_ + "/verify"), headers);
-        if (response) {
-            nlohmann::json j = nlohmann::json::parse(response->body);
+        try {
+            auto response = client_->Get((path_ + "/verify"), headers);
+            if (response) {
+                if (response->status == 200) {
+                    try {
+                        nlohmann::json j = nlohmann::json::parse(response->body);
 
-            if (response->status == 200) {
-                std::string token = j.find("token").value();
-                if (!token.empty()) {
-                    return token;
+                        std::string token = j.find("token").value();
+                        if (!token.empty()) {
+                            return token;
+                        }
+                        throw authentication_exception("the authentication service malfunction");
+
+                        if (std::string message = j.value("message", ""); !message.empty()) {
+                            throw authentication_exception(message);
+                        }
+                        throw authentication_exception("the token is malformed");
+                    } catch (nlohmann::detail::exception &jex) {
+                        throw authentication_exception(std::string("invalid reply from the authentication server, ") + jex.what());
+                    }
                 }
-                throw authentication_exception("the authentication service malfunction");
             }
-            if (std::string message = j.value("message", ""); !message.empty()) {
-                throw authentication_exception(message);
-            }
-            throw authentication_exception("the token is malformed");
+            throw authentication_exception("cannot verify token by the authentication service due to timeout or service unavailable");
+        } catch (std::invalid_argument &ex) {
+            throw authentication_exception(std::string("cannot verify token by the authentication service, reason is le ") + ex.what());
         }
-        throw authentication_exception("cannot verify token by the authentication service due to timeout or service unavailable");
     }
 
     std::optional<std::string> verify_encrypted(std::string_view encrypted_credential) {
@@ -92,23 +111,32 @@ public:
             { "X-Encrypted-Credentials", ec.c_str() }
         };
 
-        auto response = client_->Get((path_ + "/issue-encrypted"), headers);
-        if (response) {
-            nlohmann::json j = nlohmann::json::parse(response->body);
+        try {
+            auto response = client_->Get((path_ + "/issue-encrypted"), headers);
+            if (response) {
+                if (response->status == 200) {
+                    try {
+                        nlohmann::json j = nlohmann::json::parse(response->body);
 
-            if (response->status == 200) {
-                std::string token = j.find("token").value();
-                if (!token.empty()) {
-                    return token;
+                        std::string token = j.find("token").value();
+                        if (!token.empty()) {
+                            return token;
+                        }
+                        throw authentication_exception("the authentication service malfunction");
+
+                        if (std::string message = j.value("message", ""); !message.empty()) {
+                            throw authentication_exception(message);
+                        }
+                        throw authentication_exception("the credential is malformed");
+                    } catch (nlohmann::detail::exception &jex) {
+                        throw authentication_exception(std::string("invalid reply from the authentication server, ") + jex.what());
+                    }
                 }
-                throw authentication_exception("the authentication service malfunction");
             }
-            if (std::string message = j.value("message", ""); !message.empty()) {
-                throw authentication_exception(message);
-            }
-            throw authentication_exception("the credential is malformed");
+            throw authentication_exception("cannot verify encrypted credential by the authentication service due to timeout or service unavailable");
+        } catch (std::invalid_argument &ex) {
+            throw authentication_exception(std::string("cannot verify encrypted credential by the authentication service, reason is le ") + ex.what());
         }
-        throw authentication_exception("cannot verify encrypted credential by the authentication service due to timeout or service unavailable");
     }
 
 private:
