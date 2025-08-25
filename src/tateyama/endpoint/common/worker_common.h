@@ -382,7 +382,7 @@ protected:
 
     bool endpoint_service(const std::shared_ptr<tateyama::api::server::request>& req,
                           const std::shared_ptr<tateyama::api::server::response>& res,
-                          std::size_t slot) {
+                          std::size_t slot) {  //NOLINT(readability-function-cognitive-complexity)
         auto data = req->payload();
         tateyama::proto::endpoint::request::Request rq{};
         if(!rq.ParseFromArray(data.data(), static_cast<int>(data.size()))) {
