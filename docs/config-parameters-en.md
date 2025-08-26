@@ -86,6 +86,21 @@ Target component
 | dev_assign_numa_nodes_uniformly | Boolean (true/false) | Uniformly distributes the task scheduler’s worker threads across NUMA nodes. Default is `false`. Effective only when `dev_core_affinity = false` and `dev_force_numa_node` is not specified. | This is for development and may be deleted in the future. |
 | dev_force_numa_node | Integer | Forces all task scheduler worker threads onto a specific NUMA node. Specify the node number (0-based). Effective only when `dev_core_affinity = false` and `dev_assign_numa_nodes_uniformly = false`. Default is *not specified* (no node affinity). | This is for development and may be deleted in the future. |
 
+## udf section
+
+Section name
+  - udf
+
+Target component
+  - UDF Service Resource (jogasaki)
+
+
+| Parameter name | Type | Value | Remarks |
+|---:| :---: | :--- |---|
+| plugin_directory | String | Path to the directory where UDF plugins (.so files) are stored. Default value is $TSURUGI_HOME/var/plugins/. ||
+| endpoint | String | gRPC server endpoint for communication between Tsurugi Database and UDF server. Default value is "localhost:50051". ||
+| secure | Boolean (true/false) | Whether to use a secure gRPC communication channel. The default value is false. |
+
 ## ipc_endpoint section
 
 Section name
