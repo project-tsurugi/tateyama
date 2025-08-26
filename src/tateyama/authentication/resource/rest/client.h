@@ -62,7 +62,10 @@ public:
                     throw authentication_exception("the authentication service malfunction");
 
                 } catch (nlohmann::detail::exception &jex) {
-                    throw authentication_exception(std::string("invalid reply from the authentication server, ") + jex.what());
+                    if (response->status == 503) {
+                        throw authentication_exception("authentication service is unavailable");
+                    }
+                    throw authentication_exception(std::string("invalid reply from the authentication service, ") + jex.what());
                 }
             }
             throw authentication_exception("cannot obtain encryption key from the authentication service due to timeout or service unavailable");
@@ -97,7 +100,10 @@ public:
                     throw authentication_exception("the authentication service malfunction");
 
                 } catch (nlohmann::detail::exception &jex) {
-                    throw authentication_exception(std::string("invalid reply from the authentication server, ") + jex.what());
+                    if (response->status == 503) {
+                        throw authentication_exception("authentication service is unavailable");
+                    }
+                    throw authentication_exception(std::string("invalid reply from the authentication service, ") + jex.what());
                 }
             }
             throw authentication_exception("cannot verify token by the authentication service due to timeout or service unavailable");
@@ -131,7 +137,10 @@ public:
                     throw authentication_exception("the authentication service malfunction");
 
                 } catch (nlohmann::detail::exception &jex) {
-                    throw authentication_exception(std::string("invalid reply from the authentication server, ") + jex.what());
+                    if (response->status == 503) {
+                        throw authentication_exception("authentication service is unavailable");
+                    }
+                    throw authentication_exception(std::string("invalid reply from the authentication service, ") + jex.what());
                 }
             }
             throw authentication_exception("cannot verify encrypted credential by the authentication service due to timeout or service unavailable");
