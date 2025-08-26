@@ -14,4 +14,5 @@
 
 if(BUILD_TESTS)
     add_subdirectory(googletest EXCLUDE_FROM_ALL)
+    add_subdirectory(cpp-httplib EXCLUDE_FROM_ALL)
 endif()
