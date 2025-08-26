@@ -86,6 +86,20 @@ parameter=value
 |dev_assign_numa_nodes_uniformly| ブール(true/false) | タスクスケジューラのワーカースレッドをNUMAノードに均等に割当てるか。デフォルトはfalse。`dev_core_affinity=false` かつ `dev_force_numa_node` が未指定の場合のみ有効。 | 開発用のため将来的に削除/変更される可能性あり|
 |dev_force_numa_node | 整数 | タスクスケジューラのワーカースレッドを特定のNUMAノードへ割当てるか。ノード番号 (0-origin)を指定された場合そのノードですべてのワーカーが稼働する。`dev_core_affinity=false` かつ `dev_assign_numa_nodes_uniformly=false` の場合のみ有効。デフォルトは未指定 (ノード割当てなし)。|開発用のため将来的に削除/変更される可能性あり|
 
+## udfセクション
+
+セクション名
+  - udf
+
+対象コンポーネント
+  - UDFサービス・リソース(jogasaki)
+
+|パラメーター名 | 型 | 値 |備考|
+|---:| :---: | :--- |---|
+| plugin_directory | String | UDF プラグイン (.so ファイル) を配置するディレクトリへのパス。デフォルトは $TSURUGI_HOME/var/plugins/ | |
+| endpoint | String | Tsurugi Database と UDF サーバ間の通信に利用する gRPC サーバのエンドポイント。デフォルトは "localhost:50051" | |
+| secure | ブール(true/false) | セキュアなgRPC通信路の利用可否。デフォルト値はfalse。 |
+
 ## ipc_endpointセクション
 
 セクション名
