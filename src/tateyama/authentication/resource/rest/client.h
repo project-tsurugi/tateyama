@@ -45,7 +45,7 @@ public:
                 try {
                     nlohmann::json j = nlohmann::json::parse(response->body);
 
-                    if (response->status == 200) {
+                    if (response->status == httplib::StatusCode::OK_200) {
                         std::string type = j.find("key_type").value();
                         std::string data = j.find("key_data").value();
 
@@ -62,7 +62,7 @@ public:
                     throw authentication_exception("the authentication service malfunction");
 
                 } catch (nlohmann::detail::exception &jex) {
-                    if (response->status == 503) {
+                    if (response->status == httplib::StatusCode::ServiceUnavailable_503) {
                         throw authentication_exception("authentication service is unavailable");
                     }
                     throw authentication_exception(std::string("invalid reply from the authentication service, ") + jex.what());
@@ -87,7 +87,7 @@ public:
                 try {
                     nlohmann::json j = nlohmann::json::parse(response->body);
 
-                    if (response->status == 200) {
+                    if (response->status == httplib::StatusCode::OK_200) {
                         std::string token = j.find("token").value();
                         if (!token.empty()) {
                             return token;
@@ -100,7 +100,7 @@ public:
                     throw authentication_exception("the authentication service malfunction");
 
                 } catch (nlohmann::detail::exception &jex) {
-                    if (response->status == 503) {
+                    if (response->status == httplib::StatusCode::ServiceUnavailable_503) {
                         throw authentication_exception("authentication service is unavailable");
                     }
                     throw authentication_exception(std::string("invalid reply from the authentication service, ") + jex.what());
@@ -124,7 +124,7 @@ public:
                 try {
                     nlohmann::json j = nlohmann::json::parse(response->body);
 
-                    if (response->status == 200) {
+                    if (response->status == httplib::StatusCode::OK_200) {
                         std::string token = j.find("token").value();
                         if (!token.empty()) {
                             return token;
@@ -137,7 +137,7 @@ public:
                     throw authentication_exception("the authentication service malfunction");
 
                 } catch (nlohmann::detail::exception &jex) {
-                    if (response->status == 503) {
+                    if (response->status == httplib::StatusCode::ServiceUnavailable_503) {
                         throw authentication_exception("authentication service is unavailable");
                     }
                     throw authentication_exception(std::string("invalid reply from the authentication service, ") + jex.what());
