@@ -127,22 +127,22 @@ TEST_F(ipc_authentication_expiration_test, normal) {
                 // finish handshake
             }
             {
-                tateyama::proto::endpoint::request::GetCredentialsExpirationTime get_credential_expiration_time{};
+                tateyama::proto::endpoint::request::GetAuthenticationExpirationTime get_authentication_expiration_time{};
                 tateyama::proto::endpoint::request::Request endpoint_request{};
-                endpoint_request.set_allocated_get_credential_expiration_time(&get_credential_expiration_time);
+                endpoint_request.set_allocated_get_authentication_expiration_time(&get_authentication_expiration_time);
                 client.send(tateyama::framework::service_id_endpoint_broker, endpoint_request.SerializeAsString());
-                (void)endpoint_request.release_get_credential_expiration_time();
+                (void)endpoint_request.release_get_authentication_expiration_time();
 
                 std::string res{};
                 tateyama::proto::framework::response::Header::PayloadType type{};
                 client.receive(res, type);
                 EXPECT_EQ(type, tateyama::proto::framework::response::Header::SERVICE_RESULT);
-                tateyama::proto::endpoint::response::GetCredentialsExpirationTime response{};
+                tateyama::proto::endpoint::response::GetAuthenticationExpirationTime response{};
                 if(!response.ParseFromString(res)) {
                     FAIL();
                 }
 
-                EXPECT_EQ(response.result_case(), tateyama::proto::endpoint::response::GetCredentialsExpirationTime::kSuccess);
+                EXPECT_EQ(response.result_case(), tateyama::proto::endpoint::response::GetAuthenticationExpirationTime::kSuccess);
                 auto expiration_time_returned = response.success().expiration_time();
 
                 auto ee = tateyama::session::session_context::expiration_time_type::clock::now() + std::chrono::seconds(600);

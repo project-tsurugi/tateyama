@@ -409,7 +409,7 @@ protected:
             return true;
         }
 
-        case tateyama::proto::endpoint::request::Request::kUpdateCredential:
+        case tateyama::proto::endpoint::request::Request::kUpdateAuthentication:
         {
             std::string error_message{};
             tateyama::proto::diagnostics::Code code{};
@@ -418,7 +418,7 @@ protected:
                 std::optional<std::string> username_opt{};
                 code = tateyama::proto::diagnostics::Code::AUTHENTICATION_ERROR;
 
-                auto& credential = rq.update_credential().credential();
+                auto& credential = rq.update_authentication().credential();
                 switch (credential.credential_opt_case()) {
                 case tateyama::proto::endpoint::request::Credential::CredentialOptCase::kEncryptedCredential:
                     try {
@@ -447,7 +447,7 @@ protected:
                 }
                 if (username_opt) {
                     if (username_opt.value() != resources_.session_info().username()) {
-                        error_message = "UpdateCredential with differnt user";
+                        error_message = "UpdateAuthentication with differnt user";
                     }
                 }
                 if (error_message.empty()) {
@@ -457,7 +457,7 @@ protected:
                 code = tateyama::proto::diagnostics::Code::ILLEGAL_STATE;
             }
 
-            tateyama::proto::endpoint::response::UpdateCredential rp{};
+            tateyama::proto::endpoint::response::UpdateAuthentication rp{};
             if (error_message.empty()) {
                 rp.mutable_success();
                 auto body = rp.SerializeAsString();
@@ -471,9 +471,9 @@ protected:
             return true;
         }
 
-        case tateyama::proto::endpoint::request::Request::kGetCredentialExpirationTime:
+        case tateyama::proto::endpoint::request::Request::kGetAuthenticationExpirationTime:
         {
-            tateyama::proto::endpoint::response::GetCredentialsExpirationTime rp{};
+            tateyama::proto::endpoint::response::GetAuthenticationExpirationTime rp{};
 
             if (auth_) {
                 if (auto ne = authentication_timer_.next_expiration(); ne > 0) {
