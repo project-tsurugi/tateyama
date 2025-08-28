@@ -306,7 +306,7 @@ protected:
             break;
 
             default: 
-                handshake_error(res, tateyama::proto::diagnostics::Code::INVALID_REQUEST, "no valid credential");
+                handshake_error(res, tateyama::proto::diagnostics::Code::AUTHENTICATION_ERROR, "no valid credential");
                 return false;
             }
             if (auto name_opt = session_info.username(); name_opt) {
