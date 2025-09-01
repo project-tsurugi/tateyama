@@ -47,13 +47,31 @@ class alignas(64) stream_worker : public tateyama::endpoint::common::worker_comm
     const tateyama::endpoint::common::configuration& conf_;
     const bool decline_;
 
-    void notify_of_decline(tateyama::api::server::response* response) {
-        tateyama::proto::endpoint::response::Handshake rp{};
-        auto re = rp.mutable_error();
-        re->set_message("requests for session connections exceeded the maximum number of sessions");
-        re->set_code(tateyama::proto::diagnostics::Code::RESOURCE_LIMIT_REACHED);
-        response->body(rp.SerializeAsString());
-        rp.clear_error();
+    void notify_of_decline(tateyama::proto::endpoint::request::Request& rq, tateyama::api::server::response* response) {
+        switch (rq.command_case()) {
+        case tateyama::proto::endpoint::request::Request::kEncryptionKey:
+        {
+            tateyama::proto::endpoint::response::EncryptionKey rp{};
+            auto re = rp.mutable_error();
+            re->set_message("requests for session connections exceeded the maximum number of sessions");
+            re->set_code(tateyama::proto::diagnostics::Code::RESOURCE_LIMIT_REACHED);
+            response->body(rp.SerializeAsString());
+            rp.clear_error();
+            return;
+        }
+        case tateyama::proto::endpoint::request::Request::kHandshake:
+        {
+            tateyama::proto::endpoint::response::Handshake rp{};
+            auto re = rp.mutable_error();
+            re->set_message("requests for session connections exceeded the maximum number of sessions");
+            re->set_code(tateyama::proto::diagnostics::Code::RESOURCE_LIMIT_REACHED);
+            response->body(rp.SerializeAsString());
+            rp.clear_error();
+            return;
+        }
+        default:
+            notify_client(response, tateyama::proto::diagnostics::Code::INVALID_REQUEST, "invalid request for handshake phase");
+        }
     }
 
     void resultset_force_close() override {

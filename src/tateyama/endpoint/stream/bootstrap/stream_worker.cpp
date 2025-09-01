@@ -39,7 +39,15 @@ void stream_worker::run()  // NOLINT(readability-function-cognitive-complexity)
             stream_response response_obj{*session_stream_, slot, [](){}, conf_};
 
             if (decline_) {
-                notify_of_decline(&response_obj);
+                auto request = request_obj.payload();
+                tateyama::proto::endpoint::request::Request rq{};
+                if(!rq.ParseFromArray(request.data(), static_cast<int>(request.size()))) {
+                    std::string error_message{"request parse error"};
+                    LOG_LP(INFO) << error_message;
+                    notify_client(&response_obj, tateyama::proto::diagnostics::Code::INVALID_REQUEST, error_message);
+                    return;
+                }
+                notify_of_decline(rq, &response_obj);
                 if (session_stream_->await(slot, payload) == tateyama::endpoint::stream::stream_socket::await_result::payload) {
                     LOG_LP(INFO) << "illegal procedure (receive a request in spite of a decline case)";  // should not reach here
                 } else {
