@@ -482,8 +482,8 @@ protected:
                     res->body(rp.SerializeAsString());
                 } else {
                     auto* error = rp.mutable_error();
-                    error->set_code(tateyama::proto::diagnostics::Code::ILLEGAL_STATE);
-                    error->set_message("expiration timer is off");
+                    error->set_code(tateyama::proto::diagnostics::Code::UNSUPPORTED_OPERATION);
+                    error->set_message("authentication expiration timer is off");
                     res->body(rp.SerializeAsString());
                 }
             } else {
