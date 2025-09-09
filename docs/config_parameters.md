@@ -156,10 +156,10 @@ parameter=value
 
 |パラメーター名 | 型 | 値 |備考|
 |---:| :---: | :--- |---|
-| enabled | ブール(true/false) | 認証機構を有効にするかどうか、デフォルト値はfalse |
-| url | 文字列 | 認証サービスの URL、デフォルト値は'http://localhost:8080/harinoki' |
-| request_timeout | 実数 | 認証サービスのタイムアウト (秒), 0 でタイムアウトなし、デフォルト値は0 |
-| administrators | 文字列 | 管理ユーザのリスト（,区切り）、*で全loginユーザが管理ユーザとなる、デフォルト値は`*` |
+| enabled | ブール(true/false) | 認証機構を有効にするかどうか、デフォルト値は`false` |
+| url | 文字列 | 認証サービスの URL、デフォルト値は`http://localhost:8080/harinoki` |
+| request_timeout | 実数 | 認証サービスのタイムアウト (秒), `0` でタイムアウトなし、デフォルト値は`0` |
+| administrators | 文字列 | 管理ユーザのリスト（`,`区切り）、`*`で全loginユーザが管理ユーザとなる、デフォルト値は`*` |
 
 ## glogセクション
 
