@@ -20,6 +20,11 @@
 #include <tateyama/proto/endpoint/request.pb.h>
 #include <tateyama/proto/endpoint/response.pb.h>
 #include <tateyama/proto/session/request.pb.h>
+#include <tateyama/proto/metrics/request.pb.h>
+#include <tateyama/proto/request/request.pb.h>
+#ifdef ENABLE_ALTIMETER
+#include <tateyama/proto/altimeter/request.pb.h>
+#endif
 
 #include "tateyama/authentication/resource/authentication_adapter_test.h"
 #include "tateyama/authentication/resource/crypto/key.h"
@@ -81,6 +86,7 @@ class ipc_service_admin_test: public ipc_gtest_base {
 
 protected:
     tateyama::proto::framework::response::Header::PayloadType expected_type_;
+    std::function<void(ipc_client&)> invoke_resource_;
 
     // Works on forked process.
     std::function<void(ipc_client&)> client_{
@@ -120,9 +126,17 @@ protected:
             }
             EXPECT_EQ(response.result_case(), tateyama::proto::endpoint::response::Handshake::kSuccess);
 
+            invoke_resource_(client);
+        }
+    };
+    std::function<void(ipc_client&)> session_{
+        [this](ipc_client& client){
             tateyama::proto::session::request::Request request{};
             (void) request.mutable_session_list();
             client.send(tateyama::framework::service_id_session, request.SerializeAsString());
+
+            std::string res{};
+            tateyama::proto::framework::response::Header::PayloadType type{};
             client.receive(res, type);
 
             EXPECT_EQ(type, expected_type_);
@@ -136,6 +150,8 @@ TEST_F(ipc_service_admin_test, inclusive) {
                         "  administrators=admin,user\n");
 
     expected_type_ = tateyama::proto::framework::response::Header::SERVICE_RESULT;
+    
+    invoke_resource_ = session_;
     ipc_service_admin_test_server_client sc { cfg_, client_ };
     sc.start_server_client();
 }
@@ -146,6 +162,8 @@ TEST_F(ipc_service_admin_test, exclusive) {
                         "  administrators=admin\n");
 
     expected_type_ = tateyama::proto::framework::response::Header::SERVER_DIAGNOSTICS;
+
+    invoke_resource_ = session_;
     ipc_service_admin_test_server_client sc { cfg_, client_ };
     sc.start_server_client();
 }
@@ -155,8 +173,100 @@ TEST_F(ipc_service_admin_test, no_auth) {
                         "  enabled=false\n");
 
     expected_type_ = tateyama::proto::framework::response::Header::SERVICE_RESULT;
+
+    invoke_resource_ = session_;
     ipc_service_admin_test_server_client sc { cfg_, client_ };
     sc.start_server_client();
 }
+
+TEST_F(ipc_service_admin_test, metrics_permission_error) {
+    ipc_test_env::setup("[authentication]\n"
+                        "  enabled=true\n"
+                        "  administrators=admin\n");
+
+    expected_type_ = tateyama::proto::framework::response::Header::SERVER_DIAGNOSTICS;
+
+    invoke_resource_ = [this](ipc_client& client){
+        tateyama::proto::metrics::request::Request request{};
+        (void) request.mutable_list();
+        client.send(tateyama::framework::service_id_metrics, request.SerializeAsString());
+
+        std::string res{};
+        tateyama::proto::framework::response::Header::PayloadType type{};
+        client.receive(res, type);
+
+        EXPECT_EQ(type, expected_type_);
+    };
+    ipc_service_admin_test_server_client sc { cfg_, client_ };
+    sc.start_server_client();
+}
+
+TEST_F(ipc_service_admin_test, datastore_permission_error) {
+    ipc_test_env::setup("[authentication]\n"
+                        "  enabled=true\n"
+                        "  administrators=admin\n");
+
+    expected_type_ = tateyama::proto::framework::response::Header::SERVER_DIAGNOSTICS;
+
+    invoke_resource_ = [this](ipc_client& client){
+        tateyama::proto::datastore::request::Request request{};
+        (void) request.mutable_backup_begin();
+        client.send(tateyama::framework::service_id_datastore, request.SerializeAsString());
+
+        std::string res{};
+        tateyama::proto::framework::response::Header::PayloadType type{};
+        client.receive(res, type);
+
+        EXPECT_EQ(type, expected_type_);
+    };
+    ipc_service_admin_test_server_client sc { cfg_, client_ };
+    sc.start_server_client();
+}
+
+TEST_F(ipc_service_admin_test, request_permission_error) {
+    ipc_test_env::setup("[authentication]\n"
+                        "  enabled=true\n"
+                        "  administrators=admin\n");
+
+    expected_type_ = tateyama::proto::framework::response::Header::SERVER_DIAGNOSTICS;
+
+    invoke_resource_ = [this](ipc_client& client){
+        tateyama::proto::request::request::Request request{};
+        (void) request.mutable_list_request();
+        client.send(tateyama::framework::service_id_request, request.SerializeAsString());
+
+        std::string res{};
+        tateyama::proto::framework::response::Header::PayloadType type{};
+        client.receive(res, type);
+
+        EXPECT_EQ(type, expected_type_);
+    };
+    ipc_service_admin_test_server_client sc { cfg_, client_ };
+    sc.start_server_client();
+}
+
+#ifdef ENABLE_ALTIMETER
+TEST_F(ipc_service_admin_test, altimeter_permission_error) {
+    ipc_test_env::setup("[authentication]\n"
+                        "  enabled=true\n"
+                        "  administrators=admin\n");
+
+    expected_type_ = tateyama::proto::framework::response::Header::SERVER_DIAGNOSTICS;
+
+    invoke_resource_ = [this](ipc_client& client){
+        tateyama::proto::altimeter::request::Request request{};
+        (void) request.mutable_configure();
+        client.send(tateyama::framework::service_id_altimeter, request.SerializeAsString());
+
+        std::string res{};
+        tateyama::proto::framework::response::Header::PayloadType type{};
+        client.receive(res, type);
+
+        EXPECT_EQ(type, expected_type_);
+    };
+    ipc_service_admin_test_server_client sc { cfg_, client_ };
+    sc.start_server_client();
+}
+#endif
 
 } // namespace tateyama::endpoint::ipc
