@@ -19,7 +19,6 @@
 #include <chrono>
 #include <stdexcept>
 
-#include <boost/regex.hpp>
 #include <httplib.h>
 #include <nlohmann/json.hpp>
 

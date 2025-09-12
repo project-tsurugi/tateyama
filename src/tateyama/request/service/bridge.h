@@ -97,8 +97,8 @@ private:
     std::vector<std::shared_ptr<tateyama::endpoint::common::listener_common>> listeners_{};
 
     void foreach_endpoint(const tateyama::endpoint::common::listener_common::callback& func) {
-        for(auto &&l : listeners_) {
-            l->foreach_request(func);
+        for(auto &&listener : listeners_) {
+            listener->foreach_request(func);
         }
     }
 };

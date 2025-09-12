@@ -40,6 +40,7 @@ target_link_libraries(${test_target}
         PRIVATE rt
         PRIVATE crypto
         PRIVATE jwt
+        PRIVATE Boost::regex
         )
 
 function (add_test_executable source_file)
@@ -74,6 +75,7 @@ file(GLOB SRCS
         "tateyama/metrics/*.cpp"
         "tateyama/metrics/resource/*.cpp"
         "tateyama/request/service/*.cpp"
+        "tateyama/authentication/resource/*.cpp"
         )
 if (ENABLE_ALTIMETER)
     file(GLOB ALTIMETER_SOURCES
