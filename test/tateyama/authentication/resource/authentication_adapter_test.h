@@ -89,6 +89,10 @@ class authentication_adapter_test : public tateyama::authentication::resource::a
         return std::nullopt;
     }
 
+    static std::optional<std::string> check(const std::optional<std::string>& name_opt) {
+        return check_username(name_opt);
+    }        
+
 private:
     std::unique_ptr<tateyama::authentication::resource::crypto::rsa> rsa_{};
     bool enabled_;

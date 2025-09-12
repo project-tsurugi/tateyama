@@ -61,7 +61,7 @@ class authentication_adapter_impl : public authentication_adapter {
                     auto handler = std::make_unique<jwt::token_handler>(token, encryption_key_.value().second);
                     auto ns = std::chrono::system_clock::now().time_since_epoch();
                     if (std::chrono::duration_cast<std::chrono::seconds>(ns).count() < handler->expiration_time()) {
-                        return handler->tsurugi_auth_name();
+                        return check_username(handler->tsurugi_auth_name());
                     }
                     switch (handler->token_type()) {
                     case jwt::token_type::access:
@@ -83,7 +83,7 @@ class authentication_adapter_impl : public authentication_adapter {
             if (auto token_opt = client_->verify_encrypted(encrypted_credential); token_opt) {
                 if (encryption_key_) {
                     auto handler = std::make_unique<jwt::token_handler>(token_opt.value(), encryption_key_.value().second);
-                    return handler->tsurugi_auth_name();
+                    return check_username(handler->tsurugi_auth_name());
                 }
             }
         }
