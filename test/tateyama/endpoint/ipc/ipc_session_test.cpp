@@ -117,6 +117,19 @@ private:
     std::size_t local_id_{1};  // taking account of handshake request which consumes one local_id.
 };
 
+class session_info_test_for_ipc : public tateyama::api::server::session_info {
+public:
+    session_info_test_for_ipc() {}
+    [[nodiscard]] id_type id() const noexcept { return 111; }
+    [[nodiscard]] std::string_view label() const noexcept { return "label"; }
+    [[nodiscard]] std::string_view application_name() const noexcept { return "application name"; }
+    [[nodiscard]] time_type start_at() const noexcept { return {}; }
+    [[nodiscard]] std::string_view connection_type_name() const noexcept { return "connection_type_name"; }
+    [[nodiscard]] std::string_view connection_information() const noexcept { return "connection_information"; }
+    [[nodiscard]] std::optional<std::string_view> username() const noexcept { return "username"; }
+    [[nodiscard]] tateyama::api::server::user_type user_type() const noexcept { return tateyama::api::server::user_type::administrator; }
+};
+
 class ipc_session_test : public ::testing::Test {
     static constexpr std::size_t writer_count = 8;
 
@@ -151,6 +164,7 @@ protected:
     std::shared_ptr<session::resource::bridge> session_bridge_{};
     std::unique_ptr<ipc_client> client_{};
     tateyama::endpoint::common::administrators administrators_{"*"};
+    session_info_test_for_ipc session_info_test_{};
 };
 
 TEST_F(ipc_session_test, cancel_request_reply) {
@@ -218,7 +232,7 @@ TEST_F(ipc_session_test, forceful_shutdown_after_request) {
 
     // shutdown request
     std::shared_ptr<tateyama::session::session_context> session_context{};
-    session_bridge_->session_shutdown(std::string(":") + std::to_string(my_session_id), session::shutdown_request_type::forceful, session_context);
+    session_bridge_->session_shutdown(std::string(":") + std::to_string(my_session_id), session::shutdown_request_type::forceful, session_context, session_info_test_);
 
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
     EXPECT_FALSE(worker_->is_terminated());
@@ -257,7 +271,7 @@ TEST_F(ipc_session_test, forceful_shutdown_after_request) {
 TEST_F(ipc_session_test, forceful_shutdown_before_request) {
     // shutdown request
     std::shared_ptr<tateyama::session::session_context> session_context{};
-    session_bridge_->session_shutdown(std::string(":") + std::to_string(my_session_id), session::shutdown_request_type::forceful, session_context);
+    session_bridge_->session_shutdown(std::string(":") + std::to_string(my_session_id), session::shutdown_request_type::forceful, session_context, session_info_test_);
 
     // ensure shutdown request has been processed by the worker
     std::this_thread::sleep_for(std::chrono::milliseconds(2500));
@@ -280,7 +294,7 @@ TEST_F(ipc_session_test, graceful_shutdown_after_request) {
 
     // shutdown request
     std::shared_ptr<tateyama::session::session_context> session_context{};
-    session_bridge_->session_shutdown(std::string(":") + std::to_string(my_session_id), session::shutdown_request_type::graceful, session_context);
+    session_bridge_->session_shutdown(std::string(":") + std::to_string(my_session_id), session::shutdown_request_type::graceful, session_context, session_info_test_);
 
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
     EXPECT_FALSE(worker_->is_terminated());
@@ -319,7 +333,7 @@ TEST_F(ipc_session_test, graceful_shutdown_after_request) {
 TEST_F(ipc_session_test, graceful_shutdown_before_request) {
     // shutdown request
     std::shared_ptr<tateyama::session::session_context> session_context{};
-    session_bridge_->session_shutdown(std::string(":") + std::to_string(my_session_id), session::shutdown_request_type::graceful, session_context);
+    session_bridge_->session_shutdown(std::string(":") + std::to_string(my_session_id), session::shutdown_request_type::graceful, session_context, session_info_test_);
 
     // ensure shutdown request has been processed by the worker
     std::this_thread::sleep_for(std::chrono::milliseconds(2500));
