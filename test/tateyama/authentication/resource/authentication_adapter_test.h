@@ -100,9 +100,9 @@ private:
     // user map for modk whose key is user and value is password
     std::map <std::string, std::string> users_{
         { "admin", "test" },
-        { "user", "pass" }
+        { "user", "pass" },
+        { "another", "pass" }
     };
-
 
     [[nodiscard]] std::string decrypt(std::string_view encrypted) const {
         std::string decrypted{};
