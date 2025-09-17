@@ -70,6 +70,8 @@ public:
         auto& session_info = resources_.session_info();
         if (auto name_opt = session_info.username(); name_opt) {
             LOG_LP(INFO) << "session (" << resources_.session_id() << ") of the authenticated user (" << name_opt.value() << ") end";
+        } else {
+            LOG_LP(INFO) << "session (" << resources_.session_id() << ") end";
         }
     }
 
@@ -312,6 +314,8 @@ protected:
             if (auto name_opt = session_info.username(); name_opt) {
                 LOG_LP(INFO) << "session (" << resources_.session_id() << ") of an authenticated user (" << name_opt.value() << ") begin";
             }
+        } else {
+            LOG_LP(INFO) << "session (" << resources_.session_id() << ") begin";
         }
 
         auto wi = rq.handshake().wire_information();
@@ -636,7 +640,7 @@ protected:
             (sr == tateyama::session::shutdown_request_type::forceful);
     }
 
-    void care_reqreses() {
+    void care_reqreses(bool terminate_request = false) {
         std::vector<std::shared_ptr<tateyama::endpoint::common::response>> targets{};
         {
             std::lock_guard<std::mutex> lock(mtx_reqreses_);
@@ -645,6 +649,9 @@ protected:
                 auto && res = itr->second.second;
                 if ((pair.first.use_count() == 1) && (res.use_count() == 1)) {
                     if (!res->is_completed()) {
+                        if (terminate_request) {
+                            LOG_LP(INFO) << "session (" << resources_.session_id() << ") Session has pending processing requests";
+                        }
                         targets.emplace_back(res);
                     }
                     itr = reqreses_.erase(itr);

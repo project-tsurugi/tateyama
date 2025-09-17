@@ -62,6 +62,7 @@ void ipc_worker::run() {  // NOLINT(readability-function-cognitive-complexity)
         } catch (std::exception &ex) {
             care_reqreses();
             if (check_shutdown_request() && is_completed()) {
+                LOG_LP(INFO) << "session (" << session_id() << ") has received a termination request from other than the client";
                 VLOG_LP(log_trace) << "terminate worker thread for session " << session_id() << ", as it has received a shutdown request";
                 break;  // break the while loop
             }
@@ -77,8 +78,9 @@ void ipc_worker::run() {  // NOLINT(readability-function-cognitive-complexity)
         try {
             if (hdr.get_length() == 0 && hdr.get_idx() == tateyama::common::wire::message_header::terminate_request) {
                 request_shutdown(tateyama::session::shutdown_request_type::forceful);
-                care_reqreses();
+                care_reqreses(true);
                 if (check_shutdown_request() && is_completed()) {
+                    LOG_LP(INFO) << "session (" << session_id() << ") has received a termination request";
                     VLOG_LP(log_trace) << "terminate worker thread for session " << session_id() << ", as disconnection is requested and the subsequent shutdown process is completed";
                     break;  // break the while loop
                 }
@@ -116,6 +118,7 @@ void ipc_worker::run() {  // NOLINT(readability-function-cognitive-complexity)
                                           index)) {
                     care_reqreses();
                     if (check_shutdown_request() && is_completed()) {
+                        LOG_LP(INFO) << "session (" << session_id() << ") has received a termination request";
                         VLOG_LP(log_trace) << "received and completed shutdown request: session_id = " << std::to_string(session_id());
                         exit_frag = true;
                     }
@@ -143,6 +146,7 @@ void ipc_worker::run() {  // NOLINT(readability-function-cognitive-complexity)
                         exit_frag = true;
                     }
                 } else {
+                    LOG_LP(INFO) << "session (" << session_id() << ") received a termination request";
                     notify_client(response.get(), tateyama::proto::diagnostics::SESSION_CLOSED, "this session is already shutdown");
                 }
                 break;  // break the switch, and set exit_flag true to break the while loop
