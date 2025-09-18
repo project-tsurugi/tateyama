@@ -155,7 +155,7 @@ public:
     [[nodiscard]] std::optional<std::string_view> username() const noexcept { return "username"; }
     [[nodiscard]] tateyama::api::server::user_type user_type() const noexcept { return tateyama::api::server::user_type::administrator; }
 };
-    
+
 class stream_session_test : public ::testing::Test {
     void SetUp() override {
         session_bridge_ = std::make_shared<session::resource::bridge>();

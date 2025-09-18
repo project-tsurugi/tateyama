@@ -33,6 +33,21 @@ namespace tateyama::session::service {
 using tateyama::api::server::request;
 using tateyama::api::server::response;
 
+/**
+ * @brief Handles a session service request.
+ *
+ * This function processes the incoming request and populates the response accordingly.
+ *
+ * @param req The incoming request object.
+ * @param res The response object to populate.
+ * @return true if the request was handled successfully; false otherwise.
+ *
+ * @note
+ * Any exceptions of type std::runtime_error thrown when a permission error occurs
+ * during request processing are caught internally. In such cases, an error response
+ * is set in @p res, and the function returns false. Callers should not expect
+ * std::runtime_error exceptions to propagate from this function.
+ */
 bool tateyama::session::service::core::operator()(const std::shared_ptr<request>& req, const std::shared_ptr<response>& res) {
     try {
 
