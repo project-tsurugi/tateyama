@@ -129,44 +129,10 @@ protected:
             invoke_resource_(client);
         }
     };
-    std::function<void(ipc_client&)> session_{
-        [this](ipc_client& client){
-            tateyama::proto::session::request::Request request{};
-            (void) request.mutable_session_list();
-            client.send(tateyama::framework::service_id_session, request.SerializeAsString());
-
-            std::string res{};
-            tateyama::proto::framework::response::Header::PayloadType type{};
-            client.receive(res, type);
-
-            EXPECT_EQ(type, expected_type_);
-        }
-    };
 };
 
-TEST_F(ipc_service_admin_test, inclusive) {
-    ipc_test_env::setup("[authentication]\n"
-                        "  enabled=true\n"
-                        "  administrators=admin,user\n");
-
-    expected_type_ = tateyama::proto::framework::response::Header::SERVICE_RESULT;
-    
-    invoke_resource_ = session_;
-    ipc_service_admin_test_server_client sc { cfg_, client_ };
-    sc.start_server_client();
-}
-
-TEST_F(ipc_service_admin_test, exclusive) {
-    ipc_test_env::setup("[authentication]\n"
-                        "  enabled=true\n"
-                        "  administrators=admin\n");
-
-    expected_type_ = tateyama::proto::framework::response::Header::SERVER_DIAGNOSTICS;
-
-    invoke_resource_ = session_;
-    ipc_service_admin_test_server_client sc { cfg_, client_ };
-    sc.start_server_client();
-}
+// The permission model for session services has changed,
+// and verification of its operation has been transferred to ipc_service_session_test.
 
 TEST_F(ipc_service_admin_test, no_auth) {
     ipc_test_env::setup("[authentication]\n"
@@ -174,7 +140,18 @@ TEST_F(ipc_service_admin_test, no_auth) {
 
     expected_type_ = tateyama::proto::framework::response::Header::SERVICE_RESULT;
 
-    invoke_resource_ = session_;
+    invoke_resource_ = [this](ipc_client& client){
+        tateyama::proto::metrics::request::Request request{};
+        (void) request.mutable_list();
+        client.send(tateyama::framework::service_id_metrics, request.SerializeAsString());
+
+        std::string res{};
+        tateyama::proto::framework::response::Header::PayloadType type{};
+        client.receive(res, type);
+
+        EXPECT_EQ(type, expected_type_);
+    };
+
     ipc_service_admin_test_server_client sc { cfg_, client_ };
     sc.start_server_client();
 }

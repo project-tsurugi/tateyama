@@ -81,32 +81,32 @@ public:
     /**
      * @brief handle a SessionList command
      */
-    std::optional<error_descriptor> list(::tateyama::proto::session::response::SessionList_Success* mutable_success, std::size_t session_id = 0);
+    std::optional<error_descriptor> list(::tateyama::proto::session::response::SessionList_Success* mutable_success, std::size_t session_id, const tateyama::api::server::session_info& session_info);
 
     /**
      * @brief handle a SessionGet command
      */
-    std::optional<error_descriptor> get(std::string_view session_specifier, ::tateyama::proto::session::response::SessionGet_Success* mutable_success);
+    std::optional<error_descriptor> get(std::string_view session_specifier, ::tateyama::proto::session::response::SessionGet_Success* mutable_success, const tateyama::api::server::session_info& session_info);
     
     /**
      * @brief handle a SessionShutdown command
      */
-    std::optional<error_descriptor> session_shutdown(std::string_view session_specifier, shutdown_request_type type, std::shared_ptr<session_context>& context);
+    std::optional<error_descriptor> session_shutdown(std::string_view session_specifier, shutdown_request_type type, std::shared_ptr<session_context>& context, const tateyama::api::server::session_info& session_info);
 
     /**
      * @brief handle a SessionSetVariable command
      */
-    [[nodiscard]] std::optional<error_descriptor> set_valiable(std::string_view session_specifier, std::string_view name, std::string_view value);
+    [[nodiscard]] std::optional<error_descriptor> set_valiable(std::string_view session_specifier, std::string_view name, std::string_view value, const tateyama::api::server::session_info& session_info);
 
     /**
      * @brief handle a SessionSetVariable command that has not value field, means unset the session variable
      */
-    [[nodiscard]] std::optional<error_descriptor> unset_valiable(std::string_view session_specifier, std::string_view name);
+    [[nodiscard]] std::optional<error_descriptor> unset_valiable(std::string_view session_specifier, std::string_view name, const tateyama::api::server::session_info& session_info);
 
     /**
      * @brief handle a SessionGetVariable command
      */
-    [[nodiscard]] std::optional<error_descriptor> get_valiable(std::string_view session_specifier, std::string_view name, ::tateyama::proto::session::response::SessionGetVariable& get_variable);
+    [[nodiscard]] std::optional<error_descriptor> get_valiable(std::string_view session_specifier, std::string_view name, ::tateyama::proto::session::response::SessionGetVariable& get_variable, const tateyama::api::server::session_info& session_info);
 
     /**
      * @brief relays to container::register_session()

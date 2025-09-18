@@ -82,16 +82,21 @@ std::optional<error_descriptor> bridge::find_only_one_session(std::string_view s
     return std::nullopt;
 }
 
-std::optional<error_descriptor> bridge::list(::tateyama::proto::session::response::SessionList_Success* mutable_success, std::size_t session_id) {
-    sessions_core_impl_.container_.foreach([mutable_success, session_id](const std::shared_ptr<session_context>& entry){
+std::optional<error_descriptor> bridge::list(::tateyama::proto::session::response::SessionList_Success* mutable_success, std::size_t session_id, const tateyama::api::server::session_info& session_info) {
+    sessions_core_impl_.container_.foreach([mutable_success, session_id, &session_info](const std::shared_ptr<session_context>& entry){
         if (session_id != (entry->info()).id()) {
-            set_entry(mutable_success->add_entries(), entry->info());
+            auto& info = entry->info();
+
+            if (session_info.user_type() == tateyama::api::server::user_type::administrator ||
+                session_info.username() == info.username()) {
+                set_entry(mutable_success->add_entries(), info);
+            }
         }
     });
     return std::nullopt;
 }
 
-std::optional<error_descriptor> bridge::get(std::string_view session_specifier, ::tateyama::proto::session::response::SessionGet_Success* mutable_success) {
+std::optional<error_descriptor> bridge::get(std::string_view session_specifier, ::tateyama::proto::session::response::SessionGet_Success* mutable_success, const tateyama::api::server::session_info& session_info) {
     session_context::numeric_id_type numeric_id{};
     try {
         auto opt = find_only_one_session(session_specifier, numeric_id);
@@ -106,7 +111,12 @@ std::optional<error_descriptor> bridge::get(std::string_view session_specifier, 
     try {
         context = sessions_core_impl_.container_.find_session(numeric_id);
         if (context) {
-            set_entry(mutable_success->mutable_entry(), context->info());
+            auto& info = context->info();
+            if (session_info.user_type() != tateyama::api::server::user_type::administrator &&
+                session_info.username() != info.username()) {
+                throw std::runtime_error("no permission to access the session specified");
+            }
+            set_entry(mutable_success->mutable_entry(), info);
             return std::nullopt;
         }
     } catch (std::invalid_argument &ex) {
@@ -115,7 +125,7 @@ std::optional<error_descriptor> bridge::get(std::string_view session_specifier, 
     return std::make_pair(tateyama::proto::session::diagnostic::ErrorCode::SESSION_NOT_FOUND, "cannot find session by that session specifier");
 }
 
-std::optional<error_descriptor> bridge::session_shutdown(std::string_view session_specifier, shutdown_request_type type, std::shared_ptr<session_context>& context) {
+std::optional<error_descriptor> bridge::session_shutdown(std::string_view session_specifier, shutdown_request_type type, std::shared_ptr<session_context>& context, const tateyama::api::server::session_info& session_info) {
     session_context::numeric_id_type numeric_id{};
     try {
         auto opt = find_only_one_session(session_specifier, numeric_id);
@@ -129,6 +139,11 @@ std::optional<error_descriptor> bridge::session_shutdown(std::string_view sessio
     try {
         context = sessions_core_impl_.container_.find_session(numeric_id);
         if (context) {
+            if (session_info.user_type() != tateyama::api::server::user_type::administrator &&
+                session_info.username() != context->info().username()) {
+                throw std::runtime_error("no permission to access the session specified");
+            }
+
             auto rv = context->shutdown_request(type);
             if (rv) {
                 return std::nullopt;
@@ -158,7 +173,7 @@ private:
     bool data{};
 };
 
-std::optional<error_descriptor> bridge::set_valiable(std::string_view session_specifier, std::string_view name, std::string_view value) {
+std::optional<error_descriptor> bridge::set_valiable(std::string_view session_specifier, std::string_view name, std::string_view value, const tateyama::api::server::session_info& session_info) {
     session_context::numeric_id_type numeric_id{};
     try {
         auto opt = find_only_one_session(session_specifier, numeric_id);
@@ -173,6 +188,12 @@ std::optional<error_descriptor> bridge::set_valiable(std::string_view session_sp
     try {
         context = sessions_core_impl_.container_.find_session(numeric_id);
         if (context) {
+            auto& info = context->info();
+            if (session_info.user_type() != tateyama::api::server::user_type::administrator &&
+                session_info.username() != info.username()) {
+                throw std::runtime_error("no permission to access the session specified");
+            }
+
             auto& vs = context->variables();
             if (!vs.exists(name)) {
                 return std::make_pair(tateyama::proto::session::diagnostic::ErrorCode::SESSION_VARIABLE_NOT_DECLARED, "session variable by that name has not been declared");
@@ -236,7 +257,7 @@ std::optional<error_descriptor> bridge::set_valiable(std::string_view session_sp
     return std::make_pair(tateyama::proto::session::diagnostic::ErrorCode::SESSION_NOT_FOUND, "cannot find session by that session specifier");
 }
 
-std::optional<error_descriptor> bridge::unset_valiable(std::string_view session_specifier, std::string_view name) {
+std::optional<error_descriptor> bridge::unset_valiable(std::string_view session_specifier, std::string_view name, const tateyama::api::server::session_info& session_info) {
     session_context::numeric_id_type numeric_id{};
     try {
         auto opt = find_only_one_session(session_specifier, numeric_id);
@@ -250,6 +271,11 @@ std::optional<error_descriptor> bridge::unset_valiable(std::string_view session_
     std::shared_ptr<session_context> context{};
     context = sessions_core_impl_.container_.find_session(numeric_id);
     if (context) {
+        if (session_info.user_type() != tateyama::api::server::user_type::administrator &&
+            session_info.username() != context->info().username()) {
+            throw std::runtime_error("no permission to access the session specified");
+        }
+
         auto& vs = context->variables();
         if (!vs.exists(name)) {
             return std::make_pair(tateyama::proto::session::diagnostic::ErrorCode::SESSION_VARIABLE_NOT_DECLARED, "session variable by that name has not been declared");
@@ -290,7 +316,7 @@ private:
     ::tateyama::proto::session::response::SessionGetVariable_Success* mutable_success_;
 };
 
-std::optional<error_descriptor> bridge::get_valiable(std::string_view session_specifier, std::string_view name, ::tateyama::proto::session::response::SessionGetVariable& get_variable) {
+std::optional<error_descriptor> bridge::get_valiable(std::string_view session_specifier, std::string_view name, ::tateyama::proto::session::response::SessionGetVariable& get_variable, const tateyama::api::server::session_info& session_info) {
     session_context::numeric_id_type numeric_id{};
     try {
         auto opt = find_only_one_session(session_specifier, numeric_id);
@@ -304,6 +330,11 @@ std::optional<error_descriptor> bridge::get_valiable(std::string_view session_sp
     try {
         auto context = sessions_core_impl_.container_.find_session(numeric_id);
         if (context) {
+            if (session_info.user_type() != tateyama::api::server::user_type::administrator &&
+                session_info.username() != context->info().username()) {
+                throw std::runtime_error("no permission to access the session specified");
+            }
+
             auto& vs = context->variables();
             if (!vs.exists(name)) {
                 return std::make_pair(tateyama::proto::session::diagnostic::ErrorCode::SESSION_VARIABLE_NOT_DECLARED, "");

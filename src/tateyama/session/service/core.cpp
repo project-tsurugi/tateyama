@@ -33,148 +33,165 @@ namespace tateyama::session::service {
 using tateyama::api::server::request;
 using tateyama::api::server::response;
 
+/**
+ * @brief Handles a session service request.
+ *
+ * This function processes the incoming request and populates the response accordingly.
+ *
+ * @param req The incoming request object.
+ * @param res The response object to populate.
+ * @return true if the request was handled successfully; false otherwise.
+ *
+ * @note
+ * Any exceptions of type std::runtime_error thrown when a permission error occurs
+ * during request processing are caught internally. In such cases, an error response
+ * is set in @p res, and the function returns false. Callers should not expect
+ * std::runtime_error exceptions to propagate from this function.
+ */
 bool tateyama::session::service::core::operator()(const std::shared_ptr<request>& req, const std::shared_ptr<response>& res) {
-    if (req->session_info().user_type() != tateyama::api::server::user_type::administrator) {
+    try {
+
+        bool return_code =true;
+        tateyama::proto::session::request::Request rq{};
+
+        auto data = req->payload();
+        if(!rq.ParseFromArray(data.data(), static_cast<int>(data.size()))) {
+            LOG(ERROR) << "request parse error";
+            return false;
+        }
+
+        auto session_id = req->session_id();
+        res->session_id(session_id);
+        switch(rq.command_case()) {
+        case tateyama::proto::session::request::Request::kSessionGet:
+        {
+            tateyama::proto::session::response::SessionGet rs{};
+            auto& cmd = rq.session_get();
+            auto rv = resource_->get(cmd.session_specifier(), rs.mutable_success(), req->session_info());
+            if (!rv) {
+                res->body(rs.SerializeAsString());
+            } else {
+                send_error<tateyama::proto::session::response::SessionGet>(res, rv.value());
+                return_code = false;
+            }
+            rs.clear_success();
+            break;
+        }
+
+        case tateyama::proto::session::request::Request::kSessionList:
+        {
+            tateyama::proto::session::response::SessionList rs{};
+            auto rv = resource_->list(rs.mutable_success(), session_id, req->session_info());
+            if (!rv) {
+                res->body(rs.SerializeAsString());
+            } else {
+                send_error<tateyama::proto::session::response::SessionList>(res, rv.value());
+                return_code = false;
+            }
+            rs.clear_success();
+            break;
+        }
+
+        case tateyama::proto::session::request::Request::kSessionShutdown:
+        {
+            auto& cmd = rq.session_shutdown();
+            tateyama::session::shutdown_request_type type{};
+            switch (cmd.request_type()) {
+            case tateyama::proto::session::request::SessionShutdownType::GRACEFUL:
+                type = tateyama::session::shutdown_request_type::graceful;
+                break;
+            case tateyama::proto::session::request::SessionShutdownType::SESSION_SHUTDOWN_TYPE_NOT_SET:
+            case tateyama::proto::session::request::SessionShutdownType::FORCEFUL:
+                type = tateyama::session::shutdown_request_type::forceful;
+                break;
+            default:
+                send_error<tateyama::proto::session::response::SessionShutdown>(res, std::make_pair(tateyama::proto::session::diagnostic::ErrorCode::INVALID_ARGUMENT, "invalid session shutdown type"));
+                return false;
+            }
+            std::shared_ptr<tateyama::session::session_context> session_context{};
+            auto rv = resource_->session_shutdown(cmd.session_specifier(), type, session_context, req->session_info());
+            if (!rv) {
+                std::thread th([res, session_context]{
+                    while (true) {
+                        auto* session_context_impl = reinterpret_cast<tateyama::session::resource::session_context_impl*>(session_context.get());  // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
+                        auto worker = session_context_impl->get_session_worker();
+                        if (!worker) {
+                            break;
+                        }
+                        if (worker->is_terminated()) {
+                            break;
+                        }
+                    }
+                    tateyama::proto::session::response::SessionShutdown rs{};
+                    rs.mutable_success();
+                    res->body(rs.SerializeAsString());
+                    rs.clear_success();
+                });
+                th.detach();
+            } else {
+                send_error<tateyama::proto::session::response::SessionShutdown>(res, rv.value());
+                return false;
+            }
+            break;
+        }
+
+        case tateyama::proto::session::request::Request::kSessionSetVariable:
+        {
+            auto& cmd = rq.session_set_variable();
+            if (cmd.value_opt_case() == tateyama::proto::session::request::SessionSetVariable::ValueOptCase::kValue) {
+                auto rv = resource_->set_valiable(cmd.session_specifier(), cmd.name(), cmd.value(), req->session_info());
+                if (!rv) {
+                    tateyama::proto::session::response::SessionSetVariable rs{};
+                    rs.mutable_success();
+                    res->body(rs.SerializeAsString());
+                    rs.clear_success();
+                } else {
+                    send_error<tateyama::proto::session::response::SessionSetVariable>(res, rv.value());
+                    return false;
+                }
+            } else {
+                auto rv = resource_->unset_valiable(cmd.session_specifier(), cmd.name(), req->session_info());
+                if (!rv) {
+                    tateyama::proto::session::response::SessionSetVariable rs{};
+                    rs.mutable_success();
+                    res->body(rs.SerializeAsString());
+                    rs.clear_success();
+                } else {
+                    send_error<tateyama::proto::session::response::SessionSetVariable>(res, rv.value());
+                    return false;
+                }
+            }
+            break;
+        }
+
+        case tateyama::proto::session::request::Request::kSessionGetVariable:
+        {
+            tateyama::proto::session::response::SessionGetVariable rs{};
+            auto& cmd = rq.session_get_variable();
+            auto rv = resource_->get_valiable(cmd.session_specifier(), cmd.name(), rs, req->session_info());
+            if (!rv) {
+                res->body(rs.SerializeAsString());
+            } else {
+                send_error<tateyama::proto::session::response::SessionGetVariable>(res, rv.value());
+                return_code = false;
+            }
+            rs.clear_success();
+            break;
+        }
+
+        case tateyama::proto::session::request::Request::COMMAND_NOT_SET:
+            return false;
+        }
+
+        return return_code;
+
+    } catch (std::runtime_error &ex) {
         tateyama::proto::diagnostics::Record error{};
         error.set_code(tateyama::proto::diagnostics::Code::PERMISSION_ERROR);
-        error.set_message("administrator privilege is required");
+        error.set_message(ex.what());
         res->error(error);
         return false;
     }
-
-    bool return_code =true;
-    tateyama::proto::session::request::Request rq{};
-
-    auto data = req->payload();
-    if(!rq.ParseFromArray(data.data(), static_cast<int>(data.size()))) {
-        LOG(ERROR) << "request parse error";
-        return false;
-    }
-
-    auto session_id = req->session_id();
-    res->session_id(session_id);
-    switch(rq.command_case()) {
-    case tateyama::proto::session::request::Request::kSessionGet:
-    {
-        tateyama::proto::session::response::SessionGet rs{};
-        auto& cmd = rq.session_get();
-        auto rv = resource_->get(cmd.session_specifier(), rs.mutable_success());
-        if (!rv) {
-            res->body(rs.SerializeAsString());
-        } else {
-            send_error<tateyama::proto::session::response::SessionGet>(res, rv.value());
-            return_code = false;
-        }
-        rs.clear_success();
-        break;
-    }
-
-    case tateyama::proto::session::request::Request::kSessionList:
-    {
-        tateyama::proto::session::response::SessionList rs{};
-        auto rv = resource_->list(rs.mutable_success(), session_id);
-        if (!rv) {
-            res->body(rs.SerializeAsString());
-        } else {
-            send_error<tateyama::proto::session::response::SessionList>(res, rv.value());
-            return_code = false;
-        }
-        rs.clear_success();
-        break;
-    }
-
-    case tateyama::proto::session::request::Request::kSessionShutdown:
-    {
-        auto& cmd = rq.session_shutdown();
-        tateyama::session::shutdown_request_type type{};
-        switch (cmd.request_type()) {
-        case tateyama::proto::session::request::SessionShutdownType::GRACEFUL:
-            type = tateyama::session::shutdown_request_type::graceful;
-            break;
-        case tateyama::proto::session::request::SessionShutdownType::SESSION_SHUTDOWN_TYPE_NOT_SET:
-        case tateyama::proto::session::request::SessionShutdownType::FORCEFUL:
-            type = tateyama::session::shutdown_request_type::forceful;
-            break;
-        default:
-            send_error<tateyama::proto::session::response::SessionShutdown>(res, std::make_pair(tateyama::proto::session::diagnostic::ErrorCode::INVALID_ARGUMENT, "invalid session shutdown type"));
-            return false;
-        }
-        std::shared_ptr<tateyama::session::session_context> session_context{};
-        auto rv = resource_->session_shutdown(cmd.session_specifier(), type, session_context);
-        if (!rv) {
-            std::thread th([res, session_context]{
-                while (true) {
-                    auto* session_context_impl = reinterpret_cast<tateyama::session::resource::session_context_impl*>(session_context.get());  // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
-                    auto worker = session_context_impl->get_session_worker();
-                    if (!worker) {
-                        break;
-                    }
-                    if (worker->is_terminated()) {
-                        break;
-                    }
-                }
-                tateyama::proto::session::response::SessionShutdown rs{};
-                rs.mutable_success();
-                res->body(rs.SerializeAsString());
-                rs.clear_success();
-            });
-            th.detach();
-        } else {
-            send_error<tateyama::proto::session::response::SessionShutdown>(res, rv.value());
-            return false;
-        }
-        break;
-    }
-
-    case tateyama::proto::session::request::Request::kSessionSetVariable:
-    {
-        auto& cmd = rq.session_set_variable();
-        if (cmd.value_opt_case() == tateyama::proto::session::request::SessionSetVariable::ValueOptCase::kValue) {
-            auto rv = resource_->set_valiable(cmd.session_specifier(), cmd.name(), cmd.value());
-            if (!rv) {
-                tateyama::proto::session::response::SessionSetVariable rs{};
-                rs.mutable_success();
-                res->body(rs.SerializeAsString());
-                rs.clear_success();
-            } else {
-                send_error<tateyama::proto::session::response::SessionSetVariable>(res, rv.value());
-                return false;
-            }
-        } else {
-            auto rv = resource_->unset_valiable(cmd.session_specifier(), cmd.name());
-            if (!rv) {
-                tateyama::proto::session::response::SessionSetVariable rs{};
-                rs.mutable_success();
-                res->body(rs.SerializeAsString());
-                rs.clear_success();
-            } else {
-                send_error<tateyama::proto::session::response::SessionSetVariable>(res, rv.value());
-                return false;
-            }
-        }
-        break;
-    }
-
-    case tateyama::proto::session::request::Request::kSessionGetVariable:
-    {
-        tateyama::proto::session::response::SessionGetVariable rs{};
-        auto& cmd = rq.session_get_variable();
-        auto rv = resource_->get_valiable(cmd.session_specifier(), cmd.name(), rs);
-        if (!rv) {
-            res->body(rs.SerializeAsString());
-        } else {
-            send_error<tateyama::proto::session::response::SessionGetVariable>(res, rv.value());
-            return_code = false;
-        }
-        rs.clear_success();
-        break;
-    }
-
-    case tateyama::proto::session::request::Request::COMMAND_NOT_SET:
-        return false;
-    }
-
-    return return_code;
 }
 
 core::core(std::shared_ptr<tateyama::api::configuration::whole> cfg) :
