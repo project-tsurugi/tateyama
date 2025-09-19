@@ -113,8 +113,10 @@ class ipc_service_session_test: public ipc_gtest_base {
     }
 
 protected:
-    boost::barrier sync_begin_{6};
+    boost::barrier sync_begin_{2};
     boost::barrier sync_end_{6};
+    boost::barrier sync_admin_aother_{4};  // admin(2) + another(2)
+    boost::barrier sync_another_user_{3};  // another(2) + user(1)
     std::size_t expected_entry_size_{};
     tateyama::proto::framework::response::Header::PayloadType expected_type_{};
 
@@ -256,21 +258,26 @@ protected:
     std::function<void(ipc_client&)> client_admin_{
         [this](ipc_client& client){
             handshake(client, "admin", "test");
-            sync_begin_.wait();
-            sync_end_.wait();
-        }
-    };
-    std::function<void(ipc_client&)> client_user_{
-        [this](ipc_client& client){
-            handshake(client, "user", "pass");
-            sync_begin_.wait();
+            sync_admin_aother_.wait();
+
             sync_end_.wait();
         }
     };
     std::function<void(ipc_client&)> client_another_{
         [this](ipc_client& client){
+            sync_admin_aother_.wait();
             handshake(client, "another", "pass");
+            sync_another_user_.wait();
+
+            sync_end_.wait();
+        }
+    };
+    std::function<void(ipc_client&)> client_user_{
+        [this](ipc_client& client){
+            sync_another_user_.wait();
+            handshake(client, "user", "pass");
             sync_begin_.wait();
+
             sync_end_.wait();
         }
     };
