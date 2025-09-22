@@ -45,10 +45,39 @@ public:
     }
 };
 
+class synced_user_client : public ipc_client {
+public:
+    synced_user_client(std::shared_ptr<tateyama::api::configuration::whole> const &cfg, boost::barrier& finish)
+        : ipc_client(cfg, true), finish_(finish) {
+    }
+    void finish_wait() {
+        finish_.wait();
+    }
+
+private:
+    boost::barrier& finish_;
+};
+class synced_another_client : public ipc_client {
+public:
+    synced_another_client(std::shared_ptr<tateyama::api::configuration::whole> const &cfg, boost::barrier& end, boost::barrier& finish)
+        : ipc_client(cfg, true), end_(end), finish_(finish) {
+    }
+    void end_wait() {
+        end_.wait();
+    }
+    void finish_wait() {
+        finish_.wait();
+    }
+
+private:
+    boost::barrier& end_;
+    boost::barrier& finish_;
+};
+
 class ipc_service_session_test_server_client: public server_client_gtest_base {
 public:
     ipc_service_session_test_server_client(std::shared_ptr<tateyama::api::configuration::whole> const &cfg,
-                                           std::function<void(ipc_client&)> f, std::function<void(ipc_client&)> a, std::function<void(ipc_client&)> u, std::function<void(ipc_client&)> o)
+                                           std::function<void(synced_user_client&)> f, std::function<void(synced_another_client&)> a, std::function<void(synced_another_client&)> u, std::function<void(synced_another_client&)> o)
         : server_client_gtest_base(cfg), f_(std::move(f)), a_(std::move(a)), u_(std::move(u)), o_(std::move(o)) {
     }
 
@@ -70,27 +99,35 @@ public:
     }
 
     void client_thread() override {
+        boost::barrier sync_admin{3};   // admin(2) + 1
+        boost::barrier sync_another{3};  // another(2) + 1
+        boost::barrier sync_user{2};    // user(1) + 1
+        boost::barrier sync_finish{6};  // admin(2) + another(2) + user(1) + checker(1)
+
         std::thread threads[5];
         for (int i = 0; i < 2; i++ ) {
-            threads[i] = std::thread([this]() {
-                ipc_client client { cfg_, true };  // client that skips handshake operation
+            threads[i] = std::thread([this, &sync_admin, &sync_finish]() {
+                synced_another_client client { cfg_, sync_admin, sync_finish };  // client that skips handshake operation
                 a_(client);
             });
         }
+        sync_admin.wait();
         for (int i = 2; i < 4; i++ ) {
-            threads[i] = std::thread([this]() {
-                ipc_client client { cfg_, true };  // client that skips handshake operation
+            threads[i] = std::thread([this, &sync_another, &sync_finish]() {
+                synced_another_client client { cfg_, sync_another, sync_finish };  // client that skips handshake operation
                 o_(client);
             });
         }
+        sync_another.wait();
         for (int i = 4; i < 5; i++ ) {
-            threads[i] = std::thread([this]() {
-                ipc_client client { cfg_, true };  // client that skips handshake operation
+            threads[i] = std::thread([this, &sync_user, &sync_finish]() {
+                synced_another_client client { cfg_, sync_user, sync_finish };  // client that skips handshake operation
                 u_(client);
             });
         }
 
-        ipc_client client { cfg_, true };  // client that skips handshake operation
+        sync_user.wait();
+        synced_user_client client { cfg_, sync_finish };  // client that skips handshake operation
         f_(client);
 
         for (int i = 0; i < 5; i++ ) {
@@ -99,10 +136,10 @@ public:
     }
 
 private:
-    std::function<void(ipc_client&)> f_;
-    std::function<void(ipc_client&)> a_;
-    std::function<void(ipc_client&)> u_;
-    std::function<void(ipc_client&)> o_;
+    std::function<void(synced_user_client&)> f_;
+    std::function<void(synced_another_client&)> a_;
+    std::function<void(synced_another_client&)> u_;
+    std::function<void(synced_another_client&)> o_;
 };
 
 class ipc_service_session_test: public ipc_gtest_base {
@@ -113,10 +150,6 @@ class ipc_service_session_test: public ipc_gtest_base {
     }
 
 protected:
-    boost::barrier sync_begin_{2};
-    boost::barrier sync_end_{6};
-    boost::barrier sync_admin_aother_{4};  // admin(2) + another(2)
-    boost::barrier sync_another_user_{3};  // another(2) + user(1)
     std::size_t expected_entry_size_{};
     tateyama::proto::framework::response::Header::PayloadType expected_type_{};
 
@@ -155,13 +188,11 @@ protected:
                 FAIL();
             }
             EXPECT_EQ(response.result_case(), tateyama::proto::endpoint::response::Handshake::kSuccess);
-
     }
 
     // Works on forked process.
-    std::function<void(ipc_client&)> client_list_{
-        [this](ipc_client& client){
-            sync_begin_.wait();
+    std::function<void(synced_user_client&)> client_list_{
+        [this](synced_user_client& client){
             handshake(client, "user", "pass");
 
             tateyama::proto::session::request::Request request{};
@@ -180,12 +211,11 @@ protected:
                 FAIL();
             }
             EXPECT_EQ(response.success().entries_size(), expected_entry_size_);
-            sync_end_.wait();
+            client.finish_wait();
         }
     };
-    std::function<void(ipc_client&)> client_get_{
-        [this](ipc_client& client){
-            sync_begin_.wait();
+    std::function<void(synced_user_client&)> client_get_{
+        [this](synced_user_client& client){
             handshake(client, "user", "pass");
 
             tateyama::proto::session::request::Request request{};
@@ -197,12 +227,11 @@ protected:
             tateyama::proto::framework::response::Header::PayloadType type{};
             client.receive(res, type);
             EXPECT_EQ(expected_type_, type);
-            sync_end_.wait();
+            client.finish_wait();
         }
     };
-    std::function<void(ipc_client&)> client_shutdown_{
-        [this](ipc_client& client){
-            sync_begin_.wait();
+    std::function<void(synced_user_client&)> client_shutdown_{
+        [this](synced_user_client& client){
             handshake(client, "user", "pass");
 
             tateyama::proto::session::request::Request request{};
@@ -215,12 +244,11 @@ protected:
             tateyama::proto::framework::response::Header::PayloadType type{};
             client.receive(res, type);
             EXPECT_EQ(expected_type_, type);
-            sync_end_.wait();
+            client.finish_wait();
         }
     };
-    std::function<void(ipc_client&)> client_set_variable_{
-        [this](ipc_client& client){
-            sync_begin_.wait();
+    std::function<void(synced_user_client&)> client_set_variable_{
+        [this](synced_user_client& client){
             handshake(client, "user", "pass");
 
             tateyama::proto::session::request::Request request{};
@@ -234,12 +262,11 @@ protected:
             tateyama::proto::framework::response::Header::PayloadType type{};
             client.receive(res, type);
             EXPECT_EQ(expected_type_, type);
-            sync_end_.wait();
+            client.finish_wait();
         }
     };
-    std::function<void(ipc_client&)> client_get_variable_{
-        [this](ipc_client& client){
-            sync_begin_.wait();
+    std::function<void(synced_user_client&)> client_get_variable_{
+        [this](synced_user_client& client){
             handshake(client, "user", "pass");
 
             tateyama::proto::session::request::Request request{};
@@ -252,33 +279,31 @@ protected:
             tateyama::proto::framework::response::Header::PayloadType type{};
             client.receive(res, type);
             EXPECT_EQ(expected_type_, type);
-            sync_end_.wait();
+            client.finish_wait();
         }
     };
-    std::function<void(ipc_client&)> client_admin_{
-        [this](ipc_client& client){
+    std::function<void(synced_another_client&)> client_admin_{
+        [this](synced_another_client& client){
             handshake(client, "admin", "test");
-            sync_admin_aother_.wait();
+            client.end_wait();
 
-            sync_end_.wait();
+            client.finish_wait();
         }
     };
-    std::function<void(ipc_client&)> client_another_{
-        [this](ipc_client& client){
-            sync_admin_aother_.wait();
+    std::function<void(synced_another_client&)> client_another_{
+        [this](synced_another_client& client){
             handshake(client, "another", "pass");
-            sync_another_user_.wait();
+            client.end_wait();
 
-            sync_end_.wait();
+            client.finish_wait();
         }
     };
-    std::function<void(ipc_client&)> client_user_{
-        [this](ipc_client& client){
-            sync_another_user_.wait();
+    std::function<void(synced_another_client&)> client_user_{
+        [this](synced_another_client& client){
             handshake(client, "user", "pass");
-            sync_begin_.wait();
+            client.end_wait();
 
-            sync_end_.wait();
+            client.finish_wait();
         }
     };
 };
