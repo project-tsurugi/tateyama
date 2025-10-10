@@ -201,6 +201,10 @@ void stream_worker::run()  // NOLINT(readability-function-cognitive-complexity)
 
         case tateyama::endpoint::stream::stream_socket::await_result::socket_closed:
             VLOG_LP(log_trace) << "socket has been closed by the client: session_id = " << std::to_string(session_id());
+            while (!is_completed()) {
+                care_reqreses();
+                std::this_thread::sleep_for(poll_interval);
+            }
             break;
 
         default:  // some error

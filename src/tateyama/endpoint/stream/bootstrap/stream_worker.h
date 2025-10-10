@@ -17,6 +17,7 @@
 
 #include <future>
 #include <thread>
+#include <chrono>
 
 #include "tateyama/endpoint/common/worker_common.h"
 
@@ -46,6 +47,7 @@ class alignas(64) stream_worker : public tateyama::endpoint::common::worker_comm
     std::unique_ptr<stream_socket> session_stream_;
     const tateyama::endpoint::common::configuration& conf_;
     const bool decline_;
+    static constexpr std::chrono::duration poll_interval = std::chrono::milliseconds(20);
 
     void notify_of_decline(tateyama::proto::endpoint::request::Request& rq, tateyama::api::server::response* response) {
         switch (rq.command_case()) {
