@@ -35,7 +35,6 @@ tateyama::status ipc_response::body(std::string_view body) {
             std::dynamic_pointer_cast<ipc_data_channel>(data_channel_)->shutdown();  // Guard against improper operation
             data_channel_ = nullptr;
         }
-        clean_up_();
 
         std::stringstream ss{};
         endpoint::common::header_content arg{};
@@ -48,6 +47,7 @@ tateyama::status ipc_response::body(std::string_view body) {
         auto s = ss.str();
         server_wire_.get_response_wire().write(s.data(), tateyama::common::wire::response_header(index_, s.length(), RESPONSE_BODY), worker_ != std::this_thread::get_id());
         set_completed();
+        clean_up_();
         return tateyama::status::ok;
     }
     LOG_LP(ERROR) << "response is already completed";
@@ -82,7 +82,6 @@ void ipc_response::error(proto::diagnostics::Record const& record) {
             std::dynamic_pointer_cast<ipc_data_channel>(data_channel_)->shutdown();  // Guard against improper operation
             data_channel_ = nullptr;
         }
-        clean_up_();
 
         std::string s{};
         if(record.SerializeToString(&s)) {
@@ -92,6 +91,7 @@ void ipc_response::error(proto::diagnostics::Record const& record) {
             server_diagnostics("");
         }
         set_completed();
+        clean_up_();
     } else {
         LOG_LP(ERROR) << "response is already completed";
     }
