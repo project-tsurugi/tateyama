@@ -48,6 +48,8 @@ file(GLOB SOURCES
         "tateyama/request/service/*.cpp"
         "tateyama/authentication/resource/*.cpp"
         "tateyama/authentication/service/*.cpp"
+        "tateyama/grpc/*.cpp"
+        "tateyama/grpc/server/*.cpp"
 )
 
 if (ENABLE_ALTIMETER)
@@ -103,6 +105,7 @@ target_link_libraries(${ENGINE}
         PUBLIC sharksfin-${SHARKSFIN_IMPLEMENTATION}
         PRIVATE takatori
         PRIVATE limestone
+        PRIVATE data-relay-grpc
         PRIVATE tbb
         PRIVATE numa
         PRIVATE Boost::boost
@@ -117,6 +120,8 @@ target_link_libraries(${ENGINE}
         PRIVATE rt # for shm
         PRIVATE crypto
         PRIVATE jwt
+        PRIVATE grpc++
+        PRIVATE grpc
 )
 
 if(MC_QUEUE)
