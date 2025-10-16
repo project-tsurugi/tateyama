@@ -50,6 +50,7 @@
 #include <tateyama/request/service/bridge.h>
 #include <tateyama/authentication/service/bridge.h>
 #include <tateyama/authentication/resource/bridge.h>
+#include "tateyama/grpc/blob_relay_service_resource.h"
 
 namespace tateyama::framework {
 
@@ -191,6 +192,7 @@ void add_core_components(server& svr) {
     svr.add_resource(std::make_shared<datastore::resource::bridge>());
     svr.add_resource(std::make_shared<session::resource::bridge>());
     svr.add_resource(std::make_shared<authentication::resource::bridge>());
+    svr.add_resource(std::make_shared<grpc::blob_relay_service_resource>());
 
     svr.add_service(std::make_shared<framework::routing_service>());
     svr.add_service(std::make_shared<metrics::service::bridge>());

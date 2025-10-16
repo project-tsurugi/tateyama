@@ -74,6 +74,7 @@ public:
     void end_backup();
     limestone::status restore_backup(std::string_view, bool);
     limestone::status restore_backup(std::string_view, std::vector<limestone::api::file_set_entry>&);
+    limestone::api::datastore& datastore() const noexcept;
 
     /**
      * @see `tateyama::framework::component::label()`
