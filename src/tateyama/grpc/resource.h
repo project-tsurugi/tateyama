@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2023 Project Tsurugi.
+ * Copyright 2025-2025 Project Tsurugi.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,27 +15,26 @@
  */
 #pragma once
 
-#include <tateyama/framework/component_ids.h>
+#include <memory>
+#include <thread>
+
 #include <tateyama/framework/resource.h>
+#include <tateyama/framework/component_ids.h>
 #include <tateyama/framework/environment.h>
 
-#include <sharksfin/api.h>
-#include <limestone/status.h>
-#include <limestone/api/datastore.h>
+#include "server/server.h"
 
-namespace tateyama::datastore::resource {
+namespace tateyama::grpc {
 
 /**
- * @brief datastore resource bridge for tateyama framework
- * @details This object bridges datastore as a resource component in tateyama framework.
- * This object should be responsible only for life-cycle management.
+ * @brief gRPC server resource implementation class
  */
-class bridge : public framework::resource {
+class server_resource : public ::tateyama::framework::resource {
 public:
-    static constexpr id_type tag = framework::resource_id_datastore;
+    static constexpr id_type tag = framework::resource_id_grpc_service;
 
     //@brief human readable label of this component
-    static constexpr std::string_view component_label = "datastore_resource";
+    static constexpr std::string_view component_label = "gRPC_service_resource";
 
     [[nodiscard]] id_type id() const noexcept override;
 
@@ -57,33 +56,30 @@ public:
     /**
      * @brief destructor the object
      */
-    ~bridge() override;
+    ~server_resource() override;
 
-    bridge(bridge const& other) = delete;
-    bridge& operator=(bridge const& other) = delete;
-    bridge(bridge&& other) noexcept = delete;
-    bridge& operator=(bridge&& other) noexcept = delete;
+    server_resource(server_resource const& other) = delete;
+    server_resource& operator=(server_resource const& other) = delete;
+    server_resource(server_resource&& other) noexcept = delete;
+    server_resource& operator=(server_resource&& other) noexcept = delete;
 
     /**
      * @brief create empty object
      */
-    bridge() = default;
-
-    limestone::api::backup& begin_backup();
-    std::unique_ptr<limestone::api::backup_detail> begin_backup(limestone::api::backup_type);
-    void end_backup();
-    limestone::status restore_backup(std::string_view, bool);
-    limestone::status restore_backup(std::string_view, std::vector<limestone::api::file_set_entry>&);
-    limestone::api::datastore& datastore() const noexcept;
+    server_resource() = default;
 
     /**
      * @see `tateyama::framework::component::label()`
      */
     [[nodiscard]] std::string_view label() const noexcept override;
 
+
 private:
-    limestone::api::datastore* datastore_{};
-    bool deactivated_{false};
+    std::unique_ptr<server::grpc_server> grpc_server_{};
+    std::thread grpc_server_thread_{};
+
+    bool grpc_enabled_{};
+    std::string grpc_endpoint_{};
 };
 
 }
