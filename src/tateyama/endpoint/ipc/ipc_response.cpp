@@ -47,6 +47,14 @@ tateyama::status ipc_response::body(std::string_view body) {
         auto s = ss.str();
         server_wire_.get_response_wire().write(s.data(), tateyama::common::wire::response_header(index_, s.length(), RESPONSE_BODY), worker_ != std::this_thread::get_id());
         set_completed();
+
+        // The following API is used to reflect the fact that a response has been returned for a request in the
+        // endpoint state transition. When the endpoint state reaches "zero requests without a returned response,"
+        // there is a possibility that communication channels using shared memory will be released.
+        //
+        // Note that if the endpoint state is "not zero requests without a returned response," communication
+        // channels using shared memory will not be released. Therefore, it is guaranteed that this shared memory
+        // is not released before calling the following API.
         clean_up_();
         return tateyama::status::ok;
     }
@@ -91,6 +99,8 @@ void ipc_response::error(proto::diagnostics::Record const& record) {
             server_diagnostics("");
         }
         set_completed();
+
+        // see the comment added to body()
         clean_up_();
     } else {
         LOG_LP(ERROR) << "response is already completed";
