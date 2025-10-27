@@ -23,6 +23,7 @@
 
 #include <limestone/api/datastore.h>
 
+#include "ping_service/ping_service.h"
 #include "server.h"
 
 namespace tateyama::grpc::server {
@@ -39,6 +40,10 @@ void grpc_server::operator()() {
     // Build and start gRPC server with service added
     ::grpc::ServerBuilder builder{};
     builder.AddListeningPort(grpc_endpoint_, ::grpc::InsecureServerCredentials());
+
+    // Register ping service
+    tateyama::grpc::server::ping_service::ping_service ping_service;
+    builder.RegisterService(&ping_service);
 
     // Register gRpc service
     for (auto&& e : handlers_) {

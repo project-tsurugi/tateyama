@@ -89,6 +89,8 @@ private:
     bool grpc_enabled_{};
     std::string grpc_endpoint_{};
 
+    void wait_for_server_ready();
+    bool is_server_ready();
 };
 
 } // namespace
