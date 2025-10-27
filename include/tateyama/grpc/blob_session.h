@@ -108,7 +108,6 @@ public:
 
 private:
     std::unique_ptr<blob_session_impl, void(*)(blob_session_impl*)> impl_;
-//    std::unique_ptr<blob_session_impl> impl_;
 };
 
 }
