@@ -2,13 +2,36 @@ if(NOT TARGET sharksfin-${SHARKSFIN_IMPLEMENTATION})
     message(FATAL_ERROR "sharksfin implementation \"sharksfin-${SHARKSFIN_IMPLEMENTATION}\" not found")
 endif()
 
-file(GLOB_RECURSE ProtoFiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "*.proto")
+file(GLOB_RECURSE PROTO_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "*.proto")
 
-# By default, PROTOBUF_GENERATE_CPP generates file path for .pb.cc as if they are in the same directory.
-# Work-around this with PROTOBUF_GENERATE_CPP_APPEND_PATH
-set(PROTOBUF_GENERATE_CPP_APPEND_PATH OFF)
-PROTOBUF_GENERATE_CPP(GENERATED_PROTO_SRCS GENERATED_PROTO_HDRS ${ProtoFiles})
-add_custom_target(build_protos DEPENDS ${GENERATED_PROTO_SRCS})
+#
+# Add Library target with protobuf sources
+#
+add_library(tateyama_protos ${PROTO_FILES})
+target_link_libraries(tateyama_protos
+    PUBLIC
+        protobuf::libprotobuf
+        gRPC::grpc
+        gRPC::grpc++
+)
+target_include_directories(tateyama_protos PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
+
+#
+# Compile protobuf and grpc files in tateyama_protos target to cpp
+#
+get_target_property(grpc_cpp_plugin_location gRPC::grpc_cpp_plugin LOCATION)
+protobuf_generate(TARGET tateyama_protos OUT_VAR GENERATED_PROTO_FILES LANGUAGE cpp)
+protobuf_generate(TARGET tateyama_protos OUT_VAR GENERATED_GRPC_FILES LANGUAGE grpc GENERATE_EXTENSIONS .grpc.pb.h .grpc.pb.cc PLUGIN "protoc-gen-grpc=${grpc_cpp_plugin_location}")
+
+set(GENERATED_PROTO_SRCS)
+set(GENERATED_PROTO_HDRS)
+foreach(SRC_FILE ${GENERATED_PROTO_FILES} ${GENERATED_GRPC_FILES})
+  if(${SRC_FILE} MATCHES ".*\.cc")
+    list(APPEND GENERATED_PROTO_SRCS ${SRC_FILE})
+  elseif(${SRC_FILE} MATCHES ".*\.h")
+    list(APPEND GENERATED_PROTO_HDRS ${SRC_FILE})
+  endif()
+endforeach()
 
 install(DIRECTORY
         ${CMAKE_BINARY_DIR}/src/tateyama
@@ -84,7 +107,7 @@ add_library(${ENGINE}
 )
 
 add_dependencies(${ENGINE}
-        build_protos
+        tateyama_protos
         )
 
 set_target_properties(${ENGINE}
@@ -170,4 +193,3 @@ target_link_libraries(tateyama-impl
 if(MC_QUEUE)
     target_compile_definitions(tateyama-impl INTERFACE MC_QUEUE)
 endif()
-

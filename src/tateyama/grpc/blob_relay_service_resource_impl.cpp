@@ -22,6 +22,7 @@
 #include <tateyama/datastore/resource/bridge.h>
 
 #include "blob_session_impl.h"
+#include "server/ping_service/ping_service.h"
 #include "blob_relay_service_resource_impl.h"
 
 namespace tateyama::grpc {
@@ -70,6 +71,14 @@ bool resource_impl::start(environment& env) {
 
         // Start the gRPC server
         grpc_server_thread_ = std::thread(std::ref(*grpc_server_));
+
+        // Wait until the server is ready (using ping_service)
+        try {
+            wait_for_server_ready();
+        } catch (std::runtime_error &ex) {
+            LOG(ERROR) << ex.what();
+            return false;
+        }
     }
     return true;
 }
@@ -91,6 +100,36 @@ resource_impl::~resource_impl() {
 
 std::string_view resource_impl::label() const noexcept {
     return component_label;
+}
+
+// Wait until the server is ready (using ping_service)
+void resource_impl::wait_for_server_ready() {
+    constexpr int max_attempts = 50;
+    constexpr int wait_millis = 10;
+    for (int attempt = 0; attempt < max_attempts; ++attempt) {
+        if (is_server_ready()) {
+            return;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(wait_millis));
+    }
+    throw std::runtime_error("gRPC server did not become ready in time");
+}
+
+// Use ping_service to check if server is ready
+bool resource_impl::is_server_ready() {
+    auto pos = grpc_endpoint_.find(":");
+    if (pos == std::string::npos) {
+        throw std::runtime_error("server address does not includes port number");
+    }
+    std::string address("localhost");
+    address += grpc_endpoint_.substr(pos);
+    auto channel = ::grpc::CreateChannel(grpc_endpoint_, ::grpc::InsecureChannelCredentials());
+    tateyama::grpc::proto::PingService::Stub stub(channel);
+    ::grpc::ClientContext context;
+    tateyama::grpc::proto::PingRequest req;
+    tateyama::grpc::proto::PingResponse resp;
+    auto status = stub.Ping(&context, req, &resp);
+    return status.ok();
 }
 
 }
