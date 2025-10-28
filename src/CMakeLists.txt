@@ -3,25 +3,13 @@ if(NOT TARGET sharksfin-${SHARKSFIN_IMPLEMENTATION})
 endif()
 
 file(GLOB_RECURSE PROTO_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "*.proto")
+add_custom_target(tateyama_protos DEPENDS ${PROTO_FILES})
 
-#
-# Add Library target with protobuf sources
-#
-add_library(tateyama_protos ${PROTO_FILES})
-target_link_libraries(tateyama_protos
-    PUBLIC
-        protobuf::libprotobuf
-        gRPC::grpc
-        gRPC::grpc++
-)
-target_include_directories(tateyama_protos PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
-
-#
 # Compile protobuf and grpc files in tateyama_protos target to cpp
 #
 get_target_property(grpc_cpp_plugin_location gRPC::grpc_cpp_plugin LOCATION)
-protobuf_generate(TARGET tateyama_protos OUT_VAR GENERATED_PROTO_FILES LANGUAGE cpp)
-protobuf_generate(TARGET tateyama_protos OUT_VAR GENERATED_GRPC_FILES LANGUAGE grpc GENERATE_EXTENSIONS .grpc.pb.h .grpc.pb.cc PLUGIN "protoc-gen-grpc=${grpc_cpp_plugin_location}")
+protobuf_generate(TARGET tateyama_protos LANGUAGE cpp OUT_VAR GENERATED_PROTO_FILES PROTOS ${PROTO_FILES})
+protobuf_generate(TARGET tateyama_protos LANGUAGE grpc OUT_VAR GENERATED_GRPC_FILES PROTOS ${PROTO_FILES} GENERATE_EXTENSIONS .grpc.pb.h .grpc.pb.cc PLUGIN "protoc-gen-grpc=${grpc_cpp_plugin_location}")
 
 set(GENERATED_PROTO_SRCS)
 set(GENERATED_PROTO_HDRS)
