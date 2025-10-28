@@ -32,6 +32,9 @@ public:
     /// @brief the session ID type.
     using session_id_type = std::uint64_t;
 
+    /// @brief the transaction ID type.
+    using transaction_id_type = std::uint64_t;
+
     /// @brief the BLOB ID type.
     using blob_id_type = std::uint64_t;
 

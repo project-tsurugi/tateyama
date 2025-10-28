@@ -23,6 +23,7 @@
 #include <tateyama/logging.h>
 #include <tateyama/utils/boolalpha.h>
 #include <tateyama/grpc/logging.h>
+#include <tateyama/grpc/blob_session.h>
 #include <tateyama/framework/environment.h>
 #include <tateyama/grpc/server/service_handler.h>
 
@@ -34,11 +35,16 @@ class blob_relay_service : public tateyama::grpc::server::grpc_service_handler {
 public:
     blob_relay_service(::limestone::api::datastore& datastore, ::tateyama::framework::environment& env) :
         datastore_(datastore),
+        blob_pool_(datastore.acquire_blob_pool()),
         configuration_(blob_relay_service_configuration(env)),
         services_(
             data_relay_grpc::blob_relay::services::api(
-                [this](std::uint64_t, std::uint64_t){ return 0; },
-                [this](std::uint64_t bid){ return std::filesystem::path(datastore_.get_blob_file(bid).path().c_str()); }
+                [this](blob_session::blob_id_type bid, blob_session::transaction_id_type tid){
+                    return blob_pool_->generate_reference_tag(bid, tid); },
+                [this](blob_session::blob_id_type bid){
+                    auto bf = datastore_.get_blob_file(bid);
+                    return std::filesystem::path(bf.path().c_str());
+                }
             ),
             configuration_
         ) {
@@ -53,6 +59,7 @@ public:
     
 private:
     ::limestone::api::datastore& datastore_;
+    std::unique_ptr<limestone::api::blob_pool> blob_pool_;
     data_relay_grpc::blob_relay::service_configuration configuration_;
     data_relay_grpc::blob_relay::services services_;
 
