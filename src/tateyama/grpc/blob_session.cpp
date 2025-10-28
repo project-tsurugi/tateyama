@@ -14,19 +14,17 @@
  * limitations under the License.
  */
 
+#include <vector>
+#include <list>
+
 #include <tateyama/grpc/blob_session.h>
 #include "blob_session_impl.h"
 
 namespace tateyama::grpc {
 
-//blob_session::blob_session(std::unique_ptr<blob_session_impl, void(*)(blob_session_impl*)> impl)
-//    : impl_(std::unique_ptr<blob_session_impl, void(*)(blob_session_impl*)>(new blob_session_impl(), [](blob_session_impl* e){ delete e; })) {
-// blob_session::blob_session(std::unique_ptr<blob_session_impl> impl)
 blob_session::blob_session(std::unique_ptr<blob_session_impl, void(*)(blob_session_impl*)> impl)
     : impl_(std::move(impl)) {
 }
-
-// blob_session::~blob_session() = default;
 
 blob_session::session_id_type blob_session::session_id() const noexcept {
     return impl_->session_id();
@@ -52,8 +50,16 @@ std::vector<blob_session::blob_id_type> blob_session::entries() const {
     return impl_->entries();
 }
 
-// template<class Iter>
-// void blob_session::remove(Iter blob_ids_begin, Iter blob_ids_end) {
-// }
-
+using vector_iterator = std::vector<blob_session::blob_id_type>::iterator;
+template <>
+void blob_session::remove<vector_iterator>(vector_iterator blob_ids_begin, vector_iterator blob_ids_end) {
+    impl_->remove(blob_ids_begin, blob_ids_end);
 }
+
+using list_iterator = std::list<blob_session::blob_id_type>::iterator;
+template <>
+void blob_session::remove<list_iterator>(list_iterator blob_ids_begin, list_iterator blob_ids_end) {
+    impl_->remove(blob_ids_begin, blob_ids_end);
+}
+
+} // namespace

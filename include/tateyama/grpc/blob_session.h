@@ -93,9 +93,8 @@ public:
      * @param blob_ids_begin the beginning of the range of BLOB IDs to remove.
      * @param blob_ids_end the end of the range of BLOB IDs to remove.
      */
-// FIXME implement
-//    template<class Iter>
-//    void remove(Iter blob_ids_begin, Iter blob_ids_end);
+    template<class Iter>
+    void remove(Iter blob_ids_begin, Iter blob_ids_end);
 
     /**
       * @brief computes a tag value for the given BLOB ID.
