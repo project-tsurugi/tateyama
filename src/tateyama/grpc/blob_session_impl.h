@@ -15,6 +15,9 @@
  */
 #pragma once
 
+#include <vector>
+#include <list>
+
 #include <tateyama/grpc/blob_session.h>
 #include <data-relay-grpc/blob_relay/session.h>
 
@@ -84,11 +87,10 @@ public:
      * @param blob_ids_begin the beginning of the range of BLOB IDs to remove.
      * @param blob_ids_end the end of the range of BLOB IDs to remove.
      */
-// FIXME implement
-//    template<class Iter>
-//    void remove(Iter blob_ids_begin, Iter blob_ids_end);
+    template<class Iter>
+    void remove(Iter, Iter);
 
-    /**
+     /**
       * @brief computes a tag value for the given BLOB ID.
       * @param blob_id the BLOB ID to compute the tag for.
       * @return the computed tag value.
