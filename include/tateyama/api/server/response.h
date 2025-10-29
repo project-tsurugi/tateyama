@@ -57,7 +57,8 @@ public:
      * @param record the diagnostic record to report
      * @details report an error with diagnostics information for client. When this function is called, no more
      * body_head() or body() is expected to be called.
-     * @attention this function is not thread-safe and should be called from single thread at a time.
+     * @attention error(), body_head(), and body() functions of tha same object are mutually thread-unsafe and
+     * should be called at a time. If they called simultaneously by multiple threads, their behavior becomes undefined.
      * @attention After calling this for cancelling the current job, the job must not use the related resources.
      *    This includes the below:
      *
@@ -70,10 +71,11 @@ public:
     /**
      * @brief setter of the response body head
      * @param body_head the response body head data
-     * @pre body() function of this object is not yet called
+     * @pre body() or error() function of this object is not yet called
      * @return status::ok when successful
      * @return other code when error occurs
-     * @attention this function is not thread-safe and should be called from single thread at a time.
+     * @attention error(), body_head(), and body() functions of tha same object are mutually thread-unsafe and
+     * should be called at a time. If they called simultaneously by multiple threads, their behavior becomes undefined.
      */
     virtual status body_head(std::string_view body_head) = 0;
 
@@ -82,7 +84,8 @@ public:
      * @param body the response body data
      * @return status::ok when successful
      * @return other code when error occurs
-     * @attention this function is not thread-safe and should be called from single thread at a time.
+     * @attention error(), body_head(), and body() functions of tha same object are mutually thread-unsafe and
+     * should be called at a time. If they called simultaneously by multiple threads, their behavior becomes undefined.
      */
     virtual status body(std::string_view body) = 0;
 
