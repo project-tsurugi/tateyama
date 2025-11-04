@@ -56,7 +56,7 @@ public:
     data_relay_grpc::blob_relay::blob_session& create_session(std::optional<blob_relay_service_resource::transaction_id_type> transaction_id) {
         return services_.create_session(transaction_id);
     }
-    
+
 private:
     ::limestone::api::datastore& datastore_;
     std::unique_ptr<limestone::api::blob_pool> blob_pool_;
