@@ -28,7 +28,7 @@
 
 namespace tateyama::grpc {
 
-class resource_impl : public ::tateyama::framework::resource {
+class resource_impl {
 public:
     /**
       * @brief Create a new session for BLOB operations.
@@ -38,33 +38,25 @@ public:
       */
     [[nodiscard]] std::shared_ptr<blob_session> create_session(std::optional<blob_relay_service_resource::transaction_id_type> transaction_id);
 
-    // resource fundamentals
-    static constexpr id_type tag = framework::resource_id_blob_relay_service;
-
-    //@brief human readable label of this component
-    static constexpr std::string_view component_label = "blob_relay_service_resource";
-
-    [[nodiscard]] id_type id() const noexcept override;
-
     /**
      * @brief setup the component (the state will be `ready`)
      */
-    bool setup(framework::environment&) override;
+    bool setup(framework::environment&);
 
     /**
      * @brief start the component (the state will be `activated`)
      */
-    bool start(framework::environment&) override;
+    bool start(framework::environment&);
 
     /**
      * @brief shutdown the component (the state will be `deactivated`)
      */
-    bool shutdown(framework::environment&) override;
+    bool shutdown(framework::environment&);
 
     /**
      * @brief destructor the object
      */
-    ~resource_impl() override;
+    ~resource_impl();
 
     resource_impl(resource_impl const& other) = delete;
     resource_impl& operator=(resource_impl const& other) = delete;
@@ -75,11 +67,6 @@ public:
      * @brief create empty object
      */
     resource_impl() = default;
-
-    /**
-     * @see `tateyama::framework::component::label()`
-     */
-    [[nodiscard]] std::string_view label() const noexcept override;
 
 private:
     std::unique_ptr<server::grpc_server, void(*)(server::grpc_server*)> grpc_server_{nullptr, [](server::grpc_server*){} };

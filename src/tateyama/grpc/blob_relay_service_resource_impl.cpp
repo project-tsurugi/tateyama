@@ -33,10 +33,6 @@ std::shared_ptr<blob_session> resource_impl::create_session(std::optional<blob_r
     return std::make_shared<blob_session>(std::unique_ptr<blob_session_impl, void(*)(blob_session_impl*)>(new blob_session_impl(blob_relay_service_->create_session(transaction_id)), [](blob_session_impl* e){ delete e; }));
 }
 
-component::id_type resource_impl::id() const noexcept {
-    return tag;
-}
-
 bool resource_impl::setup(environment& env) {
     auto cfg = env.configuration();
 
@@ -63,17 +59,17 @@ bool resource_impl::setup(environment& env) {
 bool resource_impl::start(environment& env) {
     auto datastore = env.resource_repository().find<tateyama::datastore::resource::bridge>();
     if (grpc_enabled_) {
-        grpc_server_ = std::unique_ptr<server::grpc_server, void(*)(server::grpc_server*)>(new server::grpc_server(grpc_endpoint_), [](server::grpc_server* e){ delete e; } );
-
-        // Create and add blob relay service to the server
-        blob_relay_service_ = std::make_shared<blob_relay::blob_relay_service>(datastore->datastore(), env);
-        grpc_server_->add_grpc_service_handler(blob_relay_service_);
-
-        // Start the gRPC server
-        grpc_server_thread_ = std::thread(std::ref(*grpc_server_));
-
-        // Wait until the server is ready (using ping_service)
         try {
+            grpc_server_ = std::unique_ptr<server::grpc_server, void(*)(server::grpc_server*)>(new server::grpc_server(grpc_endpoint_), [](server::grpc_server* e){ delete e; } );
+
+            // Create and add blob relay service to the server
+            blob_relay_service_ = std::make_shared<blob_relay::blob_relay_service>(datastore->datastore(), env);
+            grpc_server_->add_grpc_service_handler(blob_relay_service_);
+
+            // Start the gRPC server
+            grpc_server_thread_ = std::thread(std::ref(*grpc_server_));
+
+            // Wait until the server is ready (using ping_service)
             wait_for_server_ready();
         } catch (std::runtime_error &ex) {
             LOG(ERROR) << ex.what();
@@ -95,12 +91,8 @@ bool resource_impl::shutdown(environment&) {
 }
 
 resource_impl::~resource_impl() {
-    VLOG(log_info) << "/:tateyama:lifecycle:component:<dtor> " << component_label;
+    VLOG(log_info) << "/:tateyama:lifecycle:component:<dtor> " << blob_relay_service_resource::component_label;
 };
-
-std::string_view resource_impl::label() const noexcept {
-    return component_label;
-}
 
 // Wait until the server is ready (using ping_service)
 void resource_impl::wait_for_server_ready() {

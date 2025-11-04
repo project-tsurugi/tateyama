@@ -31,6 +31,12 @@ class resource_impl;
 
 class blob_relay_service_resource : public ::tateyama::framework::resource {
 public:
+    // resource fundamentals
+    static constexpr id_type tag = framework::resource_id_blob_relay_service;
+
+    //@brief human readable label of this component
+    static constexpr std::string_view component_label = "blob_relay_service_resource";
+
     /// @brief the transaction ID type.
     using transaction_id_type = std::uint64_t;
 
