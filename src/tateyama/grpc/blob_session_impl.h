@@ -101,7 +101,7 @@ public:
 
     blob_session_impl(data_relay_grpc::blob_relay::blob_session& blob_session) : blob_session_(blob_session) {
     }
-    
+
 private:
     data_relay_grpc::blob_relay::blob_session& blob_session_;
     bool valid_{true};

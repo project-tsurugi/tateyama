@@ -32,7 +32,7 @@ std::shared_ptr<blob_session> blob_relay_service_resource::create_session(std::o
 }
 
 component::id_type blob_relay_service_resource::id() const noexcept {
-    return impl_->id();
+    return tag;
 }
 
 bool blob_relay_service_resource::setup(environment& env) {
@@ -48,7 +48,7 @@ bool blob_relay_service_resource::shutdown(environment& env) {
 }
 
 std::string_view blob_relay_service_resource::label() const noexcept {
-    return impl_->label();
+    return component_label;
 }
 
 }
