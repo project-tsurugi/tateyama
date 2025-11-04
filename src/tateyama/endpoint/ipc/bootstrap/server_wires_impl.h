@@ -318,7 +318,7 @@ public:
         }
 
         void set_eor() override {
-            eor_ = true;
+            eor_.store(true);
             notify_eor_conditional();
         }
         [[nodiscard]] bool is_closed() override {
@@ -386,12 +386,12 @@ public:
         std::set<unq_p_resultset_wire_conteiner> released_writers_{};
         std::atomic_ulong writers_{};
         std::atomic_ulong completed_writers_{};
-        bool eor_{};
+        std::atomic_bool eor_{};
         std::atomic_flag notify_eor_{};
         mutable std::mutex mtx_released_writers_{};
         
         void notify_eor_conditional() {
-            if ((writers_.load() == completed_writers_.load()) && eor_) {
+            if ((writers_.load() == completed_writers_.load()) && eor_.load()) {
                 if (!notify_eor_.test_and_set()) {
                     shm_resultset_wires_->set_eor();
                 }
