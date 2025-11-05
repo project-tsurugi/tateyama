@@ -51,7 +51,7 @@ parameter=value
 |thread_pool_size | 整数 | SQLサービスが使用するタスクスケジューラの使用するスレッド数。デフォルトは次式により環境に合わせて設定される。MIN( <既定ワーカー係数> * <物理コア数>, <最大既定ワーカー数> ) 結果が1未満になる場合は1とする。ここで、既定ワーカー係数 = 0.8、最大既定ワーカー数 = 32||
 |enable_index_join | ブール(true/false) | 性能向上のためインデックスを利用した結合処理を行うか。デフォルトはtrue|開発用のため将来的に削除される可能性あり|
 |stealing_enabled | ブール(true/false) | 空いたCPUコアを活用するためにスケジューラーがタスクのstealingを行うか。デフォルトはtrue||
-|default_partitions | 整数 | 並列化可能な関係演算子の実行においてデータ分割を行う際のパーティション数。デフォルトは5。| この値はmax_result_set_writers 以下でなければならない|
+|default_partitions | 整数 | 並列化可能な関係演算子の実行においてデータ分割を行う際のパーティション数。デフォルトは5。| |
 |use_preferred_worker_for_current_thread | ブール(true/false) | スケジューラーがワーカーを選択する際、タスクを提出したスレッドごとに固定的なワーカーを使うようにするか。デフォルトはtrue|開発用のため将来的に削除される可能性あり|
 |stealing_wait| 整数 | タスクスケジューラのワーカーがスティーリングを行う前に自身のタスクキューを余分にチェックする回数の係数。`<ワーカー数> * <stealing_wait>` 回だけ自身のタスクキューを多くチェックするようになる。デフォルトは1|開発用のため将来的に削除/変更される可能性あり|
 |task_polling_wait| 整数 | タスクスケジューラのワーカーが自身のタスクキューやスティール候補のポーリングに失敗した際、次のポーリングまでスリープする時間(us)。デフォルトは0|開発用のため将来的に削除/変更される可能性あり|
@@ -74,13 +74,13 @@ parameter=value
 |scan_yield_interval| 整数 | スキャンが他のタスクにスレッドを譲渡する前に処理する最大時間（ms）。デフォルトは1|開発用のため将来的に削除/変更される可能性あり|
 |dev_thousandths_ratio_check_local_first| 整数 | タスクスケジューラのワーカーがローカルタスクキューとstickyタスクキューのどちらを優先的にデキューするかを決めるパラメータ。デキューの実行1000回のうちローカルタスクキューを優先する回数(1以上1000未満)を指定する。デフォルトは100|開発用のため将来的に削除/変更される可能性あり|
 |dev_direct_commit_callback| ブール(true/false) | shirakamiのコミット処理を行うスレッドが直接クラインアント通知までおこなうか。`commit_response` が `ACCEPTED` または `AVAILABLE` の場合のみ有効。デフォルトはfalse | 開発用のため将来的に削除/変更される可能性あり|
-|scan_default_parallel| 整数 | スキャンタスクの最大並列実行数。デフォルトは4。|この値はmax_result_set_writers 以下でなければならない。開発用のため将来的に削除/変更される可能性あり|
+|scan_default_parallel| 整数 | スキャンタスクの最大並列実行数。デフォルトは4。| 開発用のため将来的に削除/変更される可能性あり|
 |dev_inplace_teardown| ブール(true/false) | ジョブの終了処理(teardown)を現在のスレッドで行いタスクの作成をバイパスするか。デフォルトはtrue | 開発用のため将来的に削除/変更される可能性あり|
 |dev_inplace_dag_schedule| ブール(true/false) | プランスケジューラ(dag controller)の状態遷移を現在のスレッドで行いタスクの作成をバイパスするか。デフォルトはtrue | 開発用のため将来的に削除/変更される可能性あり|
 |enable_join_scan| ブール(true/false) | インデックスを用いた結合処理において、全キー列のデータが利用可能でない場合に、その一部(プレフィックス)を利用して候補をスキャンして探索する演算子`join_scan` を使用可能にするか。`enable_index_join=true` の場合のみ有効。デフォルトはtrue | 開発用のため将来的に削除/変更される可能性あり|
 |dev_rtx_key_distribution| 文字列 | RTXのparallel scanにおいて、キー範囲を分割する手法を指定。次のいずれかから選択 (`simple`, `uniform`, `sampling`) 。 `scan_default_parallel > 0` の場合のみ有効。デフォルトは uniform|開発用のため将来的に削除/変更される可能性あり|
 |dev_enable_blob_cast| ブール(true/false) | BLOB/CLOBのキャストを可能にするか。デフォルトはtrue | 開発用のため将来的に削除/変更される可能性あり|
-|max_result_set_writers | 整数 | writer resultsetの最大数。デフォルトは64。|この値は256以下でなければならない|
+|max_result_set_writers | 整数 | writer resultsetの最大数。デフォルトは64。|この値は1以上256以下でなければならない|
 |dev_core_affinity| ブール(true/false) | タスクスケジューラのワーカースレッドを(論理)CPUコアに割当てるか。デフォルトはfalse。trueの場合は `dev_initial_core` を先頭にシーケンシャルに割当てられる。`dev_force_numa_node` が未指定かつ `dev_assign_numa_nodes_uniformly=false` の場合のみ有効 | 開発用のため将来的に削除/変更される可能性あり|
 |dev_initial_core | 整数 | CPUコア割当てをする際の先頭のCPUコア番号 (0-origin)。 `dev_core_affinity=true` の場合のみ有効。デフォルトは1。|開発用のため将来的に削除/変更される可能性あり|
 |dev_assign_numa_nodes_uniformly| ブール(true/false) | タスクスケジューラのワーカースレッドをNUMAノードに均等に割当てるか。デフォルトはfalse。`dev_core_affinity=false` かつ `dev_force_numa_node` が未指定の場合のみ有効。 | 開発用のため将来的に削除/変更される可能性あり|
