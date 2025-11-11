@@ -81,12 +81,12 @@ static bool extract_config(environment& env, sharksfin::DatabaseOptions& options
 }
 
 bool transactional_kvs_resource::setup(environment& env) {
-    sharksfin::DatabaseOptions options{};
-    if(! extract_config(env, options)) {
-        return false;
-    }
+    return extract_config(env, options_);
+}
+
+bool transactional_kvs_resource::start(environment&) {
     try {
-        if(auto res = sharksfin::database_open(options, std::addressof(database_handle_)); res != sharksfin::StatusCode::OK) {
+        if(auto res = sharksfin::database_open(options_, std::addressof(database_handle_)); res != sharksfin::StatusCode::OK) {
             LOG(ERROR) << "opening database failed";
             return false;
         }
@@ -96,11 +96,6 @@ bool transactional_kvs_resource::setup(environment& env) {
         LOG(ERROR) << "opening database failed";
         return false;
     }
-}
-
-bool transactional_kvs_resource::start(environment&) {
-    // no-op
-    return true;
 }
 
 bool transactional_kvs_resource::shutdown(environment&) {
