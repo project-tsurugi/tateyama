@@ -110,8 +110,8 @@ public:
             stream = connection_socket_.accept();
 
             if (stream != nullptr) {
-                const tateyama::endpoint::common::configuration conf(tateyama::endpoint::common::connection_type::stream, session_bridge_, database_info_, nullptr, administrators_);
-                worker_ = std::make_unique<tateyama::endpoint::stream::bootstrap::stream_worker>(service_, conf, my_session_id, std::move(stream), false);
+                conf_ = std::make_unique<tateyama::endpoint::common::configuration>(tateyama::endpoint::common::connection_type::stream, session_bridge_, database_info_, nullptr, administrators_);
+                worker_ = std::make_unique<tateyama::endpoint::stream::bootstrap::stream_worker>(service_, *conf_, my_session_id, std::move(stream), false);
                 worker_->invoke([&]{worker_->run();});
             } else {  // connect via pipe (request_terminate)
                 break;
@@ -133,6 +133,7 @@ public:
 private:
     service_for_stream_session_test& service_;
     std::shared_ptr<session::resource::bridge> session_bridge_;
+    std::unique_ptr<tateyama::endpoint::common::configuration> conf_{};
     connection_socket connection_socket_{tateyama::api::endpoint::stream::stream_client::PORT_FOR_TEST};
     std::unique_ptr<tateyama::endpoint::stream::bootstrap::stream_worker> worker_{};
     tateyama::status_info::resource::database_info_impl database_info_{"stream_info_test"};

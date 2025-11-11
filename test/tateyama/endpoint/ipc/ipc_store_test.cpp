@@ -89,8 +89,8 @@ class ipc_store_test : public ::testing::Test {
         session_name += std::to_string(my_session_id);
         auto wire = std::make_unique<bootstrap::server_wire_container_impl>(session_name, "dummy_mutex_file_name", datachannel_buffer_size, 16);
         session_bridge_ = std::make_shared<session::resource::bridge>();
-        const tateyama::endpoint::common::configuration conf(tateyama::endpoint::common::connection_type::ipc, session_bridge_, database_info_, nullptr, administrators_);
-        worker_ = std::make_unique<tateyama::endpoint::ipc::bootstrap::ipc_worker>(service_, conf, my_session_id, std::move(wire));
+        conf_ = std::make_unique<tateyama::endpoint::common::configuration>(tateyama::endpoint::common::connection_type::ipc, session_bridge_, database_info_, nullptr, administrators_);
+        worker_ = std::make_unique<tateyama::endpoint::ipc::bootstrap::ipc_worker>(service_, *conf_, my_session_id, std::move(wire));
         tateyama::server::ipc_listener_for_store_test::run(*worker_);
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
         client_ = std::make_unique<ipc_client>(database_name, my_session_id);
@@ -105,6 +105,7 @@ class ipc_store_test : public ::testing::Test {
 
 protected:
     tateyama::status_info::resource::database_info_impl database_info_{database_name};
+    std::unique_ptr<tateyama::endpoint::common::configuration> conf_{};
     store_service service_{};
     std::unique_ptr<tateyama::endpoint::ipc::bootstrap::ipc_worker> worker_{};
     std::shared_ptr<session::resource::bridge> session_bridge_{};
