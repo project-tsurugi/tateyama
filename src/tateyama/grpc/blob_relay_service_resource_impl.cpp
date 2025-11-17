@@ -21,17 +21,12 @@
 #include "logging.h"
 #include <tateyama/datastore/resource/bridge.h>
 
-#include "blob_session_impl.h"
 #include "server/ping_service/ping_service.h"
 #include "blob_relay_service_resource_impl.h"
 
 namespace tateyama::grpc {
 
 using namespace framework;
-
-std::shared_ptr<blob_session> resource_impl::create_session(std::optional<blob_relay_service_resource::transaction_id_type> transaction_id) {
-    return std::make_shared<blob_session>(std::unique_ptr<blob_session_impl, void(*)(blob_session_impl*)>(new blob_session_impl(blob_relay_service_->create_session(transaction_id)), [](blob_session_impl* e){ delete e; }));
-}
 
 bool resource_impl::setup(environment& env) {
     auto cfg = env.configuration();

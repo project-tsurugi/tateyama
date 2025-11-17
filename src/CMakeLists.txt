@@ -7,19 +7,17 @@ add_custom_target(tateyama_protos DEPENDS ${PROTO_FILES})
 
 # Compile protobuf and grpc files in tateyama_protos target to cpp
 #
-get_target_property(grpc_cpp_plugin_location gRPC::grpc_cpp_plugin LOCATION)
 protobuf_generate(TARGET tateyama_protos LANGUAGE cpp OUT_VAR GENERATED_PROTO_FILES PROTOS ${PROTO_FILES})
-protobuf_generate(TARGET tateyama_protos LANGUAGE grpc OUT_VAR GENERATED_GRPC_FILES PROTOS ${PROTO_FILES} GENERATE_EXTENSIONS .grpc.pb.h .grpc.pb.cc PLUGIN "protoc-gen-grpc=${grpc_cpp_plugin_location}")
-
-set(GENERATED_PROTO_SRCS)
-set(GENERATED_PROTO_HDRS)
-foreach(SRC_FILE ${GENERATED_PROTO_FILES} ${GENERATED_GRPC_FILES})
-  if(${SRC_FILE} MATCHES ".*\.cc")
-    list(APPEND GENERATED_PROTO_SRCS ${SRC_FILE})
-  elseif(${SRC_FILE} MATCHES ".*\.h")
-    list(APPEND GENERATED_PROTO_HDRS ${SRC_FILE})
+if (ENABLE_GRPC)
+  if(USE_GRPC_CONFIG)
+      get_target_property(grpc_cpp_plugin_location gRPC::grpc_cpp_plugin LOCATION)
+  else ()
+      find_program(grpc_cpp_plugin_location grpc_cpp_plugin REQUIRED)
   endif()
-endforeach()
+  protobuf_generate(TARGET tateyama_protos LANGUAGE grpc OUT_VAR GENERATED_GRPC_FILES PROTOS ${PROTO_FILES} GENERATE_EXTENSIONS .grpc.pb.h .grpc.pb.cc PLUGIN "protoc-gen-grpc=${grpc_cpp_plugin_location}")
+else()
+  set(GENERATED_GRPC_FILES)
+endif()
 
 install(DIRECTORY
         ${CMAKE_BINARY_DIR}/src/tateyama
@@ -59,15 +57,20 @@ file(GLOB SOURCES
         "tateyama/request/service/*.cpp"
         "tateyama/authentication/resource/*.cpp"
         "tateyama/authentication/service/*.cpp"
-        "tateyama/grpc/*.cpp"
-        "tateyama/grpc/server/*.cpp"
 )
-
 if (ENABLE_ALTIMETER)
     file(GLOB ALTIMETER_SOURCES
         "tateyama/altimeter/service/*.cpp"
     )
     list(APPEND SOURCES ${ALTIMETER_SOURCES})
+endif()
+
+if (ENABLE_GRPC)
+    file(GLOB GRPC_SOURCES
+        "tateyama/grpc/*.cpp"
+        "tateyama/grpc/server/*.cpp"
+    )
+    list(APPEND SOURCES ${GRPC_SOURCES})
 endif()
 
 if(TRACY_ENABLE)
@@ -83,7 +86,8 @@ if(TRACY_ENABLE)
 endif()
 
 set_source_files_properties(
-        ${GENERATED_PROTO_SRCS}
+        ${GENERATED_PROTO_FILES}
+        ${GENERATED_GRPC_FILES}
         PROPERTIES
         GENERATED TRUE
         COMPILE_FLAGS "-Wno-unused-parameter -Wno-array-bounds"
@@ -91,7 +95,8 @@ set_source_files_properties(
 
 add_library(${ENGINE}
         ${SOURCES}
-        ${GENERATED_PROTO_SRCS}
+        ${GENERATED_PROTO_FILES}
+        ${GENERATED_GRPC_FILES}
 )
 
 add_dependencies(${ENGINE}
@@ -147,6 +152,10 @@ if (ENABLE_ALTIMETER)
     target_link_libraries(${ENGINE}
         PRIVATE altimeter
     )
+endif()
+
+if (ENABLE_GRPC)
+    target_compile_definitions(${ENGINE} PUBLIC ENABLE_GRPC)
 endif()
 
 # Boost.Thread doesn't seem to allow multiple versions to coexist.
