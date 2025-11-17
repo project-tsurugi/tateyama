@@ -102,6 +102,18 @@ static constexpr std::string_view default_configuration_for_tests {  // NOLINT
         "request_timeout=0\n"
         "administrators=*\n"
 
+    "[grpc]\n"
+        "enabled=true\n"
+        "endpoint=localhost:50051\n"
+
+    "[blob_relay]\n"
+        "enabled=true\n"
+        "session_store=var/blob/sessions\n"
+        "session_quota_size=\n"
+        "local_enabled=true\n"
+        "local_upload_copy_file=false\n"
+        "stream_chunk_size=1048576\n"
+
     "[glog]\n"
         "dummy=\n"  // just for retain glog section in default configuration
 };

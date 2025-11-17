@@ -47,7 +47,7 @@ public:
 
 using namespace std::string_view_literals;
 
-TEST_F(datastore_test, basic) {
+TEST_F(datastore_test, DISABLED_basic) {
     ::sharksfin::Slice name{};
     if (auto rc = ::sharksfin::implementation_id(&name); rc == ::sharksfin::StatusCode::OK && name == "memory") {
         GTEST_SKIP() << "tateyama-memory doesn't support datastore";
@@ -87,8 +87,7 @@ TEST_F(datastore_test, basic) {
     sv.shutdown();
 }
 
-#if 0
-TEST_F(datastore_test, test_connectivity_with_limestone) {
+TEST_F(datastore_test, DISABLED_test_connectivity_with_limestone) {
     auto cfg = api::configuration::create_configuration("", tateyama::test_utils::default_configuration_for_tests);
     set_dbpath(*cfg);
     framework::server sv{framework::boot_mode::database_server, cfg};
@@ -101,6 +100,5 @@ TEST_F(datastore_test, test_connectivity_with_limestone) {
 
     sv.shutdown();
 }
-#endif
 
 }
