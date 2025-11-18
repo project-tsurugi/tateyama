@@ -35,6 +35,8 @@ struct parse_result {
     std::string_view payload_{};
     std::size_t service_id_{};
     std::size_t session_id_{};
+    std::size_t service_message_version_major_{};
+    std::size_t service_message_version_minor_{};
 };
 
 inline bool parse_header(std::string_view input, parse_result& result, [[maybe_unused]] std::map<std::string, std::pair<std::filesystem::path, bool>>& blobs_map) {
@@ -46,6 +48,8 @@ inline bool parse_header(std::string_view input, parse_result& result, [[maybe_u
     }
     result.session_id_ = hdr.session_id();
     result.service_id_ = hdr.service_id();
+    result.service_message_version_major_ = hdr.service_message_version_major();
+    result.service_message_version_minor_ = hdr.service_message_version_minor();
     if(hdr.has_blobs()) {
         for(auto&& e : hdr. blobs().blobs()) {
             blobs_map.emplace(e.channel_name(), std::make_pair(e.path(), e.temporary()));

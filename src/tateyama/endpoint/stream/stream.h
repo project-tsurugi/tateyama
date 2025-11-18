@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2023 Project Tsurugi.
+ * Copyright 2018-2025 Project Tsurugi.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,6 +53,7 @@ class stream_socket
     static constexpr unsigned char REQUEST_SESSION_PAYLOAD = 2;
     static constexpr unsigned char REQUEST_RESULT_SET_BYE_OK = 3;
     static constexpr unsigned char REQUEST_SESSION_BYE = 4;
+    static constexpr unsigned char REQUEST_ALIVE_CHECK = 5;
 
     static constexpr unsigned char RESPONSE_SESSION_PAYLOAD = 1;
     static constexpr unsigned char RESPONSE_RESULT_SET_PAYLOAD = 2;
@@ -313,6 +314,9 @@ private:
                 }
                 VLOG_LP(log_trace) << "socket is closed by the client abnormally";
                 return await_result::socket_closed;
+            case REQUEST_ALIVE_CHECK:
+                VLOG_LP(log_trace) << "--> REQUEST_ALIVE_CHECK ";
+                break;
             default:
                 LOG_LP(ERROR) << "illegal message type " << static_cast<std::uint32_t>(info);
                 close();

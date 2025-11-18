@@ -35,6 +35,9 @@ namespace tateyama::endpoint::common {
  * @brief request object for common_endpoint
  */
 class request : public tateyama::api::server::request {
+    constexpr static std::uint64_t FRAMEWORK_SERVICE_MESSAGE_VERSION_MAJOR = 2;
+    constexpr static std::uint64_t FRAMEWORK_SERVICE_MESSAGE_VERSION_MINOR = 0;
+
     class blob_info_impl : public tateyama::api::server::blob_info {
     public:
         blob_info_impl(std::string_view channel_name, std::filesystem::path path, bool temporary)
@@ -150,6 +153,10 @@ protected:
 
     void parse_framework_header(std::string_view message, parse_result& res) {
         if (parse_header(message, res, blobs_)) {
+            if (res.service_message_version_major_ > FRAMEWORK_SERVICE_MESSAGE_VERSION_MAJOR ||
+                (res.service_message_version_major_ ==  FRAMEWORK_SERVICE_MESSAGE_VERSION_MAJOR && res.service_message_version_minor_ > FRAMEWORK_SERVICE_MESSAGE_VERSION_MINOR)) {
+                throw std::runtime_error("unacceptable service message version");
+            }
             session_id_ = res.session_id_;
             service_id_ = res.service_id_;
 
