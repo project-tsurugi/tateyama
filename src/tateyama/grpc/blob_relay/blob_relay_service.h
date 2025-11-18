@@ -23,45 +23,44 @@
 #include <tateyama/logging.h>
 #include <tateyama/utils/boolalpha.h>
 #include <tateyama/grpc/logging.h>
-#include <tateyama/grpc/blob_session.h>
 #include <tateyama/framework/environment.h>
 #include <tateyama/grpc/server/service_handler.h>
 
-#include <data-relay-grpc/blob_relay/services.h>
+#include <data-relay-grpc/blob_relay/service.h>
 
 namespace tateyama::grpc::blob_relay {
 
-class blob_relay_service : public tateyama::grpc::server::grpc_service_handler {
+using data_relay_grpc::blob_relay::blob_session;
+
+class blob_relay_service_handler : public tateyama::grpc::server::grpc_service_handler {
 public:
-    blob_relay_service(::limestone::api::datastore& datastore, ::tateyama::framework::environment& env) :
+    blob_relay_service_handler(::limestone::api::datastore& datastore, ::tateyama::framework::environment& env) :
         datastore_(datastore),
         blob_pool_(datastore.acquire_blob_pool()),
-        configuration_(blob_relay_service_configuration(env)),
-        services_(
-            data_relay_grpc::blob_relay::services::api(
+        configuration_(blob_relay_service_configuration(env))
+    {
+        service_ = std::make_shared<data_relay_grpc::blob_relay::blob_relay_service>(
+            data_relay_grpc::blob_relay::blob_relay_service::api(
                 [this](blob_session::blob_id_type bid, blob_session::transaction_id_type tid){
                     return blob_pool_->generate_reference_tag(bid, tid); },
                 [this](blob_session::blob_id_type bid){
                     auto bf = datastore_.get_blob_file(bid);
                     return std::filesystem::path(bf.path().c_str());
-                }
-            ),
-            configuration_
-        ) {
+                }),
+            configuration_);
     }
     void register_to_builder(::grpc::ServerBuilder& builder) override {
-        services_.add_blob_relay_services(builder);
+        service_->add_blob_relay_service(builder);
     }
-
-    data_relay_grpc::blob_relay::blob_session& create_session(std::optional<blob_relay_service_resource::transaction_id_type> transaction_id) {
-        return services_.create_session(transaction_id);
+    std::shared_ptr<data_relay_grpc::blob_relay::blob_relay_service> blob_relay_service() {
+        return service_;
     }
 
 private:
     ::limestone::api::datastore& datastore_;
     std::unique_ptr<limestone::api::blob_pool> blob_pool_;
     data_relay_grpc::blob_relay::service_configuration configuration_;
-    data_relay_grpc::blob_relay::services services_;
+    std::shared_ptr<data_relay_grpc::blob_relay::blob_relay_service> service_{};
 
     static data_relay_grpc::blob_relay::service_configuration blob_relay_service_configuration(::tateyama::framework::environment& env) {
         auto* blob_relay_config = env.configuration()->get_section("blob_relay");
