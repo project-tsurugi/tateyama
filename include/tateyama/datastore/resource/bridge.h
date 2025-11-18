@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2023 Project Tsurugi.
+ * Copyright 2018-2025 Project Tsurugi.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -81,8 +81,13 @@ public:
      */
     [[nodiscard]] std::string_view label() const noexcept override;
 
+    [[nodiscard]] limestone::api::datastore* get_datastore() {
+        return datastore_.get();
+    }
+
 private:
-    limestone::api::datastore* datastore_{};
+    std::shared_ptr<limestone::api::datastore> datastore_{};
+    limestone::api::configuration config_{};
     bool deactivated_{false};
 };
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2023 Project Tsurugi.
+ * Copyright 2018-2025 Project Tsurugi.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -190,8 +190,8 @@ void add_core_components(server& svr) {
     svr.add_resource(std::make_shared<diagnostic::resource::diagnostic_resource>());
     svr.add_resource(std::make_shared<metrics::resource::bridge>());
     svr.add_resource(std::make_shared<status_info::resource::bridge>());
-    svr.add_resource(std::make_shared<framework::transactional_kvs_resource>());
     svr.add_resource(std::make_shared<datastore::resource::bridge>());
+    svr.add_resource(std::make_shared<framework::transactional_kvs_resource>());
     svr.add_resource(std::make_shared<session::resource::bridge>());
     svr.add_resource(std::make_shared<authentication::resource::bridge>());
 #ifdef ENABLE_GRPC
