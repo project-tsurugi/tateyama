@@ -19,6 +19,7 @@
 #include <exception>
 #include <glog/logging.h>
 
+#include <tateyama/datastore/resource/bridge.h>
 #include <tateyama/framework/environment.h>
 #include <tateyama/framework/component_ids.h>
 #include <tateyama/framework/resource.h>
@@ -31,6 +32,8 @@ static bool extract_config(environment& env, sharksfin::DatabaseOptions& options
         options.attribute(KEY_STARTUP_MODE, "maintenance");
     }
     try {
+        // TODO: remove the code that calls get_section("datastore")
+        // transitional: shirakami::init() still needs log_location info to create log_channel (for now)
         if(auto ds = env.configuration()->get_section("datastore")) {
             if (auto res = ds->get<std::filesystem::path>("log_location"); res) {
                 if(res->empty()) {
@@ -41,13 +44,6 @@ static bool extract_config(environment& env, sharksfin::DatabaseOptions& options
                 // sharksfin db location name is different for historical reason
                 static constexpr std::string_view KEY_LOCATION{"location"};
                 options.attribute(KEY_LOCATION, res->string());
-            }
-            if(auto res = ds->get<int>("recover_max_parallelism"); res) {
-                auto sz = res.value();
-                if(sz > 0) {
-                    static constexpr std::string_view KEY_RECOVER_MAX_PARALLELISM{"recover_max_parallelism"};
-                    options.attribute(KEY_RECOVER_MAX_PARALLELISM, std::to_string(sz));
-                }
             }
         }
         if(auto cc = env.configuration()->get_section("cc")) {
@@ -84,9 +80,14 @@ bool transactional_kvs_resource::setup(environment& env) {
     return extract_config(env, options_);
 }
 
-bool transactional_kvs_resource::start(environment&) {
+bool transactional_kvs_resource::start(environment& env) {
+    auto datastore = env.resource_repository().find<datastore::resource::bridge>();
+    if(! datastore || ! datastore->get_datastore()) {
+        LOG_LP(ERROR) << "failed to find datastore resource";
+        return false;
+    }
     try {
-        if(auto res = sharksfin::database_open(options_, std::addressof(database_handle_)); res != sharksfin::StatusCode::OK) {
+        if(auto res = sharksfin::database_open(options_, datastore->get_datastore(), std::addressof(database_handle_)); res != sharksfin::StatusCode::OK) {
             LOG(ERROR) << "opening database failed";
             return false;
         }
