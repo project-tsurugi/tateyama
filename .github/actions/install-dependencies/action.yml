@@ -49,7 +49,7 @@ runs:
       with:
         repository: project-tsurugi/shirakami
         path: ${{ inputs.path }}/shirakami
-        ref: master
+        ref: dev-ban-1338-rawpointer
 
     - name: Checkout_Sharksfin
       uses: actions/checkout@v4
@@ -57,7 +57,7 @@ runs:
       with:
         repository: project-tsurugi/sharksfin
         path: ${{ inputs.path }}/sharksfin
-        ref: master
+        ref: dev-ban-1338
 
     - name: Install_Takatori
       run: |

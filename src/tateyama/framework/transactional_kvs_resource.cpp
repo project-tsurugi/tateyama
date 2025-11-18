@@ -19,6 +19,7 @@
 #include <exception>
 #include <glog/logging.h>
 
+#include <tateyama/datastore/resource/bridge.h>
 #include <tateyama/framework/environment.h>
 #include <tateyama/framework/component_ids.h>
 #include <tateyama/framework/resource.h>
@@ -84,9 +85,14 @@ bool transactional_kvs_resource::setup(environment& env) {
     return extract_config(env, options_);
 }
 
-bool transactional_kvs_resource::start(environment&) {
+bool transactional_kvs_resource::start(environment& env) {
+    auto datastore = env.resource_repository().find<datastore::resource::bridge>();
+    if(! datastore) {
+        LOG_LP(ERROR) << "failed to find datastore resource";
+        return false;
+    }
     try {
-        if(auto res = sharksfin::database_open(options_, std::addressof(database_handle_)); res != sharksfin::StatusCode::OK) {
+        if(auto res = sharksfin::database_open(options_, datastore.get(), std::addressof(database_handle_)); res != sharksfin::StatusCode::OK) {
             LOG(ERROR) << "opening database failed";
             return false;
         }

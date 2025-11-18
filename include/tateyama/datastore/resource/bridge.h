@@ -81,7 +81,8 @@ public:
     [[nodiscard]] std::string_view label() const noexcept override;
 
 private:
-    limestone::api::datastore* datastore_{};
+    std::shared_ptr<limestone::api::datastore> datastore_{};
+    limestone::api::configuration config_{};
     bool deactivated_{false};
 };
 
