@@ -27,10 +27,6 @@ blob_relay_service_resource::blob_relay_service_resource()
 
 blob_relay_service_resource::~blob_relay_service_resource() = default;
 
-std::shared_ptr<blob_session> blob_relay_service_resource::create_session(std::optional<blob_relay_service_resource::transaction_id_type> transaction_id) {
-    return impl_->create_session(transaction_id);
-}
-
 component::id_type blob_relay_service_resource::id() const noexcept {
     return tag;
 }
@@ -49,6 +45,10 @@ bool blob_relay_service_resource::shutdown(environment& env) {
 
 std::string_view blob_relay_service_resource::label() const noexcept {
     return component_label;
+}
+
+std::shared_ptr<data_relay_grpc::blob_relay::blob_relay_service> blob_relay_service_resource::blob_relay_service() {
+    return impl_->blob_relay_service();
 }
 
 }

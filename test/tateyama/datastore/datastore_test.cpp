@@ -87,7 +87,8 @@ TEST_F(datastore_test, DISABLED_basic) {
     sv.shutdown();
 }
 
-TEST_F(datastore_test, DISABLED_test_connectivity_with_limestone) {
+#if 0
+TEST_F(datastore_test, test_connectivity_with_limestone) {
     auto cfg = api::configuration::create_configuration("", tateyama::test_utils::default_configuration_for_tests);
     set_dbpath(*cfg);
     framework::server sv{framework::boot_mode::database_server, cfg};
@@ -99,5 +100,6 @@ TEST_F(datastore_test, DISABLED_test_connectivity_with_limestone) {
 
     sv.shutdown();
 }
+#endif
 
 }
