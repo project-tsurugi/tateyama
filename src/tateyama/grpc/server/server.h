@@ -31,9 +31,9 @@ namespace tateyama::grpc::server {
 /**
  * @brief gRPC server
  */
-class grpc_server {
+class tateyama_trpc_server {
 public:
-    grpc_server(std::string grpc_endpoint);
+    explicit tateyama_trpc_server(std::string grpc_endpoint);
 
     void operator()();
 

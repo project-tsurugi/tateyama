@@ -94,7 +94,6 @@ TEST_F(datastore_test, DISABLED_test_connectivity_with_limestone) {
     add_core_components(sv);
     sv.start();
     auto ds = sv.find_service<datastore::service::bridge>();
-    datastore::
 
 
 

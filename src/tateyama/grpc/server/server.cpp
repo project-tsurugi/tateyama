@@ -31,10 +31,10 @@ namespace tateyama::grpc::server {
 /**
  * @brief gRPC server service
  */
-grpc_server::grpc_server(std::string grpc_endpoint) : grpc_endpoint_(grpc_endpoint) {
+tateyama_trpc_server::tateyama_trpc_server(std::string grpc_endpoint) : grpc_endpoint_(std::move(grpc_endpoint)) {
 }
 
-void grpc_server::operator()() {
+void tateyama_trpc_server::operator()() {
     pthread_setname_np(pthread_self(), "grpc_server_impl");
 
     // Build and start gRPC server with service added
@@ -67,12 +67,12 @@ void grpc_server::operator()() {
     LOG_LP(INFO) << "The gRPC server stopped.";
 }
 
-void grpc_server::add_grpc_service_handler(std::shared_ptr<grpc_service_handler> handler) {
+void tateyama_trpc_server::add_grpc_service_handler(std::shared_ptr<grpc_service_handler> handler) {
     std::lock_guard<std::mutex> lock(mutex_);
     handlers_.emplace_back(std::move(handler));
 }
 
-void grpc_server::request_shutdown() {
+void tateyama_trpc_server::request_shutdown() {
     shutdown_requested_.store(true);
 }
 
