@@ -23,6 +23,7 @@
 #include <tateyama/framework/environment.h>
 #include <tateyama/framework/transactional_kvs_resource.h>
 #include <tateyama/api/server/request.h>
+#include <tateyama/datastore/resource/bridge.h>
 #include <tateyama/proto/test.pb.h>
 
 #include <gtest/gtest.h>
@@ -54,10 +55,15 @@ TEST_F(transactional_kvs_test, basic) {
     std::cerr << "ss : " << ss.str();
     auto cfg = std::make_shared<tateyama::api::configuration::whole>(ss, tateyama::test_utils::default_configuration_for_tests);
     framework::environment env{boot_mode::database_server, cfg};
+    auto ds = std::make_shared<datastore::resource::bridge>();
     transactional_kvs_resource kvs{};
+    env.resource_repository().add(ds);
+    ASSERT_TRUE(ds->setup(env));
     ASSERT_TRUE(kvs.setup(env));
+    ASSERT_TRUE(ds->start(env));
     ASSERT_TRUE(kvs.start(env));
     ASSERT_TRUE(kvs.shutdown(env));
+    ASSERT_TRUE(ds->shutdown(env));
 }
 
 TEST_F(transactional_kvs_test, relative_path) {
@@ -69,12 +75,17 @@ TEST_F(transactional_kvs_test, relative_path) {
     auto cfg = std::make_shared<tateyama::api::configuration::whole>(ss, tateyama::test_utils::default_configuration_for_tests);
     cfg->base_path(path());
     framework::environment env{boot_mode::database_server, cfg};
+    auto ds = std::make_shared<datastore::resource::bridge>();
     transactional_kvs_resource kvs{};
+    env.resource_repository().add(ds);
     // we can only check following calls are successful
     // manually verify with GLOG_v=50 env. var. and shirakami::init receives db directory under tmp folder as log_directory_path
+    ASSERT_TRUE(ds->setup(env));
     ASSERT_TRUE(kvs.setup(env));
+    ASSERT_TRUE(ds->start(env));
     ASSERT_TRUE(kvs.start(env));
     ASSERT_TRUE(kvs.shutdown(env));
+    ASSERT_TRUE(ds->shutdown(env));
 }
 
 TEST_F(transactional_kvs_test, empty_string) {

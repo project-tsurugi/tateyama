@@ -92,7 +92,7 @@ bool transactional_kvs_resource::start(environment& env) {
         return false;
     }
     try {
-        if(auto res = sharksfin::database_open(options_, datastore.get(), std::addressof(database_handle_)); res != sharksfin::StatusCode::OK) {
+        if(auto res = sharksfin::database_open(options_, datastore->get_datastore_ptr(), std::addressof(database_handle_)); res != sharksfin::StatusCode::OK) {
             LOG(ERROR) << "opening database failed";
             return false;
         }

@@ -80,6 +80,10 @@ public:
      */
     [[nodiscard]] std::string_view label() const noexcept override;
 
+    [[nodiscard]] limestone::api::datastore* get_datastore_ptr() {
+        return datastore_.get();
+    }
+
 private:
     std::shared_ptr<limestone::api::datastore> datastore_{};
     limestone::api::configuration config_{};
