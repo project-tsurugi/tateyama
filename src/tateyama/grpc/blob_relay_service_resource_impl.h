@@ -61,7 +61,7 @@ public:
     resource_impl() = default;
 
 private:
-    std::unique_ptr<server::grpc_server, void(*)(server::grpc_server*)> grpc_server_{nullptr, [](server::grpc_server*){} };
+    std::unique_ptr<server::tateyama_trpc_server, void(*)(server::tateyama_trpc_server*)> grpc_server_{nullptr, [](server::tateyama_trpc_server*){} };
     std::thread grpc_server_thread_{};
     std::shared_ptr<data_relay_grpc::blob_relay::blob_relay_service> blob_relay_service_{};
 
