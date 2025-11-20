@@ -23,7 +23,7 @@
 #include <tateyama/framework/component_ids.h>
 #include <tateyama/framework/environment.h>
 
-#include <data-relay-grpc/blob_relay/service.h>
+#include <tateyama/grpc/blob_session.h>
 
 namespace tateyama::grpc {
 
@@ -41,10 +41,12 @@ public:
     using transaction_id_type = std::uint64_t;
 
     /**
-      * @brief Provides the blob_relay_service.
-      * @return the blob_relay_service object
+      * @brief Create a new session for BLOB operations.
+      * @param transaction_id The ID of the transaction that owns the session,
+      *    or empty if the session is not associated with any transaction
+      * @return the created session object
       */
-    [[nodiscard]] std::shared_ptr<data_relay_grpc::blob_relay::blob_relay_service> blob_relay_service();
+    [[nodiscard]] std::shared_ptr<blob_session> create_session(std::optional<transaction_id_type> transaction_id = {});
 
 
     // resource fundamentals
