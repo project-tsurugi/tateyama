@@ -19,7 +19,6 @@
 #include <tateyama/logging.h>
 #include <tateyama/utils/boolalpha.h>
 #include "logging.h"
-#include <tateyama/datastore/resource/bridge.h>
 
 #include "server/ping_service/ping_service.h"
 #include "blob_relay_service_resource_impl.h"
@@ -40,6 +39,11 @@ bool resource_impl::setup(environment& env) {
         grpc_endpoint_ = grpc_endpoint_opt.value();
     }
 
+    if (grpc_enabled_) {
+        // create the relay service
+        service_handler_ = std::make_shared<blob_relay::blob_relay_service_handler>();
+    }
+
     // output configuration to be used
     LOG(INFO) << tateyama::grpc::grpc_config_prefix
               << "grpc_enabled: " << utils::boolalpha(grpc_enabled_) << ", "
@@ -52,13 +56,15 @@ bool resource_impl::setup(environment& env) {
 }
 
 bool resource_impl::start(environment& env) {
-    auto datastore = env.resource_repository().find<tateyama::datastore::resource::bridge>();
     if (grpc_enabled_) {
         try {
             grpc_server_ = std::unique_ptr<server::tateyama_grpc_server, void(*)(server::tateyama_grpc_server*)>(new server::tateyama_grpc_server(grpc_endpoint_), [](server::tateyama_grpc_server* e){ delete e; } );  // NOLINT
 
-            // Create and add blob relay service to the server
-            service_handler_ = std::make_shared<blob_relay::blob_relay_service_handler>(datastore->datastore(), env);
+            // start blob relay service and add it to the server
+            if (!service_handler_->start(env)) {
+                LOG(ERROR) << "cannot start the lob relay service";
+                return false;
+            }
             grpc_server_->add_grpc_service_handler(service_handler_);
 
             // Start the gRPC server
@@ -76,7 +82,9 @@ bool resource_impl::start(environment& env) {
 
 bool resource_impl::shutdown(environment&) {
     if (grpc_enabled_) {
-        grpc_server_->request_shutdown();
+        if (grpc_server_) {
+            grpc_server_->request_shutdown();
+        }
 
         if(grpc_server_thread_.joinable()) {
             grpc_server_thread_.join();
@@ -90,7 +98,10 @@ resource_impl::~resource_impl() {
 };
 
 std::shared_ptr<data_relay_grpc::blob_relay::blob_relay_service> resource_impl::blob_relay_service() {
-    return service_handler_->blob_relay_service();
+    if(service_handler_) {
+        return service_handler_->blob_relay_service();
+    }
+    throw std::runtime_error("blob_relay_service is not ready. Do thie after start()");
 }
 
 

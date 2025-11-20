@@ -31,23 +31,19 @@ class resource_impl;
 
 class blob_relay_service_resource : public ::tateyama::framework::resource {
 public:
-    // resource fundamentals
-    static constexpr id_type tag = framework::resource_id_blob_relay_service;
-
-    //@brief human readable label of this component
-    static constexpr std::string_view component_label = "blob_relay_service_resource";
-
-    /// @brief the transaction ID type.
-    using transaction_id_type = std::uint64_t;
-
     /**
-      * @brief Provides the blob_relay_service.
+      * @brief provides the blob_relay_service.
       * @return the blob_relay_service object
       */
     [[nodiscard]] std::shared_ptr<data_relay_grpc::blob_relay::blob_relay_service> blob_relay_service();
 
 
     // resource fundamentals
+    static constexpr id_type tag = framework::resource_id_blob_relay_service;
+
+    //@brief human readable label of this component
+    static constexpr std::string_view component_label = "blob_relay_service_resource";
+
     [[nodiscard]] id_type id() const noexcept override;
 
     /**
@@ -84,7 +80,6 @@ public:
      * @see `tateyama::framework::component::label()`
      */
     [[nodiscard]] std::string_view label() const noexcept override;
-
 
 private:
     std::unique_ptr<resource_impl, void(*)(resource_impl*)> impl_;

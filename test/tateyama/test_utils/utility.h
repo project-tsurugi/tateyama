@@ -74,7 +74,7 @@ static constexpr std::string_view default_configuration_for_tests {  // NOLINT
         "allow_blob_privileged=true\n"
 
     "[stream_endpoint]\n"
-        "enabled=true\n"
+        "enabled=false\n"
         "port=12345\n"
         "threads=104\n"
         "allow_blob_privileged=false\n"

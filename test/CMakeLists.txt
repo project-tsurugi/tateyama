@@ -30,8 +30,8 @@ target_include_directories(${test_target}
         )
 
 target_link_libraries(${test_target}
-        PRIVATE tateyama-impl
         PUBLIC gtest
+        PRIVATE tateyama-impl
         PRIVATE tbb
         PRIVATE takatori
         PRIVATE limestone
@@ -42,6 +42,12 @@ target_link_libraries(${test_target}
         PRIVATE jwt
         PRIVATE Boost::regex
         )
+
+if (ENABLE_GRPC)
+target_link_libraries(${test_target}
+        PRIVATE data-relay-grpc
+)
+endif()
 
 function (add_test_executable source_file)
     get_filename_component(test_name "${source_file}" NAME_WE)
@@ -76,6 +82,7 @@ file(GLOB SRCS
         "tateyama/metrics/resource/*.cpp"
         "tateyama/request/service/*.cpp"
         "tateyama/authentication/resource/*.cpp"
+        "tateyama/grpc/*.cpp"
         )
 if (ENABLE_ALTIMETER)
     file(GLOB ALTIMETER_SOURCES
