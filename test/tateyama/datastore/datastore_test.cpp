@@ -27,6 +27,7 @@
 #include <gtest/gtest.h>
 #include <tateyama/test_utils/utility.h>
 #include <tateyama/test_utils/request_response.h>
+#include <tateyama/test_utils/test_server.h>
 
 namespace tateyama::datastore {
 
@@ -47,7 +48,7 @@ public:
 
 using namespace std::string_view_literals;
 
-TEST_F(datastore_test, DISABLED_basic) {
+TEST_F(datastore_test, basic) {
     ::sharksfin::Slice name{};
     if (auto rc = ::sharksfin::implementation_id(&name); rc == ::sharksfin::StatusCode::OK && name == "memory") {
         GTEST_SKIP() << "tateyama-memory doesn't support datastore";
@@ -55,7 +56,7 @@ TEST_F(datastore_test, DISABLED_basic) {
     auto cfg = api::configuration::create_configuration("", tateyama::test_utils::default_configuration_for_tests);
     set_dbpath(*cfg);
     framework::server sv{framework::boot_mode::database_server, cfg};
-    add_core_components(sv);
+    tateyama::test_utils::add_core_components_for_datastore_test(sv);
     sv.start();
     auto router = sv.find_service<framework::routing_service>();
     EXPECT_TRUE(router);
