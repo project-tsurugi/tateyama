@@ -22,14 +22,22 @@
 
 #include <tateyama/framework/component_ids.h>
 
-#include <data-relay-grpc/blob_relay/service.h>
 #include <tateyama/grpc/blob_relay_service_resource.h>
 #include "server/server.h"
+#include "blob_relay/blob_relay_service.h"
 
 namespace tateyama::grpc {
 
 class resource_impl {
 public:
+    /**
+      * @brief Create a new session for BLOB operations.
+      * @param transaction_id The ID of the transaction that owns the session,
+      *    or empty if the session is not associated with any transaction
+      * @return the created session object
+      */
+    [[nodiscard]] std::shared_ptr<blob_session> create_session(std::optional<blob_relay_service_resource::transaction_id_type> transaction_id);
+
     /**
      * @brief setup the component (the state will be `ready`)
      */
@@ -61,9 +69,9 @@ public:
     resource_impl() = default;
 
 private:
-    std::unique_ptr<server::grpc_server, void(*)(server::grpc_server*)> grpc_server_{nullptr, [](server::grpc_server*){} };
+    std::unique_ptr<server::tateyama_grpc_server, void(*)(server::tateyama_grpc_server*)> grpc_server_{nullptr, [](server::tateyama_grpc_server*){} };
     std::thread grpc_server_thread_{};
-    std::shared_ptr<data_relay_grpc::blob_relay::blob_relay_service> blob_relay_service_{};
+    std::shared_ptr<blob_relay::blob_relay_service> blob_relay_service_{};
 
     bool grpc_enabled_{};
     std::string grpc_endpoint_{};
