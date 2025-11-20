@@ -106,7 +106,7 @@ public:
     /**
       * @brief create a new object.
       */
-    blob_session(std::unique_ptr<blob_session_impl, void(*)(blob_session_impl*)> impl);
+    explicit blob_session(std::unique_ptr<blob_session_impl, void(*)(blob_session_impl*)> impl);
 
 private:
     std::unique_ptr<blob_session_impl, void(*)(blob_session_impl*)> impl_;

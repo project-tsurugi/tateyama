@@ -60,7 +60,7 @@ public:
      * @attention undefined behavior occurs if the path is already added in this session.
      */
     [[nodiscard]] blob_session::blob_id_type add(blob_session::blob_path_type path) {
-        return blob_session_.add(path);
+        return blob_session_.add(std::move(path));
     }
 
     /**
@@ -99,7 +99,7 @@ public:
         return blob_session_.compute_tag(blob_id);
     }
 
-    blob_session_impl(data_relay_grpc::blob_relay::blob_session& blob_session) : blob_session_(blob_session) {
+    explicit blob_session_impl(data_relay_grpc::blob_relay::blob_session& blob_session) : blob_session_(blob_session) {
     }
 
 private:
