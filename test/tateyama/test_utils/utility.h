@@ -46,6 +46,9 @@ public:
         auto id = getpid() % 1000;
         stmcfg->set("port", std::to_string(12345+id));
     }
+    ~utility() {
+        temporary_.clean();
+    }
 
 protected:
     temporary_folder temporary_{};
