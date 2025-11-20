@@ -39,7 +39,7 @@ void blob_session::dispose() {
 }
 
 blob_session::blob_id_type blob_session::add(blob_path_type path) {
-    return impl_->add(std::move(path));
+    return impl_->add(path);
 }
 
 std::optional<blob_session::blob_path_type> blob_session::find(blob_id_type blob_id) const {

@@ -22,7 +22,7 @@ namespace tateyama::grpc {
 using namespace framework;
 
 blob_relay_service_resource::blob_relay_service_resource()
-    : impl_(std::unique_ptr<resource_impl, void(*)(resource_impl*)>(new resource_impl(), [](resource_impl* e){ delete e; })) {  // NOLINT
+    : impl_(std::unique_ptr<resource_impl, void(*)(resource_impl*)>(new resource_impl(), [](resource_impl* e){ delete e; })) {
 }
 
 blob_relay_service_resource::~blob_relay_service_resource() = default;

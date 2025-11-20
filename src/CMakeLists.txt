@@ -121,7 +121,6 @@ target_link_libraries(${ENGINE}
         PUBLIC sharksfin-${SHARKSFIN_IMPLEMENTATION}
         PRIVATE takatori
         PRIVATE limestone
-        PRIVATE data-relay-grpc
         PRIVATE tbb
         PRIVATE numa
         PRIVATE Boost::boost
@@ -139,6 +138,12 @@ target_link_libraries(${ENGINE}
         PRIVATE grpc++
         PRIVATE grpc
 )
+
+if (ENABLE_GRPC)
+target_link_libraries(${ENGINE}
+        PRIVATE data-relay-grpc
+)
+endif()
 
 if(MC_QUEUE)
     target_compile_definitions(${ENGINE} PUBLIC MC_QUEUE)

@@ -21,6 +21,7 @@
 #include "logging.h"
 #include <tateyama/datastore/resource/bridge.h>
 
+#include "blob_session_impl.h"
 #include "server/ping_service/ping_service.h"
 #include "blob_relay_service_resource_impl.h"
 
@@ -29,11 +30,11 @@ namespace tateyama::grpc {
 using namespace framework;
 
 std::shared_ptr<blob_session> resource_impl::create_session(std::optional<blob_relay_service_resource::transaction_id_type> transaction_id) {
-    return std::make_shared<blob_session>(std::unique_ptr<blob_session_impl, void(*)(blob_session_impl*)>(new blob_session_impl(blob_relay_service_->create_session(transaction_id)), [](blob_session_impl* e){ delete e; }));  // NOLINT
+    return std::make_shared<blob_session>(std::unique_ptr<blob_session_impl, void(*)(blob_session_impl*)>(new blob_session_impl(blob_relay_service_->create_session(transaction_id)), [](blob_session_impl* e){ delete e; }));
 }
 
 bool resource_impl::setup(environment& env) {
-    const auto& cfg = env.configuration();
+    auto cfg = env.configuration();
 
     // grpc section
     auto* grpc_config = cfg->get_section("grpc");
@@ -59,7 +60,7 @@ bool resource_impl::start(environment& env) {
     auto datastore = env.resource_repository().find<tateyama::datastore::resource::bridge>();
     if (grpc_enabled_) {
         try {
-            grpc_server_ = std::unique_ptr<server::tateyama_trpc_server, void(*)(server::tateyama_trpc_server*)>(new server::tateyama_trpc_server(grpc_endpoint_), [](server::tateyama_trpc_server* e){ delete e; } );  // NOLINT
+            grpc_server_ = std::unique_ptr<server::grpc_server, void(*)(server::grpc_server*)>(new server::grpc_server(grpc_endpoint_), [](server::grpc_server* e){ delete e; } );
 
             // Create and add blob relay service to the server
             blob_relay_service_ = std::make_shared<blob_relay::blob_relay_service>(datastore->datastore(), env);
@@ -108,7 +109,7 @@ void resource_impl::wait_for_server_ready() {
 
 // Use ping_service to check if server is ready
 bool resource_impl::is_server_ready() {
-    auto pos = grpc_endpoint_.find(':');
+    auto pos = grpc_endpoint_.find(":");
     if (pos == std::string::npos) {
         throw std::runtime_error("server address does not includes port number");
     }
