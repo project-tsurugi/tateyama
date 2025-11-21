@@ -15,6 +15,11 @@
  */
 #include <tateyama/framework/transactional_kvs_resource.h>
 
+#include <filesystem>
+#include <gtest/gtest.h>
+
+#include <tateyama/api/server/request.h>
+#include <tateyama/datastore/resource/bridge.h>
 #include <tateyama/framework/resource.h>
 #include <tateyama/framework/service.h>
 #include <tateyama/framework/endpoint.h>
@@ -22,11 +27,7 @@
 #include <tateyama/framework/server.h>
 #include <tateyama/framework/environment.h>
 #include <tateyama/framework/transactional_kvs_resource.h>
-#include <tateyama/api/server/request.h>
-#include <tateyama/datastore/resource/bridge.h>
 #include <tateyama/proto/test.pb.h>
-
-#include <gtest/gtest.h>
 #include <tateyama/test_utils/utility.h>
 
 namespace tateyama::framework {
@@ -74,6 +75,7 @@ TEST_F(transactional_kvs_test, relative_path) {
     };
     auto cfg = std::make_shared<tateyama::api::configuration::whole>(ss, tateyama::test_utils::default_configuration_for_tests);
     cfg->base_path(path());
+    std::filesystem::path dbdir = path() / "db";
     framework::environment env{boot_mode::database_server, cfg};
     auto ds = std::make_shared<datastore::resource::bridge>();
     transactional_kvs_resource kvs{};
@@ -86,6 +88,9 @@ TEST_F(transactional_kvs_test, relative_path) {
     ASSERT_TRUE(kvs.start(env));
     ASSERT_TRUE(kvs.shutdown(env));
     ASSERT_TRUE(ds->shutdown(env));
+    // assume: limestone creates anything in dbdir
+    // TODO?: force creating pwal file, eg. CREATE TABLE
+    ASSERT_FALSE(std::filesystem::is_empty(dbdir)) << dbdir;
 }
 
 TEST_F(transactional_kvs_test, empty_string) {
@@ -97,8 +102,11 @@ TEST_F(transactional_kvs_test, empty_string) {
     auto cfg = std::make_shared<tateyama::api::configuration::whole>(ss, tateyama::test_utils::default_configuration_for_tests);
     cfg->base_path(path());
     framework::environment env{boot_mode::database_server, cfg};
+    auto ds = std::make_shared<datastore::resource::bridge>();
     transactional_kvs_resource kvs{};
-    ASSERT_FALSE(kvs.setup(env));
+    env.resource_repository().add(ds);
+    ASSERT_FALSE(ds->setup(env)); // log_location is invalid
+    ASSERT_FALSE(kvs.setup(env)); // datastore is not initialized
 }
 
 TEST_F(transactional_kvs_test, DISABLED_error_detection) {
