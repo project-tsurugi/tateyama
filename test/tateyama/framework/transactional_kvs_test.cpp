@@ -75,7 +75,7 @@ TEST_F(transactional_kvs_test, relative_path) {
     };
     auto cfg = std::make_shared<tateyama::api::configuration::whole>(ss, tateyama::test_utils::default_configuration_for_tests);
     cfg->base_path(path());
-    std::filesystem::path dbdir = path() / "db";
+    std::filesystem::path dbdir{path() + "/db"};
     framework::environment env{boot_mode::database_server, cfg};
     auto ds = std::make_shared<datastore::resource::bridge>();
     transactional_kvs_resource kvs{};
