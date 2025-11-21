@@ -362,7 +362,7 @@ private:
 
 
 /**
- * @brief get std::filesystem::epath from configuration file
+ * @brief get std::filesystem::path from configuration file
  * @return the file path from the specified parameter. if the file path is not absolute path (does not begin with '/'), the base path is given at the beginning of the file path.
  */
 template<>
