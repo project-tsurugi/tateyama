@@ -47,12 +47,20 @@ public:
     }
 };
 
+TEST_F(transactional_kvs_test, fail_without_registering_datastore_resource) {
+    std::stringstream ss{};
+    ss << "[datastore]\n";
+    ss << "log_location=" << path() << "\n";
+    auto cfg = std::make_shared<tateyama::api::configuration::whole>(ss, tateyama::test_utils::default_configuration_for_tests);
+    framework::environment env{boot_mode::database_server, cfg};
+    transactional_kvs_resource kvs{};
+    ASSERT_FALSE(kvs.setup(env) && kvs.start(env));
+}
+
 TEST_F(transactional_kvs_test, basic) {
     std::stringstream ss{};
     ss << "[datastore]\n";
-    ss << "log_location=";
-    ss << path();
-    ss << "\n";
+    ss << "log_location=" << path() << "\n";
     std::cerr << "ss : " << ss.str();
     std::filesystem::path logdir{path()};
     auto cfg = std::make_shared<tateyama::api::configuration::whole>(ss, tateyama::test_utils::default_configuration_for_tests);
