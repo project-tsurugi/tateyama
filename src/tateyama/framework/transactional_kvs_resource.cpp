@@ -32,6 +32,7 @@ static bool extract_config(environment& env, sharksfin::DatabaseOptions& options
         options.attribute(KEY_STARTUP_MODE, "maintenance");
     }
     try {
+        // transitional: shirakami::init needs the info of log_location to create log_channel (for now)
         if(auto ds = env.configuration()->get_section("datastore")) {
             if (auto res = ds->get<std::filesystem::path>("log_location"); res) {
                 if(res->empty()) {
@@ -42,13 +43,6 @@ static bool extract_config(environment& env, sharksfin::DatabaseOptions& options
                 // sharksfin db location name is different for historical reason
                 static constexpr std::string_view KEY_LOCATION{"location"};
                 options.attribute(KEY_LOCATION, res->string());
-            }
-            if(auto res = ds->get<int>("recover_max_parallelism"); res) {
-                auto sz = res.value();
-                if(sz > 0) {
-                    static constexpr std::string_view KEY_RECOVER_MAX_PARALLELISM{"recover_max_parallelism"};
-                    options.attribute(KEY_RECOVER_MAX_PARALLELISM, std::to_string(sz));
-                }
             }
         }
         if(auto cc = env.configuration()->get_section("cc")) {
@@ -87,7 +81,7 @@ bool transactional_kvs_resource::setup(environment& env) {
 
 bool transactional_kvs_resource::start(environment& env) {
     auto datastore = env.resource_repository().find<datastore::resource::bridge>();
-    if(! datastore) {
+    if(! datastore || ! datastore->get_datastore_ptr()) {
         LOG_LP(ERROR) << "failed to find datastore resource";
         return false;
     }

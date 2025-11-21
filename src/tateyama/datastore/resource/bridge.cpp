@@ -59,13 +59,13 @@ static bool extract_config(environment& env, limestone::api::configuration& opti
     return true;
 }
 
-bool bridge::setup([[maybe_unused]] environment& env) {
+bool bridge::setup(environment& env) {
     auto ret = extract_config(env, config_);
     if (!ret) { return false; }
     try {
         datastore_ = std::make_shared<limestone::api::datastore>(config_);
     } catch (std::runtime_error &ex) {
-        LOG(ERROR) << "opening dataatore failed";
+        LOG(ERROR) << "opening datastore failed";
         return false;
     }
     return true;
