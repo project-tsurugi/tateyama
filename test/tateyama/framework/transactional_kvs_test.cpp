@@ -51,7 +51,6 @@ TEST_F(transactional_kvs_test, fail_without_registering_datastore_resource) {
     std::stringstream ss{};
     ss << "[datastore]\n";
     ss << "log_location=" << path() << "\n";
-    std::cerr << "ss : " << ss.str();
     auto cfg = std::make_shared<tateyama::api::configuration::whole>(ss, tateyama::test_utils::default_configuration_for_tests);
     framework::environment env{boot_mode::database_server, cfg};
     transactional_kvs_resource kvs{};
@@ -63,17 +62,22 @@ TEST_F(transactional_kvs_test, basic) {
     ss << "[datastore]\n";
     ss << "log_location=" << path() << "\n";
     std::cerr << "ss : " << ss.str();
+    std::filesystem::path logdir{path()};
     auto cfg = std::make_shared<tateyama::api::configuration::whole>(ss, tateyama::test_utils::default_configuration_for_tests);
     framework::environment env{boot_mode::database_server, cfg};
     auto ds = std::make_shared<datastore::resource::bridge>();
-    transactional_kvs_resource kvs{};
     env.resource_repository().add(ds);
+    transactional_kvs_resource kvs{};
+    ASSERT_FALSE(std::filesystem::exists(logdir) && !std::filesystem::is_empty(logdir)) << logdir;
     ASSERT_TRUE(ds->setup(env));
     ASSERT_TRUE(kvs.setup(env));
     ASSERT_TRUE(ds->start(env));
     ASSERT_TRUE(kvs.start(env));
     ASSERT_TRUE(kvs.shutdown(env));
     ASSERT_TRUE(ds->shutdown(env));
+    // assume: limestone creates something in logdir
+    // TODO?: force creating pwal file, eg. CREATE TABLE
+    ASSERT_TRUE(std::filesystem::exists(logdir) && !std::filesystem::is_empty(logdir)) << logdir;
 }
 
 TEST_F(transactional_kvs_test, relative_path) {
@@ -82,25 +86,25 @@ TEST_F(transactional_kvs_test, relative_path) {
         "[datastore]\n"
         "log_location=db\n",
     };
+    std::filesystem::path logdir{path() + "/db"};
     auto cfg = std::make_shared<tateyama::api::configuration::whole>(ss, tateyama::test_utils::default_configuration_for_tests);
     cfg->base_path(path());
-    std::filesystem::path dbdir{path() + "/db"};
     framework::environment env{boot_mode::database_server, cfg};
     auto ds = std::make_shared<datastore::resource::bridge>();
-    transactional_kvs_resource kvs{};
     env.resource_repository().add(ds);
+    transactional_kvs_resource kvs{};
     // we can only check following calls are successful
     // manually verify with GLOG_v=50 env. var. and shirakami::init receives db directory under tmp folder as log_directory_path
-    ASSERT_FALSE(std::filesystem::exists(dbdir) && !std::filesystem::is_empty(dbdir)) << dbdir;
+    ASSERT_FALSE(std::filesystem::exists(logdir) && !std::filesystem::is_empty(logdir)) << logdir;
     ASSERT_TRUE(ds->setup(env));
     ASSERT_TRUE(kvs.setup(env));
     ASSERT_TRUE(ds->start(env));
     ASSERT_TRUE(kvs.start(env));
     ASSERT_TRUE(kvs.shutdown(env));
     ASSERT_TRUE(ds->shutdown(env));
-    // assume: limestone creates anything in dbdir
+    // assume: limestone creates something in logdir
     // TODO?: force creating pwal file, eg. CREATE TABLE
-    ASSERT_TRUE(std::filesystem::exists(dbdir) && !std::filesystem::is_empty(dbdir)) << dbdir;
+    ASSERT_TRUE(std::filesystem::exists(logdir) && !std::filesystem::is_empty(logdir)) << logdir;
 }
 
 TEST_F(transactional_kvs_test, empty_string) {
@@ -113,13 +117,17 @@ TEST_F(transactional_kvs_test, empty_string) {
     cfg->base_path(path());
     framework::environment env{boot_mode::database_server, cfg};
     auto ds = std::make_shared<datastore::resource::bridge>();
-    transactional_kvs_resource kvs{};
     env.resource_repository().add(ds);
+    transactional_kvs_resource kvs{};
     ASSERT_FALSE(ds->setup(env)); // log_location is invalid
-    ASSERT_FALSE(kvs.setup(env)); // log_location is invalid or datastore is not initialized
+    ASSERT_FALSE(kvs.setup(env)); // log_location is invalid (by transitional config check) or failed to find datastore resource
 }
 
-TEST_F(transactional_kvs_test, DISABLED_error_detection) {
+// TODO: move to datastore test file
+TEST_F(transactional_kvs_test, error_detection) {
+    // root can make directories anywhere
+    if (geteuid() == 0) { GTEST_SKIP() << "skip when run by root"; }
+
     // rise error from datastore
     std::stringstream ss{
         "[datastore]\n"
@@ -128,10 +136,8 @@ TEST_F(transactional_kvs_test, DISABLED_error_detection) {
     auto cfg = std::make_shared<tateyama::api::configuration::whole>(ss, tateyama::test_utils::default_configuration_for_tests);
     cfg->base_path(path());
     framework::environment env{boot_mode::database_server, cfg};
-    transactional_kvs_resource kvs{};
-    // we can only check following calls are successful
-    // manually verify with GLOG_v=50 env. var. and shirakami::init receives empty string as log_directory_path
+    auto ds = std::make_shared<datastore::resource::bridge>();
 
-    ASSERT_FALSE(kvs.setup(env));
+    ASSERT_FALSE(ds->setup(env)); // cannot make log_location
 }
 }
