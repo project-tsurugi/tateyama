@@ -28,8 +28,7 @@ namespace tateyama::framework {
 
 static bool extract_config(environment& env, sharksfin::DatabaseOptions& options) {
     if(env.mode() == boot_mode::maintenance_server || env.mode() == boot_mode::maintenance_standalone) {
-        static constexpr std::string_view KEY_STARTUP_MODE{"startup_mode"};
-        options.attribute(KEY_STARTUP_MODE, "maintenance");
+        return true; // do nothing
     }
     try {
         // TODO: remove the code that calls get_section("datastore")
@@ -81,6 +80,9 @@ bool transactional_kvs_resource::setup(environment& env) {
 }
 
 bool transactional_kvs_resource::start(environment& env) {
+    if(env.mode() == boot_mode::maintenance_server || env.mode() == boot_mode::maintenance_standalone) {
+        return true; // do nothing
+    }
     auto datastore = env.resource_repository().find<datastore::resource::bridge>();
     if(! datastore || ! datastore->get_datastore()) {
         LOG_LP(ERROR) << "failed to find datastore resource";
