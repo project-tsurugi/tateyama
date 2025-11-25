@@ -111,7 +111,7 @@ public:
             throw std::runtime_error("cannot find allow_blob_privileged at the ipc_endpoint section in the configuration");
         }
         auto allow_blob_privileged = allow_blob_privileged_opt.value();
-        VLOG_LP(log_debug) << "allow_blob_privileged = " << utils::boolalpha(allow_blob_privileged) << std::noboolalpha;
+        VLOG_LP(log_debug) << "allow_blob_privileged = " << utils::boolalpha(allow_blob_privileged);
         conf_.allow_blob_privileged(allow_blob_privileged);
 
         // connection channel

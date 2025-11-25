@@ -46,7 +46,7 @@ public:
     bool shutdown(framework::environment&);
 
     /**
-     * @brief destructor the object
+     * @brief destructor of this object
      */
     ~resource_impl();
 

@@ -30,7 +30,7 @@ target_include_directories(${test_target}
         )
 
 target_link_libraries(${test_target}
-        PUBLIC gtest
+        PRIVATE gtest
         PRIVATE tateyama-impl
         PRIVATE tbb
         PRIVATE takatori

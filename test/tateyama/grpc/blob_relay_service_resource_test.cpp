@@ -148,4 +148,4 @@ TEST_F(blob_relay_service_resource_test, entries_and_remove) {
     blob_session.dispose();
 }
 
-} // namespace tateyama::endpoint::ipc
+} // namespace tateyama::endpoint::grpc

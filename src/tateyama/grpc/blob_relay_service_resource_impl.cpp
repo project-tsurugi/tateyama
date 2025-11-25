@@ -101,7 +101,7 @@ std::shared_ptr<data_relay_grpc::blob_relay::blob_relay_service> resource_impl::
     if(service_handler_) {
         return service_handler_->blob_relay_service();
     }
-    throw std::runtime_error("blob_relay_service is not ready. Do thie after start()");
+    throw std::runtime_error("blob_relay_service is not ready. Do this after start()");
 }
 
 

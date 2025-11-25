@@ -62,7 +62,7 @@ public:
     bool shutdown(framework::environment&) override;
 
     /**
-     * @brief destructor the object
+     * @brief destructor of this object
      */
     ~blob_relay_service_resource() override;
 
