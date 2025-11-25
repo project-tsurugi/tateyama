@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2023 Project Tsurugi.
+ * Copyright 2025-2025 Project Tsurugi.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,27 +15,34 @@
  */
 #pragma once
 
-#include <tateyama/framework/component_ids.h>
+#include <cstdint>
+#include <optional>
+#include <memory>
+
 #include <tateyama/framework/resource.h>
+#include <tateyama/framework/component_ids.h>
 #include <tateyama/framework/environment.h>
 
-#include <sharksfin/api.h>
-#include <limestone/status.h>
-#include <limestone/api/datastore.h>
+#include <data-relay-grpc/blob_relay/service.h>
 
-namespace tateyama::datastore::resource {
+namespace tateyama::grpc {
 
-/**
- * @brief datastore resource bridge for tateyama framework
- * @details This object bridges datastore as a resource component in tateyama framework.
- * This object should be responsible only for life-cycle management.
- */
-class bridge : public framework::resource {
+class resource_impl;
+
+class blob_relay_service_resource : public ::tateyama::framework::resource {
 public:
-    static constexpr id_type tag = framework::resource_id_datastore;
+    /**
+      * @brief provides the blob_relay_service.
+      * @return the blob_relay_service object
+      */
+    [[nodiscard]] std::shared_ptr<data_relay_grpc::blob_relay::blob_relay_service> blob_relay_service();
+
+
+    // resource fundamentals
+    static constexpr id_type tag = framework::resource_id_blob_relay_service;
 
     //@brief human readable label of this component
-    static constexpr std::string_view component_label = "datastore_resource";
+    static constexpr std::string_view component_label = "blob_relay_service_resource";
 
     [[nodiscard]] id_type id() const noexcept override;
 
@@ -55,26 +62,19 @@ public:
     bool shutdown(framework::environment&) override;
 
     /**
-     * @brief destructor the object
+     * @brief destructor of this object
      */
-    ~bridge() override;
+    ~blob_relay_service_resource() override;
 
-    bridge(bridge const& other) = delete;
-    bridge& operator=(bridge const& other) = delete;
-    bridge(bridge&& other) noexcept = delete;
-    bridge& operator=(bridge&& other) noexcept = delete;
+    blob_relay_service_resource(blob_relay_service_resource const& other) = delete;
+    blob_relay_service_resource& operator=(blob_relay_service_resource const& other) = delete;
+    blob_relay_service_resource(blob_relay_service_resource&& other) noexcept = delete;
+    blob_relay_service_resource& operator=(blob_relay_service_resource&& other) noexcept = delete;
 
     /**
      * @brief create empty object
      */
-    bridge() = default;
-
-    limestone::api::backup& begin_backup();
-    std::unique_ptr<limestone::api::backup_detail> begin_backup(limestone::api::backup_type);
-    void end_backup();
-    limestone::status restore_backup(std::string_view, bool);
-    limestone::status restore_backup(std::string_view, std::vector<limestone::api::file_set_entry>&);
-    [[nodiscard]] limestone::api::datastore& datastore() const noexcept;
+    blob_relay_service_resource();
 
     /**
      * @see `tateyama::framework::component::label()`
@@ -82,8 +82,7 @@ public:
     [[nodiscard]] std::string_view label() const noexcept override;
 
 private:
-    limestone::api::datastore* datastore_{};
-    bool deactivated_{false};
+    std::unique_ptr<resource_impl, void(*)(resource_impl*)> impl_;
 };
 
-}
+} // namespace

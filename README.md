@@ -67,6 +67,7 @@ available options:
 * `-DINSTALL_EXAMPLES=ON` - install example applications
 * `-DSHARKSFIN_IMPLEMENTATION=<implementation name>` - switch sharksfin implementation. Available options are `memory` and `shirakami` (default: `shirakami`)
 * `-DENABLE_ALTIMETER=ON` - turn on the `altimeter logging`.
+* `-DENABLE_GRPC` - turn off the `grpc build`.
 * `-DMC_QUEUE=ON` - use moody camel queue instead of tbb queue to store tasks in tateyama task scheduler.
 * `-DENABLE_DEBUG_SERVICE=OFF` - turn off the `debug service`.
 * for debugging only

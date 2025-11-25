@@ -2,13 +2,22 @@ if(NOT TARGET sharksfin-${SHARKSFIN_IMPLEMENTATION})
     message(FATAL_ERROR "sharksfin implementation \"sharksfin-${SHARKSFIN_IMPLEMENTATION}\" not found")
 endif()
 
-file(GLOB_RECURSE ProtoFiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "*.proto")
+file(GLOB_RECURSE PROTO_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "*.proto")
+add_custom_target(tateyama_protos DEPENDS ${PROTO_FILES})
 
-# By default, PROTOBUF_GENERATE_CPP generates file path for .pb.cc as if they are in the same directory.
-# Work-around this with PROTOBUF_GENERATE_CPP_APPEND_PATH
-set(PROTOBUF_GENERATE_CPP_APPEND_PATH OFF)
-PROTOBUF_GENERATE_CPP(GENERATED_PROTO_SRCS GENERATED_PROTO_HDRS ${ProtoFiles})
-add_custom_target(build_protos DEPENDS ${GENERATED_PROTO_SRCS})
+# Compile protobuf and grpc files in tateyama_protos target to cpp
+#
+protobuf_generate(TARGET tateyama_protos LANGUAGE cpp OUT_VAR GENERATED_PROTO_FILES PROTOS ${PROTO_FILES})
+if (ENABLE_GRPC)
+  if(USE_GRPC_CONFIG)
+      get_target_property(grpc_cpp_plugin_location gRPC::grpc_cpp_plugin LOCATION)
+  else ()
+      find_program(grpc_cpp_plugin_location grpc_cpp_plugin REQUIRED)
+  endif()
+  protobuf_generate(TARGET tateyama_protos LANGUAGE grpc OUT_VAR GENERATED_GRPC_FILES PROTOS ${PROTO_FILES} GENERATE_EXTENSIONS .grpc.pb.h .grpc.pb.cc PLUGIN "protoc-gen-grpc=${grpc_cpp_plugin_location}")
+else()
+  set(GENERATED_GRPC_FILES)
+endif()
 
 install(DIRECTORY
         ${CMAKE_BINARY_DIR}/src/tateyama
@@ -49,12 +58,19 @@ file(GLOB SOURCES
         "tateyama/authentication/resource/*.cpp"
         "tateyama/authentication/service/*.cpp"
 )
-
 if (ENABLE_ALTIMETER)
     file(GLOB ALTIMETER_SOURCES
         "tateyama/altimeter/service/*.cpp"
     )
     list(APPEND SOURCES ${ALTIMETER_SOURCES})
+endif()
+
+if (ENABLE_GRPC)
+    file(GLOB GRPC_SOURCES
+        "tateyama/grpc/*.cpp"
+        "tateyama/grpc/server/*.cpp"
+    )
+    list(APPEND SOURCES ${GRPC_SOURCES})
 endif()
 
 if(TRACY_ENABLE)
@@ -70,7 +86,8 @@ if(TRACY_ENABLE)
 endif()
 
 set_source_files_properties(
-        ${GENERATED_PROTO_SRCS}
+        ${GENERATED_PROTO_FILES}
+        ${GENERATED_GRPC_FILES}
         PROPERTIES
         GENERATED TRUE
         COMPILE_FLAGS "-Wno-unused-parameter -Wno-array-bounds"
@@ -78,11 +95,12 @@ set_source_files_properties(
 
 add_library(${ENGINE}
         ${SOURCES}
-        ${GENERATED_PROTO_SRCS}
+        ${GENERATED_PROTO_FILES}
+        ${GENERATED_GRPC_FILES}
 )
 
 add_dependencies(${ENGINE}
-        build_protos
+        tateyama_protos
         )
 
 set_target_properties(${ENGINE}
@@ -117,7 +135,15 @@ target_link_libraries(${ENGINE}
         PRIVATE rt # for shm
         PRIVATE crypto
         PRIVATE jwt
+        PRIVATE grpc++
+        PRIVATE grpc
 )
+
+if (ENABLE_GRPC)
+target_link_libraries(${ENGINE}
+        PRIVATE data-relay-grpc
+)
+endif()
 
 if(MC_QUEUE)
     target_compile_definitions(${ENGINE} PUBLIC MC_QUEUE)
@@ -131,6 +157,10 @@ if (ENABLE_ALTIMETER)
     target_link_libraries(${ENGINE}
         PRIVATE altimeter
     )
+endif()
+
+if (ENABLE_GRPC)
+    target_compile_definitions(${ENGINE} PUBLIC ENABLE_GRPC)
 endif()
 
 # Boost.Thread doesn't seem to allow multiple versions to coexist.
@@ -165,4 +195,3 @@ target_link_libraries(tateyama-impl
 if(MC_QUEUE)
     target_compile_definitions(tateyama-impl INTERFACE MC_QUEUE)
 endif()
-

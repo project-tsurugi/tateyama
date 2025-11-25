@@ -74,7 +74,7 @@ static constexpr std::string_view default_configuration_for_tests {  // NOLINT
         "allow_blob_privileged=true\n"
 
     "[stream_endpoint]\n"
-        "enabled=true\n"
+        "enabled=false\n"
         "port=12345\n"
         "threads=104\n"
         "allow_blob_privileged=false\n"
@@ -104,6 +104,18 @@ static constexpr std::string_view default_configuration_for_tests {  // NOLINT
         "url=http://localhost:8080/harinoki\n"
         "request_timeout=0\n"
         "administrators=*\n"
+
+    "[grpc]\n"
+        "enabled=true\n"
+        "endpoint=localhost:50051\n"
+
+    "[blob_relay]\n"
+        "enabled=true\n"
+        "session_store=var/blob/sessions\n"
+        "session_quota_size=\n"
+        "local_enabled=true\n"
+        "local_upload_copy_file=false\n"
+        "stream_chunk_size=1048576\n"
 
     "[glog]\n"
         "dummy=\n"  // just for retain glog section in default configuration

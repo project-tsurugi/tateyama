@@ -27,6 +27,7 @@
 #include <gtest/gtest.h>
 #include <tateyama/test_utils/utility.h>
 #include <tateyama/test_utils/request_response.h>
+#include <tateyama/test_utils/test_server.h>
 
 namespace tateyama::datastore {
 
@@ -55,7 +56,7 @@ TEST_F(datastore_test, basic) {
     auto cfg = api::configuration::create_configuration("", tateyama::test_utils::default_configuration_for_tests);
     set_dbpath(*cfg);
     framework::server sv{framework::boot_mode::database_server, cfg};
-    add_core_components(sv);
+    tateyama::test_utils::add_core_components_for_datastore_test(sv);
     sv.start();
     auto router = sv.find_service<framework::routing_service>();
     EXPECT_TRUE(router);
@@ -95,7 +96,6 @@ TEST_F(datastore_test, test_connectivity_with_limestone) {
     add_core_components(sv);
     sv.start();
     auto ds = sv.find_service<datastore::service::bridge>();
-    datastore::
 
 
 

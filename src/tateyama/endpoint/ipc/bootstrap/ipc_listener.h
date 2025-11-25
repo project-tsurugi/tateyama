@@ -31,6 +31,7 @@
 #include <glog/logging.h>
 
 #include <tateyama/logging.h>
+#include <tateyama/utils/boolalpha.h>
 #include <tateyama/framework/routing_service.h>
 #include <tateyama/api/configuration.h>
 #include <tateyama/session/resource/bridge.h>
@@ -110,7 +111,7 @@ public:
             throw std::runtime_error("cannot find allow_blob_privileged at the ipc_endpoint section in the configuration");
         }
         auto allow_blob_privileged = allow_blob_privileged_opt.value();
-        VLOG_LP(log_debug) << "allow_blob_privileged = " << std::boolalpha << allow_blob_privileged << std::noboolalpha;
+        VLOG_LP(log_debug) << "allow_blob_privileged = " << utils::boolalpha(allow_blob_privileged);
         conf_.allow_blob_privileged(allow_blob_privileged);
 
         // connection channel
@@ -153,7 +154,7 @@ public:
 
             auto enable_timeout = enable_timeout_opt.value();
             LOG(INFO) << tateyama::endpoint::common::session_config_prefix
-                      << "enable_timeout: " << enable_timeout << ", "
+                      << "enable_timeout: " << utils::boolalpha(enable_timeout) << ", "
                       << "whether timeout is enabled or not.";
 
             if (enable_timeout) {
@@ -193,7 +194,7 @@ public:
         }
 
         LOG(INFO) << tateyama::endpoint::common::ipc_endpoint_config_prefix
-                  << "allow_blob_privileged: " << std::boolalpha << allow_blob_privileged << std::noboolalpha << ", "
+                  << "allow_blob_privileged: " << utils::boolalpha(allow_blob_privileged) << std::noboolalpha << ", "
                   << "whether permission to handle blobs in privileged mode is granted or not.";
     }
 

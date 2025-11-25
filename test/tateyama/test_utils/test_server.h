@@ -17,7 +17,6 @@
 
 #include <tateyama/framework/server.h>
 #include <tateyama/framework/repository.h>
-
 #include <tateyama/status/resource/bridge.h>
 #include <tateyama/framework/routing_service.h>
 #include <tateyama/session/service/bridge.h>
@@ -31,6 +30,11 @@
 #include <tateyama/endpoint/ipc/bootstrap/ipc_endpoint.h>
 #include <tateyama/authentication/service/bridge.h>
 #include <tateyama/authentication/resource/bridge.h>
+
+// for datastore test
+#include <tateyama/framework/transactional_kvs_resource.h>
+#include <tateyama/datastore/service/bridge.h>
+#include <tateyama/datastore/resource/bridge.h>
 
 namespace tateyama::test_utils {
 
@@ -52,4 +56,24 @@ namespace tateyama::test_utils {
         svr.add_endpoint(std::make_shared<tateyama::framework::ipc_endpoint>());
     }
 
+    static void add_core_components_for_datastore_test(tateyama::framework::server& svr) {
+        svr.add_resource(std::make_shared<tateyama::metrics::resource::bridge>());
+        svr.add_resource(std::make_shared<tateyama::status_info::resource::bridge>());
+        svr.add_resource(std::make_shared<framework::transactional_kvs_resource>());
+        svr.add_resource(std::make_shared<datastore::resource::bridge>());
+        svr.add_resource(std::make_shared<tateyama::session::resource::bridge>());
+        svr.add_resource(std::make_shared<authentication::resource::bridge>());
+
+        svr.add_service(std::make_shared<tateyama::framework::routing_service>());
+        svr.add_service(std::make_shared<tateyama::metrics::service::bridge>());
+        svr.add_service(std::make_shared<datastore::service::bridge>());
+        svr.add_service(std::make_shared<tateyama::session::service::bridge>());
+#ifdef ENABLE_ALTIMETER
+        svr.add_service(std::make_shared<altimeter::service::bridge>());
+#endif
+        svr.add_service(std::make_shared<tateyama::request::service::bridge>());
+        svr.add_service(std::make_shared<tateyama::authentication::service::bridge>());
+
+        svr.add_endpoint(std::make_shared<tateyama::framework::ipc_endpoint>());
+    }
 }
