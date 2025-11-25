@@ -1,6 +1,7 @@
 # transactional kvs resource
 
-2024-01-31 kurosawa
+* 2024-01-31 kurosawa
+* 2025-11-25 (update) ban
 
 ## 当文書について
 
@@ -33,11 +34,13 @@
 
     https://github.com/project-tsurugi/tateyama-bootstrap/blob/0bb4d5b04c439105bcafd83967f101fbebc83880/src/tateyama/server/backend.cpp#L258
 
-    ここで構成パラメーター(`conf`の内容)を抽出し `sharksfin::DatabaseOptions` を作成し、sharksfinを初期化する。sharksfinの延長でshirakami、その延長でlimestoneも初期化される。(`shirakami::init()`の処理)
+    ここで構成パラメーター(`conf`の内容)を抽出し `sharksfin::DatabaseOptions` を作成する
 
-3. `tateyama::framework::server::start()` が呼ばれ、その中で`transactional_kvs_resource::start()` も実行されるが、現実装ではDBの初期化は上記setupで実行され、startの方では得に何もしていない。
+3. `tateyama::framework::server::start()` が呼ばれ、その中で`transactional_kvs_resource::start()` も実行される
 
     https://github.com/project-tsurugi/tateyama-bootstrap/blob/0bb4d5b04c439105bcafd83967f101fbebc83880/src/tateyama/server/backend.cpp#L275
+
+    setup で抽出した構成パラメーターと、別途初期化されている limestone datastore リソースを用いて、sharksfinを初期化する
 
 ## 停止時の挙動
 
@@ -57,16 +60,15 @@ tsurugidbのプロセスには複数の起動時モードがあり(定義は[tat
 
 - `maintenance_server`, `maintenance_standalone`
 リストアのためのメンテナンスモード。
-トランザクションエンジンはlimestoneにアクセス可能にする以外の機能は期待されない
+トランザクションエンジンは起動されない
 
 - `quiescent_server`
 静止状態で起動するモード(主にバックアップのため) 通常の起動を行うが停止以外の要求を受けることはない
 
 ## その他
 
-- 現実装ではshirakamiによってlimestoneが初期化され保持されているが、本来はlimestoneも独立したtateyamaのリソースとして初期化されることが望ましい
-  - この事情のため、limestone向けの構成パラメータも一旦 `transactional_kvs_resource` が構成ファイルから読み出して渡すという回り道になっている
-  - maintenanceモードでlimestoneのみ初期化を行うのも同じ理由であり、shirakamiの初期化を経由せずにlimestoneの初期化が実施されるのが望ましい
+- 旧実装(tsurugidb 1.7.0 あたりまで)ではshirakamiによってlimestoneが初期化され保持されていたが、
+  (tsurugidb 1.8.0 あたりから)limestoneも独立したtateyamaのリソースとして初期化されるようになった
 
 ## 参考情報
 
