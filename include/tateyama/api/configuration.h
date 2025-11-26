@@ -228,7 +228,6 @@ public:
      * @return canonical path of the config file
      */
     std::filesystem::path get_canonical_path() {
-        std::cout << __func__ << ":" << static_cast<void*>(this) << ":" << property_file_exist_ << '\n' << std::flush;
         if (property_file_exist_) {
             return std::filesystem::canonical(file_);
         }
