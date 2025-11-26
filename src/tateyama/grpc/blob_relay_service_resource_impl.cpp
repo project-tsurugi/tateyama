@@ -31,26 +31,40 @@ bool resource_impl::setup(environment& env) {
     const auto& cfg = env.configuration();
 
     // grpc section
-    auto* grpc_config = cfg->get_section("grpc");
-    if (auto grpc_enabled_opt = grpc_config->get<bool>("enabled"); grpc_enabled_opt) {
-        grpc_enabled_ = grpc_enabled_opt.value();
-    }
-    if (auto grpc_endpoint_opt = grpc_config->get<std::string>("endpoint"); grpc_endpoint_opt) {
-        grpc_endpoint_ = grpc_endpoint_opt.value();
+    if (auto* grpc_config = cfg->get_section("grpc"); grpc_config) {
+        if (auto grpc_enabled_opt = grpc_config->get<bool>("enabled"); grpc_enabled_opt) {
+            grpc_enabled_ = grpc_enabled_opt.value();
+        }
+        if (auto grpc_endpoint_opt = grpc_config->get<std::string>("endpoint"); grpc_endpoint_opt) {
+            grpc_endpoint_ = grpc_endpoint_opt.value();
+        }
     }
 
     if (grpc_enabled_) {
-        // create the relay service
-        service_handler_ = std::make_shared<blob_relay::blob_relay_service_handler>();
+        // check blob_relay.enabled
+        if (auto* blob_relay_config = cfg->get_section("blob_relay"); blob_relay_config) {
+            if (auto blob_relay_enabled_opt = blob_relay_config->get<bool>("enabled"); blob_relay_enabled_opt) {
+                blob_relay_enabled_ = blob_relay_enabled_opt.value();
+                if (blob_relay_enabled_) {
+                    // create the relay service
+                    service_handler_ = std::make_shared<blob_relay::blob_relay_service_handler>();
+                }
+            }
+        }
     }
 
     // output configuration to be used
     LOG(INFO) << tateyama::grpc::grpc_config_prefix
               << "grpc_enabled: " << utils::boolalpha(grpc_enabled_) << ", "
               << "gRPC service is enabled or not.";
-    LOG(INFO) << tateyama::grpc::blob_relay_config_prefix
+    LOG(INFO) << tateyama::grpc::grpc_config_prefix
               << "grpc_endpoint: " << grpc_endpoint_ << ", "
-              << "endpoint address of the blob_relay service.";
+              << "endpoint address of the grpc server.";
+
+    // output configuration to be used
+    LOG(INFO) << tateyama::grpc::blob_relay_config_prefix
+              << "blob_relay_enabled: " << utils::boolalpha(blob_relay_enabled_) << ", "
+              << "blob relay service is enabled or not.";
 
     return true;
 }
@@ -60,12 +74,14 @@ bool resource_impl::start(environment& env) {
         try {
             grpc_server_ = std::unique_ptr<server::tateyama_grpc_server, void(*)(server::tateyama_grpc_server*)>(new server::tateyama_grpc_server(grpc_endpoint_), [](server::tateyama_grpc_server* e){ delete e; } );  // NOLINT
 
-            // start blob relay service and add it to the server
-            if (!service_handler_->start(env)) {
-                LOG(ERROR) << "cannot start the lob relay service";
-                return false;
+            if (service_handler_) {
+                // start blob relay service and add it to the server
+                if (!service_handler_->start(env)) {
+                    LOG(ERROR) << "cannot start the lob relay service";
+                    return false;
+                }
+                grpc_server_->add_grpc_service_handler(service_handler_);
             }
-            grpc_server_->add_grpc_service_handler(service_handler_);
 
             // Start the gRPC server
             grpc_server_thread_ = std::thread(std::ref(*grpc_server_));
