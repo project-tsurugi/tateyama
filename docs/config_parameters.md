@@ -97,7 +97,7 @@ parameter=value
 |パラメーター名 | 型 | 値 |備考|
 |---:| :---: | :--- |---|
 | plugin_directory | String | UDF プラグイン (.so ファイル) を配置するディレクトリへのパス。デフォルトは $TSURUGI_HOME/var/plugins/ | |
-| endpoint | String | Tsurugi Database と UDF サーバ間の通信に利用する gRPC サーバのエンドポイント。デフォルトは "localhost:50051" | |
+| endpoint | String | Tsurugi Database と UDF サーバ間の通信に利用する gRPC サーバのエンドポイント。デフォルトは "dns:///localhost:50051" | |
 | secure | ブール(true/false) | セキュアなgRPC通信路の利用可否。デフォルト値はfalse。 |
 
 ## ipc_endpointセクション
