@@ -98,7 +98,7 @@ Target component
 | Parameter name | Type | Value | Remarks |
 |---:| :---: | :--- |---|
 | plugin_directory | String | Path to the directory where UDF plugins (.so files) are stored. Default value is $TSURUGI_HOME/var/plugins/. ||
-| endpoint | String | gRPC server endpoint for communication between Tsurugi Database and UDF server. Default value is "localhost:50051". ||
+| endpoint | String | gRPC server endpoint for communication between Tsurugi Database and UDF server. Default value is "dns:///localhost:50051". ||
 | secure | Boolean (true/false) | Whether to use a secure gRPC communication channel. The default value is false. |
 
 ## ipc_endpoint section
