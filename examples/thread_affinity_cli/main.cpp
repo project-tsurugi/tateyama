@@ -97,7 +97,7 @@ public:
 
 }
 
-extern "C" int main(int argc, char* argv[]) {
+int main(int argc, char* argv[]) {
     // ignore log level
     if (FLAGS_log_dir.empty()) {
         FLAGS_logtostderr = true;
