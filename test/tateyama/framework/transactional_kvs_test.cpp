@@ -17,7 +17,6 @@
 
 #include <filesystem>
 #include <gtest/gtest.h>
-#include <unistd.h>
 
 #include <tateyama/api/server/request.h>
 #include <tateyama/datastore/resource/bridge.h>
@@ -122,27 +121,6 @@ TEST_F(transactional_kvs_test, empty_string) {
     transactional_kvs_resource kvs{};
     ASSERT_FALSE(ds->setup(env)); // log_location is invalid
     ASSERT_FALSE(kvs.setup(env)); // log_location is invalid (by transitional config check) or failed to find datastore resource
-}
-
-// TODO: move to datastore test file
-TEST_F(transactional_kvs_test, error_detection) {
-    // root can make directories anywhere
-    if (geteuid() == 0) { GTEST_SKIP() << "skip when run by root"; }
-
-    // skip if something exists at the location
-    if (std::filesystem::exists("/does_not_exist")) { GTEST_SKIP() << "'/does_not_exist' exists"; }
-
-    // arise error from datastore
-    std::stringstream ss{
-        "[datastore]\n"
-        "log_location=/does_not_exist\n",  // to arise error
-    };
-    auto cfg = std::make_shared<tateyama::api::configuration::whole>(ss, tateyama::test_utils::default_configuration_for_tests);
-    cfg->base_path(path());
-    framework::environment env{boot_mode::database_server, cfg};
-    auto ds = std::make_shared<datastore::resource::bridge>();
-    // assume: abort in current limestone implementation
-    ASSERT_DEATH(ds->setup(env), "limestone.* fail to create"); // cannot make log_location
 }
 
 }
