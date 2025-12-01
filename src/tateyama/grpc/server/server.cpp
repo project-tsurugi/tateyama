@@ -31,7 +31,7 @@ namespace tateyama::grpc::server {
 /**
  * @brief gRPC server service
  */
-tateyama_grpc_server::tateyama_grpc_server(std::string grpc_endpoint) : grpc_endpoint_(std::move(grpc_endpoint)) {
+tateyama_grpc_server::tateyama_grpc_server(std::string port) : port_(std::move(port)) {
 }
 
 void tateyama_grpc_server::operator()() {
@@ -39,7 +39,7 @@ void tateyama_grpc_server::operator()() {
 
     // Build and start gRPC server with service added
     ::grpc::ServerBuilder builder{};
-    builder.AddListeningPort(grpc_endpoint_, ::grpc::InsecureServerCredentials());
+    builder.AddListeningPort(std::string("0.0.0.0:") + port_, ::grpc::InsecureServerCredentials());
 
     // Register ping service
     tateyama::grpc::server::ping_service::ping_service ping_service;
@@ -52,10 +52,10 @@ void tateyama_grpc_server::operator()() {
 
     std::unique_ptr<::grpc::Server> server(builder.BuildAndStart());
     if (!server) {
-        LOG_LP(ERROR) << "Failed to start gRPC server on " << grpc_endpoint_;
+        LOG_LP(ERROR) << "Failed to start gRPC server on port " << port_;
         return;
     }
-    LOG_LP(INFO) << "The gRPC server started on " << grpc_endpoint_;
+    LOG_LP(INFO) << "The gRPC server started on port " << port_;
 
     // Wait for shutdown signal
     while (!shutdown_requested_.load()) {

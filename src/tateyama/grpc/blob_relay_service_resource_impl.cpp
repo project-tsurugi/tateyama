@@ -31,12 +31,16 @@ bool resource_impl::setup(environment& env) {
     const auto& cfg = env.configuration();
 
     // grpc section
-    if (auto* grpc_config = cfg->get_section("grpc"); grpc_config) {
+    if (auto* grpc_config = cfg->get_section("grpc_server"); grpc_config) {
         if (auto grpc_enabled_opt = grpc_config->get<bool>("enabled"); grpc_enabled_opt) {
             grpc_enabled_ = grpc_enabled_opt.value();
         }
         if (auto grpc_endpoint_opt = grpc_config->get<std::string>("endpoint"); grpc_endpoint_opt) {
             grpc_endpoint_ = grpc_endpoint_opt.value();
+            port_ = grpc_endpoint_.substr(grpc_endpoint_.find_last_of(':') + 1);
+        }
+        if (auto grpc_secure_opt = grpc_config->get<bool>("secure"); grpc_secure_opt) {
+            grpc_secure_ = grpc_secure_opt.value();
         }
     }
 
@@ -60,6 +64,9 @@ bool resource_impl::setup(environment& env) {
     LOG(INFO) << tateyama::grpc::grpc_config_prefix
               << "grpc_endpoint: " << grpc_endpoint_ << ", "
               << "endpoint address of the grpc server.";
+    LOG(INFO) << tateyama::grpc::grpc_config_prefix
+              << "grpc_endpoint: " << grpc_secure_ << ", "
+              << "endpoint address of the grpc server.";
 
     // output configuration to be used
     LOG(INFO) << tateyama::grpc::blob_relay_config_prefix
@@ -72,7 +79,7 @@ bool resource_impl::setup(environment& env) {
 bool resource_impl::start(environment& env) {
     if (grpc_enabled_) {
         try {
-            grpc_server_ = std::unique_ptr<server::tateyama_grpc_server, void(*)(server::tateyama_grpc_server*)>(new server::tateyama_grpc_server(grpc_endpoint_), [](server::tateyama_grpc_server* e){ delete e; } );  // NOLINT
+            grpc_server_ = std::unique_ptr<server::tateyama_grpc_server, void(*)(server::tateyama_grpc_server*)>(new server::tateyama_grpc_server(port_), [](server::tateyama_grpc_server* e){ delete e; } );  // NOLINT
 
             if (service_handler_) {
                 // start blob relay service and add it to the server
