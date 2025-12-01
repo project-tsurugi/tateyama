@@ -33,7 +33,7 @@ namespace tateyama::grpc::server {
  */
 class tateyama_grpc_server {
 public:
-    explicit tateyama_grpc_server(std::string grpc_endpoint);
+    explicit tateyama_grpc_server(std::string port);
 
     void operator()();
 
@@ -45,7 +45,7 @@ public:
     void add_grpc_service_handler(std::shared_ptr<grpc_service_handler>);
 
 private:
-    std::string grpc_endpoint_;
+    std::string port_;
     std::atomic<bool> shutdown_requested_{false};
 
     std::mutex mutex_{};

@@ -72,7 +72,9 @@ private:
     std::shared_ptr<blob_relay::blob_relay_service_handler> service_handler_{};
 
     std::string grpc_endpoint_{};
+    std::string port_{};
     bool grpc_enabled_{};
+    bool grpc_secure_{};
     bool blob_relay_enabled_{};
 
     void wait_for_server_ready();
