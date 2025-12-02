@@ -32,7 +32,6 @@
 #include <tateyama/authentication/resource/bridge.h>
 
 // for datastore test
-#include <tateyama/framework/transactional_kvs_resource.h>
 #include <tateyama/datastore/service/bridge.h>
 #include <tateyama/datastore/resource/bridge.h>
 
@@ -59,7 +58,6 @@ namespace tateyama::test_utils {
     static void add_core_components_for_datastore_test(tateyama::framework::server& svr) {
         svr.add_resource(std::make_shared<tateyama::metrics::resource::bridge>());
         svr.add_resource(std::make_shared<tateyama::status_info::resource::bridge>());
-        svr.add_resource(std::make_shared<framework::transactional_kvs_resource>());
         svr.add_resource(std::make_shared<datastore::resource::bridge>());
         svr.add_resource(std::make_shared<tateyama::session::resource::bridge>());
         svr.add_resource(std::make_shared<authentication::resource::bridge>());

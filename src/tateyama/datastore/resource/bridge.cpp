@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2023 Project Tsurugi.
+ * Copyright 2018-2025 Project Tsurugi.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,33 +25,56 @@ namespace tateyama::datastore::resource {
 
 using namespace framework;
 
-static limestone::api::datastore* get_datastore(transactional_kvs_resource& kvs) {
-    std::any ptr{};
-    auto res = ::sharksfin::implementation_get_datastore(kvs.core_object(), std::addressof(ptr));
-    if(res == ::sharksfin::StatusCode::OK) {
-        return reinterpret_cast<limestone::api::datastore*>(std::any_cast<void*>(ptr));  //NOLINT
-    }
-    return nullptr;
-}
-
 component::id_type bridge::id() const noexcept {
     return tag;
 }
 
-bool bridge::setup([[maybe_unused]] environment& env) {
+static bool extract_config(environment& env, limestone::api::configuration& options) {
+    try {
+        std::string location{};
+        int recover_param = 0;
+        if(auto ds = env.configuration()->get_section("datastore")) {
+            if (auto res = ds->get<std::filesystem::path>("log_location"); res) {
+                if(res->empty()) {
+                    // if value is empty, it's not relative path and is invalid
+                    LOG(ERROR) << "datastore log_location configuration parameter is empty";
+                    return false;
+                }
+                location = res->string();
+            }
+            if (auto res = ds->get<int>("recover_max_parallelism"); res) {
+                auto sz = res.value();
+                if(sz > 0) {
+                    recover_param = sz;
+                }
+            }
+        }
+        // XXX: direct porting from shirakami init code
+        options = limestone::api::configuration({location}, location + "m");
+        options.set_recover_max_parallelism(recover_param);
+    } catch(std::exception const& e) {
+        // error log should have been made
+        return false;
+    }
     return true;
 }
 
-bool bridge::start(environment& env) {
-    auto kvs = env.resource_repository().find<framework::transactional_kvs_resource>();
-    if (! kvs) {
-        std::abort();
+bool bridge::setup(environment& env) {
+    return extract_config(env, config_);
+}
+
+bool bridge::start(environment&) {
+    try {
+        datastore_ = std::make_shared<limestone::api::datastore>(config_);
+    } catch (std::runtime_error &ex) {
+        LOG(ERROR) << "opening datastore failed";
+        return false;
     }
-    datastore_ = get_datastore(*kvs); // this can be nullptr if kvs doesn't support datastore (e.g. memory)
     return true;
 }
 
 bool bridge::shutdown(environment&) {
+    datastore_.reset();
     deactivated_ = true;
     return true;
 }
