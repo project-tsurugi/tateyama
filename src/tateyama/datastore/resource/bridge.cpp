@@ -60,8 +60,10 @@ static bool extract_config(environment& env, limestone::api::configuration& opti
 }
 
 bool bridge::setup(environment& env) {
-    auto ret = extract_config(env, config_);
-    if (!ret) { return false; }
+    return extract_config(env, config_);
+}
+
+bool bridge::start(environment&) {
     try {
         datastore_ = std::make_shared<limestone::api::datastore>(config_);
     } catch (std::runtime_error &ex) {
@@ -71,11 +73,8 @@ bool bridge::setup(environment& env) {
     return true;
 }
 
-bool bridge::start(environment&) {
-    return true;
-}
-
 bool bridge::shutdown(environment&) {
+    datastore_.reset();
     deactivated_ = true;
     return true;
 }
