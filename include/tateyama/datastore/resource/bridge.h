@@ -88,7 +88,6 @@ public:
 private:
     std::shared_ptr<limestone::api::datastore> datastore_{};
     limestone::api::configuration config_{};
-    bool deactivated_{false};
 };
 
 }

@@ -75,7 +75,6 @@ bool bridge::start(environment&) {
 
 bool bridge::shutdown(environment&) {
     datastore_.reset();
-    deactivated_ = true;
     return true;
 }
 
