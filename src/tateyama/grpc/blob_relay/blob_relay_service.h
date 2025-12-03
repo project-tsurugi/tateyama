@@ -129,7 +129,7 @@ private:
         LOG(INFO) << tateyama::grpc::blob_relay_config_prefix
                   << "dev_accept_mock_tag: " << utils::boolalpha(dev_accept_mock_tag) << ", "
                   << "whether to accept mock tag.";
-        return { session_store, session_quota_size, local_enabled, local_upload_copy_file, dev_accept_mock_tag, dev_accept_mock_tag };
+        return { session_store, session_quota_size, local_enabled, local_upload_copy_file, stream_chunk_size, dev_accept_mock_tag };
     }
 };
 
