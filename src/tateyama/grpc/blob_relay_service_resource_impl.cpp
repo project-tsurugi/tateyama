@@ -35,9 +35,8 @@ bool resource_impl::setup(environment& env) {
         if (auto grpc_enabled_opt = grpc_config->get<bool>("enabled"); grpc_enabled_opt) {
             grpc_enabled_ = grpc_enabled_opt.value();
         }
-        if (auto grpc_endpoint_opt = grpc_config->get<std::string>("endpoint"); grpc_endpoint_opt) {
-            grpc_endpoint_ = grpc_endpoint_opt.value();
-            port_ = grpc_endpoint_.substr(grpc_endpoint_.find_last_of(':') + 1);
+        if (auto grpc_listen_address_opt = grpc_config->get<std::string>("listen_address"); grpc_listen_address_opt) {
+            grpc_listen_address_ = grpc_listen_address_opt.value();
         }
         if (auto grpc_secure_opt = grpc_config->get<bool>("secure"); grpc_secure_opt) {
             grpc_secure_ = grpc_secure_opt.value();
@@ -59,18 +58,18 @@ bool resource_impl::setup(environment& env) {
 
     // output configuration to be used
     LOG(INFO) << tateyama::grpc::grpc_config_prefix
-              << "grpc_enabled: " << utils::boolalpha(grpc_enabled_) << ", "
-              << "gRPC service is enabled or not.";
+              << "enabled: " << utils::boolalpha(grpc_enabled_) << ", "
+              << "gRPC server is enabled or not.";
     LOG(INFO) << tateyama::grpc::grpc_config_prefix
-              << "grpc_endpoint: " << grpc_endpoint_ << ", "
-              << "endpoint address of the grpc server.";
+              << "listen_address: " << grpc_listen_address_ << ", "
+              << "listen address of the gRPC server.";
     LOG(INFO) << tateyama::grpc::grpc_config_prefix
-              << "grpc_endpoint: " << grpc_secure_ << ", "
-              << "endpoint address of the grpc server.";
+              << "secure: " << grpc_secure_ << ", "
+              << "enable secure ports for gRPC server or not.";
 
     // output configuration to be used
     LOG(INFO) << tateyama::grpc::blob_relay_config_prefix
-              << "blob_relay_enabled: " << utils::boolalpha(blob_relay_enabled_) << ", "
+              << "enabled: " << utils::boolalpha(blob_relay_enabled_) << ", "
               << "blob relay service is enabled or not.";
 
     return true;
@@ -79,7 +78,7 @@ bool resource_impl::setup(environment& env) {
 bool resource_impl::start(environment& env) {
     if (grpc_enabled_) {
         try {
-            grpc_server_ = std::unique_ptr<server::tateyama_grpc_server, void(*)(server::tateyama_grpc_server*)>(new server::tateyama_grpc_server(port_), [](server::tateyama_grpc_server* e){ delete e; } );  // NOLINT
+            grpc_server_ = std::unique_ptr<server::tateyama_grpc_server, void(*)(server::tateyama_grpc_server*)>(new server::tateyama_grpc_server(grpc_listen_address_), [](server::tateyama_grpc_server* e){ delete e; } );  // NOLINT
 
             if (service_handler_) {
                 // start blob relay service and add it to the server
@@ -143,13 +142,13 @@ void resource_impl::wait_for_server_ready() {
 
 // Use ping_service to check if server is ready
 bool resource_impl::is_server_ready() {
-    auto pos = grpc_endpoint_.find(':');
+    auto pos = grpc_listen_address_.find(':');
     if (pos == std::string::npos) {
         throw std::runtime_error("server address does not includes port number");
     }
     std::string address("localhost");
-    address += grpc_endpoint_.substr(pos);
-    auto channel = ::grpc::CreateChannel(grpc_endpoint_, ::grpc::InsecureChannelCredentials());
+    address += grpc_listen_address_.substr(pos);
+    auto channel = ::grpc::CreateChannel(grpc_listen_address_, ::grpc::InsecureChannelCredentials());
     tateyama::grpc::proto::PingService::Stub stub(channel);
     ::grpc::ClientContext context;
     tateyama::grpc::proto::PingRequest req;

@@ -89,6 +89,7 @@ private:
         bool local_enabled{};
         bool local_upload_copy_file{};
         std::size_t stream_chunk_size{};
+        bool dev_accept_mock_tag{};
 
         if (auto session_store_opt = blob_relay_config->get<std::filesystem::path>("session_store"); session_store_opt) {
             session_store = session_store_opt.value();
@@ -104,6 +105,9 @@ private:
         }
         if (auto stream_chunk_size_opt = blob_relay_config->get<std::size_t>("stream_chunk_size"); stream_chunk_size_opt) {
             stream_chunk_size = stream_chunk_size_opt.value();
+        }
+        if (auto dev_accept_mock_tag_opt = blob_relay_config->get<bool>("dev_accept_mock_tag"); dev_accept_mock_tag_opt) {
+            dev_accept_mock_tag = dev_accept_mock_tag_opt.value();
         }
 
         // output configuration to be used
@@ -122,7 +126,10 @@ private:
         LOG(INFO) << tateyama::grpc::blob_relay_config_prefix
                   << "stream_chunk_size: " << stream_chunk_size << ", "
                   << "chunk size (in bytes) when transferring data in chunks during download in gRPC streaming.";
-        return { session_store, session_quota_size, local_enabled, local_upload_copy_file, stream_chunk_size };
+        LOG(INFO) << tateyama::grpc::blob_relay_config_prefix
+                  << "dev_accept_mock_tag: " << utils::boolalpha(dev_accept_mock_tag) << ", "
+                  << "whether to accept mock tag.";
+        return { session_store, session_quota_size, local_enabled, local_upload_copy_file, dev_accept_mock_tag, dev_accept_mock_tag };
     }
 };
 

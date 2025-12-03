@@ -71,8 +71,7 @@ private:
     std::thread grpc_server_thread_{};
     std::shared_ptr<blob_relay::blob_relay_service_handler> service_handler_{};
 
-    std::string grpc_endpoint_{};
-    std::string port_{};
+    std::string grpc_listen_address_{};
     bool grpc_enabled_{};
     bool grpc_secure_{};
     bool blob_relay_enabled_{};
