@@ -190,7 +190,7 @@ protected:
             }
             return;
         }
-        throw std::runtime_error("error in parse framework header");
+        throw std::runtime_error("error occurred while parsing a request message in Protocol Buffers");
     }
     
 private:

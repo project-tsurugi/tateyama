@@ -37,8 +37,8 @@ public:
 
         auto* ipccfg = cfg.get_section("ipc_endpoint");
         BOOST_ASSERT(ipccfg != nullptr); //NOLINT
-        auto p = boost::filesystem::unique_path();
-        ipccfg->set("database_name", p.string());
+        database_name_ = boost::filesystem::unique_path().string();
+        ipccfg->set("database_name", database_name_);
 
         auto* stmcfg = cfg.get_section("stream_endpoint");
         BOOST_ASSERT(stmcfg != nullptr); //NOLINT
@@ -52,6 +52,7 @@ public:
 
 protected:
     temporary_folder temporary_{};
+    std::string database_name_{};
 };
 
 static constexpr std::string_view default_configuration_for_tests {  // NOLINT
