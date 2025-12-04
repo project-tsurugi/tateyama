@@ -169,8 +169,9 @@ TEST_F(datastore_test, resource_error_detection) {
     cfg->base_path(path());
     framework::environment env{framework::boot_mode::database_server, cfg};
     auto ds = std::make_shared<datastore::resource::bridge>();
+    ASSERT_TRUE(ds->setup(env));
     // assume: abort in current limestone implementation
-    ASSERT_DEATH(ds->setup(env), "limestone.* fail to create"); // cannot make log_location
+    ASSERT_DEATH(ds->start(env), "limestone.* fail to create"); // cannot make log_location
 }
 
 }
