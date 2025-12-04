@@ -16,6 +16,7 @@
 
 #include <iomanip>
 #include <sstream>
+#include <unistd.h>
 
 #include <tateyama/logging.h>
 #include <glog/logging.h>
@@ -33,7 +34,12 @@ component::id_type bridge::id() const noexcept {
 
 bool bridge::setup(environment& env) {
     const auto& conf = env.configuration();
-    set_digest(conf->get_canonical_path().string());
+    const auto canonical_path = conf->get_canonical_path().string();
+    if (!canonical_path.empty()) {
+        set_digest(conf->get_canonical_path().string());
+    } else {
+        set_digest(std::to_string(getpid()));  // for testing purpose
+    }
 
     auto* ipc_section = conf->get_section("ipc_endpoint");
     auto database_name_opt = ipc_section->get<std::string>("database_name");
