@@ -160,24 +160,16 @@ protected:
             rsa.encrypt(get_json_text(user, password), c);
             std::string encrypted_credential = crypto::base64_encode(c);
 
-            tateyama::proto::endpoint::request::Handshake endpoint_handshake{};
-            tateyama::proto::endpoint::request::ClientInformation client_information{};
-            tateyama::proto::endpoint::request::Credential credential{};
-            credential.set_encrypted_credential(encrypted_credential);
-            client_information.set_allocated_credential(&credential);
-            endpoint_handshake.set_allocated_client_information(&client_information);
-
-            tateyama::proto::endpoint::request::WireInformation wire_information{};
-            wire_information.mutable_ipc_information();
-            endpoint_handshake.set_allocated_wire_information(&wire_information);
-
             tateyama::proto::endpoint::request::Request endpoint_request{};
-            endpoint_request.set_allocated_handshake(&endpoint_handshake);
+            tateyama::proto::endpoint::request::Handshake* endpoint_handshake = endpoint_request.mutable_handshake();
+            tateyama::proto::endpoint::request::ClientInformation* clientInformation = endpoint_handshake->mutable_client_information();
+            tateyama::proto::endpoint::request::Credential* credential = clientInformation->mutable_credential();
+            credential->set_encrypted_credential(encrypted_credential);
+
+            tateyama::proto::endpoint::request::WireInformation* wire_information = endpoint_handshake->mutable_wire_information();
+            (void) wire_information->mutable_ipc_information();
+
             client.send(tateyama::framework::service_id_endpoint_broker, endpoint_request.SerializeAsString());
-            (void) endpoint_request.release_handshake();
-            (void) endpoint_handshake.release_wire_information();
-            (void) endpoint_handshake.release_client_information();
-            (void) client_information.release_credential();
 
             std::string res{};
             tateyama::proto::framework::response::Header::PayloadType type{};
