@@ -48,5 +48,6 @@ constexpr inline component::id_type service_id_altimeter = 9;
 #endif
 constexpr inline component::id_type service_id_request = 10;
 constexpr inline component::id_type service_id_authentication = 11;
+constexpr inline component::id_type service_id_system = 12;
 
 }

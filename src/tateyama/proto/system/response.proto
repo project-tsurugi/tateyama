@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package tateyama.proto.system.response;
+
+option java_multiple_files = false;
+option java_package = "com.tsurugidb.system.proto";
+option java_outer_classname = "SystemResponse";
+
+import "tateyama/proto/system/diagnostic.proto";
+
+message Error {
+    // the error message.
+    string message = 1;
+
+    // error code
+    diagnostic.ErrorCode code = 2;
+
+    // supplemental text for debug purpose
+    string supplemental_text = 4;
+}
+
+// response of get database product version request.
+message GetDatabaseProductVersion {
+    reserved 1 to 10;
+
+    // the response body.
+    oneof result {
+        // request is successfully completed.
+        Success success = 11;
+
+        // error was occurred.
+        Error error = 12;
+    }
+
+    // request is successfully completed.
+    message Success {
+        // the data channel name of retrieved large object data.
+        string product_version = 1;
+    }
+}
