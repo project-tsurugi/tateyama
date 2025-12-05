@@ -85,6 +85,7 @@ Target component
 | dev_initial_core | Integer | First CPU core number (0-based) when assigning cores. Effective only when `dev_core_affinity = true`. Default is `1`. | This is for development and may be deleted in the future. |
 | dev_assign_numa_nodes_uniformly | Boolean (true/false) | Uniformly distributes the task scheduler’s worker threads across NUMA nodes. Default is `false`. Effective only when `dev_core_affinity = false` and `dev_force_numa_node` is not specified. | This is for development and may be deleted in the future. |
 | dev_force_numa_node | Integer | Forces all task scheduler worker threads onto a specific NUMA node. Specify the node number (0-based). Effective only when `dev_core_affinity = false` and `dev_assign_numa_nodes_uniformly = false`. Default is *not specified* (no node affinity). | This is for development and may be deleted in the future. |
+|dev_enable_disjunction_range_hinting| Boolean (true/false) | Determine whether the column value ranges are extracted from conditions containing `OR`. The default value is `false`. | This is for development and may be deleted in the future. |
 
 ## udf section
 
