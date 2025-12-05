@@ -16,7 +16,6 @@
 
 #include <functional>
 #include <optional>
-#include <mutex>
 
 #include <tateyama/proto/endpoint/request.pb.h>
 #include <tateyama/proto/endpoint/response.pb.h>
@@ -153,25 +152,19 @@ class ipc_service_session_test: public ipc_gtest_base {
 protected:
     std::size_t expected_entry_size_{};
     tateyama::proto::framework::response::Header::PayloadType expected_type_{};
-    mutable std::mutex mutex_{};
 
     void handshake(ipc_client& client, const std::string user, const std::string password) {
+        crypto::rsa_encrypter rsa{crypto::base64_decode(std::string(tateyama::authentication::resource::crypto::public_key))};
+
+        std::string c{};
+        rsa.encrypt(get_json_text(user, password), c);
+        std::string encrypted_credential = crypto::base64_encode(c);
+
         tateyama::proto::endpoint::request::Request endpoint_request{};
         tateyama::proto::endpoint::request::Handshake* endpoint_handshake = endpoint_request.mutable_handshake();
         tateyama::proto::endpoint::request::ClientInformation* clientInformation = endpoint_handshake->mutable_client_information();
         tateyama::proto::endpoint::request::Credential* credential = clientInformation->mutable_credential();
-
-        {
-            std::lock_guard<std::mutex> lock(mutex_);
-        
-            crypto::rsa_encrypter rsa{crypto::base64_decode(std::string(tateyama::authentication::resource::crypto::public_key))};
-
-            std::string c{};
-            rsa.encrypt(get_json_text(user, password), c);
-            std::string encrypted_credential = crypto::base64_encode(c);
-
-            credential->set_encrypted_credential(encrypted_credential);
-        }
+        credential->set_encrypted_credential(encrypted_credential);
 
         tateyama::proto::endpoint::request::WireInformation* wire_information = endpoint_handshake->mutable_wire_information();
         (void) wire_information->mutable_ipc_information();
@@ -187,6 +180,8 @@ protected:
             FAIL();
         }
         EXPECT_EQ(response.result_case(), tateyama::proto::endpoint::response::Handshake::kSuccess);
+
+        OPENSSL_thread_stop();
     }
 
     // Works on forked process.
