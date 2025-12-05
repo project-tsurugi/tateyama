@@ -82,13 +82,18 @@ file(GLOB SRCS
         "tateyama/metrics/resource/*.cpp"
         "tateyama/request/service/*.cpp"
         "tateyama/authentication/resource/*.cpp"
-        "tateyama/grpc/*.cpp"
         )
 if (ENABLE_ALTIMETER)
     file(GLOB ALTIMETER_SOURCES
         "tateyama/altimeter/*.cpp"
     )
     list(APPEND SRCS ${ALTIMETER_SOURCES})
+endif()
+if (ENABLE_GRPC)
+    file(GLOB GRPC_SOURCES
+        "tateyama/grpc/*.cpp"
+    )
+    list(APPEND SRCS ${GRPC_SOURCES})
 endif()
 
 list(REMOVE_ITEM SRCS ${CMAKE_CURRENT_SOURCE_DIR}/tateyama/endpoint/ipc/ipc_resultset_writer_limit_test.cpp)

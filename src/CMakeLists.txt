@@ -135,13 +135,13 @@ target_link_libraries(${ENGINE}
         PRIVATE rt # for shm
         PRIVATE crypto
         PRIVATE jwt
-        PRIVATE grpc++
-        PRIVATE grpc
 )
 
 if (ENABLE_GRPC)
 target_link_libraries(${ENGINE}
         PRIVATE data-relay-grpc
+        PRIVATE grpc++
+        PRIVATE grpc
 )
 endif()
 
