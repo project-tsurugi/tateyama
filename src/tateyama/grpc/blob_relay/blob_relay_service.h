@@ -47,7 +47,7 @@ public:
                 [this](blob_session::blob_id_type bid, blob_session::transaction_id_type tid) {
                     return datastore_resource_->datastore().generate_reference_tag(bid, tid); },
                 [this](blob_session::blob_id_type bid) {
-                    return datastore_resource_->datastore().get_blob_file(bid).path().c_str();
+                    return std::filesystem::path{datastore_resource_->datastore().get_blob_file(bid).path().native()};
                 }),
             blob_relay_service_configuration(env));
         return service_ != nullptr;
