@@ -51,10 +51,17 @@ bool resource_impl::setup(environment& env) {
                 if (blob_relay_enabled_) {
                     // create the relay service
                     service_handler_ = std::make_shared<blob_relay::blob_relay_service_handler>();
+                    // setup blob relay service
+                    if (!service_handler_->setup(env)) {
+                        LOG(ERROR) << "cannot start the lob relay service";
+                        return false;
+                    }
+                    service_handler_->setup(env);
                 }
             }
         }
     }
+    setup_done_ = true;
 
     // output configuration to be used
     LOG(INFO) << tateyama::grpc::grpc_config_prefix
@@ -75,17 +82,13 @@ bool resource_impl::setup(environment& env) {
     return true;
 }
 
-bool resource_impl::start(environment& env) {
+bool resource_impl::start(environment&) {
     if (grpc_enabled_) {
         try {
-            grpc_server_ = std::unique_ptr<server::tateyama_grpc_server, void(*)(server::tateyama_grpc_server*)>(new server::tateyama_grpc_server(grpc_listen_address_), [](server::tateyama_grpc_server* e){ delete e; } );  // NOLINT
+            grpc_server_ = std::make_unique<server::tateyama_grpc_server>(grpc_listen_address_);
 
             if (service_handler_) {
-                // start blob relay service and add it to the server
-                if (!service_handler_->start(env)) {
-                    LOG(ERROR) << "cannot start the lob relay service";
-                    return false;
-                }
+                // add blob relay service to the server
                 grpc_server_->add_grpc_service_handler(service_handler_);
             }
 
@@ -120,10 +123,13 @@ resource_impl::~resource_impl() {
 };
 
 std::shared_ptr<data_relay_grpc::blob_relay::blob_relay_service> resource_impl::blob_relay_service() {
-    if(service_handler_) {
-        return service_handler_->blob_relay_service();
+    if (setup_done_) {
+        if(service_handler_) {
+            return service_handler_->blob_relay_service();
+        }
+        return nullptr;
     }
-    throw std::runtime_error("blob_relay_service is not ready. Do this after start()");
+    throw std::runtime_error("blob_relay_service is not ready. Do this after setup()");
 }
 
 
