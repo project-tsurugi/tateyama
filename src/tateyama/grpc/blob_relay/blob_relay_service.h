@@ -37,18 +37,17 @@ class blob_relay_service_handler : public tateyama::grpc::server::grpc_service_h
 public:
     blob_relay_service_handler() = default;
 
-    bool start(::tateyama::framework::environment& env) {
-        auto datastore = env.resource_repository().find<tateyama::datastore::resource::bridge>();
-        if (!datastore) {
+    bool setup(::tateyama::framework::environment& env) {
+        datastore_resource_ = env.resource_repository().find<tateyama::datastore::resource::bridge>();
+        if (!datastore_resource_) {
             return false;
         }
-        datastore_handler_ = std::make_unique<datastore_handler>(datastore->datastore());
         service_ = std::make_shared<data_relay_grpc::blob_relay::blob_relay_service>(
             data_relay_grpc::blob_relay::blob_relay_service::api(
                 [this](blob_session::blob_id_type bid, blob_session::transaction_id_type tid) {
-                    return datastore_handler_->generate_reference_tag(bid, tid); },
+                    return datastore_resource_->datastore().generate_reference_tag(bid, tid); },
                 [this](blob_session::blob_id_type bid) {
-                    return datastore_handler_->get_blob_file(bid);
+                    return datastore_resource_->datastore().get_blob_file(bid).path().c_str();
                 }),
             blob_relay_service_configuration(env));
         return service_ != nullptr;
@@ -61,24 +60,7 @@ public:
     }
 
 private:
-    class datastore_handler {
-      public:
-        explicit datastore_handler(::limestone::api::datastore& datastore) : datastore_(datastore), blob_pool_(datastore.acquire_blob_pool()) {
-        }
-        blob_session::blob_tag_type generate_reference_tag(blob_session::blob_id_type bid, blob_session::transaction_id_type tid) {
-            return blob_pool_->generate_reference_tag(bid, tid);
-        }
-        blob_session::blob_path_type get_blob_file(blob_session::blob_id_type bid) {
-            auto bf = datastore_.get_blob_file(bid);
-            return { bf.path().c_str() };
-        }
-
-      private:
-        ::limestone::api::datastore& datastore_;
-        std::unique_ptr<limestone::api::blob_pool> blob_pool_;
-    };
-
-    std::unique_ptr<datastore_handler> datastore_handler_{};
+    std::shared_ptr<datastore::resource::bridge> datastore_resource_{};
     std::shared_ptr<data_relay_grpc::blob_relay::blob_relay_service> service_{};
 
     static data_relay_grpc::blob_relay::service_configuration blob_relay_service_configuration(::tateyama::framework::environment& env) {

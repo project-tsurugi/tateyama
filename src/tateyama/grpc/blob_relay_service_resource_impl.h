@@ -67,7 +67,7 @@ public:
     [[nodiscard]] std::shared_ptr<data_relay_grpc::blob_relay::blob_relay_service> blob_relay_service();
 
 private:
-    std::unique_ptr<server::tateyama_grpc_server, void(*)(server::tateyama_grpc_server*)> grpc_server_{nullptr, [](server::tateyama_grpc_server*){} };
+    std::unique_ptr<server::tateyama_grpc_server> grpc_server_{};
     std::thread grpc_server_thread_{};
     std::shared_ptr<blob_relay::blob_relay_service_handler> service_handler_{};
 
@@ -75,6 +75,7 @@ private:
     bool grpc_enabled_{};
     bool grpc_secure_{};
     bool blob_relay_enabled_{};
+    bool setup_done_{};
 
     void wait_for_server_ready();
     bool is_server_ready();

@@ -121,6 +121,7 @@ TEST_F(server_test, basic) {
     EXPECT_EQ(svc0, sv.find_service<test_service0>());
     EXPECT_EQ(svc1, sv.find_service<test_service1>());
 
+    sv.setup();
     sv.start();
     sv.shutdown();
 }
@@ -136,6 +137,8 @@ TEST_F(server_test, add_core_components) {
     ASSERT_TRUE(router);
     auto kvs = std::static_pointer_cast<transactional_kvs_resource>(sv.find_resource<transactional_kvs_resource>());
     ASSERT_TRUE(kvs);
+
+    sv.setup();
     sv.start();
     sv.shutdown();
 }

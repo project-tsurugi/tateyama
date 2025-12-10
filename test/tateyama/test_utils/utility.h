@@ -17,6 +17,7 @@
 
 #include <sys/types.h>
 #include <unistd.h>
+#include <filesystem>
 
 #include "temporary_folder.h"
 #include "request_response.h"
@@ -33,7 +34,13 @@ public:
     void set_dbpath(api::configuration::whole& cfg) {
         auto* dscfg = cfg.get_section("datastore");
         BOOST_ASSERT(dscfg != nullptr); //NOLINT
-        dscfg->set("log_location", path());
+        std::string log_location = path() + "/log";
+        dscfg->set("log_location", log_location);
+        {
+            std::error_code ec;
+            std::filesystem::create_directory(std::filesystem::path(log_location), ec);
+            BOOST_ASSERT(!ec);
+        }
 
         auto* ipccfg = cfg.get_section("ipc_endpoint");
         BOOST_ASSERT(ipccfg != nullptr); //NOLINT
@@ -45,6 +52,16 @@ public:
         // use port randomly chosen from PID
         auto id = getpid() % 1000;
         stmcfg->set("port", std::to_string(12345+id));
+
+        auto* brcfg = cfg.get_section("blob_relay");
+        BOOST_ASSERT(brcfg != nullptr); //NOLINT
+        std::string session_store = path() + "/session_store";
+        brcfg->set("session_store", session_store);
+        {
+            std::error_code ec;
+            std::filesystem::create_directory(std::filesystem::path(session_store), ec);
+            BOOST_ASSERT(!ec);
+        }
     }
     ~utility() {
         temporary_.clean();
@@ -107,6 +124,7 @@ static constexpr std::string_view default_configuration_for_tests {  // NOLINT
 
     "[grpc_server]\n"
         "enabled=true\n"
+        "listen_address=0.0.0.0:52345\n"
         "endpoint=dns:///localhost:52345\n"
         "secure=false\n"
 
