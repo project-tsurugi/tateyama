@@ -37,7 +37,7 @@ public:
         parse_info(info_file_path());
     }
 
-    bool error() {
+    [[nodiscard]] bool error() const {
         return error_;
     }
     void set_system_info(tateyama::proto::system::response::SystemInfo* system_info) {
@@ -46,7 +46,7 @@ public:
         system_info->set_date(date_);
         system_info->set_url(url_);
     }
-    std::string to_string() {
+    [[nodiscard]] std::string to_string() {
         std::stringstream ss{};
         ss << "name = " << name_;
         ss << ", version = " << version_;

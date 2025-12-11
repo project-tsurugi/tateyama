@@ -16,7 +16,7 @@ message Error {
     diagnostic.ErrorCode code = 2;
 
     // supplemental text for debug purpose
-    string supplemental_text = 4;
+    string supplemental_text = 3;
 }
 
 // response of get system information request.

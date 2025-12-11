@@ -11,7 +11,7 @@ enum ErrorCode {
     // the error code is not set.
     ERROR_CODE_NOT_SPECIFIED = 0;
 
-    // the unknown error was occurred.
+    // the unknown error occurred.
     UNKNOWN = 1;
 
     // the target is not found.
