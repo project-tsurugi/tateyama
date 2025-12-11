@@ -105,24 +105,40 @@ public:
         session_id_ = id;
     };
     status body_head(std::string_view body_head) override { return status::ok; }
-    status body(std::string_view body) override { body_ = body; body_arrived_ = true; return status::ok; }
-    void error(proto::diagnostics::Record const& record) override {}
+    status body(std::string_view body) override {
+        body_ = body;
+        body_arrived_ = true;
+        return status::ok;
+    }
+    void error(proto::diagnostics::Record const& record) override {
+        error_arrived_ = true;
+        error_ = record.SerializeAsString();
+    }
     status acquire_channel(std::string_view name, std::shared_ptr<api::server::data_channel>& ch, std::size_t writer_count) override { return status::ok; }
     status release_channel(api::server::data_channel& ch) override { return status::ok; }
     bool check_cancel() const override { return false; }
     status add_blob(std::unique_ptr<tateyama::api::server::blob_info> blob) override { return status::ok; }
 
+    // for tests
     std::string& wait_and_get_body() {
-        while (!body_arrived_) {
+        while (!body_arrived_ && !error_arrived_) {
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
         return body_;
     }
+    bool is_error() {
+        return error_arrived_;
+    }
+    std::string& get_error() {
+        return error_;
+    }
 
     std::size_t session_id_{};
     std::string body_{};
+    std::string error_{};
 private:
     bool body_arrived_{};
+    bool error_arrived_{};
 };
 
 }
