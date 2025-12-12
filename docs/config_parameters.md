@@ -85,7 +85,7 @@ parameter=value
 |dev_initial_core | 整数 | CPUコア割当てをする際の先頭のCPUコア番号 (0-origin)。 `dev_core_affinity=true` の場合のみ有効。デフォルトは1。|開発用のため将来的に削除/変更される可能性あり|
 |dev_assign_numa_nodes_uniformly| ブール(true/false) | タスクスケジューラのワーカースレッドをNUMAノードに均等に割当てるか。デフォルトはfalse。`dev_core_affinity=false` かつ `dev_force_numa_node` が未指定の場合のみ有効。 | 開発用のため将来的に削除/変更される可能性あり|
 |dev_force_numa_node | 整数 | タスクスケジューラのワーカースレッドを特定のNUMAノードへ割当てるか。ノード番号 (0-origin)を指定された場合そのノードですべてのワーカーが稼働する。`dev_core_affinity=false` かつ `dev_assign_numa_nodes_uniformly=false` の場合のみ有効。デフォルトは未指定 (ノード割当てなし)。|開発用のため将来的に削除/変更される可能性あり|
-|dev_enable_disjunction_range_hinting| ブール(true/false) | `OR` を含む条件からカラムの範囲を抽出するか。デフォルトはfalse。 | 開発用のため将来的に削除/変更される可能性あり|
+|dev_enable_disjunction_range_hinting| ブール(true/false) | `OR` を含む条件からカラムの範囲を抽出するか。デフォルトはtrue。 | 開発用のため将来的に削除/変更される可能性あり|
 
 ## udfセクション
 
