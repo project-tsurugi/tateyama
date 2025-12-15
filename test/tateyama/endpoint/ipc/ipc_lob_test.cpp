@@ -110,7 +110,7 @@ private:
 
 class ipc_lob_test : public ::testing::Test {
     void SetUp() override {
-        auto rv = system("if [ -f /dev/shm/ipc_lob_test ]; then rm -f /dev/shm/ipc_lob_test; fi");
+        auto rv = ::system("if [ -f /dev/shm/ipc_lob_test ]; then rm -f /dev/shm/ipc_lob_test; fi");
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
         // server part
@@ -140,7 +140,7 @@ class ipc_lob_test : public ::testing::Test {
         worker_->terminate(tateyama::session::shutdown_request_type::forceful);
         tateyama::server::ipc_listener_for_test::wait(*worker_);
 
-        auto rv = system("if [ -f /dev/shm/ipc_lob_test ]; then rm -f /dev/shm/ipc_lob_test; fi");
+        auto rv = ::system("if [ -f /dev/shm/ipc_lob_test ]; then rm -f /dev/shm/ipc_lob_test; fi");
     }
 
     tateyama::endpoint::common::configuration conf_{tateyama::endpoint::common::connection_type::ipc, nullptr, database_info_, nullptr, administrators_};

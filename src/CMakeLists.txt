@@ -57,6 +57,7 @@ file(GLOB SOURCES
         "tateyama/request/service/*.cpp"
         "tateyama/authentication/resource/*.cpp"
         "tateyama/authentication/service/*.cpp"
+        "tateyama/system/service/*.cpp"
 )
 if (ENABLE_ALTIMETER)
     file(GLOB ALTIMETER_SOURCES
