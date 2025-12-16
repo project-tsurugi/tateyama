@@ -86,7 +86,6 @@ public:
     [[nodiscard]] std::string_view label() const noexcept override;
 private:
     std::unique_ptr<tateyama::system::service::system_service_core> core_{};
-    bool deactivated_{false};
 };
 
 }
