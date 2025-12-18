@@ -23,7 +23,7 @@
 #include <tateyama/framework/component_ids.h>
 #include <tateyama/framework/environment.h>
 
-#include <data-relay-grpc/blob_relay/service.h>
+#include <data_relay_grpc/blob_relay/service.h>
 
 namespace tateyama::grpc {
 
