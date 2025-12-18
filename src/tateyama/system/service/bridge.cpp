@@ -29,10 +29,10 @@ component::id_type system_service_bridge::id() const noexcept {
 
 bool system_service_bridge::setup(environment&) {
     core_ = std::make_unique<system_service_core>();
-    try {
+    if (!core_->info_handler_.error()) {
         LOG_LP(INFO) << "tsurugidb system info is '" << core_->info_handler_.to_string() << '\'';
-    } catch (const std::runtime_error &ex) {
-        LOG_LP(INFO) << ex.what();
+    } else {
+        LOG_LP(INFO) << core_->info_handler_.error_message();
     }
     return core_ != nullptr;
 }

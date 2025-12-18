@@ -18,6 +18,7 @@
 #include <filesystem>
 #include <fstream>
 #include <string>
+#include <string_view>
 #include <sstream>
 #include <exception>
 #include <stdlib.h>
@@ -40,6 +41,9 @@ public:
     [[nodiscard]] bool error() const {
         return error_;
     }
+    [[nodiscard]] std::string_view error_message() const {
+        return error_message_;
+    }
     void set_system_info(tateyama::proto::system::response::SystemInfo* system_info) {
         system_info->set_name(name_);
         system_info->set_version(version_);
@@ -60,6 +64,7 @@ private:
     std::string version_{};
     std::string date_{};
     std::string url_{};
+    std::string error_message_{};
     bool error_{};
     const std::filesystem::path info_path = std::filesystem::path("lib/tsurugi-info.json");
 
@@ -73,6 +78,7 @@ private:
     }
 
     void parse_info(const std::filesystem::path& path) {
+        using namespace std::literals::string_literals;
         if (std::filesystem::exists(path)) {
             try {
                 std::ifstream stream{path};
@@ -92,9 +98,11 @@ private:
                 }
             } catch (const std::exception &ex) {
                 error_ = true;
+                error_message_ = "broken json, file = "s + path.string();
             }
         } else {
             error_ = true;
+            error_message_ = "cannot find system information file, file name: "s + path.string();
         }
     }
 };
