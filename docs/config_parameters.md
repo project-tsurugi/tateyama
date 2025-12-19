@@ -176,18 +176,20 @@ parameter=value
 | request_timeout | 実数 | 認証サービスのタイムアウト (秒), `0` でタイムアウトなし、デフォルト値は`0` |
 | administrators | 文字列 | 管理ユーザのリスト（`,`区切り）、`*`で全loginユーザが管理ユーザとなる、デフォルト値は`*` |
 
-## grpcセクション
+## grpc_serverセクション
 
 セクション名
-  - grpc
+  - grpc_server
 
 対象コンポーネント
   - grpc(tateyama)
 
 |パラメーター名 | 型 | 値 |備考|
 |---:| :---: | :--- |---|
-|enabled | ブール(true/false) | gRPC サーバーを有効にするかどうか、デフォルト値は`false` |
-|endpoint | 文字列 | gRPC サーバーのエンドポイント、デフォルト値は`localhost:50051` |
+|enabled | ブール(true/false) | gRPC サーバーを有効にするかどうか、デフォルト値は`true` |
+|listen_address | 文字列 | サーバーが Listen 先のアドレスとポート、デフォルト値は`0.0.0.0:52345` |
+|endpoint | 文字列 | リモートから見た gRPC サーバーのエンドポイント URI、デフォルト値は`dns:///localhost:52345` |
+|secure | ブール(true/false) | gRPC サーバーをセキュアポートを有効にするかどうか、デフォルト値は`false` |
 
 ## blob_relayセクション
 
@@ -199,12 +201,13 @@ parameter=value
 
 |パラメーター名 | 型 | 値 |備考|
 |---:| :---: | :--- |---|
-|enabled | ブール(true/false) | BLOB 中継サービスを有効にするかどうか、デフォルト値は`false` |
-|session_store | 文字列 | セッションストレージのルートディレクトリ、デフォルト値は`var/blob/sessions`（相対パス） |
+|enabled | ブール(true/false) | BLOB 中継サービスを有効にするかどうか、デフォルト値は`true` |
+|session_store | 文字列 | セッションストレージのルートディレクトリ、デフォルト値は`$TSURUGI_HOME/var/blob/sessions`（$TSURUGI_HOMEからの相対パス） |
 |session_quota_size | 整数 | セッションストレージのクウォータサイズ、未指定の場合は無制限、デフォルト値は未指定 |
 |local_enabled | ブール(true/false) | ファイルシステムを利用したデータ転送を有効にするかどうか、デフォルト値は`true` |
 |local_upload_copy_file | ブール(true/false) | ファイルシステムを利用したアップロード時に元ファイルをコピーするかどうか、デフォルト値は`false` |
 |stream_chunk_size | 整数 | gRPC ストリーミングにおいて、ダウンロード時にチャンク化してデータを転送する場合のチャンクサイズ (バイト)、デフォルト値は`1048576` |
+|dev_accept_mock_tag | ブール(true/false) | Get()操作時、mocktag(0xffffffffffffffff)を有効なタグとして扱うかどうか、デフォルト値は`false`（有効なtagとして扱わない）|
 
 ## glogセクション
 
