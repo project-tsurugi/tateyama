@@ -208,6 +208,7 @@ Target component
 | local_enabled | Boolean(true/false) | Whether to enable data transfer using the file system. The default value is true. |
 | local_upload_copy_file | Boolean(true/false)  | Whether to copy the original file when uploading using the file system. The default value is false. |
 | stream_chunk_size | Integer | Chunk size (in bytes) when transferring data in chunks during download in gRPC streaming. The default value is 1048576. |
+|dev_accept_mock_tag | Boolean(true/false) | Whether to accept mocktag (0xffffffffffffffff) in GET operations. The default value is false |
 
 ## glog section
 

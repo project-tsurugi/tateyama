@@ -206,6 +206,7 @@ parameter=value
 |local_enabled | ブール(true/false) | ファイルシステムを利用したデータ転送を有効にするかどうか、デフォルト値は`true` |
 |local_upload_copy_file | ブール(true/false) | ファイルシステムを利用したアップロード時に元ファイルをコピーするかどうか、デフォルト値は`false` |
 |stream_chunk_size | 整数 | gRPC ストリーミングにおいて、ダウンロード時にチャンク化してデータを転送する場合のチャンクサイズ (バイト)、デフォルト値は`1048576` |
+|dev_accept_mock_tag | ブール(true/false) | Get操作において、mocktag(0xffffffffffffffff)を受理するか否か、デフォルト値は`false` |
 
 ## glogセクション
 
