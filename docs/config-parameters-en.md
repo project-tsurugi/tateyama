@@ -178,18 +178,19 @@ Target component
 | request_timeout | Number | Authentication service timeout in seconds, 0 for no timeout. The default value is 0. |
 | administrators | String | List of administrative users, separated by ','. `*` means all login users are treated as an administrative user. Default value is `*`. |
 
-## grpc section
+## grpc_server section
 
 Section name
-  - grpc
+  - grpc_server
 
 Target component
   - grpc(tateyama)
 
 | Parameter name | Type | Value | Remarks |
 |---:| :---: | :--- |---|
-| enabled | Boolean(true/false) | Whether to enable the gRPC server. The default value is false. |
-| endpoint | String | Endpoint of the gRPC server. The default value is 'localhost:50051' |
+| enabled | Boolean(true/false) | Whether to enable the gRPC server. The default value is true. |
+| listen_address | String | The address and port the server listens on. The default value is '0.0.0.0:52345' |
+| endpoint | String | Endpoint of the gRPC server. The default value is 'dns:///localhost:52345' |
 
 ## blob_relay section
 
@@ -201,7 +202,7 @@ Target component
 
 | Parameter name | Type | Value | Remarks |
 |---:| :---: | :--- |---|
-| enabled | Boolean(true/false) | Whether to enable the BLOB relay service. The default value is false |
+| enabled | Boolean(true/false) | Whether to enable the BLOB relay service. The default value is true |
 | session_store | String | Session storage root directory. The default value is 'var/blob/sessions' (relative path) |
 | session_quota_size | Integer | Session storage quota size. If not specified, unlimited. The default value is 'not specified' |
 | local_enabled | Boolean(true/false) | Whether to enable data transfer using the file system. The default value is true. |
