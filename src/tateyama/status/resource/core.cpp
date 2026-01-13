@@ -21,8 +21,8 @@
 #include <tateyama/logging.h>
 #include <glog/logging.h>
 
+#include <tateyama/api/server/database_info.h>
 #include <tateyama/status/resource/bridge.h>
-#include "database_info_impl.h"
 
 namespace tateyama::status_info {   // FIXME should be tateyama::status::resource
 

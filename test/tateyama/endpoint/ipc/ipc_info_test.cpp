@@ -17,7 +17,7 @@
 #include "tateyama/endpoint/ipc/bootstrap/ipc_worker.h"
 #include "tateyama/endpoint/header_utils.h"
 #include <tateyama/proto/endpoint/request.pb.h>
-#include "tateyama/status/resource/database_info_impl.h"
+#include "tateyama/configuration/resource/database_info_impl.h"
 #include "ipc_client.h"
 
 #include <gtest/gtest.h>
@@ -85,7 +85,7 @@ class ipc_info_test : public ::testing::Test {
     int rv_;
 
 public:
-    tateyama::status_info::resource::database_info_impl database_info_{database_name, "iid-ipc-info-test"};
+    tateyama::configuration::resource::database_info_impl database_info_{database_name, "iid-ipc-info-test"};
     info_service service_{};
 
 protected:

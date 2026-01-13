@@ -18,7 +18,7 @@
 
 #include "tateyama/endpoint/stream/bootstrap/stream_worker.h"
 #include "tateyama/endpoint/header_utils.h"
-#include "tateyama/status/resource/database_info_impl.h"
+#include "tateyama/configuration/resource/database_info_impl.h"
 #include "stream_client.h"
 
 #include <gtest/gtest.h>
@@ -57,7 +57,7 @@ private:
 
 class stream_listener_for_info_test {
 public:
-    stream_listener_for_info_test(info_service_for_test& service, tateyama::status_info::resource::database_info_impl& database_info) : service_(service), conf_(tateyama::endpoint::common::connection_type::stream, nullptr, database_info, nullptr, administrators_) {
+    stream_listener_for_info_test(info_service_for_test& service, tateyama::configuration::resource::database_info_impl& database_info) : service_(service), conf_(tateyama::endpoint::common::connection_type::stream, nullptr, database_info, nullptr, administrators_) {
     }
     void operator()() {
         while (true) {
@@ -102,7 +102,7 @@ class stream_info_test : public ::testing::Test {
 
 public:
     tateyama::endpoint::stream::info_service_for_test service_{};
-    tateyama::status_info::resource::database_info_impl database_info_{"stream_info_test", "iid-stream-info-test"};
+    tateyama::configuration::resource::database_info_impl database_info_{"stream_info_test", "iid-stream-info-test"};
     tateyama::endpoint::stream::stream_listener_for_info_test listener_{service_, database_info_};
     std::thread thread_{};
 };

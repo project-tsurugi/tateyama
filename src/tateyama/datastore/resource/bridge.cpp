@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2025 Project Tsurugi.
+ * Copyright 2018-2026 Project Tsurugi.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@
 #include <tateyama/framework/component_ids.h>
 #include <tateyama/framework/resource.h>
 #include <tateyama/framework/transactional_kvs_resource.h>
+#include <tateyama/configuration/configuration_provider.h>
 
 namespace tateyama::datastore::resource {
 
@@ -52,6 +53,12 @@ static bool extract_config(environment& env, limestone::api::configuration& opti
         // XXX: direct porting from shirakami init code
         options = limestone::api::configuration({location}, location + "m");
         options.set_recover_max_parallelism(recover_param);
+        if (auto configuration = env.resource_repository().find<configuration::configuration_provider>(); configuration) {
+            options.set_instance_id(configuration->database_info().instance_id());
+        } else {
+            // happen only in tateyama/datastore/datastore_test.cpp
+            LOG(ERROR) << "cannot find configuration::configuration_provider, and thus instance_id has not been provided to datastore";
+        }
     } catch(std::exception const& e) {
         // error log should have been made
         return false;

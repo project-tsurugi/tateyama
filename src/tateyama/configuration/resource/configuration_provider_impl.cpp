@@ -19,12 +19,32 @@
 namespace tateyama::configuration::resource {
 
 api::server::database_info const& configuration_provider_impl::database_info() const noexcept {
-    return status_->database_info();
+    return *database_info_;
 }
 
 bool configuration_provider_impl::setup(framework::environment& env) {
-    status_ = env.resource_repository().find<status_info::resource::bridge>();
-    return status_ != nullptr;
+    const auto& conf = env.configuration();
+
+    // database name
+    auto* ipc_section = conf->get_section("ipc_endpoint");
+    auto database_name_opt = ipc_section->get<std::string>("database_name");
+    if (!database_name_opt) {
+        LOG(ERROR) << "cannot find database_name at the ipc_endpoint section in the configuration";
+        return false;
+    }
+
+    // instance_id
+    auto* system_section = conf->get_section("system");
+    auto instance_id_opt = system_section->get<std::string>("instance_id");
+    if (!instance_id_opt) {
+        LOG(ERROR) << "cannot find  instance_id at the system section in the configuration";
+        return false;
+    }
+
+    // create database_info
+    database_info_ = std::make_unique<database_info_impl>(database_name_opt.value(), instance_id_opt.value());
+
+    return database_info_ != nullptr;
 }
 
 bool configuration_provider_impl::start(framework::environment&) {

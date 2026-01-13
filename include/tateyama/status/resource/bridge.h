@@ -28,7 +28,7 @@
 #include <tateyama/framework/resource.h>
 #include <tateyama/framework/environment.h>
 
-#include <tateyama/api/server/database_info.h>
+#include <tateyama/configuration/configuration_provider.h>
 
 namespace tateyama::status_info::resource {
 
@@ -143,14 +143,6 @@ public:
     [[nodiscard]] std::string_view label() const noexcept override;
 
     /**
-     * @brief returns a reference to the database_info
-     * @return database info
-     */
-    [[nodiscard]] const tateyama::api::server::database_info& database_info() const noexcept {
-        return *database_info_;
-    }
-
-    /**
      * @brief returns the database name
      * @return database name
      */
@@ -163,7 +155,7 @@ private:
     std::unique_ptr<boost::interprocess::managed_shared_memory> segment_;
     std::unique_ptr<resource_status_memory> resource_status_memory_{};
     std::string digest_{};
-    std::unique_ptr<tateyama::api::server::database_info> database_info_{};
+    std::shared_ptr<tateyama::configuration::configuration_provider> configuration_{};
 
     void set_digest(const std::string& path_string);
 

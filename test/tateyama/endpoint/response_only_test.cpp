@@ -21,6 +21,8 @@
 #include "tateyama/endpoint/ipc/ipc_request.h"
 #include "tateyama/endpoint/ipc/ipc_response.h"
 
+#include "tateyama/configuration/resource/database_info_impl.h"
+
 #include <tateyama/endpoint/ipc/bootstrap/server_wires_impl.h>
 #include "header_utils.h"
 
@@ -50,7 +52,7 @@ public:
 
     std::shared_ptr<bootstrap::server_wire_container_impl> wire_;
 
-    tateyama::status_info::resource::database_info_impl dmy_dbinfo_{};
+    tateyama::configuration::resource::database_info_impl dmy_dbinfo_{};
     tateyama::endpoint::common::configuration conf_{tateyama::endpoint::common::connection_type::ipc, nullptr, dmy_dbinfo_, nullptr, administrators_};
     tateyama::endpoint::common::resources resources_{conf_, session_id, "", administrators_};
 

@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-#include "tateyama/status/resource/bridge.h"
-
 #include <tateyama/configuration/configuration_provider.h>
+#include "database_info_impl.h"
 
 namespace tateyama::configuration::resource {
 
@@ -47,7 +46,7 @@ class configuration_provider_impl : public tateyama::configuration::configuratio
     [[nodiscard]] std::string_view label() const noexcept override;
 
   private:
-    std::shared_ptr<status_info::resource::bridge> status_{};
+    std::unique_ptr<tateyama::api::server::database_info> database_info_{};
 };
 
 }

@@ -21,7 +21,7 @@
 
 #include <tateyama/api/server/request.h>
 
-#include "tateyama/status/resource/database_info_impl.h"
+#include "tateyama/configuration/resource/database_info_impl.h"
 #include "tateyama/endpoint/common/session_info_impl.h"
 
 namespace tateyama::endpoint::loopback {
@@ -99,7 +99,7 @@ private:
     const std::size_t service_id_;
     const std::string payload_;
 
-    const tateyama::status_info::resource::database_info_impl database_info_{};
+    const tateyama::configuration::resource::database_info_impl database_info_{};
     const tateyama::endpoint::common::administrators administrators_{"*"};
     const tateyama::endpoint::common::session_info_impl session_info_{session_id_, "loopback", "", administrators_};
     tateyama::api::server::session_store session_store_{};

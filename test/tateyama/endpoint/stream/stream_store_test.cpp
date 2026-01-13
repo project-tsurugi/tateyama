@@ -21,7 +21,7 @@
 
 #include "tateyama/endpoint/stream/bootstrap/stream_worker.h"
 #include "tateyama/endpoint/header_utils.h"
-#include "tateyama/status/resource/database_info_impl.h"
+#include "tateyama/configuration/resource/database_info_impl.h"
 #include "stream_client.h"
 
 #include <gtest/gtest.h>
@@ -93,7 +93,7 @@ private:
     std::unique_ptr<tateyama::endpoint::common::configuration> conf_{};
     connection_socket connection_socket_{tateyama::api::endpoint::stream::stream_client::PORT_FOR_TEST};
     std::unique_ptr<tateyama::endpoint::stream::bootstrap::stream_worker> worker_{};
-    tateyama::status_info::resource::database_info_impl database_info_{"stream_store_test", "iid-stream-store-test"};
+    tateyama::configuration::resource::database_info_impl database_info_{"stream_store_test", "iid-stream-store-test"};
     tateyama::endpoint::common::administrators administrators_{"*"};
 };
 }
