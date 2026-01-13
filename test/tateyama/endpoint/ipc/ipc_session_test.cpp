@@ -158,7 +158,7 @@ class ipc_session_test : public ::testing::Test {
     int rv_;
 
 protected:
-    tateyama::status_info::resource::database_info_impl database_info_{database_name};
+    tateyama::status_info::resource::database_info_impl database_info_{database_name, "iid-ipc-session-test"};
     std::unique_ptr<tateyama::endpoint::common::configuration> conf_{};
     service_for_ipc_session_test service_{};
     std::unique_ptr<tateyama::endpoint::ipc::bootstrap::ipc_worker> worker_{};

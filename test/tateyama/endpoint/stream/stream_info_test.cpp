@@ -102,7 +102,7 @@ class stream_info_test : public ::testing::Test {
 
 public:
     tateyama::endpoint::stream::info_service_for_test service_{};
-    tateyama::status_info::resource::database_info_impl database_info_{"stream_info_test"};
+    tateyama::status_info::resource::database_info_impl database_info_{"stream_info_test", "iid-stream-info-test"};
     tateyama::endpoint::stream::stream_listener_for_info_test listener_{service_, database_info_};
     std::thread thread_{};
 };

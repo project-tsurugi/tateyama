@@ -32,6 +32,7 @@ constexpr inline component::id_type resource_id_remote_kvs = 8;
 constexpr inline component::id_type resource_id_metrics = 9;
 constexpr inline component::id_type resource_id_authentication = 10;
 constexpr inline component::id_type resource_id_blob_relay_service = 11;
+constexpr inline component::id_type resource_id_configuration = 13;
 
 // service
 constexpr inline component::id_type service_id_routing = 0;

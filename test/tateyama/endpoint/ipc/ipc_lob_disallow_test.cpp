@@ -146,7 +146,7 @@ class ipc_lob_disallow_test : public ::testing::Test {
     tateyama::endpoint::common::configuration conf_{tateyama::endpoint::common::connection_type::ipc, nullptr, database_info_, nullptr, administrators_};
 
 public:
-    tateyama::status_info::resource::database_info_impl database_info_{database_name};
+    tateyama::status_info::resource::database_info_impl database_info_{database_name, "iid-ipc-lob-disallow-test"};
 
 protected:
     std::unique_ptr<bootstrap::server_wire_container_impl> wire_{};

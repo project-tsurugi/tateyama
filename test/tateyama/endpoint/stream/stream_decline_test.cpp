@@ -85,7 +85,7 @@ private:
     info_service_for_test& service_;
     connection_socket connection_socket_{tateyama::api::endpoint::stream::stream_client::PORT_FOR_TEST};
     std::unique_ptr<tateyama::endpoint::stream::bootstrap::stream_worker> worker_{};
-    tateyama::status_info::resource::database_info_impl database_info_{"stream_info_test"};
+    tateyama::status_info::resource::database_info_impl database_info_{"stream_decline_test", "iid-stream-decline-test"};
     tateyama::endpoint::common::administrators administrators_{"*"};
 };
 }

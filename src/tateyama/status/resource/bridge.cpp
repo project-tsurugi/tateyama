@@ -41,16 +41,24 @@ bool bridge::setup(environment& env) {
         set_digest(std::to_string(getpid()));  // for testing purpose
     }
 
+    // database name
     auto* ipc_section = conf->get_section("ipc_endpoint");
     auto database_name_opt = ipc_section->get<std::string>("database_name");
     if (!database_name_opt) {
         LOG(ERROR) << "cannot find database_name at the ipc_endpoint section in the configuration";
         return false;
     }
-    const auto& name = database_name_opt.value();
-    auto dbinfo = std::make_unique<database_info_impl>();
-    dbinfo->name(name);
-    database_info_ = std::move(dbinfo);
+
+    // instance_id
+    auto* system_section = conf->get_section("system");
+    auto instance_id_opt = system_section->get<std::string>("instance_id");
+    if (!instance_id_opt) {
+        LOG(ERROR) << "cannot find  instance_id at the system section in the configuration";
+        return false;
+    }
+
+    // create database_info
+    database_info_ = std::make_unique<database_info_impl>(database_name_opt.value(), instance_id_opt.value());
 
     auto threads_opt = ipc_section->get<std::size_t>("threads");
     if (!threads_opt) {
@@ -71,7 +79,7 @@ bool bridge::setup(environment& env) {
         segment_ = std::make_unique<boost::interprocess::managed_shared_memory>(boost::interprocess::create_only, status_file_name.c_str(), shm_size(threads_opt.value() + admin_sessions_opt.value()));
         resource_status_memory_ = std::make_unique<resource_status_memory>(*segment_);
         resource_status_memory_->set_pid();
-        resource_status_memory_->set_database_name(name);
+        resource_status_memory_->set_database_name(database_name_opt.value());
         return true;
     } catch(const boost::interprocess::interprocess_exception& ex) {
         std::stringstream ss{};

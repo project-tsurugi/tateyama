@@ -85,7 +85,7 @@ class ipc_info_test : public ::testing::Test {
     int rv_;
 
 public:
-    tateyama::status_info::resource::database_info_impl database_info_{database_name};
+    tateyama::status_info::resource::database_info_impl database_info_{database_name, "iid-ipc-info-test"};
     info_service service_{};
 
 protected:
