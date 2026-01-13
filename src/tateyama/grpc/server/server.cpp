@@ -56,7 +56,7 @@ void tateyama_grpc_server::operator()() {
     std::unique_ptr<::grpc::Server> server(builder.BuildAndStart());
     if (!server) {
         LOG_LP(ERROR) << "Failed to start gRPC server on " << listen_address_;
-        return;
+        throw std::runtime_error("failed to start gRPC server");
     }
     LOG_LP(INFO) << "The gRPC server started on " << listen_address_;
 
