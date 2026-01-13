@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 Project Tsurugi.
+ * Copyright 2025-2026 Project Tsurugi.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@
 #include <tateyama/utils/boolalpha.h>
 #include "logging.h"
 
-#include "blob_relay_service_resource_impl.h"
+#include "server_resource_impl.h"
 
 namespace tateyama::grpc {
 
@@ -42,26 +42,6 @@ bool resource_impl::setup(environment& env) {
         }
     }
 
-    if (grpc_enabled_) {
-        // check blob_relay.enabled
-        if (auto* blob_relay_config = cfg->get_section("blob_relay"); blob_relay_config) {
-            if (auto blob_relay_enabled_opt = blob_relay_config->get<bool>("enabled"); blob_relay_enabled_opt) {
-                blob_relay_enabled_ = blob_relay_enabled_opt.value();
-                if (blob_relay_enabled_) {
-                    // create the relay service
-                    service_handler_ = std::make_shared<blob_relay::blob_relay_service_handler>();
-                    // setup blob relay service
-                    if (!service_handler_->setup(env)) {
-                        LOG(ERROR) << "cannot start the lob relay service";
-                        return false;
-                    }
-                    service_handler_->setup(env);
-                }
-            }
-        }
-    }
-    setup_done_ = true;
-
     // output configuration to be used
     LOG(INFO) << tateyama::grpc::grpc_config_prefix
               << "enabled: " << utils::boolalpha(grpc_enabled_) << ", "
@@ -70,26 +50,17 @@ bool resource_impl::setup(environment& env) {
               << "listen_address: " << grpc_listen_address_ << ", "
               << "listen address of the gRPC server.";
     LOG(INFO) << tateyama::grpc::grpc_config_prefix
-              << "secure: " << grpc_secure_ << ", "
+              << "secure: " << utils::boolalpha(grpc_secure_) << ", "
               << "enable secure ports for gRPC server or not.";
-
-    // output configuration to be used
-    LOG(INFO) << tateyama::grpc::blob_relay_config_prefix
-              << "enabled: " << utils::boolalpha(blob_relay_enabled_) << ", "
-              << "blob relay service is enabled or not.";
 
     return true;
 }
 
 bool resource_impl::start(environment&) {
+    started_ = true;
     if (grpc_enabled_) {
         try {
-            grpc_server_ = std::make_unique<server::tateyama_grpc_server>(grpc_listen_address_, sync_);
-
-            if (service_handler_) {
-                // add blob relay service to the server
-                grpc_server_->add_grpc_service_handler(service_handler_);
-            }
+            grpc_server_ = std::make_unique<tateyama_grpc_server>(grpc_listen_address_, services_, sync_);
 
             // Start the gRPC server
             grpc_server_thread_ = std::thread(std::ref(*grpc_server_));
@@ -122,17 +93,14 @@ bool resource_impl::shutdown(environment&) {
 }
 
 resource_impl::~resource_impl() {
-    VLOG(log_info) << "/:tateyama:lifecycle:component:<dtor> " << blob_relay_service_resource::component_label;
+    VLOG(log_info) << "/:tateyama:lifecycle:component:<dtor> " << grpc_server_resource::component_label;
 };
 
-std::shared_ptr<data_relay_grpc::blob_relay::blob_relay_service> resource_impl::blob_relay_service() {
-    if (setup_done_) {
-        if(service_handler_) {
-            return service_handler_->blob_relay_service();
-        }
-        return nullptr;
+void resource_impl::add_service(::grpc::Service* service) {
+    if (started_) {
+        throw std::runtime_error("The gRPC server has already started");
     }
-    throw std::runtime_error("blob_relay_service is not ready. Do this after setup()");
+    services_.emplace_back(service);
 }
 
 }

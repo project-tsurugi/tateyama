@@ -17,10 +17,10 @@
 
 #include <string_view>
 
-namespace tateyama::grpc {
+namespace tateyama::grpc::blob_relay {
 
 using namespace std::string_view_literals;
 
-static constexpr std::string_view grpc_config_prefix = "/:tateyama:grpc:config: "sv;
+static constexpr std::string_view blob_relay_config_prefix = "/:tateyama:blob_relay:config: "sv;
 
 } // namespace

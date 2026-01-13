@@ -94,6 +94,7 @@ endif()
 if (ENABLE_GRPC)
     file(GLOB GRPC_SOURCES
         "tateyama/grpc/*.cpp"
+        "tateyama/grpc/blob_relay/*.cpp"
     )
     list(APPEND SRCS ${GRPC_SOURCES})
 endif()

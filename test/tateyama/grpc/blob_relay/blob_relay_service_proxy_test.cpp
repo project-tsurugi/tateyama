@@ -23,14 +23,14 @@
 
 #include <tateyama/framework/server.h>
 #include <tateyama/framework/component_ids.h>
-#include <tateyama/grpc/blob_relay_service_resource.h>
+#include <tateyama/grpc/blob_relay/service_proxy.h>
 
 #include <gtest/gtest.h>
 #include <tateyama/test_utils/utility.h>
 
-namespace tateyama::grpc {
+namespace tateyama::grpc::blob_relay {
 
-class blob_relay_service_resource_test :
+class blob_relay_service_proxy_test :
     public ::testing::Test,
     public test_utils::utility
 {
@@ -45,16 +45,16 @@ public:
         add_core_components(*sv_);
 
         sv_->setup();
-        // obtaining the blob_relay_service_resource can be done after setup();
-        service_resource_ = std::dynamic_pointer_cast<grpc::blob_relay_service_resource>(sv_->server::find_resource_by_id(framework::resource_id_blob_relay_service));
-        if (!service_resource_) {
+        // obtaining the blob_relay_service_proxy can be done after setup();
+        service_proxy_ = std::dynamic_pointer_cast<grpc::blob_relay::service_proxy>(sv_->server::find_resource_by_id(framework::resource_id_blob_relay_service));
+        if (!service_proxy_) {
             FAIL();
         }
 
         sv_->start();
         // obtaining the blob_relay_service must be done after start().
         try {
-            blob_relay_service_ = service_resource_->blob_relay_service();
+            blob_relay_service_ = service_proxy_->blob_relay_service();
             if (!blob_relay_service_) {
                 FAIL();
             }
@@ -69,7 +69,7 @@ public:
     }
 
 protected:
-    std::shared_ptr<grpc::blob_relay_service_resource> service_resource_{};
+    std::shared_ptr<grpc::blob_relay::service_proxy> service_proxy_{};
     std::shared_ptr<data_relay_grpc::blob_relay::blob_relay_service> blob_relay_service_{};
 
     std::filesystem::path create_blob_file(std::filesystem::path file) {
@@ -99,12 +99,12 @@ private:
     }
 };
 
-TEST_F(blob_relay_service_resource_test, basic) {
+TEST_F(blob_relay_service_proxy_test, basic) {
     auto& blob_session = blob_relay_service_->create_session();
     blob_session.dispose();
 }
 
-TEST_F(blob_relay_service_resource_test, add_blob) {
+TEST_F(blob_relay_service_proxy_test, add_blob) {
     auto& blob_session = blob_relay_service_->create_session();
 
     auto blob_file_path = create_blob_file("add_blob");
@@ -120,7 +120,7 @@ TEST_F(blob_relay_service_resource_test, add_blob) {
     EXPECT_FALSE(std::filesystem::exists(blob_file_path));
 }
 
-TEST_F(blob_relay_service_resource_test, add_blob_no_file) {
+TEST_F(blob_relay_service_proxy_test, add_blob_no_file) {
     auto& blob_session = blob_relay_service_->create_session();
 
     auto blob_file_path = create_blob_file("add_blob_no_file");
@@ -131,7 +131,7 @@ TEST_F(blob_relay_service_resource_test, add_blob_no_file) {
     blob_session.dispose();
 }
 
-TEST_F(blob_relay_service_resource_test, entries_and_remove) {
+TEST_F(blob_relay_service_proxy_test, entries_and_remove) {
     auto& blob_session = blob_relay_service_->create_session();
 
     auto blob_file_path = create_blob_file("entries_and_remove");
