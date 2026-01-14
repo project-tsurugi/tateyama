@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#pragma once
 
 #include <tateyama/configuration/configuration_provider.h>
 #include "database_info_impl.h"

@@ -37,7 +37,7 @@ bool configuration_provider_impl::setup(framework::environment& env) {
     auto* system_section = conf->get_section("system");
     auto instance_id_opt = system_section->get<std::string>("instance_id");
     if (!instance_id_opt) {
-        LOG(ERROR) << "cannot find  instance_id at the system section in the configuration";
+        LOG(ERROR) << "cannot find instance_id at the system section in the configuration";
         return false;
     }
 

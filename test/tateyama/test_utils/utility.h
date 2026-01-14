@@ -115,7 +115,7 @@ static constexpr std::string_view default_configuration_for_tests {  // NOLINT
         "max_concurrent_transactions=\n"
 
     "[system]\n"
-        "pid_directory = /tmp\n"
+        "pid_directory=/tmp\n"
         "instance_id=instance-id-for-test\n"
 
     "[authentication]\n"
