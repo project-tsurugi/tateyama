@@ -38,8 +38,11 @@ void tateyama_grpc_server::operator()() {
 
     // Build and start gRPC server with service added
     ::grpc::ServerBuilder builder{};
+// FIXME Return it when another issue is resolved.
+#if 0
     // Set GRPC_ARG_ALLOW_REUSEPORT to 0 (off)
     builder.AddChannelArgument(GRPC_ARG_ALLOW_REUSEPORT, 0);
+#endif
     // Set ListeningPort
     builder.AddListeningPort(listen_address_, ::grpc::InsecureServerCredentials());
 
