@@ -83,6 +83,7 @@ file(GLOB SRCS
         "tateyama/request/service/*.cpp"
         "tateyama/authentication/resource/*.cpp"
         "tateyama/system/*.cpp"
+        "tateyama/configuration/*.cpp"
         )
 if (ENABLE_ALTIMETER)
     file(GLOB ALTIMETER_SOURCES

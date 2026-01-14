@@ -21,8 +21,8 @@
 #include <tateyama/logging.h>
 #include <glog/logging.h>
 
+#include <tateyama/api/server/database_info.h>
 #include <tateyama/status/resource/bridge.h>
-#include "database_info_impl.h"
 
 namespace tateyama::status_info::resource {
 
@@ -42,16 +42,6 @@ bool bridge::setup(environment& env) {
     }
 
     auto* ipc_section = conf->get_section("ipc_endpoint");
-    auto database_name_opt = ipc_section->get<std::string>("database_name");
-    if (!database_name_opt) {
-        LOG(ERROR) << "cannot find database_name at the ipc_endpoint section in the configuration";
-        return false;
-    }
-    const auto& name = database_name_opt.value();
-    auto dbinfo = std::make_unique<database_info_impl>();
-    dbinfo->name(name);
-    database_info_ = std::move(dbinfo);
-
     auto threads_opt = ipc_section->get<std::size_t>("threads");
     if (!threads_opt) {
         LOG(ERROR) << "cannot find thread at the ipc_endpoint section in the configuration";
@@ -68,10 +58,11 @@ bool bridge::setup(environment& env) {
     boost::interprocess::shared_memory_object::remove(status_file_name.c_str());
     shm_remover_ = std::make_unique<shm_remover>(status_file_name);
     try {
+        configuration_ = env.resource_repository().find<configuration::configuration_provider>();
         segment_ = std::make_unique<boost::interprocess::managed_shared_memory>(boost::interprocess::create_only, status_file_name.c_str(), shm_size(threads_opt.value() + admin_sessions_opt.value()));
         resource_status_memory_ = std::make_unique<resource_status_memory>(*segment_);
         resource_status_memory_->set_pid();
-        resource_status_memory_->set_database_name(name);
+        resource_status_memory_->set_database_name(configuration_->database_info().name());
         return true;
     } catch(const boost::interprocess::interprocess_exception& ex) {
         std::stringstream ss{};

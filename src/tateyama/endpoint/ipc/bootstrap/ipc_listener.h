@@ -33,6 +33,7 @@
 #include <tateyama/logging.h>
 #include <tateyama/utils/boolalpha.h>
 #include <tateyama/framework/routing_service.h>
+#include <tateyama/configuration/configuration_provider.h>
 #include <tateyama/api/configuration.h>
 #include <tateyama/session/resource/bridge.h>
 
@@ -57,7 +58,7 @@ public:
           session_(env.resource_repository().find<session::resource::bridge>()),
           conf_(tateyama::endpoint::common::connection_type::ipc,
                 session_,
-                status_->database_info(),
+                env.resource_repository().find<configuration::configuration_provider>()->database_info(),
                 authentication_bridge(env),
                 administrators_),
           ipc_metrics_(env) {

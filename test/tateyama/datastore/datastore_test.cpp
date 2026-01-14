@@ -27,7 +27,7 @@
 #include <tateyama/proto/datastore/request.pb.h>
 #include <tateyama/proto/datastore/response.pb.h>
 
-#include "tateyama/status/resource/database_info_impl.h"
+#include <tateyama/api/server/database_info.h>
 #include "tateyama/endpoint/common/session_info_impl.h"
 
 #include <tateyama/test_utils/utility.h>

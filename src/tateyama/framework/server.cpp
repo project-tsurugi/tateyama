@@ -44,6 +44,7 @@
 #include <tateyama/metrics/service/bridge.h>
 #include <tateyama/metrics/resource/bridge.h>
 #include <tateyama/system/service/bridge.h>
+#include "tateyama/configuration/resource/configuration_provider_impl.h"
 #ifdef ENABLE_ALTIMETER
 #include "altimeter_logger.h"
 #include <tateyama/altimeter/service/bridge.h>
@@ -189,8 +190,9 @@ server::server(framework::boot_mode mode, std::shared_ptr<api::configuration::wh
 
 void add_core_components(server& svr) {
     svr.add_resource(std::make_shared<diagnostic::resource::diagnostic_resource>());
+    svr.add_resource(std::make_shared<configuration::resource::configuration_provider_impl>());
     svr.add_resource(std::make_shared<metrics::resource::bridge>());
-    svr.add_resource(std::make_shared<status_info::resource::bridge>());
+    svr.add_resource(std::make_shared<status_info::resource::bridge>());  // place after configuration::resource::configuration_provider_impl
     svr.add_resource(std::make_shared<datastore::resource::bridge>());
     svr.add_resource(std::make_shared<framework::transactional_kvs_resource>());
     svr.add_resource(std::make_shared<session::resource::bridge>());

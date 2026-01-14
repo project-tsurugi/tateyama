@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2023 Project Tsurugi.
+ * Copyright 2018-2026 Project Tsurugi.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,18 +20,16 @@
 
 #include <tateyama/api/server/database_info.h>
 
-namespace tateyama::status_info::resource {
-
-class bridge;
+namespace tateyama::configuration::resource {
 
 /**
  * @brief database_info_impl
  */
 class database_info_impl : public tateyama::api::server::database_info {
 public:
-    explicit database_info_impl(std::string_view name) : name_(name) {}
+    explicit database_info_impl(std::string_view name, std::string_view instance_id) : name_(name), instance_id_(instance_id) {}
 
-    database_info_impl() : database_info_impl("name_has_not_been_given") {}
+    database_info_impl() : database_info_impl("name_has_not_been_given", "instance_id_has_not_been_given") {}
 
     [[nodiscard]] process_id_type process_id() const noexcept override { return process_id_; }
 
@@ -39,17 +37,16 @@ public:
 
     [[nodiscard]] time_type start_at() const noexcept override { return start_at_; }
 
+    [[nodiscard]] std::string_view instance_id() const noexcept override { return instance_id_; }
+
 private:
+    std::string name_;
+
+    std::string instance_id_;
+
     process_id_type process_id_{::getpid()};
 
-    std::string name_{};
-
     time_type start_at_{std::chrono::system_clock::now()};
-
-    // only tateyama::status_info::resource::bridge can use this.
-    void name(std::string_view name) { name_ = name; }
-
-    friend class tateyama::status_info::resource::bridge;
 };
 
 }

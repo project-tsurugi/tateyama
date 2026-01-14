@@ -24,6 +24,7 @@
 #include <tateyama/metrics/service/bridge.h>
 #include <tateyama/metrics/resource/bridge.h>
 #include <tateyama/system/service/bridge.h>
+#include "tateyama/configuration/resource/configuration_provider_impl.h"
 #ifdef ENABLE_ALTIMETER
 #include <tateyama/altimeter/service/bridge.h>
 #endif
@@ -39,6 +40,7 @@
 namespace tateyama::test_utils {
 
     static void add_core_components_for_test(tateyama::framework::server& svr) {
+        svr.add_resource(std::make_shared<configuration::resource::configuration_provider_impl>());
         svr.add_resource(std::make_shared<tateyama::metrics::resource::bridge>());
         svr.add_resource(std::make_shared<tateyama::status_info::resource::bridge>());
         svr.add_resource(std::make_shared<tateyama::session::resource::bridge>());
@@ -58,6 +60,7 @@ namespace tateyama::test_utils {
     }
 
     static void add_core_components_for_datastore_test(tateyama::framework::server& svr) {
+        svr.add_resource(std::make_shared<configuration::resource::configuration_provider_impl>());
         svr.add_resource(std::make_shared<tateyama::metrics::resource::bridge>());
         svr.add_resource(std::make_shared<tateyama::status_info::resource::bridge>());
         svr.add_resource(std::make_shared<datastore::resource::bridge>());

@@ -24,8 +24,8 @@
 #include <unistd.h>
 
 #include <tateyama/api/server/request.h>
+#include <tateyama/api/server/database_info.h>
 
-#include "tateyama/status/resource/database_info_impl.h"
 #include "session_info_impl.h"
 #include "tateyama/endpoint/common/endpoint_proto_utils.h"
 #include "worker_configuration.h"

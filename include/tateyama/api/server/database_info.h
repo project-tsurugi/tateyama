@@ -66,6 +66,12 @@ public:
      * @returns the database started time
      */
     [[nodiscard]] virtual time_type start_at() const noexcept = 0;
+
+    /**
+     * @brief returns the instance_id of the database.
+     * @returns the instance_id
+     */
+    [[nodiscard]] virtual std::string_view instance_id() const noexcept = 0;
 };
 
 }

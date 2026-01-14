@@ -21,7 +21,7 @@
 #include <tateyama/api/server/request.h>
 #include <tateyama/api/server/response.h>
 
-#include "tateyama/status/resource/database_info_impl.h"
+#include "tateyama/configuration/resource/database_info_impl.h"
 #include "tateyama/endpoint/common/session_info_impl.h"
 
 namespace tateyama::test_utils {
@@ -90,7 +90,7 @@ public:
     std::size_t local_id_{};
     std::string payload_{};
 
-    tateyama::status_info::resource::database_info_impl database_info_{};
+    tateyama::configuration::resource::database_info_impl database_info_{};
     tateyama::endpoint::common::administrators administrators_{"*"};
     tateyama::endpoint::common::session_info_impl session_info_{0, "", "", administrators_};
     tateyama::api::server::session_store session_store_{};
