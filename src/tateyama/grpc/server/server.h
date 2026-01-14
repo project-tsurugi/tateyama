@@ -22,8 +22,9 @@
 #include <vector>
 #include <mutex>
 
-#include <tateyama/framework/environment.h>
+#include <boost/thread/barrier.hpp>
 
+#include <tateyama/framework/environment.h>
 #include"service_handler.h"
 
 namespace tateyama::grpc::server {
@@ -33,20 +34,34 @@ namespace tateyama::grpc::server {
  */
 class tateyama_grpc_server {
 public:
-    explicit tateyama_grpc_server(std::string listen_address);
+    explicit tateyama_grpc_server(std::string listen_address, boost::barrier& sync);
 
+    /**
+     * @brief Processing core of the gRPC server
+     */
     void operator()();
 
-    void request_shutdown();
+    /**
+     * @brief request the gRPC server shutdown
+     */
+    void request_shutdown() noexcept;
 
     /**
      * @brief add a gRPC service handler
      */
     void add_grpc_service_handler(std::shared_ptr<grpc_service_handler>);
 
+    /**
+     * @brief check whether the server is running
+     * @return true if the server is working
+     */
+    bool is_working() const noexcept;
+
 private:
     std::string listen_address_;
+    boost::barrier& sync_;
     std::atomic<bool> shutdown_requested_{false};
+    std::atomic<bool> working_{false};
 
     std::mutex mutex_{};
     std::vector<std::shared_ptr<grpc_service_handler>> handlers_{};

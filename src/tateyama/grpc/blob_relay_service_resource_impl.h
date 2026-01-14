@@ -20,8 +20,9 @@
 #include <memory>
 #include <thread>
 
-#include <tateyama/framework/component_ids.h>
+#include <boost/thread/barrier.hpp>
 
+#include <tateyama/framework/component_ids.h>
 #include <tateyama/grpc/blob_relay_service_resource.h>
 #include "blob_relay/blob_relay_service.h"
 #include "server/server.h"
@@ -72,13 +73,11 @@ private:
     std::shared_ptr<blob_relay::blob_relay_service_handler> service_handler_{};
 
     std::string grpc_listen_address_{};
+    boost::barrier sync_{2};
     bool grpc_enabled_{};
     bool grpc_secure_{};
     bool blob_relay_enabled_{};
     bool setup_done_{};
-
-    void wait_for_server_ready();
-    bool is_server_ready();
 };
 
 } // namespace

@@ -20,7 +20,6 @@
 #include <tateyama/utils/boolalpha.h>
 #include "logging.h"
 
-#include "server/ping_service/ping_service.h"
 #include "blob_relay_service_resource_impl.h"
 
 namespace tateyama::grpc {
@@ -85,7 +84,7 @@ bool resource_impl::setup(environment& env) {
 bool resource_impl::start(environment&) {
     if (grpc_enabled_) {
         try {
-            grpc_server_ = std::make_unique<server::tateyama_grpc_server>(grpc_listen_address_);
+            grpc_server_ = std::make_unique<server::tateyama_grpc_server>(grpc_listen_address_, sync_);
 
             if (service_handler_) {
                 // add blob relay service to the server
@@ -96,7 +95,11 @@ bool resource_impl::start(environment&) {
             grpc_server_thread_ = std::thread(std::ref(*grpc_server_));
 
             // Wait until the server is ready (using ping_service)
-            wait_for_server_ready();
+            sync_.wait();
+            if (!grpc_server_->is_working()) {
+                LOG(ERROR) << "fail to launch gRPC server";
+                return false;
+            }
         } catch (std::runtime_error &ex) {
             LOG(ERROR) << ex.what();
             return false;
@@ -130,37 +133,6 @@ std::shared_ptr<data_relay_grpc::blob_relay::blob_relay_service> resource_impl::
         return nullptr;
     }
     throw std::runtime_error("blob_relay_service is not ready. Do this after setup()");
-}
-
-
-// Wait until the server is ready (using ping_service)
-void resource_impl::wait_for_server_ready() {
-    constexpr int max_attempts = 50;
-    constexpr int wait_millis = 10;
-    for (int attempt = 0; attempt < max_attempts; ++attempt) {
-        if (is_server_ready()) {
-            return;
-        }
-        std::this_thread::sleep_for(std::chrono::milliseconds(wait_millis));
-    }
-    throw std::runtime_error("gRPC server did not become ready in time");
-}
-
-// Use ping_service to check if server is ready
-bool resource_impl::is_server_ready() {
-    auto pos = grpc_listen_address_.find(':');
-    if (pos == std::string::npos) {
-        throw std::runtime_error("server address does not includes port number");
-    }
-    std::string address("localhost");
-    address += grpc_listen_address_.substr(pos);
-    auto channel = ::grpc::CreateChannel(grpc_listen_address_, ::grpc::InsecureChannelCredentials());
-    tateyama::grpc::proto::PingService::Stub stub(channel);
-    ::grpc::ClientContext context;
-    tateyama::grpc::proto::PingRequest req;
-    tateyama::grpc::proto::PingResponse resp;
-    auto status = stub.Ping(&context, req, &resp);
-    return status.ok();
 }
 
 }

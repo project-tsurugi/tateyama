@@ -23,7 +23,6 @@
 
 #include <limestone/api/datastore.h>
 
-#include "ping_service/ping_service.h"
 #include "server.h"
 
 namespace tateyama::grpc::server {
@@ -31,7 +30,7 @@ namespace tateyama::grpc::server {
 /**
  * @brief gRPC server service
  */
-tateyama_grpc_server::tateyama_grpc_server(std::string listen_address) : listen_address_(std::move(listen_address)) {
+tateyama_grpc_server::tateyama_grpc_server(std::string listen_address, boost::barrier& sync) : listen_address_(std::move(listen_address)), sync_(sync) {
 }
 
 void tateyama_grpc_server::operator()() {
@@ -44,10 +43,6 @@ void tateyama_grpc_server::operator()() {
     // Set ListeningPort
     builder.AddListeningPort(listen_address_, ::grpc::InsecureServerCredentials());
 
-    // Register ping service
-    tateyama::grpc::server::ping_service::ping_service ping_service;
-    builder.RegisterService(&ping_service);
-
     // Register gRpc service
     for (auto&& e : handlers_) {
         e->register_to_builder(builder);
@@ -56,9 +51,12 @@ void tateyama_grpc_server::operator()() {
     std::unique_ptr<::grpc::Server> server(builder.BuildAndStart());
     if (!server) {
         LOG_LP(ERROR) << "Failed to start gRPC server on " << listen_address_;
-        throw std::runtime_error("failed to start gRPC server");
+        sync_.wait();
+        return;
     }
     LOG_LP(INFO) << "The gRPC server started on " << listen_address_;
+    working_.store(true);
+    sync_.wait();
 
     // Wait for shutdown signal
     while (!shutdown_requested_.load()) {
@@ -75,8 +73,12 @@ void tateyama_grpc_server::add_grpc_service_handler(std::shared_ptr<grpc_service
     handlers_.emplace_back(std::move(handler));
 }
 
-void tateyama_grpc_server::request_shutdown() {
+void tateyama_grpc_server::request_shutdown() noexcept {
     shutdown_requested_.store(true);
+}
+
+bool tateyama_grpc_server::is_working() const noexcept {
+    return working_.load();
 }
 
 } // namespace
