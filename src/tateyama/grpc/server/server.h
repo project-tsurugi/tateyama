@@ -55,7 +55,7 @@ public:
      * @brief check whether the server is running
      * @return true if the server is working
      */
-    bool is_working() const noexcept;
+    [[nodiscard]] bool is_working() const noexcept;
 
 private:
     std::string listen_address_;
