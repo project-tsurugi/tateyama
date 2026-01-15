@@ -56,8 +56,8 @@ static bool extract_config(environment& env, limestone::api::configuration& opti
         if (auto configuration = env.resource_repository().find<configuration::configuration_provider>(); configuration) {
             options.set_instance_id(configuration->database_info().instance_id());
         } else {
-            // happen only in tateyama/datastore/datastore_test.cpp
             LOG(WARNING) << "cannot find configuration::configuration_provider, and thus instance_id has not been provided to datastore";
+            return false;
         }
     } catch(std::exception const& e) {
         // error log should have been made
