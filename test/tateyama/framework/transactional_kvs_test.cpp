@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2025 Project Tsurugi.
+ * Copyright 2018-2026 Project Tsurugi.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,12 +69,16 @@ TEST_F(transactional_kvs_test, basic) {
     std::filesystem::path logdir{path()};
     auto cfg = std::make_shared<tateyama::api::configuration::whole>(ss, tateyama::test_utils::default_configuration_for_tests);
     framework::environment env{boot_mode::database_server, cfg};
+    auto cp = std::make_shared<configuration::resource::configuration_provider_impl>();
+    env.resource_repository().add(cp);
     auto ds = std::make_shared<datastore::resource::bridge>();
     env.resource_repository().add(ds);
     transactional_kvs_resource kvs{};
     ASSERT_FALSE(std::filesystem::exists(logdir) && !std::filesystem::is_empty(logdir)) << logdir;
+    ASSERT_TRUE(cp->setup(env));
     ASSERT_TRUE(ds->setup(env));
     ASSERT_TRUE(kvs.setup(env));
+    ASSERT_TRUE(cp->start(env));
     ASSERT_TRUE(ds->start(env));
     ASSERT_TRUE(kvs.start(env));
     if (using_shirakami) {
@@ -82,6 +86,7 @@ TEST_F(transactional_kvs_test, basic) {
     }
     ASSERT_TRUE(kvs.shutdown(env));
     ASSERT_TRUE(ds->shutdown(env));
+    ASSERT_TRUE(cp->shutdown(env));
     // assume: limestone creates something in logdir
     ASSERT_TRUE(std::filesystem::exists(logdir) && !std::filesystem::is_empty(logdir)) << logdir;
     if (using_shirakami) {

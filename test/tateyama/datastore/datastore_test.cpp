@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2025 Project Tsurugi.
+ * Copyright 2018-2026 Project Tsurugi.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -112,12 +112,17 @@ TEST_F(datastore_test, resource_log_location_absolute) {
     std::filesystem::path logdir{path()};
     auto cfg = std::make_shared<tateyama::api::configuration::whole>(ss, tateyama::test_utils::default_configuration_for_tests);
     framework::environment env{framework::boot_mode::database_server, cfg};
+    auto cp = std::make_shared<configuration::resource::configuration_provider_impl>();
+    env.resource_repository().add(cp);
     auto ds = std::make_shared<datastore::resource::bridge>();
     ASSERT_FALSE(std::filesystem::exists(logdir) && !std::filesystem::is_empty(logdir)) << logdir;
+    ASSERT_TRUE(cp->setup(env));
     ASSERT_TRUE(ds->setup(env));
+    ASSERT_TRUE(cp->start(env));
     ASSERT_TRUE(ds->start(env));
     // assume: limestone creates something in logdir
     ASSERT_TRUE(ds->shutdown(env));
+    ASSERT_TRUE(cp->shutdown(env));
     ASSERT_TRUE(std::filesystem::exists(logdir) && !std::filesystem::is_empty(logdir)) << logdir;
 }
 
@@ -131,11 +136,16 @@ TEST_F(datastore_test, resource_log_location_relative) {
     auto cfg = std::make_shared<tateyama::api::configuration::whole>(ss, tateyama::test_utils::default_configuration_for_tests);
     cfg->base_path(path());
     framework::environment env{framework::boot_mode::database_server, cfg};
+    auto cp = std::make_shared<configuration::resource::configuration_provider_impl>();
+    env.resource_repository().add(cp);
     auto ds = std::make_shared<datastore::resource::bridge>();
     ASSERT_FALSE(std::filesystem::exists(logdir) && !std::filesystem::is_empty(logdir)) << logdir;
+    ASSERT_TRUE(cp->setup(env));
     ASSERT_TRUE(ds->setup(env));
+    ASSERT_TRUE(cp->start(env));
     ASSERT_TRUE(ds->start(env));
     ASSERT_TRUE(ds->shutdown(env));
+    ASSERT_TRUE(cp->shutdown(env));
     // assume: limestone creates something in logdir
     ASSERT_TRUE(std::filesystem::exists(logdir) && !std::filesystem::is_empty(logdir)) << logdir;
 }
@@ -149,8 +159,12 @@ TEST_F(datastore_test, resource_log_location_empty_string) {
     auto cfg = std::make_shared<tateyama::api::configuration::whole>(ss, tateyama::test_utils::default_configuration_for_tests);
     cfg->base_path(path());
     framework::environment env{framework::boot_mode::database_server, cfg};
+    auto cp = std::make_shared<configuration::resource::configuration_provider_impl>();
+    env.resource_repository().add(cp);
     auto ds = std::make_shared<datastore::resource::bridge>();
+    ASSERT_TRUE(cp->setup(env));
     ASSERT_FALSE(ds->setup(env)); // log_location is invalid
+    cp->shutdown(env);
 }
 
 TEST_F(datastore_test, resource_error_detection) {
@@ -168,7 +182,10 @@ TEST_F(datastore_test, resource_error_detection) {
     auto cfg = std::make_shared<tateyama::api::configuration::whole>(ss, tateyama::test_utils::default_configuration_for_tests);
     cfg->base_path(path());
     framework::environment env{framework::boot_mode::database_server, cfg};
+    auto cp = std::make_shared<configuration::resource::configuration_provider_impl>();
+    env.resource_repository().add(cp);
     auto ds = std::make_shared<datastore::resource::bridge>();
+    ASSERT_TRUE(cp->setup(env));
     ASSERT_TRUE(ds->setup(env));
     // assume: abort in current limestone implementation
     ASSERT_DEATH(ds->start(env), "limestone.* fail to create"); // cannot make log_location
