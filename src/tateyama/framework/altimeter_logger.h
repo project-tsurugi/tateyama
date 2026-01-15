@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2024 Project Tsurugi.
+ * Copyright 2018-2026 Project Tsurugi.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ namespace tateyama::framework {
 static constexpr std::int64_t db_start_stop_success = 1;
 static constexpr std::int64_t db_start_stop_fail = 2;
 
-static inline void db_start(std::string_view user, std::string_view dbname, std::int64_t result) {
+static inline void db_start(std::string_view user, std::string_view dbname, std::string_view instance_id, std::int64_t result) {
     if (::altimeter::logger::is_log_on(::altimeter::audit::category,
                                        ::altimeter::audit::level::info)) {
         ::altimeter::log_item log_item;
@@ -44,6 +44,7 @@ static inline void db_start(std::string_view user, std::string_view dbname, std:
         if (!dbname.empty()) {
             log_item.add(::altimeter::audit::item::dbname, dbname);
         }
+        log_item.add(::altimeter::audit::item::instance_id, instance_id);
         log_item.add(::altimeter::audit::item::result, result);
         ::altimeter::logger::log(log_item);
     }
@@ -62,12 +63,13 @@ static inline void db_start(std::string_view user, std::string_view dbname, std:
         log_item.add(::altimeter::event::item::pid, getpid());
         log_item.add(::altimeter::event::item::current_level,
                      ::altimeter::logger::get_level(::altimeter::event::category));
+        log_item.add(::altimeter::event::item::instance_id, instance_id);
         log_item.add(::altimeter::event::item::result, result);
         ::altimeter::logger::log(log_item);
     }
 }
 
-static inline void db_stop(std::string_view user, std::string_view dbname, std::int64_t result, std::int64_t duration_time) {
+static inline void db_stop(std::string_view user, std::string_view dbname, std::string_view instance_id, std::int64_t result, std::int64_t duration_time) {
     if (::altimeter::logger::is_log_on(::altimeter::audit::category,
                                        ::altimeter::audit::level::info)) {
         ::altimeter::log_item log_item;
@@ -80,6 +82,7 @@ static inline void db_stop(std::string_view user, std::string_view dbname, std::
         if (!dbname.empty()) {
             log_item.add(::altimeter::audit::item::dbname, dbname);
         }
+        log_item.add(::altimeter::audit::item::instance_id, instance_id);
         log_item.add(::altimeter::audit::item::result, result);
         // no duration_time for audit log (by sepcification)
         ::altimeter::logger::log(log_item);
@@ -97,6 +100,7 @@ static inline void db_stop(std::string_view user, std::string_view dbname, std::
             log_item.add(::altimeter::event::item::dbname, dbname);
         }
         log_item.add(::altimeter::event::item::pid, getpid());
+        log_item.add(::altimeter::event::item::instance_id, instance_id);
         log_item.add(::altimeter::event::item::result, result);
         log_item.add(::altimeter::event::item::duration_time, duration_time);
         ::altimeter::logger::log(log_item);
