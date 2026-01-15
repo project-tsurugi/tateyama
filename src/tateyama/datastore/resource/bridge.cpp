@@ -50,8 +50,8 @@ static bool extract_config(environment& env, limestone::api::configuration& opti
                 }
             }
         }
-        // XXX: direct porting from shirakami init code
-        options = limestone::api::configuration({location}, location + "m");
+        options = limestone::api::configuration();
+        options.set_data_location(location);
         options.set_recover_max_parallelism(recover_param);
         if (auto configuration = env.resource_repository().find<configuration::configuration_provider>(); configuration) {
             options.set_instance_id(configuration->database_info().instance_id());
