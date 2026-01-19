@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2025 Project Tsurugi.
+ * Copyright 2018-2026 Project Tsurugi.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -82,6 +82,14 @@ inline static std::string get_database_name(environment& env) {
     }
     return {};
 }
+
+inline static std::string_view get_instance_id(environment& env) {
+    auto configuration_provider = env.resource_repository().find<configuration::configuration_provider>();
+    if (configuration_provider) {
+        return configuration_provider->database_info().instance_id();
+    }
+    return {};
+}
 #endif
 
 bool server::setup() {
@@ -110,7 +118,7 @@ bool server::setup() {
         // shutdown already setup components
 #ifdef ENABLE_ALTIMETER
         db_start_time_ = std::chrono::steady_clock::now();
-        db_start("", get_database_name(*environment_), db_start_stop_fail);
+        db_start("", get_database_name(*environment_), get_instance_id(*environment_), db_start_stop_fail);
 #endif
         shutdown();
     }
@@ -146,7 +154,7 @@ bool server::start() {
     });
 #ifdef ENABLE_ALTIMETER
     db_start_time_ = std::chrono::steady_clock::now();
-    db_start("", get_database_name(*environment_), success ? db_start_stop_success : db_start_stop_fail);
+    db_start("", get_database_name(*environment_), get_instance_id(*environment_), success ? db_start_stop_success : db_start_stop_fail);
 #endif
     if(! success) {
         LOG(ERROR) << "Server application framework start phase failed.";
@@ -175,7 +183,7 @@ bool server::shutdown() {
         VLOG(log_info) << "/:tateyama:lifecycle:component:shutdown_end " << arg.label();
     }, true);
 #ifdef ENABLE_ALTIMETER
-    db_stop("", get_database_name(*environment_), db_start_stop_success, std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - db_start_time_).count());
+    db_stop("", get_database_name(*environment_), get_instance_id(*environment_), db_start_stop_success, std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - db_start_time_).count());
 #endif
     return success;
 }
