@@ -84,7 +84,7 @@ static inline void db_stop(std::string_view user, std::string_view dbname, std::
         }
         log_item.add(::altimeter::audit::item::instance_id, instance_id);
         log_item.add(::altimeter::audit::item::result, result);
-        // no duration_time for audit log (by sepcification)
+        // no duration_time for audit log (by specification)
         ::altimeter::logger::log(log_item);
     }
     if (::altimeter::logger::is_log_on(::altimeter::event::category,
