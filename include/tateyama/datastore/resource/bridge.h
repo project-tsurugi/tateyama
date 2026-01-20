@@ -75,6 +75,7 @@ public:
     limestone::status restore_backup(std::string_view, bool);
     limestone::status restore_backup(std::string_view, std::vector<limestone::api::file_set_entry>&);
     [[nodiscard]] limestone::api::datastore& datastore() const noexcept;
+    void register_transaction_tpm_id(const std::string& transaction_id, std::uint64_t tpm_id) noexcept;
 
     /**
      * @see `tateyama::framework::component::label()`

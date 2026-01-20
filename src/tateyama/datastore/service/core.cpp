@@ -206,6 +206,18 @@ bool tateyama::datastore::service::core::operator()(const std::shared_ptr<reques
             break;
         }
 
+        case ns::Request::kRegisterTransactionTpmId: {
+            auto& rb = rq.register_transaction_tpm_id();
+            resource_->register_transaction_tpm_id(rb.transaction_id(), rb.tpm_id());
+            VLOG(log_debug) << "received RegisterTransactionTpmId, transaction id = " << rb.transaction_id() << ", tpm id = " << rb.tpm_id();
+
+            tateyama::proto::datastore::response::RegisterTransactionTpmId rp{};
+            (void) rp.mutable_success();
+            auto body = rp.SerializeAsString();
+            res->body(body);
+            break;
+        }
+
     case ns::Request::kTagList:
     case ns::Request::kTagAdd:
     case ns::Request::kTagGet:
