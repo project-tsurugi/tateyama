@@ -32,7 +32,7 @@ runs:
       with:
         repository: project-tsurugi/limestone
         path: ${{ inputs.path }}/limestone
-        ref: master
+        ref: dist-tx-bench-2026
 
     - name: Checkout_Yakushima
       uses: actions/checkout@v4
@@ -49,7 +49,7 @@ runs:
       with:
         repository: project-tsurugi/shirakami
         path: ${{ inputs.path }}/shirakami
-        ref: master
+        ref: dist-tx-bench-2026
 
     - name: Checkout_Sharksfin
       uses: actions/checkout@v4
