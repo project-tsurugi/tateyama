@@ -30,6 +30,9 @@ namespace tateyama::datastore::service {
 using tateyama::api::server::request;
 using tateyama::api::server::response;
 
+constexpr static std::uint64_t SERVICE_MESSAGE_VERSION_MAJOR = 0;
+constexpr static std::uint64_t SERVICE_MESSAGE_VERSION_MINOR = 0;
+
 bool tateyama::datastore::service::core::operator()(const std::shared_ptr<request>& req, const std::shared_ptr<response>& res) {
     if (req->session_info().user_type() != tateyama::api::server::user_type::administrator) {
         tateyama::proto::diagnostics::Record error{};
@@ -47,6 +50,16 @@ bool tateyama::datastore::service::core::operator()(const std::shared_ptr<reques
     ns::Request rq{};
     if(!rq.ParseFromArray(data.data(), static_cast<int>(data.size()))) {
         LOG(ERROR) << "request parse error";
+        return false;
+    }
+
+    auto smvm = rq.service_message_version_major();
+    if (smvm > SERVICE_MESSAGE_VERSION_MAJOR ||
+        (smvm == SERVICE_MESSAGE_VERSION_MAJOR && rq.service_message_version_minor() > SERVICE_MESSAGE_VERSION_MINOR)) {
+        tateyama::proto::diagnostics::Record error{};
+        error.set_code(tateyama::proto::diagnostics::Code::INVALID_REQUEST);
+        error.set_message("unsupported message version");
+        res->error(error);
         return false;
     }
 
