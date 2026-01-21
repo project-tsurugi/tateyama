@@ -66,8 +66,8 @@ TEST_F(datastore_test, basic) {
     std::string str{};
     {
         ::tateyama::proto::datastore::request::Request rq{};
-        rq.set_service_message_version_major(1);
-        rq.set_service_message_version_minor(0);
+        rq.set_service_message_version_major(0);
+        rq.set_service_message_version_minor(1);
         auto bb = rq.mutable_backup_begin();
         str = rq.SerializeAsString();
         rq.clear_backup_begin();

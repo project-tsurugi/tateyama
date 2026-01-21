@@ -110,6 +110,7 @@ limestone::status bridge::restore_backup(std::string_view from, std::vector<lime
 }
 
 void bridge::register_transaction_tpm_id(const std::string& transaction_id, std::uint64_t tpm_id) noexcept {
+    VLOG(log_debug) << "received RegisterTransactionTpmId, transaction id = " << transaction_id << ", tpm id = " << tpm_id;
     datastore_->register_transaction_tpm_id(transaction_id, tpm_id);
 }
 
