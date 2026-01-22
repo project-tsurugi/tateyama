@@ -57,7 +57,7 @@ runs:
       with:
         repository: project-tsurugi/sharksfin
         path: ${{ inputs.path }}/sharksfin
-        ref: master
+        ref: dev-ban-1338-02
 
     - name: Checkout_Data_Relay_gRPC
       uses: actions/checkout@v4
