@@ -28,6 +28,8 @@
 #include <boost/exception/all.hpp>
 #include <takatori/util/exception.h>
 
+#include <tbb/concurrent_queue.h>
+
 #include <tateyama/common.h>
 #include <tateyama/task_scheduler/context.h>
 #include <tateyama/task_scheduler/impl/queue.h>
@@ -95,7 +97,7 @@ public:
     worker(
         std::vector<basic_queue<task>>& queues,
         std::vector<basic_queue<task>>& sticky_task_queues,
-        std::vector<std::vector<task>>& initial_tasks,
+        std::vector<tbb::concurrent_queue<task>>& initial_tasks,
         worker_stat& stat,
         task_scheduler_cfg const& cfg,
         initializer_type initializer = {}
@@ -121,14 +123,14 @@ public:
         auto& q = (*queues_)[index];
         auto& sq = (*sticky_task_queues_)[index];
         auto& s = (*initial_tasks_)[index];
-        for(auto&& t : s) {
+        task t{};
+        while(s.try_pop(t)) {
             if(t.sticky()) {
                 sq.push(std::move(t));
                 continue;
             }
             q.push(std::move(t));
         }
-        s.clear();
 
         if(initializer_) {
             initializer_(index);
@@ -214,7 +216,7 @@ private:
     task_scheduler_cfg const* cfg_{};
     std::vector<basic_queue<task>>* queues_{};
     std::vector<basic_queue<task>>* sticky_task_queues_{};
-    std::vector<std::vector<task>>* initial_tasks_{};
+    std::vector<tbb::concurrent_queue<task>>* initial_tasks_{};
     worker_stat* stat_{};
     initializer_type initializer_{};
 

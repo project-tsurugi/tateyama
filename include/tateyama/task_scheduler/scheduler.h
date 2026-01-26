@@ -18,6 +18,8 @@
 #include <chrono>
 #include <sched.h>
 
+#include <tbb/concurrent_queue.h>
+
 #include <tateyama/logging.h>
 #include <tateyama/task_scheduler/impl/worker.h>
 #include <tateyama/task_scheduler/impl/conditional_worker.h>
@@ -172,7 +174,7 @@ public:
         auto& thread = threads_[index];
         if (! started_) {
             auto& s = initial_tasks_[index];
-            s.emplace_back(std::move(t));
+            s.push(std::move(t));
             return;
         }
         if(t.sticky()) {
@@ -438,7 +440,7 @@ private:
     std::vector<impl::worker_stat> worker_stats_{};
     std::vector<context> contexts_{};
     std::atomic_size_t next_worker_index_before_modulo_{};
-    std::vector<std::vector<task>> initial_tasks_{};
+    std::vector<tbb::concurrent_queue<task>> initial_tasks_{};
     std::atomic_bool started_{false};
     conditional_task_queue conditional_queue_{};
     // use unique_ptr to avoid default constructor to spawn new thread
