@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 Project Tsurugi.
+ * Copyright 2025-2026 Project Tsurugi.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,21 +21,26 @@
 #include <tateyama/logging.h>
 #include <tateyama/logging_helper.h>
 
-#include <limestone/api/datastore.h>
-
 #include "server.h"
 
-namespace tateyama::grpc::server {
+namespace tateyama::grpc {
 
 /**
  * @brief gRPC server service
  */
-tateyama_grpc_server::tateyama_grpc_server(std::string listen_address, boost::barrier& sync) : listen_address_(std::move(listen_address)), sync_(sync) {
+tateyama_grpc_server::tateyama_grpc_server(std::string listen_address, std::vector<::grpc::Service*>& services, boost::barrier& sync)
+    : listen_address_(std::move(listen_address)), services_(services), sync_(sync) {
 }
 
 void tateyama_grpc_server::operator()() {
     pthread_setname_np(pthread_self(), "grpc_server_impl");
 
+    // Check services has been registered
+    if (services_.empty()) {
+        LOG_LP(INFO) << "The gRPC server did not start as no service has been registered";
+        return;
+    }
+    
     // Build and start gRPC server with service added
     ::grpc::ServerBuilder builder{};
     // Set GRPC_ARG_ALLOW_REUSEPORT to 0 (off)
@@ -44,8 +49,8 @@ void tateyama_grpc_server::operator()() {
     builder.AddListeningPort(listen_address_, ::grpc::InsecureServerCredentials());
 
     // Register gRpc service
-    for (auto&& e : handlers_) {
-        e->register_to_builder(builder);
+    for (auto&& e : services_) {
+        builder.RegisterService(e);
     }
 
     std::unique_ptr<::grpc::Server> server(builder.BuildAndStart());
@@ -66,11 +71,6 @@ void tateyama_grpc_server::operator()() {
     server->Shutdown();
     server->Wait();
     LOG_LP(INFO) << "The gRPC server stopped.";
-}
-
-void tateyama_grpc_server::add_grpc_service_handler(std::shared_ptr<grpc_service_handler> handler) {
-    std::lock_guard<std::mutex> lock(mutex_);
-    handlers_.emplace_back(std::move(handler));
 }
 
 void tateyama_grpc_server::request_shutdown() noexcept {

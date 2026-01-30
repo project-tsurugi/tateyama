@@ -66,7 +66,6 @@ available options:
 * `-DBUILD_STRICT=OFF` - don't treat compile warnings as build errors
 * `-DINSTALL_EXAMPLES=ON` - install example applications
 * `-DSHARKSFIN_IMPLEMENTATION=<implementation name>` - switch sharksfin implementation. Available options are `memory` and `shirakami` (default: `shirakami`)
-* `-DINSTALL_API_ONLY=ON` - configure build directory just to install public header files. Use when other components require tateyama public headers.
 * `-DENABLE_ALTIMETER=ON` - turn on the `altimeter logging`.
 * `-DENABLE_GRPC=OFF` - turn off the `grpc build`.
 * `-DMC_QUEUE=ON` - use moody camel queue instead of tbb queue to store tasks in tateyama task scheduler.
