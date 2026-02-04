@@ -53,7 +53,9 @@ public:
         return service_ != nullptr;
     }
     void register_to_builder(::grpc::ServerBuilder& builder) override {
-        service_->add_blob_relay_service(builder);
+        for (auto* svc : service_->services()) {
+            builder.RegisterService(svc);
+        }
     }
     std::shared_ptr<data_relay_grpc::blob_relay::blob_relay_service> blob_relay_service() {
         return service_;
