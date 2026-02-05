@@ -65,7 +65,7 @@ runs:
       with:
         repository: project-tsurugi/data-relay-grpc
         path: ${{ inputs.path }}/data-relay-grpc
-        ref: master
+        ref: 3981dab124d2bcb61ba69e8a4fbefe55fdab387d
 
     - name: Install_Takatori
       run: |
