@@ -102,14 +102,14 @@ jobs:
         uses: ./.github/actions/install-dependencies
         with:
           sharksfin_implementation: ${{ env.SHARKSFIN_IMPLEMENTATION }}
-          cmake_build_option: ${{ inputs.cmake_build_option }}
+          cmake_build_option: -DUSE_GRPC_CONFIG=ON ${{ inputs.cmake_build_option }}
 
       - name: CMake_Build
         run: |
           rm -rf build
           mkdir build
           cd build
-          cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DSHARKSFIN_IMPLEMENTATION=${SHARKSFIN_IMPLEMENTATION} -DBUILD_TESTS=OFF -DBUILD_EXAMPLES=OFF -DBUILD_BENCHMARK=OFF -DBUILD_STRICT=OFF -DCMAKE_PREFIX_PATH=${GITHUB_WORKSPACE}/.local -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ${{ inputs.cmake_build_option }} ..
+          cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DSHARKSFIN_IMPLEMENTATION=${SHARKSFIN_IMPLEMENTATION} -DUSE_GRPC_CONFIG=ON-DBUILD_TESTS=OFF -DBUILD_EXAMPLES=OFF -DBUILD_BENCHMARK=OFF -DBUILD_STRICT=OFF -DCMAKE_PREFIX_PATH=${GITHUB_WORKSPACE}/.local -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ${{ inputs.cmake_build_option }} ..
           cmake --build . --target all --clean-first
 
       - name: Clang-Tidy
