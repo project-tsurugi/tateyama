@@ -34,6 +34,26 @@ namespace tateyama::grpc {
  */
 class tateyama_grpc_server {
 public:
+    /**
+     * @brief the server status type.
+     */
+    enum class status : std::int32_t {
+        /**
+         * @brief initial state.
+         */
+        init = 0,
+
+        /**
+         * @brief no service has been retistered, thus gRPC server has not launched.
+         */
+        no_service,
+
+        /**
+         * @brief the gRPC server has successfully launched.
+         */
+        working
+    };
+
     explicit tateyama_grpc_server(std::string listen_address, std::vector<::grpc::Service*>& services, boost::barrier& sync);
 
     /**
@@ -47,17 +67,17 @@ public:
     void request_shutdown() noexcept;
 
     /**
-     * @brief check whether the server is running
-     * @return true if the server is working
+     * @brief return current server status
+     * @return the status of the server
      */
-    [[nodiscard]] bool is_working() const noexcept;
+    [[nodiscard]] tateyama_grpc_server::status get_status() const noexcept;
 
 private:
     std::string listen_address_;
     std::vector<::grpc::Service*>& services_;
     boost::barrier& sync_;
     std::atomic<bool> shutdown_requested_{false};
-    std::atomic<bool> working_{false};
+    std::atomic<status> status_{status::init};
 
     ::grpc::ServerBuilder builder_{};
     mutable std::mutex mutex_{};

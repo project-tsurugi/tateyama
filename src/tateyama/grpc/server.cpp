@@ -38,6 +38,8 @@ void tateyama_grpc_server::operator()() {
     // Check services has been registered
     if (services_.empty()) {
         LOG_LP(INFO) << "The gRPC server did not start as no service has been registered";
+        status_.store(status::no_service);
+        sync_.wait();
         return;
     }
     
@@ -60,7 +62,7 @@ void tateyama_grpc_server::operator()() {
         return;
     }
     LOG_LP(INFO) << "The gRPC server started on " << listen_address_;
-    working_.store(true);
+    status_.store(status::working);
     sync_.wait();
 
     // Wait for shutdown signal
@@ -77,8 +79,8 @@ void tateyama_grpc_server::request_shutdown() noexcept {
     shutdown_requested_.store(true);
 }
 
-bool tateyama_grpc_server::is_working() const noexcept {
-    return working_.load();
+tateyama_grpc_server::status tateyama_grpc_server::get_status() const noexcept {
+    return status_.load();
 }
 
 } // namespace

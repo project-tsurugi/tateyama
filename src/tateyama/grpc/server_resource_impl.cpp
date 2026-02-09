@@ -67,7 +67,9 @@ bool resource_impl::start(environment&) {
 
             // Wait until the server is ready (using ping_service)
             sync_.wait();
-            if (!grpc_server_->is_working()) {
+            auto server_status = grpc_server_->get_status();
+            if (server_status != tateyama_grpc_server::status::no_service &&
+                server_status != tateyama_grpc_server::status::working) {
                 LOG(ERROR) << "fail to launch gRPC server";
                 return false;
             }
