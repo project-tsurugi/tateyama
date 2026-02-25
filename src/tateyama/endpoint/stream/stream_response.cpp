@@ -32,6 +32,7 @@ class stream_request;
 tateyama::status stream_response::body(std::string_view body) {
     bool expected = false;
     if (complete_gate_.compare_exchange_strong(expected, true)) {
+        LOG_LP(INFO) << static_cast<const void*>(&stream_) << " length = " << body.length();  //NOLINT
         VLOG_LP(log_trace) << static_cast<const void*>(&stream_) << " length = " << body.length();  //NOLINT
         if (data_channel_) {
             std::dynamic_pointer_cast<stream_data_channel>(data_channel_)->shutdown();  // Guard against improper operation
