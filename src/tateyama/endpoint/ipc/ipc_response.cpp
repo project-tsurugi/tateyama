@@ -30,7 +30,6 @@ namespace tateyama::endpoint::ipc {
 tateyama::status ipc_response::body(std::string_view body) {
     bool expected = false;
     if (complete_gate_.compare_exchange_strong(expected, true)) {
-        LOG_LP(INFO) << static_cast<const void*>(&server_wire_) << " length = " << body.length() << " slot = " << index_;  //NOLINT
         VLOG_LP(log_trace) << static_cast<const void*>(&server_wire_) << " length = " << body.length() << " slot = " << index_;  //NOLINT
         if (data_channel_) {
             std::dynamic_pointer_cast<ipc_data_channel>(data_channel_)->shutdown();  // Guard against improper operation
