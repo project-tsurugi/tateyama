@@ -33,9 +33,9 @@
 
 namespace tateyama::grpc::blob_relay {
 
-class service_proxy_impl;
+class service_adapter_impl;
 
-class service_proxy : public framework::resource {
+class service_adapter : public framework::resource {
 public:
    /**
      * @brief Returns a data_relay_grpc::blob_relay::blob_relay_service
@@ -48,7 +48,7 @@ public:
     [[nodiscard]] framework::component::id_type id() const noexcept override;
 
     //@brief human readable label of this component
-    static constexpr std::string_view component_label = "blob_relay_service_proxy";
+    static constexpr std::string_view component_label = "blob_relay_service_adapter";
 
     [[nodiscard]] std::string_view label() const noexcept override;
 
@@ -70,20 +70,20 @@ public:
     /**
      * @brief constructor of this object.
      */
-    service_proxy();
+    service_adapter();
 
     /**
      * @brief destructor of this object
      */
-    ~service_proxy() override;
+    ~service_adapter() override;
 
-    service_proxy(service_proxy const& other) = delete;
-    service_proxy& operator=(service_proxy const& other) = delete;
-    service_proxy(service_proxy&& other) noexcept = delete;
-    service_proxy& operator=(service_proxy&& other) noexcept = delete;
+    service_adapter(service_adapter const& other) = delete;
+    service_adapter& operator=(service_adapter const& other) = delete;
+    service_adapter(service_adapter&& other) noexcept = delete;
+    service_adapter& operator=(service_adapter&& other) noexcept = delete;
 
 private:
-    std::unique_ptr<service_proxy_impl, void(*)(service_proxy_impl*)> impl_;
+    std::unique_ptr<service_adapter_impl, void(*)(service_adapter_impl*)> impl_;
 };
 
 } // namespace

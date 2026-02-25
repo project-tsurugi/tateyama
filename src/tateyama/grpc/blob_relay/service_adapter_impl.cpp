@@ -23,21 +23,21 @@
 #include <tateyama/grpc/server_resource.h>
 
 #include "service_handler.h"
-#include "service_proxy_impl.h"
+#include "service_adapter_impl.h"
 
 namespace tateyama::grpc::blob_relay {
 
 using namespace framework;
 
-std::shared_ptr<data_relay_grpc::blob_relay::blob_relay_service> service_proxy_impl::blob_relay_service() {
+std::shared_ptr<data_relay_grpc::blob_relay::blob_relay_service> service_adapter_impl::blob_relay_service() {
     return service_handler_;
 }
 
-service_proxy_impl::service_proxy_impl() = default;
+service_adapter_impl::service_adapter_impl() = default;
 
-service_proxy_impl::~service_proxy_impl() = default;
+service_adapter_impl::~service_adapter_impl() = default;
 
-bool service_proxy_impl::setup(framework::environment& env) {
+bool service_adapter_impl::setup(framework::environment& env) {
     const auto& cfg = env.configuration();
 
     // grpc section

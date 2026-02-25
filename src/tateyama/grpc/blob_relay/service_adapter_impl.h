@@ -29,12 +29,12 @@
 #include <tateyama/framework/component_ids.h>
 #include <tateyama/framework/resource.h>
 
-#include <tateyama/grpc/blob_relay/service_proxy.h>
+#include <tateyama/grpc/blob_relay/service_adapter.h>
 #include <data_relay_grpc/blob_relay/service.h>
 
 namespace tateyama::grpc::blob_relay {
 
-class service_proxy_impl {
+class service_adapter_impl {
 public:
    /**
      * @brief Returns a data_relay_grpc::blob_relay::blob_relay_service
@@ -47,17 +47,17 @@ public:
     /**
      * @brief constructor of this object.
      */
-    service_proxy_impl();
+    service_adapter_impl();
 
     /**
      * @brief destructor of this object
      */
-    ~service_proxy_impl();
+    ~service_adapter_impl();
 
-    service_proxy_impl(service_proxy_impl const& other) = delete;
-    service_proxy_impl& operator=(service_proxy_impl const& other) = delete;
-    service_proxy_impl(service_proxy_impl&& other) noexcept = delete;
-    service_proxy_impl& operator=(service_proxy_impl&& other) noexcept = delete;
+    service_adapter_impl(service_adapter_impl const& other) = delete;
+    service_adapter_impl& operator=(service_adapter_impl const& other) = delete;
+    service_adapter_impl(service_adapter_impl&& other) noexcept = delete;
+    service_adapter_impl& operator=(service_adapter_impl&& other) noexcept = delete;
     
 private:
     std::shared_ptr<::tateyama::datastore::resource::bridge> datastore_resource_{};
