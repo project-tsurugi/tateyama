@@ -22,7 +22,6 @@
 #include <cstdint>
 #include <memory>
 
-#include <limestone/api/datastore.h>
 #include <tateyama/datastore/resource/bridge.h>
 
 #include <tateyama/framework/environment.h>

@@ -621,11 +621,11 @@ public:
             response_wire_.initialize(res_wire, res_wire->get_bip_address(managed_shared_memory_.get()));
         } catch(const boost::interprocess::interprocess_exception& ex) {
             std::stringstream ss{};
-            ss << "failed to allocate shared memory in IPC endpoint: " << ex.what();
+            ss << "failed to allocate shared memory for IPC endpoint due to /dev/shm/" << name_.c_str() << " creation failure, reason: " << ex.what();
             throw std::runtime_error(ss.str());
         } catch (const std::exception &ex) {
             std::stringstream ss{};
-            ss << "failed to allocate shared memory in IPC endpoint: " << ex.what();
+            ss << "failed to allocate shared memory for IPC endpoint due to /dev/shm/" << name_.c_str() << " creation failure, reason: " << ex.what();
             throw std::runtime_error(ss.str());
         }
     }
