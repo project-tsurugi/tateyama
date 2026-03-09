@@ -68,6 +68,7 @@ find_package(gflags REQUIRED)
 find_package(Threads REQUIRED)
 find_package(Boost
         COMPONENTS filesystem thread regex
+        OPTIONAL_COMPONENTS system
         REQUIRED
         )
 find_package(TBB REQUIRED)
