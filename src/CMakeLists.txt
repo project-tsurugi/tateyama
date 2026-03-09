@@ -128,7 +128,6 @@ target_link_libraries(${ENGINE}
         PRIVATE Boost::boost
         PRIVATE Boost::filesystem
         PRIVATE Boost::thread
-        PRIVATE Boost::container
         PRIVATE Boost::regex
         PRIVATE glog::glog
         PRIVATE atomic
@@ -189,7 +188,6 @@ target_link_libraries(tateyama-impl
         INTERFACE Boost::boost
         INTERFACE Boost::filesystem
         INTERFACE Boost::thread
-        INTERFACE Boost::container
         INTERFACE glog::glog
         INTERFACE protobuf::libprotobuf # temporary
         )
