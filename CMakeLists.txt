@@ -67,7 +67,7 @@ find_package(glog REQUIRED)
 find_package(gflags REQUIRED)
 find_package(Threads REQUIRED)
 find_package(Boost
-        COMPONENTS filesystem thread regex
+        COMPONENTS filesystem thread container regex
         OPTIONAL_COMPONENTS system
         REQUIRED
         )
