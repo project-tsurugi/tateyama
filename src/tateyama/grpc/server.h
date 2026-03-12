@@ -86,7 +86,7 @@ private:
     ::grpc::ServerBuilder builder_{};
     mutable std::mutex mutex_{};
 
-    void read_file(const std::filesystem::path&, std::string&);
+    std::string read_file(const std::filesystem::path&);
 };
 
 } // namespace
