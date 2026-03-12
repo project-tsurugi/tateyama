@@ -16,6 +16,7 @@
 #pragma once
 
 #include <cstdint>
+#include <filesystem>
 #include <memory>
 #include <optional>
 #include <string>
@@ -69,14 +70,12 @@ private:
     std::vector<::grpc::Service*> services_{};
 
     std::string grpc_listen_address_{};
-    std::string fullchain_crt_content_{};
-    std::string server_key_content_{};
+    std::filesystem::path fullchain_crt_{};
+    std::filesystem::path server_key_{};
     boost::barrier sync_{2};
     bool grpc_enabled_{};
     bool grpc_secure_{};
     bool started_{};
-
-    void read_file(const std::filesystem::path&, std::string&);
 };
 
 } // namespace

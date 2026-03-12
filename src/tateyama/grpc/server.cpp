@@ -29,9 +29,10 @@ namespace tateyama::grpc {
  * @brief gRPC server service
  */
 tateyama_grpc_server::tateyama_grpc_server(std::string listen_address, std::vector<::grpc::Service*>& services, boost::barrier& sync,
-                                           bool secure, const std::string& fullchain_crt_content, const std::string& server_key_content)
-    : listen_address_(std::move(listen_address)), services_(services), sync_(sync),
-      secure_(secure), fullchain_crt_content_(fullchain_crt_content), server_key_content_(server_key_content) {
+                                           bool secure, const std::filesystem::path& fullchain_crt, const std::filesystem::path& server_key)
+    : listen_address_(std::move(listen_address)), services_(services), sync_(sync), secure_(secure) {
+    read_file(fullchain_crt, fullchain_crt_content_);
+    read_file(server_key, server_key_content_);
 }
 
 void tateyama_grpc_server::operator()() {
@@ -91,6 +92,21 @@ void tateyama_grpc_server::request_shutdown() noexcept {
 
 tateyama_grpc_server::status tateyama_grpc_server::get_status() const noexcept {
     return status_.load();
+}
+
+void tateyama_grpc_server::read_file(const std::filesystem::path& filename, std::string& file_content) {
+    using namespace std::literals::string_literals;
+
+    std::string str_line;
+    std::ifstream file(filename, std::ios::in);
+    if (!file.is_open()) {
+        throw std::runtime_error("cannot open "s + filename.string());
+    }
+    while(getline(file, str_line)) {
+        file_content += str_line;
+        file_content += '\n';
+    }
+    file.close();
 }
 
 } // namespace

@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-#include <filesystem>
+#include <fstream>
+
 #include <glog/logging.h>
 
 #include <tateyama/logging.h>
@@ -41,6 +42,22 @@ bool resource_impl::setup(environment& env) {
         if (auto grpc_secure_opt = grpc_config->get<bool>("secure"); grpc_secure_opt) {
             grpc_secure_ = grpc_secure_opt.value();
         }
+
+        if (grpc_secure_) {
+            if (auto grpc_fullchain_crt_opt = grpc_config->get<std::filesystem::path>("fullchain_crt"); grpc_fullchain_crt_opt) {
+                fullchain_crt_ = grpc_fullchain_crt_opt.value();
+            } else {
+                LOG(ERROR) << "fullchain_crt is not specified";
+                return false;
+            }
+            if (auto grpc_server_key_opt = grpc_config->get<std::filesystem::path>("server_key"); grpc_server_key_opt) {
+                server_key_ = grpc_server_key_opt.value();
+            } else {
+                LOG(ERROR) << "server_key is not specified";
+                return false;
+            }
+        }
+
         // output configuration to be used
         LOG(INFO) << tateyama::grpc::grpc_config_prefix
                   << "enabled: " << utils::boolalpha(grpc_enabled_) << ", "
@@ -51,53 +68,23 @@ bool resource_impl::setup(environment& env) {
         LOG(INFO) << tateyama::grpc::grpc_config_prefix
                   << "secure: " << utils::boolalpha(grpc_secure_) << ", "
                   << "enable secure ports for gRPC server or not.";
-
         if (grpc_secure_) {
-            try {
-                if (auto grpc_fullchain_crt_opt = grpc_config->get<std::filesystem::path>("fullchain_crt"); grpc_fullchain_crt_opt) {
-                    const auto& file = grpc_fullchain_crt_opt.value();
-                    read_file(file, fullchain_crt_content_);
-                    LOG(INFO) << tateyama::grpc::grpc_config_prefix
-                              << "fullchain_crt: " << file.string() << ", "
-                              << "file path of fullchain crt.";
-                } else {
-                    LOG(ERROR) << "fullchain_crt is not specified";
-                    return false;
-                }
-                if (auto grpc_server_key_opt = grpc_config->get<std::filesystem::path>("server_key"); grpc_server_key_opt) {
-                    const auto& file = grpc_server_key_opt.value();
-                    read_file(file, server_key_content_);
-                    LOG(INFO) << tateyama::grpc::grpc_config_prefix
-                              << "server_key: " << file.string() << ", "
-                              << "file path of server key.";
-                } else {
-                    LOG(ERROR) << "server_key is not specified";
-                    return false;
-                }
-            } catch (std::exception &ex) {
-                LOG(ERROR) << "failed to read fullchain crt and/or server key file";
-                return false;
-            }
+            LOG(INFO) << tateyama::grpc::grpc_config_prefix
+                      << "fullchain_crt: " << fullchain_crt_.string() << ", "
+                      << "file path of fullchain crt.";
+            LOG(INFO) << tateyama::grpc::grpc_config_prefix
+                      << "server_key: " << server_key_.string() << ", "
+                      << "file path of server key.";
         }
     }
     return true;
-}
-
-void resource_impl::read_file(const std::filesystem::path& filename, std::string& file_content) {
-    std::string str_line;
-    std::ifstream file(filename, std::ios::in);
-    while(getline(file, str_line)) {
-        file_content += str_line;
-        file_content += '\n';
-    }
-    file.close();
 }
 
 bool resource_impl::start(environment&) {
     started_ = true;
     if (grpc_enabled_) {
         try {
-            grpc_server_ = std::make_unique<tateyama_grpc_server>(grpc_listen_address_, services_, sync_, grpc_secure_, fullchain_crt_content_, server_key_content_);
+            grpc_server_ = std::make_unique<tateyama_grpc_server>(grpc_listen_address_, services_, sync_, grpc_secure_, fullchain_crt_, server_key_);
 
             // Start the gRPC server
             grpc_server_thread_ = std::thread(std::ref(*grpc_server_));
