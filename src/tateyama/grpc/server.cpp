@@ -31,8 +31,16 @@ namespace tateyama::grpc {
 tateyama_grpc_server::tateyama_grpc_server(std::string listen_address, std::vector<::grpc::Service*>& services, boost::barrier& sync,
                                            bool secure, const std::filesystem::path& fullchain_crt, const std::filesystem::path& server_key)
     : listen_address_(std::move(listen_address)), services_(services), sync_(sync), secure_(secure) {
-    fullchain_crt_content_ = read_file(fullchain_crt);
-    server_key_content_ = read_file(server_key);
+    if (secure_) {
+        if (fullchain_crt.empty()) {
+            throw std::runtime_error("file name for fullchain crt is empty");
+        }
+        fullchain_crt_content_ = read_file(fullchain_crt);
+        if (server_key.empty()) {
+            throw std::runtime_error("file name for server key is empty");
+        }
+        server_key_content_ = read_file(server_key);
+    }
 }
 
 void tateyama_grpc_server::operator()() {
