@@ -28,8 +28,10 @@ namespace tateyama::grpc {
 /**
  * @brief gRPC server service
  */
-tateyama_grpc_server::tateyama_grpc_server(std::string listen_address, std::vector<::grpc::Service*>& services, boost::barrier& sync)
-    : listen_address_(std::move(listen_address)), services_(services), sync_(sync) {
+tateyama_grpc_server::tateyama_grpc_server(std::string listen_address, std::vector<::grpc::Service*>& services, boost::barrier& sync,
+                                           bool secure, const std::string& fullchain_crt_content, const std::string& server_key_content)
+    : listen_address_(std::move(listen_address)), services_(services), sync_(sync),
+      secure_(secure), fullchain_crt_content_(fullchain_crt_content), server_key_content_(server_key_content) {
 }
 
 void tateyama_grpc_server::operator()() {
@@ -42,13 +44,21 @@ void tateyama_grpc_server::operator()() {
         sync_.wait();
         return;
     }
-    
+
+    std::shared_ptr<::grpc::ServerCredentials> creds{};
+    if (secure_) {
+        ::grpc::SslServerCredentialsOptions sslOpts{};
+        sslOpts.pem_key_cert_pairs.push_back(::grpc::SslServerCredentialsOptions::PemKeyCertPair{ server_key_content_, fullchain_crt_content_ });
+        creds = ::grpc::SslServerCredentials(sslOpts);
+    } else {
+        creds = ::grpc::InsecureServerCredentials();
+    }
     // Build and start gRPC server with service added
     ::grpc::ServerBuilder builder{};
     // Set GRPC_ARG_ALLOW_REUSEPORT to 0 (off)
     builder.AddChannelArgument(GRPC_ARG_ALLOW_REUSEPORT, 0);
     // Set ListeningPort
-    builder.AddListeningPort(listen_address_, ::grpc::InsecureServerCredentials());
+    builder.AddListeningPort(listen_address_, creds);
 
     // Register gRpc service
     for (auto&& e : services_) {
