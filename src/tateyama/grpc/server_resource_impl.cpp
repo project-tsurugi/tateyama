@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#include <fstream>
+
 #include <glog/logging.h>
 
 #include <tateyama/logging.h>
@@ -40,19 +42,41 @@ bool resource_impl::setup(environment& env) {
         if (auto grpc_secure_opt = grpc_config->get<bool>("secure"); grpc_secure_opt) {
             grpc_secure_ = grpc_secure_opt.value();
         }
+
+        if (grpc_secure_) {
+            if (auto grpc_fullchain_crt_opt = grpc_config->get<std::filesystem::path>("fullchain_crt"); grpc_fullchain_crt_opt) {
+                fullchain_crt_ = grpc_fullchain_crt_opt.value();
+            } else {
+                LOG(ERROR) << "fullchain_crt is not specified";
+                return false;
+            }
+            if (auto grpc_server_key_opt = grpc_config->get<std::filesystem::path>("server_key"); grpc_server_key_opt) {
+                server_key_ = grpc_server_key_opt.value();
+            } else {
+                LOG(ERROR) << "server_key is not specified";
+                return false;
+            }
+        }
+
+        // output configuration to be used
+        LOG(INFO) << tateyama::grpc::grpc_config_prefix
+                  << "enabled: " << utils::boolalpha(grpc_enabled_) << ", "
+                  << "gRPC server is enabled or not.";
+        LOG(INFO) << tateyama::grpc::grpc_config_prefix
+                  << "listen_address: " << grpc_listen_address_ << ", "
+                  << "listen address of the gRPC server.";
+        LOG(INFO) << tateyama::grpc::grpc_config_prefix
+                  << "secure: " << utils::boolalpha(grpc_secure_) << ", "
+                  << "enable secure ports for gRPC server or not.";
+        if (grpc_secure_) {
+            LOG(INFO) << tateyama::grpc::grpc_config_prefix
+                      << "fullchain_crt: " << fullchain_crt_.string() << ", "
+                      << "file path of fullchain crt.";
+            LOG(INFO) << tateyama::grpc::grpc_config_prefix
+                      << "server_key: " << server_key_.string() << ", "
+                      << "file path of server key.";
+        }
     }
-
-    // output configuration to be used
-    LOG(INFO) << tateyama::grpc::grpc_config_prefix
-              << "enabled: " << utils::boolalpha(grpc_enabled_) << ", "
-              << "gRPC server is enabled or not.";
-    LOG(INFO) << tateyama::grpc::grpc_config_prefix
-              << "listen_address: " << grpc_listen_address_ << ", "
-              << "listen address of the gRPC server.";
-    LOG(INFO) << tateyama::grpc::grpc_config_prefix
-              << "secure: " << utils::boolalpha(grpc_secure_) << ", "
-              << "enable secure ports for gRPC server or not.";
-
     return true;
 }
 
@@ -60,7 +84,7 @@ bool resource_impl::start(environment&) {
     started_ = true;
     if (grpc_enabled_) {
         try {
-            grpc_server_ = std::make_unique<tateyama_grpc_server>(grpc_listen_address_, services_, sync_);
+            grpc_server_ = std::make_unique<tateyama_grpc_server>(grpc_listen_address_, services_, sync_, grpc_secure_, fullchain_crt_, server_key_);
 
             // Start the gRPC server
             grpc_server_thread_ = std::thread(std::ref(*grpc_server_));

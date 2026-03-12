@@ -54,7 +54,8 @@ public:
         working
     };
 
-    explicit tateyama_grpc_server(std::string listen_address, std::vector<::grpc::Service*>& services, boost::barrier& sync);
+    tateyama_grpc_server(std::string listen_address, std::vector<::grpc::Service*>& services, boost::barrier& sync,
+                         bool secure, const std::filesystem::path& fullchain_crt, const std::filesystem::path& server_key);
 
     /**
      * @brief Processing core of the gRPC server
@@ -78,9 +79,14 @@ private:
     boost::barrier& sync_;
     std::atomic<bool> shutdown_requested_{false};
     std::atomic<status> status_{status::init};
+    bool secure_;
+    std::string fullchain_crt_content_{};
+    std::string server_key_content_{};
 
     ::grpc::ServerBuilder builder_{};
     mutable std::mutex mutex_{};
+
+    std::string read_file(const std::filesystem::path&);
 };
 
 } // namespace

@@ -16,8 +16,10 @@
 #pragma once
 
 #include <cstdint>
-#include <optional>
+#include <filesystem>
 #include <memory>
+#include <optional>
+#include <string>
 #include <thread>
 
 #include <boost/thread/barrier.hpp>
@@ -68,6 +70,8 @@ private:
     std::vector<::grpc::Service*> services_{};
 
     std::string grpc_listen_address_{};
+    std::filesystem::path fullchain_crt_{};
+    std::filesystem::path server_key_{};
     boost::barrier sync_{2};
     bool grpc_enabled_{};
     bool grpc_secure_{};
