@@ -57,7 +57,7 @@ private:
 
 class stream_listener_for_info_test {
 public:
-    stream_listener_for_info_test(info_service_for_test& service, tateyama::configuration::resource::database_info_impl& database_info) : service_(service), conf_(tateyama::endpoint::common::connection_type::stream, nullptr, database_info, nullptr, administrators_) {
+    stream_listener_for_info_test(info_service_for_test& service, tateyama::configuration::resource::database_info_impl& database_info) : service_(service), conf_(tateyama::endpoint::common::connection_type::stream, nullptr, database_info, nullptr, administrators_, nullptr, nullptr) {
     }
     void operator()() {
         while (true) {

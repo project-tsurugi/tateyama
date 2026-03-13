@@ -53,7 +53,7 @@ public:
     std::shared_ptr<bootstrap::server_wire_container_impl> wire_;
 
     tateyama::configuration::resource::database_info_impl dmy_dbinfo_{};
-    tateyama::endpoint::common::configuration conf_{tateyama::endpoint::common::connection_type::ipc, nullptr, dmy_dbinfo_, nullptr, administrators_};
+    tateyama::endpoint::common::configuration conf_{tateyama::endpoint::common::connection_type::ipc, nullptr, dmy_dbinfo_, nullptr, administrators_, nullptr, nullptr};
     tateyama::endpoint::common::resources resources_{conf_, session_id, "", administrators_};
 
     class test_service {

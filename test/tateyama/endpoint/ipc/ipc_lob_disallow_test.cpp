@@ -143,7 +143,7 @@ class ipc_lob_disallow_test : public ::testing::Test {
         auto rv = ::system("if [ -f /dev/shm/ipc_lob_disallow_test ]; then rm -f /dev/shm/ipc_lob_disallow_test; fi");
     }
 
-    tateyama::endpoint::common::configuration conf_{tateyama::endpoint::common::connection_type::ipc, nullptr, database_info_, nullptr, administrators_};
+    tateyama::endpoint::common::configuration conf_{tateyama::endpoint::common::connection_type::ipc, nullptr, database_info_, nullptr, administrators_, nullptr, nullptr};
 
 public:
     tateyama::configuration::resource::database_info_impl database_info_{database_name, "iid-ipc-lob-disallow-test"};

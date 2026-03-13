@@ -48,8 +48,15 @@ void server_client_base::wait_client_exit() {
 }
 
 void server_client_base::server(std::function<void(tateyama::framework::server&, std::shared_ptr<tateyama::api::configuration::whole> const &)> f) {
+    server(f, false);
+}
+void server_client_base::server(std::function<void(tateyama::framework::server&, std::shared_ptr<tateyama::api::configuration::whole> const &)> f, bool full) {
     tateyama::framework::server sv { tateyama::framework::boot_mode::database_server, cfg_ };
-    tateyama::test_utils::add_core_components_for_test(sv);
+    if (full) {
+        tateyama::framework::add_core_components(sv);
+    } else {
+        tateyama::test_utils::add_core_components_for_test(sv);
+    }
     if (auto server_service = create_server_service(); server_service) {
         sv.add_service(server_service);
     }

@@ -110,7 +110,7 @@ public:
             stream = connection_socket_.accept();
 
             if (stream != nullptr) {
-                conf_ = std::make_unique<tateyama::endpoint::common::configuration>(tateyama::endpoint::common::connection_type::stream, session_bridge_, database_info_, nullptr, administrators_);
+                conf_ = std::make_unique<tateyama::endpoint::common::configuration>(tateyama::endpoint::common::connection_type::stream, session_bridge_, database_info_, nullptr, administrators_, nullptr, nullptr);
                 worker_ = std::make_unique<tateyama::endpoint::stream::bootstrap::stream_worker>(service_, *conf_, my_session_id, std::move(stream), false);
                 worker_->invoke([&]{worker_->run();});
             } else {  // connect via pipe (request_terminate)

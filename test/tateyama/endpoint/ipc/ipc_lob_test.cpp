@@ -131,6 +131,7 @@ class ipc_lob_test : public ::testing::Test {
         cci.set_allocated_credential(&cred);
         tateyama::proto::endpoint::request::Handshake hs{};
         hs.set_allocated_client_information(&cci);
+        hs.set_blob_transfer_type(proto::endpoint::request::BlobTransferType::PRIVILEGED);  // FIXME
         client_ = std::make_unique<ipc_client>(database_name, my_session_id, hs);
         (void)cci.release_credential();
         (void)hs.release_client_information();
@@ -143,7 +144,7 @@ class ipc_lob_test : public ::testing::Test {
         auto rv = ::system("if [ -f /dev/shm/ipc_lob_test ]; then rm -f /dev/shm/ipc_lob_test; fi");
     }
 
-    tateyama::endpoint::common::configuration conf_{tateyama::endpoint::common::connection_type::ipc, nullptr, database_info_, nullptr, administrators_};
+    tateyama::endpoint::common::configuration conf_{tateyama::endpoint::common::connection_type::ipc, nullptr, database_info_, nullptr, administrators_, nullptr, nullptr};
 
 public:
     tateyama::configuration::resource::database_info_impl database_info_{database_name, "iid-ipc-lob-test"};

@@ -67,6 +67,16 @@ void ipc_client::send(const std::size_t tag, const std::string &message, std::se
                          ipc_test_index + index_offset);
 }
 
+void ipc_client::send(const std::size_t tag, const std::string &message, std::set<std::tuple<std::string, std::uint64_t, std::uint64_t, bool>>& blobs, std::size_t index_offset) {
+    request_header_content hdr { session_id_, tag, &blobs };
+    std::stringstream ss { };
+    append_request_header(ss, message, hdr);
+    auto request_message = ss.str();
+    request_wire_->write(reinterpret_cast<const signed char*>(request_message.data()),
+                         request_message.length(),
+                         ipc_test_index + index_offset);
+}
+
 bool parse_response_header(std::string_view input, tateyama::proto::framework::response::Header& hdr, std::string_view &payload) {
     google::protobuf::io::ArrayInputStream in { input.data(), static_cast<int>(input.size()) };
     if (auto res = utils::ParseDelimitedFromZeroCopyStream(std::addressof(hdr), std::addressof(in), nullptr); !res) {

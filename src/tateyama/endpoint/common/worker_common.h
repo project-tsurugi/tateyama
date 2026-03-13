@@ -53,6 +53,7 @@ public:
     worker_common(const configuration& config, std::size_t session_id, std::string_view conn_info)
         : connection_type_(config.con_),
           session_(config.session_),
+          config_(config),
           resources_(config, session_id, conn_info, config.administrators_),
           session_context_(std::make_shared<tateyama::session::resource::session_context_impl>(resources_.session_info(), resources_.session_variable_set())),
           enable_timeout_(config.enable_timeout_),
@@ -191,7 +192,7 @@ protected:
     // local_id
     std::size_t local_id_{};  // NOLINT
 
-    bool handshake(tateyama::api::server::request* req, tateyama::api::server::response* res) {
+    bool handshake(tateyama::api::server::request* req, tateyama::api::server::response* res) {  //NOLINT(readability-function-cognitive-complexity)
         if (req->service_id() != tateyama::framework::service_id_endpoint_broker) {
             LOG_LP(INFO) << "request received is not handshake";
             std::stringstream ss;
@@ -210,8 +211,8 @@ protected:
 
         // check service mesage version;
         std::uint64_t smvm = rq.service_message_version_major();
-        if (smvm > SERVICE_MESSAGE_VERSION_MAJOR ||
-            (smvm == SERVICE_MESSAGE_VERSION_MAJOR && rq.service_message_version_minor() > SERVICE_MESSAGE_VERSION_MINOR)) {
+        if (smvm > ENDPOINT_BROKER_SERVICE_MESSAGE_VERSION_MAJOR ||
+            (smvm == ENDPOINT_BROKER_SERVICE_MESSAGE_VERSION_MAJOR && rq.service_message_version_minor() > ENDPOINT_BROKER_SERVICE_MESSAGE_VERSION_MINOR)) {
             handshake_error(res, tateyama::proto::diagnostics::Code::INVALID_REQUEST, "unsupported service message version");
             return false;
         }
@@ -351,6 +352,39 @@ protected:
         if (auto name_opt = session_info.username(); name_opt) {
             rs->set_user_name(std::string(name_opt.value()));
         }
+
+        // care blob handling mechanism
+        auto type = rq.handshake().blob_transfer_type();
+        // If endpoint_broker_service_message_version is less than 0.2, BlobTransferType::PRIVILEGED is applied automatically.
+        if (type == proto::endpoint::request::BlobTransferType::PRIVILEGED || (rq.service_message_version_major() == 0 && rq.service_message_version_minor() < 2)) {
+            if (config_.allow_blob_privileged_) {
+                rs->set_privileged_mode(true);
+                resources_.blob_transfer(resources::blob_transfer_type::privileged);
+            }
+        } else if(type == proto::endpoint::request::BlobTransferType::BLOB_RELAY_STREAMING) {
+            if (auto cfg = config_.cfg(); cfg) {
+                auto* grpc_server = cfg->get_section("grpc_server");
+                auto grpc_enabled_opt = grpc_server->get<bool>("enabled");
+                auto endpoint_opt = grpc_server->get<std::string>("endpoint");
+                auto secure_opt = grpc_server->get<bool>("secure");
+                auto blog_relay_enabled_opt = grpc_server->get<bool>("enabled");
+                if (grpc_enabled_opt && blog_relay_enabled_opt && endpoint_opt && secure_opt) {
+                    if (grpc_enabled_opt.value() && blog_relay_enabled_opt.value()) {
+                        if(auto blob_relay_service = config_.blob_relay_service(); blob_relay_service) {
+                            auto& blob_session = blob_relay_service->create_session();
+                            resources_.blob_session(blob_session);
+                            auto* blob_relay_info = rs->mutable_blob_relay_info();
+                            blob_relay_info->set_endpoint(endpoint_opt.value());
+                            blob_relay_info->set_secure(secure_opt.value());
+                            blob_relay_info->set_blob_session_id(blob_session.session_id());
+                            resources_.blob_transfer(resources::blob_transfer_type::blob_relay_streaming);
+                        }
+                    }
+                }
+            }
+        }
+
+        // send endpoint.response
         auto body = rp.SerializeAsString();
         res->body(body);
         return true;
@@ -751,9 +785,10 @@ protected:
     }
 
 private:
-    constexpr static std::uint64_t SERVICE_MESSAGE_VERSION_MAJOR = 1;
-    constexpr static std::uint64_t SERVICE_MESSAGE_VERSION_MINOR = 2;
+    constexpr static std::uint64_t ENDPOINT_BROKER_SERVICE_MESSAGE_VERSION_MAJOR = 0;
+    constexpr static std::uint64_t ENDPOINT_BROKER_SERVICE_MESSAGE_VERSION_MINOR = 2;
 
+    const configuration& config_;
     tateyama::endpoint::common::resources resources_;
     const std::shared_ptr<tateyama::session::resource::session_context_impl> session_context_;
     bool enable_timeout_;
