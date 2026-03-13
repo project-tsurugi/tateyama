@@ -47,6 +47,7 @@ public:
 
     void send(const std::size_t tag, const std::string &message, std::size_t index_offset = 0);
     void send(const std::size_t tag, const std::string &message, std::set<std::tuple<std::string, std::string, bool>>& blobs, std::size_t index_offset = 0);
+    void send(const std::size_t tag, const std::string &message, std::set<std::tuple<std::string, std::uint64_t, std::uint64_t, bool>>& blobs, std::size_t index_offset = 0);
     void receive(std::string &message);
     void receive(std::string &message, tateyama::proto::framework::response::Header::PayloadType& type);
     void disconnect() {

@@ -142,7 +142,7 @@ class ipc_session_test : public ::testing::Test {
         session_name += std::to_string(my_session_id);
         auto wire = std::make_unique<bootstrap::server_wire_container_impl>(session_name, "dummy_mutex_file_name", datachannel_buffer_size, 16);
         session_bridge_ = std::make_shared<session::resource::bridge>();
-        conf_ = std::make_unique<tateyama::endpoint::common::configuration>(tateyama::endpoint::common::connection_type::ipc, session_bridge_, database_info_, nullptr, administrators_);
+        conf_ = std::make_unique<tateyama::endpoint::common::configuration>(tateyama::endpoint::common::connection_type::ipc, session_bridge_, database_info_, nullptr, administrators_, nullptr, nullptr);
         worker_ = std::make_unique<tateyama::endpoint::ipc::bootstrap::ipc_worker>(service_, *conf_, my_session_id, std::move(wire));
         tateyama::server::ipc_listener_for_session_test::run(*worker_);
         std::this_thread::sleep_for(std::chrono::milliseconds(100));

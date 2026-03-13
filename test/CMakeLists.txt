@@ -41,6 +41,8 @@ target_link_libraries(${test_target}
         PRIVATE crypto
         PRIVATE jwt
         PRIVATE Boost::regex
+        PRIVATE grpc++
+        PRIVATE gpr
         )
 
 if (ENABLE_GRPC)

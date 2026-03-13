@@ -19,10 +19,12 @@
 #include <set>
 #include <map>
 #include <utility>
+#include <variant>
 
 #include <tateyama/api/server/request.h>
 
 #include "tateyama/framework/component_ids.h"
+#include <tateyama/proto/framework/common.pb.h>
 #include <tateyama/proto/framework/request.pb.h>
 #include <tateyama/proto/framework/response.pb.h>
 #include <tateyama/api/server/blob_info.h>
@@ -39,7 +41,7 @@ struct parse_result {
     std::size_t service_message_version_minor_{};
 };
 
-inline bool parse_header(std::string_view input, parse_result& result, [[maybe_unused]] std::map<std::string, std::pair<std::filesystem::path, bool>>& blobs_map) {
+inline bool parse_header(std::string_view input, parse_result& result, std::map<std::string, std::pair<std::variant<std::string, proto::framework::common::BlobReferenceForBlobRelay>, bool>>& blobs_map) {
     result = {};
     ::tateyama::proto::framework::request::Header hdr{};
     google::protobuf::io::ArrayInputStream in{input.data(), static_cast<int>(input.size())};
@@ -52,7 +54,17 @@ inline bool parse_header(std::string_view input, parse_result& result, [[maybe_u
     result.service_message_version_minor_ = hdr.service_message_version_minor();
     if(hdr.has_blobs()) {
         for(auto&& e : hdr. blobs().blobs()) {
-            blobs_map.emplace(e.channel_name(), std::make_pair(e.path(), e.temporary()));
+            switch(e.blob_location_case()) {
+            case proto::framework::common::BlobInfo::BlobLocationCase::kPath:
+                blobs_map.emplace(e.channel_name(), std::make_pair(e.path(), e.temporary()));
+                break;
+            case proto::framework::common::BlobInfo::BlobLocationCase::kBlob:
+                blobs_map.emplace(e.channel_name(), std::make_pair(e.blob(), e.temporary()));
+                break;
+            default:
+                break;
+                // FIXME add error handling here
+            }
         }
     }
     return utils::GetDelimitedBodyFromZeroCopyStream(std::addressof(in), nullptr, result.payload_);

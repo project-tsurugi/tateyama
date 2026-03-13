@@ -21,6 +21,7 @@
 #include <sstream>
 #include <cstddef>
 #include <cstdint>
+#include <variant>
 #include <unistd.h>
 
 #include <tateyama/api/server/request.h>
@@ -29,14 +30,15 @@
 #include "session_info_impl.h"
 #include "tateyama/endpoint/common/endpoint_proto_utils.h"
 #include "worker_configuration.h"
+#include <tateyama/proto/framework/common.pb.h>
 
 namespace tateyama::endpoint::common {
 /**
  * @brief request object for common_endpoint
  */
 class request : public tateyama::api::server::request {
-    constexpr static std::uint64_t FRAMEWORK_SERVICE_MESSAGE_VERSION_MAJOR = 2;
-    constexpr static std::uint64_t FRAMEWORK_SERVICE_MESSAGE_VERSION_MINOR = 0;
+    constexpr static std::uint64_t FRAMEWORK_SERVICE_MESSAGE_VERSION_MAJOR = 0;
+    constexpr static std::uint64_t FRAMEWORK_SERVICE_MESSAGE_VERSION_MINOR = 3;
 
     class blob_info_impl : public tateyama::api::server::blob_info {
     public:
@@ -71,10 +73,10 @@ public:
     };
 
     request(tateyama::endpoint::common::resources& resources,
-                     std::size_t local_id,
-                     const configuration& conf) :
+            std::size_t local_id,
+            const configuration& conf) :
         session_info_(resources.session_info()), session_store_(resources.session_store()), session_variable_set_(resources.session_variable_set()),
-        local_id_(local_id), start_at_(std::chrono::system_clock::now()), conf_(conf) {
+        resources_(resources), local_id_(local_id), start_at_(std::chrono::system_clock::now()), conf_(conf) {
     }
 
     [[nodiscard]] std::size_t session_id() const override {
@@ -152,7 +154,8 @@ protected:
     tateyama::session::session_variable_set& session_variable_set_;  // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes,misc-non-private-member-variables-in-classes)
 
     void parse_framework_header(std::string_view message, parse_result& res) {
-        if (parse_header(message, res, blobs_)) {
+        std::map<std::string, std::pair<std::variant<std::string, proto::framework::common::BlobReferenceForBlobRelay>, bool>> blobs_sent{};
+        if (parse_header(message, res, blobs_sent)) {
             if (res.service_message_version_major_ > FRAMEWORK_SERVICE_MESSAGE_VERSION_MAJOR ||
                 (res.service_message_version_major_ ==  FRAMEWORK_SERVICE_MESSAGE_VERSION_MAJOR && res.service_message_version_minor_ > FRAMEWORK_SERVICE_MESSAGE_VERSION_MINOR)) {
                 throw std::runtime_error("unacceptable service message version");
@@ -160,40 +163,26 @@ protected:
             session_id_ = res.session_id_;
             service_id_ = res.service_id_;
 
-            if (!blobs_.empty()) {
+            if (!blobs_sent.empty()) {
                 if (!conf_.allow_blob_privileged_) {
                     blob_error_ = blob_error::not_allowed;
                     return;
                 }
-                for (auto&& e: blobs_) {
-                    std::error_code ec{};
-                    std::filesystem::path p(e.second.first);
-                    if (std::filesystem::exists(p, ec) && !ec) {
-                        if (is_readable(p)) {
-                            if (std::filesystem::is_regular_file(p, ec) && !ec) {
-                                if (!std::filesystem::is_symlink(p, ec) && !ec) {
-                                    continue;
-                                }
-                            }
-                            blob_error_ = blob_error::not_regular_file;
-                            causing_file_ = e.second.first;
-                            return;
-                        }
-                        blob_error_ = blob_error::not_accessible;
-                        causing_file_ = e.second.first;
+                for (auto&& e: blobs_sent) {
+                    blob_error_ = std::visit(blob_handler(this, e.first, e.second.second, resources_), e.second.first);
+                    if (blob_error_ != blob_error::ok) {
+                        // error, already set blob_error_ and causing_file_ in std::visit() */
                         return;
                     }
-                    blob_error_ = blob_error::not_found;
-                    causing_file_ = e.second.first;
-                    return;
                 }
             }
             return;
         }
         throw std::runtime_error("error occurred while parsing a request message in Protocol Buffers");
     }
-    
+
 private:
+    const resources& resources_;
     std::size_t local_id_;
     std::chrono::system_clock::time_point start_at_;
     const configuration& conf_;
@@ -206,6 +195,81 @@ private:
 
     mutable std::unique_ptr<blob_info_impl> blob_info_{};
 
+    class blob_handler {
+    public:
+        blob_handler(request* r, const std::string& name, bool temporary, const endpoint::common::resources& res) : request_(r), name_(name), temporary_(temporary), resources_(res) {
+        }
+
+        [[nodiscard]] blob_error operator()(const std::string &value) {
+            if (resources_.blob_transfer() != resources::blob_transfer_type::privileged) {
+                return blob_error::not_allowed;
+            }
+
+            std::filesystem::path p(value);
+            auto error = check_blob_path(p);
+            if (error == blob_error::ok) {
+                auto& blobs = request_->blobs_;
+                blobs.emplace(name_, std::make_pair(p, temporary_));
+                return blob_error::ok;
+            }
+            request_->causing_file_ = p;
+            return error;
+        }
+        [[nodiscard]] blob_error operator()(const proto::framework::common::BlobReferenceForBlobRelay &value) {
+            if (resources_.blob_transfer() != resources::blob_transfer_type::blob_relay_streaming) {
+                return blob_error::not_allowed;
+            }
+
+            auto& blob_session = request_->resources_.blob_session();
+            auto object_id = value.object_id();
+            if (auto blob_path_opt = blob_session.find(object_id); blob_path_opt) {
+                auto error = request_->blob_error_ = check_blob_path(std::filesystem::path(blob_path_opt.value()));
+                if(error == blob_error::ok) {
+                    if (blob_session.compute_tag(object_id) == value.tag()) {
+                        if (auto path_opt = blob_session.find(object_id); path_opt) {
+                            auto& blobs = request_->blobs_;
+                            blobs.emplace(name_, std::make_pair(path_opt.value(), temporary_));
+                            return blob_error::ok;
+                        }
+                        request_->causing_file_ = blob_path_opt.value();
+                        return blob_error::not_found;
+                    }
+                    request_->causing_file_ = blob_path_opt.value();
+                    return blob_error::not_allowed;
+                }
+                request_->causing_file_ = blob_path_opt.value();
+                return error;
+            }
+            request_->blob_error_ = blob_error::not_found;
+            // causing_file_ can not be determined in this case
+            return blob_error::not_found;
+        }
+
+    private:
+        request* request_;
+        std::string_view name_;
+        bool temporary_;
+        const endpoint::common::resources& resources_;
+
+        blob_error check_blob_path(const std::filesystem::path& p) {
+            std::error_code ec{};
+            if (std::filesystem::exists(p, ec) && !ec) {
+	      if (request::is_readable(p)) {
+                    if (std::filesystem::is_regular_file(p, ec) && !ec) {
+                        if (!std::filesystem::is_symlink(p, ec) && !ec) {
+                            return blob_error::ok;
+                        }
+                    }
+                    request_->causing_file_ = p.string();
+                    return blob_error::not_regular_file;
+                }
+                request_->causing_file_ = p.string();
+                return blob_error::not_accessible;
+            }
+            request_->causing_file_ = p.string();
+            return blob_error::not_found;
+        }
+    };
 
     [[nodiscard]] constexpr inline std::string_view to_string_view(blob_error value) const noexcept {
         using namespace std::string_view_literals;
@@ -219,10 +283,11 @@ private:
         std::abort();
     }
 
-    [[nodiscard]] bool is_readable(const std::filesystem::path& p) {
+    [[nodiscard]] static bool is_readable(const std::filesystem::path& p) {
         return access(p.c_str(), R_OK) == 0;
     }
 
+    friend class blob_handler;
 };
 
 }  // tateyama::endpoint::common

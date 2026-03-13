@@ -20,6 +20,7 @@
 #include <chrono>
 #include <functional>
 
+#include <tateyama/grpc/blob_relay/service_adapter.h>
 #include <tateyama/api/server/request.h>
 
 #include "tateyama/authentication/resource/bridge.h"
@@ -98,6 +99,13 @@ protected:
             return "*";
         }
         throw std::runtime_error("cannot find authentication.enabled in tsurugi.ini");
+    }
+
+    static std::shared_ptr<data_relay_grpc::blob_relay::blob_relay_service> blob_service(tateyama::framework::environment& env) {
+        if (auto service_adapter = env.resource_repository().find<tateyama::grpc::blob_relay::service_adapter>(); service_adapter) {
+            return service_adapter->blob_relay_service();
+        }
+        return nullptr;
     }
 };
 

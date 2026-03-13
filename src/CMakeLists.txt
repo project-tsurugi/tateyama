@@ -182,6 +182,7 @@ target_include_directories(tateyama-impl
 target_link_libraries(tateyama-impl
         INTERFACE ${ENGINE}
         INTERFACE takatori
+        INTERFACE data-relay-grpc
         INTERFACE tbb
         INTERFACE numa
         INTERFACE moodycamel

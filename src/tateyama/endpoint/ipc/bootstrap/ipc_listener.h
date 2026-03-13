@@ -60,7 +60,9 @@ public:
                 session_,
                 env.resource_repository().find<configuration::configuration_provider>()->database_info(),
                 authentication_bridge(env),
-                administrators_),
+                administrators_,
+                blob_service(env),
+                cfg_),
           ipc_metrics_(env) {
 
         auto* endpoint_config = cfg_->get_section("ipc_endpoint");

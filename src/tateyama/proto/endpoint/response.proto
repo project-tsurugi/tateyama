@@ -42,7 +42,29 @@ message Handshake {
         oneof user_name_opt {
             string user_name = 12;
         }
+
+        // the BLOB transfer info
+        oneof blob_transfer_info_opt {
+            // true if privileged mode is available
+            bool privileged_mode = 13;
+
+            // information for using the BLOB relay service
+            BLOBRelayInfo blob_relay_info = 14;
+        }
     }
+}
+
+message BLOBRelayInfo {
+    // the endpoint URI for BLOB relay service
+    // Concretely, the string set at `grpc_server.endpoint` in `tsurugi.ini`
+    string endpoint = 1;
+
+    // the grpc server uses secure port
+    // Concretely, the value of `grpc_server.secure` in `tsurugi.ini`
+    bool secure = 2;
+
+    // the BLOB session id
+    uint64 blob_session_id = 3;
 }
 
 // get the encryption key.
