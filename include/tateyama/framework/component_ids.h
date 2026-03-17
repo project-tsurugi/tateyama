@@ -34,6 +34,7 @@ constexpr inline component::id_type resource_id_authentication = 10;
 constexpr inline component::id_type resource_id_blob_relay_service = 11;
 constexpr inline component::id_type resource_id_grpc_server = 12;
 constexpr inline component::id_type resource_id_configuration = 13;
+constexpr inline component::id_type resource_id_graph = 14;
 
 // service
 constexpr inline component::id_type service_id_routing = 0;
