@@ -189,6 +189,9 @@ parameter=value
 |enabled | ブール(true/false) | gRPC サーバーを有効にするかどうか、デフォルト値は`true` |
 |listen_address | 文字列 | サーバーが Listen 先のアドレスとポート、デフォルト値は`0.0.0.0:52345` |
 |endpoint | 文字列 | リモートから見た gRPC サーバーのエンドポイント URI、デフォルト値は`dns:///localhost:52345` |
+|secure | ブール(true/false) | gRPC サーバーのセキュアポートを有効にするかどうか、デフォルト値は`false` |
+|fullchain_crt | 文字列 | フルチェイン証明書ファイルのパス、デフォルト値は空文字列 | gRPC サーバーのセキュアポートを有効にする場合のみ使用
+|server_key | 文字列 | サーバ鍵ファイルのパス、デフォルト値は空文字列 | gRPC サーバーのセキュアポートを有効にする場合のみ使用
 
 ## blob_relayセクション
 
