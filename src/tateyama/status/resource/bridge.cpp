@@ -16,6 +16,7 @@
 
 #include <iomanip>
 #include <sstream>
+#include <functional>
 #include <unistd.h>
 
 #include <tateyama/logging.h>
@@ -102,6 +103,18 @@ shutdown_type bridge::get_shutdown_request() {
         return resource_status_memory_->get_shutdown_request();
     }
     return shutdown_type::nothing;
+}
+
+void bridge::notify_session_list(const std::function<void()>& set_func) {
+    if (resource_status_memory_) {
+        resource_status_memory_->notify_session_list(set_func);
+    }
+}
+
+void bridge::wait_for_session_list(const std::function<bool()>& check_func) {
+    if (resource_status_memory_) {
+        resource_status_memory_->wait_for_session_list(check_func);
+    }
 }
 
 void bridge::mutex_file(std::string_view file_name) {

@@ -31,6 +31,11 @@ public:
      * @brief returns sessions_core
      */
     virtual tateyama::session::sessions_core& sessions_core() noexcept = 0;
+
+    /**
+     * @brief Start a thread to print the session list.
+     */
+    virtual void start_print_thread() = 0;
 };
 
 }

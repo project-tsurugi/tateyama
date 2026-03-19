@@ -28,7 +28,8 @@ component::id_type bridge::id() const noexcept {
     return tag;
 }
 
-bool bridge::setup(environment&) {
+bool bridge::setup(environment& env) {
+    status_info_ = env.resource_repository().find<status_info::resource::bridge>();
     return true;
 }
 
@@ -37,6 +38,12 @@ bool bridge::start(environment&) {
 }
 
 bool bridge::shutdown(environment&) {
+    if (status_info_) {
+        status_info_->notify_session_list([this](){shutdown_ = true;});
+        if (print_thread_.joinable()) {
+            print_thread_.join();
+        }
+    }
     return true;
 }
 

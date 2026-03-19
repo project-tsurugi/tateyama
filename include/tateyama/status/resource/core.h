@@ -90,17 +90,35 @@ class resource_status_memory {
         using shm_vector = boost::interprocess::vector<std::size_t, ulong_allocator>;
 
         explicit resource_status(const void_allocator& allocator)
-            : resource_status_map_(allocator), service_status_map_(allocator), endpoint_status_map_(allocator), database_name_(allocator), mutex_file_(allocator), sessions_(allocator), allocator_(allocator) {
+            : resource_status_map_(allocator), service_status_map_(allocator), endpoint_status_map_(allocator),
+              database_name_(allocator), mutex_file_(allocator), sessions_(allocator), allocator_(allocator) {
             shutdown_requested_.store(shutdown_type::nothing, boost::memory_order_relaxed);
         }
-    
-      private:
+
+    private:
+        shm_map resource_status_map_;
+        shm_map service_status_map_;
+        shm_map endpoint_status_map_;
+        state whole_{};
+        pid_t pid_{};
+        boost::atomic<shutdown_type> shutdown_requested_{};
+        boost::interprocess::interprocess_mutex m_shutdown_{};
+        boost::interprocess::interprocess_condition c_shutdown_{};
+        boost::interprocess::interprocess_condition c_session_list_{};
+        shm_string database_name_;
+        shm_string mutex_file_;
+        shm_vector sessions_;
+
+        const void_allocator allocator_;
+
+        void wait_for_session_list(const std::function<bool()>& check_func);    // used by tateyama session resource
         [[nodiscard]] bool request_shutdown(shutdown_type type) {  // used by tateyama-bootstrap
-            boost::interprocess::scoped_lock lock(m_shutdown_);
-            if (!test_and_set_shutdown(type)) {
-                return false;
+            {
+                boost::interprocess::scoped_lock lock(m_shutdown_);
+                if (!test_and_set_shutdown(type)) {
+                    return false;
+                }
             }
-            lock.unlock();
             c_shutdown_.notify_one();
             return true;
         }
@@ -108,19 +126,6 @@ class resource_status_memory {
             boost::interprocess::scoped_lock lock(m_shutdown_);
             while (shutdown_requested_.load(boost::memory_order_acquire) == shutdown_type::nothing) {
                 c_shutdown_.wait(lock);
-            }
-            lock.unlock();
-        }
-        void apply_shm_entry(std::function<void(std::string_view)>& f) {  // used by tateyama-bootstrap
-            f(database_name_);
-            std::string prefix(database_name_.data(), database_name_.length());
-            prefix += "-";
-            for (auto &e: sessions_) {
-                if (e > 0) {
-                    std::string session_name = prefix;
-                    session_name += std::to_string(e);
-                    f(session_name);
-                }
             }
         }
         [[nodiscard]] bool test_and_set_shutdown(shutdown_type type) {  // used by tateyama-bootstrap
@@ -132,20 +137,25 @@ class resource_status_memory {
             }
             return shutdown_requested_.compare_exchange_strong(expected, type, boost::memory_order_acq_rel);
         }
-
-        shm_map resource_status_map_;
-        shm_map service_status_map_;
-        shm_map endpoint_status_map_;
-        state whole_{};
-        pid_t pid_{};
-        boost::atomic<shutdown_type> shutdown_requested_{};
-        boost::interprocess::interprocess_mutex m_shutdown_{};
-        boost::interprocess::interprocess_condition c_shutdown_{};
-        shm_string database_name_;
-        shm_string mutex_file_;
-        shm_vector sessions_;
-
-        const void_allocator allocator_;
+        void apply_shm_entry(const std::function<void(std::string_view)>& f) {  // used by tateyama-bootstrap
+            f(database_name_);
+            std::string prefix(database_name_.data(), database_name_.length());
+            prefix += "-";
+            for (auto &e: sessions_) {
+                if (e > 0) {
+                    std::string session_name = prefix;
+                    session_name += std::to_string(e);
+                    f(session_name);
+                }
+            }
+        }
+        void notify_session_list(const std::function<void()>& set_func) {  // used by tateyama-bootstrap
+            {
+                boost::interprocess::scoped_lock lock(m_shutdown_);
+                set_func();
+            }
+            c_session_list_.notify_one();
+        }
 
         friend class resource_status_memory;
     };
@@ -191,14 +201,15 @@ class resource_status_memory {
         return resource_status_->request_shutdown(type);
     }
     void wait_for_shutdown() {  // used by tateyama-bootstrap
-        resource_status_->wait_for_shutdown();
-    }
-    void apply_shm_entry(std::function<void(std::string_view)> f) {  // used by tateyama-bootstrap
+        resource_status_->wait_for_shutdown();    }
+    void apply_shm_entry(const std::function<void(std::string_view)>& f) {  // used by tateyama-bootstrap
         resource_status_->apply_shm_entry(f);
     }
-    [[nodiscard]] bool alive() const {  // used by tateyama-bootstrap
-        return kill(resource_status_->pid_, 0) == 0;
+    [[nodiscard]] bool alive() const;                                                   // used by tateyama-bootstrap
+    void notify_session_list(const std::function<void()>& set_func = [](){}) {  // used by tateyama-bootstrap and tateyama session resource
+        resource_status_->notify_session_list(set_func);
     }
+    void wait_for_session_list(const std::function<bool()>& check_fun);                        // used by tateyama session resource
 
     void set_pid();
     void whole(state s);

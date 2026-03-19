@@ -16,10 +16,12 @@
 #pragma once
 
 #include <optional>
+#include <thread>
 
 #include <tateyama/framework/component_ids.h>
 #include <tateyama/framework/environment.h>
 #include <tateyama/session/resource.h>
+#include <tateyama/status/resource/bridge.h>
 
 #include "core_impl.h"
 #include "context_impl.h"
@@ -109,6 +111,11 @@ public:
     [[nodiscard]] std::optional<error_descriptor> get_valiable(std::string_view session_specifier, std::string_view name, ::tateyama::proto::session::response::SessionGetVariable& get_variable, const tateyama::api::server::session_info& session_info);
 
     /**
+     * @brief Start a thread to print the session list.
+     */
+    void start_print_thread() override;
+
+    /**
      * @brief relays to container::register_session()
      * @param session the session context to register
      * @return true if the target session is successfully registered
@@ -126,7 +133,13 @@ public:
 private:
     sessions_core_impl sessions_core_impl_{};
 
+    std::thread print_thread_{};
+    std::shared_ptr<tateyama::status_info::resource::bridge> status_info_{};
+    bool shutdown_{};
+
     std::optional<error_descriptor> find_only_one_session(std::string_view session_specifier, session_context::numeric_id_type& numeric_id);
+
+    void print_session_list_to_log();
 };
 
 }

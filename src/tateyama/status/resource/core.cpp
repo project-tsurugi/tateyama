@@ -27,6 +27,9 @@
 namespace tateyama::status_info {   // FIXME should be tateyama::status::resource
 
 // resource_status_memory
+bool resource_status_memory::alive() const {
+    return kill(resource_status_->pid_, 0) == 0;
+}
 void resource_status_memory::set_pid() {
     resource_status_->pid_ = ::getpid();
 }
@@ -46,7 +49,6 @@ void resource_status_memory::set_database_name(std::string_view name) {
 std::string_view resource_status_memory::get_database_name() {
     return resource_status_->database_name_;
 }
-
 void resource_status_memory::set_maximum_sessions(std::size_t n) {
     auto& sessions = resource_status_->sessions_;
     {
@@ -94,6 +96,19 @@ void resource_status_memory::remove_shm_entry(std::size_t session_id, std::size_
             }
         }
     }
+}
+
+void resource_status_memory::wait_for_session_list(const std::function<bool()>& check_func) {
+    resource_status_->wait_for_session_list(check_func);
+}
+
+// resource_status_memory::resource_status
+void resource_status_memory::resource_status::wait_for_session_list(const std::function<bool()>& check_func) {
+    boost::interprocess::scoped_lock lock(m_shutdown_);
+    if (check_func()) {
+        return;
+    }
+    c_session_list_.wait(lock);
 }
 
 }

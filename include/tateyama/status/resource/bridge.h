@@ -16,6 +16,7 @@
 #pragma once
 
 #include <string>
+#include <functional>
 
 #include <boost/interprocess/managed_shared_memory.hpp>
 #include <boost/interprocess/containers/map.hpp>
@@ -113,12 +114,25 @@ public:
     shutdown_type get_shutdown_request();
 
     /**
+     * @brief notify the print thread of an event requiring action has occurred
+     * @param set_func the function that establishes conditions
+     */
+    void notify_session_list(const std::function<void()>& set_func);
+
+    /**
+     * @brief wait for a request for print session list to the log
+     * @param check_func the function that determines whether waiting is necessary
+     */
+    void wait_for_session_list(const std::function<bool()>& check_func);
+
+    /**
      * @brief set proc_mutex file name
+     * @param file_name the name of the proc_mutex file
      */
     void mutex_file(std::string_view file_name);
 
     /**
-     * @brief get proc_mutex file name
+     * @brief get the proc_mutex file name
      */
     [[nodiscard]] std::string_view mutex_file() const noexcept;
 
