@@ -1,12 +1,14 @@
-# 共有メモリ使用量について
+# 共有メモリについて
 2024-06-13 horikawa (NT)
 2024-06-26 rev.1
+2026-04-07 rev.2
 
 Tsurugidb（tateyama）では、boost managed shared memory（以下、共有メモリ）により、クライアントプロセス（tsubakuro, tateyama-bootstrap, ogawayama, etc.）との間で情報の受け渡しを行っている。
-このメモでは、共有メモリのライフサイクルと割り当てるメモリ容量を記す。
+このメモでは、共有メモリのライフサイクルと割り当てるメモリ容量およびファイル名を記す。
 
-## 用途（種類）
-共有メモリの用途は以下の通り。
+## 概要
+### 共有メモリの用途
+tateyamaが使用する共有メモリの用途は以下の通り。
 
 * Tsurugidbプロセスの状態通知用
 * IPC endpoint接続処理用
@@ -14,6 +16,16 @@ Tsurugidb（tateyama）では、boost managed shared memory（以下、共有メ
 
 「Tsurugidbプロセスの状態通知」と「IPC endpoint接続処理」はTsurugidbに各1segment*)、「IPC endpointで接続されるsessionの通信」は、IPC接続されているセッション数分のsegmentが作成される。
 *) segmentは共有メモリを確保する単位で、linuxでは/dev/shm下に作成されるファイルと1:1に対応している。
+
+### ファイル名
+各用途の共有メモリは、/dev/shm下に下記ファイル名で作成される。
+| 共有メモリの用途 | ファイル名 |
+| ---- | ---- |
+| Tsurugidbプロセスの状態通知用 | tsurugidb-`ハッシュ値`.stat |
+| IPC endpoint接続処理用 | `database名` |
+| IPC endpointで接続されるsessionの通信用 | `database名`-`セッションID` |
+
+ここで、`ハッシュ値`は、構成定義ファイル（`tsurugi.ini`）の絶対パスから作成した16進数16桁のハッシュ値、`database名`は、構成定義ファイル（`tsurugi.ini`）で設定されている`ipc_endpoint.database_name`の値（文字列）、`セッションID`はセッションに付与されたID。
 
 ## 各共有メモリのライフサイクルと容量
 「Tsurugidbプロセスの状態通知」と「IPC endpoint接続処理」に割り当てるメモリ容量は、IPC接続可能な最大セッション数（tsurigi.iniのipc_endpoint.threadsパラメータとipc_endpoint.admin_sessionsパラメータの和）に依存する。本項では、そのパラメータをnと表記する。また、各種の固定値は共有メモリの使用量を測定して求めた値である。
