@@ -87,6 +87,8 @@ Target component
 | dev_force_numa_node | Integer | Forces all task scheduler worker threads onto a specific NUMA node. Specify the node number (0-based). Effective only when `dev_core_affinity = false` and `dev_assign_numa_nodes_uniformly = false`. Default is *not specified* (no node affinity). | This is for development and may be deleted in the future. |
 |dev_enable_disjunction_range_hinting| Boolean (true/false) | Determine whether the column value ranges are extracted from conditions containing `OR`. The default value is `true`. | This is for development and may be deleted in the future. |
 |dev_apply_max_polls | Integer | maximum number of polling before apply operator yields when it receives UDTF result records and the next record is not ready yet. The default value is 0. | This is for development and may be deleted in the future. |
+|dev_enable_maintenance_thread| Boolean (true/false) | Whether SQL engine starts maintenance thread to process storages background. The default value is `true`. | This is for development and may be deleted in the future. |
+|dev_maintenance_interval_ms | Integer | The interval (ms) between resume and suspension of maintenance thread. The default value is 100. |This is for development and may be deleted in the future. |
 
 ## udf section
 

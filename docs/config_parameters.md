@@ -87,6 +87,8 @@ parameter=value
 |dev_force_numa_node | 整数 | タスクスケジューラのワーカースレッドを特定のNUMAノードへ割当てるか。ノード番号 (0-origin)を指定された場合そのノードですべてのワーカーが稼働する。`dev_core_affinity=false` かつ `dev_assign_numa_nodes_uniformly=false` の場合のみ有効。デフォルトは未指定 (ノード割当てなし)。|開発用のため将来的に削除/変更される可能性あり|
 |dev_enable_disjunction_range_hinting| ブール(true/false) | `OR` を含む条件からカラムの範囲を抽出するか。デフォルトはtrue。 | 開発用のため将来的に削除/変更される可能性あり|
 |dev_apply_max_polls | 整数 | apply演算子がUDTFの結果レコードを受け取る際、レコードの準備が完了していない場合にイールド前に行うポーリング回数の最大値。デフォルトは0。|開発用のため将来的に削除/変更される可能性あり|
+|dev_enable_maintenance_thread| ブール(true/false) | SQL実行エンジンがメンテナンススレッドを起動してストレージのバックグラウンド処理等に使用するか。デフォルトは true 。 | 開発用のため将来的に削除/変更される可能性あり|
+|dev_maintenance_interval_ms | 整数 | SQL実行エンジンが起動するメンテナンススレッドが一時停止した後に再開するまでの間隔(ms)。デフォルトは 100 。|開発用のため将来的に削除/変更される可能性あり|
 
 ## udfセクション
 
