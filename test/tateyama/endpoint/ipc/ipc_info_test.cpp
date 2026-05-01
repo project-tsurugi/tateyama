@@ -20,7 +20,7 @@
 #include "tateyama/configuration/resource/database_info_impl.h"
 #include "ipc_client.h"
 
-#include <gtest/gtest.h>
+#include "tateyama/test_utils/test.h"
 
 namespace tateyama::server {
 class ipc_listener_for_test {
@@ -73,9 +73,10 @@ private:
     std::shared_ptr<tateyama::api::server::request> req_{};
 };
 
-class ipc_info_test : public ::testing::Test {
+class ipc_info_test : public tateyama::test_utils::Test {
     void SetUp() override {
         rv_ = ::system("if [ -f /dev/shm/ipc_info_test ]; then rm -f /dev/shm/ipc_info_test; fi");
+        set_database_info(&database_info_);
     }
 
     void TearDown() override {
@@ -87,9 +88,6 @@ class ipc_info_test : public ::testing::Test {
 public:
     tateyama::configuration::resource::database_info_impl database_info_{database_name, "iid-ipc-info-test"};
     info_service service_{};
-
-protected:
-    tateyama::endpoint::common::administrators administrators_{"*"};
 };
 
 static constexpr std::size_t writer_count = 8;
@@ -102,7 +100,7 @@ TEST_F(ipc_info_test, basic) {
     session_name += "-";
     session_name += std::to_string(my_session_id);
     auto wire = std::make_unique<bootstrap::server_wire_container_impl>(session_name, "dummy_mutex_file_name", datachannel_buffer_size, 16);
-    const tateyama::endpoint::common::configuration conf(tateyama::endpoint::common::connection_type::ipc, nullptr, database_info_, nullptr, administrators_, nullptr, nullptr);
+    const tateyama::endpoint::common::configuration conf(tateyama::endpoint::common::connection_type::ipc, test_environment_);
     tateyama::endpoint::ipc::bootstrap::ipc_worker worker(service_, conf, my_session_id, std::move(wire));
     tateyama::server::ipc_listener_for_test::run(worker);
 

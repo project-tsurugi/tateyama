@@ -21,10 +21,9 @@
 
 #include "tateyama/endpoint/stream/bootstrap/stream_worker.h"
 #include "tateyama/endpoint/header_utils.h"
-#include "tateyama/configuration/resource/database_info_impl.h"
 #include "stream_client.h"
 
-#include <gtest/gtest.h>
+#include "tateyama/test_utils/test.h"
 
 static constexpr std::size_t my_session_id_ = 1234;
 static constexpr std::string_view request_test_message = "abcdefgh";
@@ -58,7 +57,7 @@ private:
 
 class stream_listener_for_store_test {
 public:
-    stream_listener_for_store_test(store_service_for_test& service) : service_(service) {
+    stream_listener_for_store_test(store_service_for_test& service, tateyama::framework::environment& env) : service_(service), env_(env) {
     }
     ~stream_listener_for_store_test() {
         connection_socket_.close();
@@ -69,7 +68,7 @@ public:
             stream = connection_socket_.accept();
 
             if (stream != nullptr) {
-                conf_ = std::make_unique<tateyama::endpoint::common::configuration>(tateyama::endpoint::common::connection_type::stream, nullptr, database_info_, nullptr, administrators_, nullptr, nullptr);
+                conf_ = std::make_unique<tateyama::endpoint::common::configuration>(tateyama::endpoint::common::connection_type::stream, env_);
                 worker_ = std::make_unique<tateyama::endpoint::stream::bootstrap::stream_worker>(service_, *conf_, my_session_id_, std::move(stream), false);
                 worker_->invoke([&]{
                     worker_->run();
@@ -90,18 +89,17 @@ public:
 
 private:
     store_service_for_test& service_;
+    tateyama::framework::environment& env_;
     std::unique_ptr<tateyama::endpoint::common::configuration> conf_{};
     connection_socket connection_socket_{tateyama::api::endpoint::stream::stream_client::PORT_FOR_TEST};
     std::unique_ptr<tateyama::endpoint::stream::bootstrap::stream_worker> worker_{};
-    tateyama::configuration::resource::database_info_impl database_info_{"stream_store_test", "iid-stream-store-test"};
-    tateyama::endpoint::common::administrators administrators_{"*"};
 };
 }
 
 
 namespace tateyama::api::endpoint::stream {
 
-class stream_store_test : public ::testing::Test {
+class stream_store_test : public tateyama::test_utils::Test {
     void SetUp() override {
         thread_ = std::thread(std::ref(listener_));
         client_ = std::make_unique<stream_client>();
@@ -115,7 +113,7 @@ class stream_store_test : public ::testing::Test {
 
 public:
     tateyama::endpoint::stream::store_service_for_test service_{};
-    tateyama::endpoint::stream::stream_listener_for_store_test listener_{service_};
+    tateyama::endpoint::stream::stream_listener_for_store_test listener_{service_, test_environment_};
     std::thread thread_{};
     std::unique_ptr<stream_client> client_{};
 };

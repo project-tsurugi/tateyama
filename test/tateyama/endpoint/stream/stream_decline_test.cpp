@@ -18,10 +18,9 @@
 
 #include "tateyama/endpoint/stream/bootstrap/stream_worker.h"
 #include "tateyama/endpoint/header_utils.h"
-#include "tateyama/configuration/resource/database_info_impl.h"
 #include "stream_client.h"
 
-#include <gtest/gtest.h>
+#include "tateyama/test_utils/test.h"
 
 static constexpr std::string_view label = "label_fot_test";
 static constexpr std::string_view application_name = "application_name_fot_test";
@@ -57,7 +56,7 @@ private:
 
 class stream_listener_for_decline_test {
 public:
-    stream_listener_for_decline_test(info_service_for_test& service) : service_(service) {
+    stream_listener_for_decline_test(info_service_for_test& service, tateyama::framework::environment& env) : service_(service), env_(env) {
     }
     void operator()() {
         while (true) {
@@ -65,7 +64,7 @@ public:
             stream = connection_socket_.accept();
 
             if (stream != nullptr) {
-                const tateyama::endpoint::common::configuration conf(tateyama::endpoint::common::connection_type::stream, nullptr, database_info_, nullptr, administrators_, nullptr, nullptr);
+                const tateyama::endpoint::common::configuration conf(tateyama::endpoint::common::connection_type::stream, env_);
                 worker_ = std::make_unique<tateyama::endpoint::stream::bootstrap::stream_worker>(service_, conf, my_session_id_, std::move(stream), true);
                 worker_->invoke([&]{worker_->run();});
             } else {  // connect via pipe (request_terminate)
@@ -83,17 +82,16 @@ public:
 
 private:
     info_service_for_test& service_;
+    tateyama::framework::environment& env_;
     connection_socket connection_socket_{tateyama::api::endpoint::stream::stream_client::PORT_FOR_TEST};
     std::unique_ptr<tateyama::endpoint::stream::bootstrap::stream_worker> worker_{};
-    tateyama::configuration::resource::database_info_impl database_info_{"stream_decline_test", "iid-stream-decline-test"};
-    tateyama::endpoint::common::administrators administrators_{"*"};
 };
 }
 
 
 namespace tateyama::api::endpoint::stream {
 
-class stream_decline_test : public ::testing::Test {
+class stream_decline_test : public tateyama::test_utils::Test {
     void SetUp() override {
         thread_ = std::thread(std::ref(listener_));
     }
@@ -104,7 +102,7 @@ class stream_decline_test : public ::testing::Test {
 
 public:
     tateyama::endpoint::stream::info_service_for_test service_{};
-    tateyama::endpoint::stream::stream_listener_for_decline_test listener_{service_};
+    tateyama::endpoint::stream::stream_listener_for_decline_test listener_{service_, test_environment_};
     std::thread thread_{};
 };
 

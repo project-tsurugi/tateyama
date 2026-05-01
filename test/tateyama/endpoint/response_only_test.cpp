@@ -21,24 +21,22 @@
 #include "tateyama/endpoint/ipc/ipc_request.h"
 #include "tateyama/endpoint/ipc/ipc_response.h"
 
-#include "tateyama/configuration/resource/database_info_impl.h"
-
 #include <tateyama/endpoint/ipc/bootstrap/server_wires_impl.h>
 #include "header_utils.h"
 
-#include <gtest/gtest.h>
+#include "tateyama/test_utils/test.h"
 
 namespace tateyama::endpoint::ipc {
 
-class response_only_test : public ::testing::Test {
+class response_only_test : public tateyama::test_utils::Test {
     static constexpr std::size_t datachannel_buffer_size = 64 * 1024;
 
     void SetUp() override {
-        rv_ = system("if [ -f /dev/shm/tateyama-response_only_test ]; then rm -f /dev/shm/tateyama-response_only_test; fi ");
+        rv_ = ::system("if [ -f /dev/shm/tateyama-response_only_test ]; then rm -f /dev/shm/tateyama-response_only_test; fi ");
         wire_ = std::make_shared<bootstrap::server_wire_container_impl>("tateyama-response_only_test", "dummy_mutex_file_name", datachannel_buffer_size, 16);
     }
     void TearDown() override {
-        rv_ = system("if [ -f /dev/shm/tateyama-response_only_test ]; then rm -f /dev/shm/tateyama-response_only_test; fi ");
+        rv_ = ::system("if [ -f /dev/shm/tateyama-response_only_test ]; then rm -f /dev/shm/tateyama-response_only_test; fi ");
     }
 
     int rv_;
@@ -52,9 +50,8 @@ public:
 
     std::shared_ptr<bootstrap::server_wire_container_impl> wire_;
 
-    tateyama::configuration::resource::database_info_impl dmy_dbinfo_{};
-    tateyama::endpoint::common::configuration conf_{tateyama::endpoint::common::connection_type::ipc, nullptr, dmy_dbinfo_, nullptr, administrators_, nullptr, nullptr};
-    tateyama::endpoint::common::resources resources_{conf_, session_id, "", administrators_};
+    tateyama::endpoint::common::configuration conf_{tateyama::endpoint::common::connection_type::ipc, test_environment_};
+    tateyama::endpoint::common::resources resources_{conf_, session_id, ""};
 
     class test_service {
     public:
@@ -69,9 +66,6 @@ public:
             return 0;
         }
     };
-
-private:
-    tateyama::endpoint::common::administrators administrators_{"*"};
 };
 
 TEST_F(response_only_test, normal) {

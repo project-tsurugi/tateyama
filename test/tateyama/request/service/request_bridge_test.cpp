@@ -33,12 +33,12 @@ namespace tateyama::request {
 
 class listener_fot_test : public tateyama::endpoint::common::listener_common {
 public:
-    listener_fot_test() : listener_common("*") {}
-    void operator()() {}
-    void arrive_and_wait() {}
-    void terminate() {}
-    void print_diagnostic(std::ostream&) {}
-    void foreach_request(const callback& cb) {
+    listener_fot_test() : listener_common() {}
+    void operator()() override {}
+    void arrive_and_wait() override {}
+    void terminate() override {}
+    void print_diagnostic(std::ostream&) override {}
+    void foreach_request(const callback& cb) override {
         for (auto&& e : data_) {
             cb(std::make_shared<tateyama::test_utils::test_request>(std::get<0>(e), std::get<1>(e), std::get<2>(e), std::get<3>(e)), std::chrono::system_clock::now());
             std::this_thread::sleep_for( std::chrono::milliseconds(10) );

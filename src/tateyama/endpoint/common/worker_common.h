@@ -54,7 +54,7 @@ public:
         : connection_type_(config.con_),
           session_(config.session_),
           config_(config),
-          resources_(config, session_id, conn_info, config.administrators_),
+          resources_(config, session_id, conn_info),
           session_context_(std::make_shared<tateyama::session::resource::session_context_impl>(resources_.session_info(), resources_.session_variable_set())),
           enable_timeout_(config.enable_timeout_),
           refresh_timeout_(config.refresh_timeout_),
@@ -362,25 +362,14 @@ protected:
                 resources_.blob_transfer(resources::blob_transfer_type::privileged);
             }
         } else if(type == proto::endpoint::request::BlobTransferType::BLOB_RELAY_STREAMING) {
-            if (auto cfg = config_.cfg(); cfg) {
-                auto* grpc_server = cfg->get_section("grpc_server");
-                auto grpc_enabled_opt = grpc_server->get<bool>("enabled");
-                auto endpoint_opt = grpc_server->get<std::string>("endpoint");
-                auto secure_opt = grpc_server->get<bool>("secure");
-                auto blog_relay_enabled_opt = grpc_server->get<bool>("enabled");
-                if (grpc_enabled_opt && blog_relay_enabled_opt && endpoint_opt && secure_opt) {
-                    if (grpc_enabled_opt.value() && blog_relay_enabled_opt.value()) {
-                        if(auto blob_relay_service = config_.blob_relay_service(); blob_relay_service) {
-                            auto& blob_session = blob_relay_service->create_session();
-                            resources_.blob_session(blob_session);
-                            auto* blob_relay_info = rs->mutable_blob_relay_info();
-                            blob_relay_info->set_endpoint(endpoint_opt.value());
-                            blob_relay_info->set_secure(secure_opt.value());
-                            blob_relay_info->set_blob_session_id(blob_session.session_id());
-                            resources_.blob_transfer(resources::blob_transfer_type::blob_relay_streaming);
-                        }
-                    }
-                }
+            if (config_.blob_relay_enabled_) {
+                auto& blob_session = config_.blob_relay_service_->create_session();
+                resources_.blob_session(blob_session);
+                auto* blob_relay_info = rs->mutable_blob_relay_info();
+                blob_relay_info->set_endpoint(config_.blob_relay_endpoint_);
+                blob_relay_info->set_secure(config_.blob_relay_secure_);
+                blob_relay_info->set_blob_session_id(blob_session.session_id());
+                resources_.blob_transfer(resources::blob_transfer_type::blob_relay_streaming);
             }
         }
 

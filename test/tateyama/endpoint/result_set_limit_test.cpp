@@ -26,25 +26,22 @@
 #include "tateyama/endpoint/ipc/ipc_request.h"
 #include "tateyama/endpoint/ipc/ipc_response.h"
 
-#include "tateyama/configuration/resource/database_info_impl.h"
-
 #include <tateyama/endpoint/ipc/bootstrap/server_wires_impl.h>
 #include "header_utils.h"
 
-#include <gtest/gtest.h>
+#include "tateyama/test_utils/test.h"
 
 namespace tateyama::endpoint::ipc {
 
-class result_set_limit_test : public ::testing::Test {
+class result_set_limit_test : public tateyama::test_utils::Test {
     void SetUp() override {
-
-        rv_ = system("if [ -f /dev/shm/tateyama-result_set_limit_test ]; then rm -f /dev/shm/tateyama-result_set_limit_test; fi ");
+        rv_ = ::system("if [ -f /dev/shm/tateyama-result_set_limit_test ]; then rm -f /dev/shm/tateyama-result_set_limit_test; fi ");
 
         wire_ = std::make_shared<bootstrap::server_wire_container_impl>("tateyama-result_set_limit_test", "dummy_mutex_file_name", datachannel_buffer_size, writers);
         buffer.resize(value_size);
     }
     void TearDown() override {
-        rv_ = system("if [ -f /dev/shm/tateyama-result_set_limit_test ]; then rm -f /dev/shm/tateyama-result_set_limit_test*; fi ");
+        rv_ = ::system("if [ -f /dev/shm/tateyama-result_set_limit_test ]; then rm -f /dev/shm/tateyama-result_set_limit_test*; fi ");
     }
 
     int rv_;
@@ -64,10 +61,8 @@ public:
 
     std::shared_ptr<bootstrap::server_wire_container_impl> wire_;
 
-    tateyama::configuration::resource::database_info_impl dmy_dbinfo_{};
-    tateyama::endpoint::common::configuration conf_{tateyama::endpoint::common::connection_type::ipc, nullptr, dmy_dbinfo_, nullptr, administrators_, nullptr, nullptr};
-    tateyama::endpoint::common::resources resources_{conf_, session_id, "", administrators_};
-
+    tateyama::endpoint::common::configuration conf_{tateyama::endpoint::common::connection_type::ipc, test_environment_};
+    tateyama::endpoint::common::resources resources_{conf_, session_id, ""};
     bool timeout(std::function<void()>&& test_behavior) {
         std::promise<bool> promisedFinished;
         auto futureResult = promisedFinished.get_future();
@@ -78,9 +73,6 @@ public:
   
         return futureResult.wait_for(std::chrono::milliseconds(500)) == std::future_status::timeout;
     }
-
-private:
-    tateyama::endpoint::common::administrators administrators_{"*"};
 };
 
 TEST_F(result_set_limit_test, within_datachannel_buffer_size) {

@@ -32,11 +32,7 @@
 
 #include <tateyama/logging.h>
 #include <tateyama/utils/boolalpha.h>
-#include <tateyama/framework/routing_service.h>
 #include <tateyama/configuration/configuration_provider.h>
-#include <tateyama/api/configuration.h>
-#include <tateyama/session/resource/bridge.h>
-#include "tateyama/authentication/resource/bridge.h"
 
 #include "tateyama/endpoint/common/listener_common.h"
 #include "tateyama/endpoint/common/logging.h"
@@ -61,18 +57,8 @@ class stream_listener : public tateyama::endpoint::common::listener_common {
 
 public:
     explicit stream_listener(tateyama::framework::environment& env)
-        : listener_common(administrator_names(env)),
-          cfg_(env.configuration()),
-          router_(env.service_repository().find<framework::routing_service>()),
-          status_(env.resource_repository().find<status_info::resource::bridge>()),
-          session_(env.resource_repository().find<session::resource::bridge>()),
-          conf_(tateyama::endpoint::common::connection_type::stream,
-                session_,
-                env.resource_repository().find<configuration::configuration_provider>()->database_info(),
-                authentication_bridge(env),
-                administrators_,
-                blob_service(env),
-                cfg_),
+        : listener_common(env),
+          conf_(tateyama::endpoint::common::connection_type::stream, env),
           stream_metrics_(env) {
         auto endpoint_config = cfg_->get_section("stream_endpoint");
         if (endpoint_config == nullptr) {
@@ -292,10 +278,6 @@ public:
     }
 
 private:
-    const std::shared_ptr<api::configuration::whole> cfg_;
-    const std::shared_ptr<framework::routing_service> router_;
-    const std::shared_ptr<status_info::resource::bridge> status_;
-    const std::shared_ptr<tateyama::session::resource::bridge> session_;
     tateyama::endpoint::common::configuration conf_;
     tateyama::endpoint::stream::metrics::stream_metrics stream_metrics_;
 
