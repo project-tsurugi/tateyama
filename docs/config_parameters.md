@@ -189,7 +189,7 @@ parameter=value
 
 |パラメーター名 | 型 | 値 |備考|
 |---:| :---: | :--- |---|
-|enabled | ブール(true/false) | gRPC サーバーを有効にするかどうか、デフォルト値は`true` |
+|enabled | ブール(true/false) | gRPC サーバーを有効にするかどうか、デフォルト値は`false` |
 |listen_address | 文字列 | サーバーが Listen 先のアドレスとポート、デフォルト値は`0.0.0.0:52345` |
 |endpoint | 文字列 | リモートから見た gRPC サーバーのエンドポイント URI、デフォルト値は`dns:///localhost:52345` |
 |secure | ブール(true/false) | gRPC サーバーのセキュアポートを有効にするかどうか、デフォルト値は`false` |
