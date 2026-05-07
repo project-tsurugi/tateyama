@@ -51,28 +51,37 @@ enum class connection_type : std::uint32_t {
 
 class alignas(64) configuration {
 public:
-    configuration(connection_type con,
-                  tateyama::framework::environment& env) :
-        con_(con),
-        session_(env.resource_repository().find<tateyama::session::resource::bridge>()),
-        database_info_(database_info(env)),
-        auth_(authentication_bridge(env)),
-        administrators_(env.configuration()),
-        blob_relay_service_(tateyama::endpoint::common::configuration::blob_service(env)) {
-            if (const auto& cfg = env.configuration(); cfg) {
-              // for blob_relay
-              auto* grpc_server = cfg->get_section("grpc_server");
-              auto grpc_enabled_opt = grpc_server->get<bool>("enabled");
-              auto endpoint_opt = grpc_server->get<std::string>("endpoint");
-              auto secure_opt = grpc_server->get<bool>("secure");
-              auto blob_relay_enabled_opt = grpc_server->get<bool>("enabled");
-              if (grpc_enabled_opt && blob_relay_enabled_opt && endpoint_opt && secure_opt &&
-                  grpc_enabled_opt.value() && blob_relay_enabled_opt.value() && blob_relay_service_) {
-                  blob_relay_enabled_ = true;
-                  blob_relay_endpoint_ = endpoint_opt.value();
-                  blob_relay_secure_ = secure_opt.value();
-              }
-          }
+    configuration(connection_type con, tateyama::framework::environment& env)
+        : con_(con),
+          session_(env.resource_repository().find<tateyama::session::resource::bridge>()),
+          database_info_(database_info(env)),
+          auth_(authentication_bridge(env)),
+          administrators_(env.configuration()),
+          blob_relay_service_(tateyama::endpoint::common::configuration::blob_service(env)) {
+
+        if (const auto& cfg = env.configuration(); cfg) {
+            // for blob_relay
+            auto* grpc_server = cfg->get_section("grpc_server");
+            auto grpc_enabled_opt = grpc_server->get<bool>("enabled");
+            auto endpoint_opt = grpc_server->get<std::string>("endpoint");
+            auto secure_opt = grpc_server->get<bool>("secure");
+            auto* blob_relay = cfg->get_section("blob_relay");
+            if (grpc_enabled_opt && endpoint_opt && secure_opt && blob_relay) {
+                auto blob_relay_enabled_opt = blob_relay->get<bool>("enabled");
+                auto stream_chunk_size_opt = blob_relay->get<std::string>("stream_chunk_size");
+                if (blob_relay_enabled_opt) {
+                    if (blob_relay_enabled_opt.value()) {
+                        blob_relay_enabled_ = true;
+                        blob_relay_endpoint_ = endpoint_opt.value();
+                        blob_relay_secure_ = secure_opt.value();
+                        if (stream_chunk_size_opt) {
+                            using namespace std::literals::string_literals;
+                            blob_relay_streaming_params_.emplace("stream_chunk_size"s, stream_chunk_size_opt.value());
+                        }
+                    }
+                }
+            }
+        }
     }
     void set_timeout(std::size_t refresh_timeout, std::size_t max_refresh_timeout) {
         if (refresh_timeout < 120) {
@@ -134,6 +143,7 @@ private:
     bool blob_relay_enabled_{};
     std::string blob_relay_endpoint_{};
     bool blob_relay_secure_{};
+    std::map<std::string, std::string> blob_relay_streaming_params_{};
 
     friend class worker_common;
     friend class request;

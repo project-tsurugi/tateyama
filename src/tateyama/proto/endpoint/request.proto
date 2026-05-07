@@ -43,10 +43,8 @@ message Handshake {
     // the client information.
     ClientInformation client_information = 1;
 
-    // BLOB relay service type to use
-    oneof blob_transfer_type_opt {
-        BlobTransferType blob_transfer_type = 2;
-    }
+    // prioritized candidates of BLOB transfer media/methods to use
+    repeated BlobTransferMedium blob_transfer_media = 2;
 
     // reserved for system use
     reserved 3 to 10;
@@ -63,11 +61,15 @@ enum BlobTransferType {
   // privileged mode BLOB transfer
   PRIVILEGED = 1;
 
-  // data_relay_grpc.proto.blob_relay.blob_relay_streaming
-  BLOB_RELAY_STREAMING = 2;
+  // data_relay_grpc.proto.blob_relay_streaming.blob_relay
+  RELAY = 2;
 }
 
-
+// BLOB relay service medium
+message BlobTransferMedium {
+  // BLOB relay service type
+  BlobTransferType blob_transfer_type = 1;
+}
 
 // client information
 message ClientInformation {

@@ -157,7 +157,8 @@ protected:
         endpoint_request.set_service_message_version_minor(ENDPOINT_BROKER_SERVICE_MESSAGE_VERSION_MINOR);
 
         auto* endpoint_handshake = endpoint_request.mutable_handshake();
-        endpoint_handshake->set_blob_transfer_type(tateyama::proto::endpoint::request::BlobTransferType::BLOB_RELAY_STREAMING);
+        auto* blob_transfer_media = endpoint_handshake->add_blob_transfer_media();
+        blob_transfer_media->set_blob_transfer_type(tateyama::proto::endpoint::request::BlobTransferType::RELAY);
         
         auto* client_information = endpoint_handshake->mutable_client_information();
         client_information->set_connection_label("ipc_blob_relay_streaming_test");
@@ -180,12 +181,12 @@ protected:
         EXPECT_EQ(type, tateyama::proto::framework::response::Header::SERVICE_RESULT);
         EXPECT_EQ(handshake_response.result_case(), tateyama::proto::endpoint::response::Handshake::kSuccess);
         auto& success = handshake_response.success();
-        EXPECT_EQ(success.blob_transfer_info_opt_case(), tateyama::proto::endpoint::response::Handshake_Success::kBlobRelayInfo);
-        auto& blob_relay_info = success.blob_relay_info();
-        EXPECT_EQ(blob_relay_info.endpoint(), "dns:///localhost:62345");
-        EXPECT_EQ(blob_relay_info.secure(), false);
+        ASSERT_EQ(success.blob_transfer_case(), tateyama::proto::endpoint::response::Handshake_Success::kBlobRelayServiceInfo);
+        auto& blob_relay_service_info = success.blob_relay_service_info();
+        EXPECT_EQ(blob_relay_service_info.endpoint(), "dns:///localhost:62345");
+        EXPECT_EQ(blob_relay_service_info.secure(), false);
 
-        grpc_client_ = std::make_unique<grpc::Client>(blob_relay_info.endpoint(), blob_relay_info.blob_session_id());
+        grpc_client_ = std::make_unique<grpc::Client>(blob_relay_service_info.endpoint(), blob_relay_service_info.blob_session_id());
     };
     std::function<std::string(ipc_client&, tateyama::proto::framework::response::Header::PayloadType&, blobs_type&)> request_ =
         [this](ipc_client& client, tateyama::proto::framework::response::Header::PayloadType& type, blobs_type& blobs){

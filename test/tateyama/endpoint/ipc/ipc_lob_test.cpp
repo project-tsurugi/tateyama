@@ -122,18 +122,14 @@ class ipc_lob_test : public tateyama::test_utils::Test {
         tateyama::server::ipc_listener_for_test::run(*worker_);
 
         // client part
-        tateyama::proto::endpoint::request::ClientInformation cci{};
-        cci.set_connection_label(std::string(label));
-        cci.set_application_name(std::string(application_name));
-        tateyama::proto::endpoint::request::Credential cred{};
-        // FIXME handle userName when a credential specification is fixed.
-        cci.set_allocated_credential(&cred);
         tateyama::proto::endpoint::request::Handshake hs{};
-        hs.set_allocated_client_information(&cci);
-        hs.set_blob_transfer_type(proto::endpoint::request::BlobTransferType::PRIVILEGED);  // FIXME
+        auto* cci = hs.mutable_client_information();
+        cci->set_connection_label(std::string(label));
+        cci->set_application_name(std::string(application_name));
+        auto* cred = cci->mutable_credential();
+        auto* blob_transfer_media = hs.add_blob_transfer_media();
+        blob_transfer_media->set_blob_transfer_type(tateyama::proto::endpoint::request::BlobTransferType::PRIVILEGED);
         client_ = std::make_unique<ipc_client>(database_name, my_session_id, hs);
-        (void)cci.release_credential();
-        (void)hs.release_client_information();
     }
 
     void TearDown() override {

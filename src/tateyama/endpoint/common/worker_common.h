@@ -24,6 +24,7 @@
 #include <vector>
 #include <mutex>
 #include <chrono>
+#include <string>
 
 #include <tateyama/status.h>
 #include <tateyama/framework/routing_service.h>
@@ -353,24 +354,48 @@ protected:
             rs->set_user_name(std::string(name_opt.value()));
         }
 
-        // care blob handling mechanism
-        auto type = rq.handshake().blob_transfer_type();
-        // If endpoint_broker_service_message_version is less than 0.2, BlobTransferType::PRIVILEGED is applied automatically.
-        if (type == proto::endpoint::request::BlobTransferType::PRIVILEGED || (rq.service_message_version_major() == 0 && rq.service_message_version_minor() < 2)) {
-            if (config_.allow_blob_privileged_) {
-                rs->set_privileged_mode(true);
-                resources_.blob_transfer(resources::blob_transfer_type::privileged);
+        // take care of blob handling mechanism
+        constexpr static std::uint64_t ENDPOINT_BROKER_SMVMAJ_BLOB_RELAY_SUPPORT = 0;
+        constexpr static std::uint64_t ENDPOINT_BROKER_SMVMIN_BLOB_RELAY_SUPPORT = 2;
+        bool find_blob_transfer{false};
+        for (const auto& e : rq.handshake().blob_transfer_media()) {
+            auto type = e.blob_transfer_type();
+            // If endpoint_broker_service_message_version is less than 0.2, BlobTransferType::PRIVILEGED is applied automatically.
+            if (type == proto::endpoint::request::BlobTransferType::PRIVILEGED ||
+                (rq.service_message_version_major() == ENDPOINT_BROKER_SMVMAJ_BLOB_RELAY_SUPPORT && rq.service_message_version_minor() < ENDPOINT_BROKER_SMVMIN_BLOB_RELAY_SUPPORT)) {
+                if (config_.allow_blob_privileged_) {
+                    (void) rs->mutable_privileged_mode();
+                    resources_.blob_transfer(resources::blob_transfer_type::privileged);
+                    find_blob_transfer = true;
+                    break;
+                }
+            } else if(type == proto::endpoint::request::BlobTransferType::RELAY) {
+                if (config_.blob_relay_enabled_) {
+                    auto& blob_session = config_.blob_relay_service_->create_session();
+                    resources_.blob_session(blob_session);
+                    auto* blob_relay_info = rs->mutable_blob_relay_service_info();
+                    blob_relay_info->set_blob_session_id(blob_session.session_id());
+                    blob_relay_info->set_endpoint(config_.blob_relay_endpoint_);
+                    blob_relay_info->set_secure(config_.blob_relay_secure_);
+                    blob_relay_info->set_medium("streaming");
+                    auto* parameters = blob_relay_info->mutable_parameters();
+                    for(auto&& e: config_.blob_relay_streaming_params_) {
+                        parameters->insert({e.first, e.second});
+                    }
+                    resources_.blob_transfer(resources::blob_transfer_type::blob_relay_streaming);
+                    find_blob_transfer = true;
+                    break;
+                }
+            } else if(type == proto::endpoint::request::BlobTransferType::DOES_NOT_USE) {
+                find_blob_transfer = true;
+                break;
             }
-        } else if(type == proto::endpoint::request::BlobTransferType::BLOB_RELAY_STREAMING) {
-            if (config_.blob_relay_enabled_) {
-                auto& blob_session = config_.blob_relay_service_->create_session();
-                resources_.blob_session(blob_session);
-                auto* blob_relay_info = rs->mutable_blob_relay_info();
-                blob_relay_info->set_endpoint(config_.blob_relay_endpoint_);
-                blob_relay_info->set_secure(config_.blob_relay_secure_);
-                blob_relay_info->set_blob_session_id(blob_session.session_id());
-                resources_.blob_transfer(resources::blob_transfer_type::blob_relay_streaming);
-            }
+        }
+        if (!find_blob_transfer &&
+            (rq.service_message_version_major() > ENDPOINT_BROKER_SMVMAJ_BLOB_RELAY_SUPPORT || rq.service_message_version_minor() >= ENDPOINT_BROKER_SMVMIN_BLOB_RELAY_SUPPORT)) {
+            using namespace std::literals::string_literals;
+            handshake_error(res, tateyama::proto::diagnostics::Code::UNSUPPORTED_OPERATION, "the requested blob transfer method is unavailable"s);
+            return false;
         }
 
         // send endpoint.response
