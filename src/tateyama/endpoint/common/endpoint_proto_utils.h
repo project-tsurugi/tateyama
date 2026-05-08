@@ -41,7 +41,7 @@ struct parse_result {
     std::size_t service_message_version_minor_{};
 };
 
-inline bool parse_header(std::string_view input, parse_result& result, std::map<std::string, std::pair<std::variant<std::string, proto::framework::common::BlobReferenceForBlobRelay>, bool>>& blobs_map) {
+inline bool parse_header(std::string_view input, parse_result& result, std::map<std::string, std::pair<std::variant<std::string, proto::framework::common::BlobRelayReference>, bool>>& blobs_map) {
     result = {};
     ::tateyama::proto::framework::request::Header hdr{};
     google::protobuf::io::ArrayInputStream in{input.data(), static_cast<int>(input.size())};

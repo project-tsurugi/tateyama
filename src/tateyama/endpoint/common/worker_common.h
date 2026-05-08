@@ -370,7 +370,7 @@ protected:
                     break;
                 }
             } else if(type == proto::endpoint::request::BlobTransferType::RELAY) {
-                if (config_.blob_relay_enabled_) {
+                if (config_.blob_relay_enabled_ && config_.blob_relay_service_) {
                     auto& blob_session = config_.blob_relay_service_->create_session();
                     resources_.blob_session(blob_session);
                     auto* blob_relay_info = rs->mutable_blob_relay_service_info();

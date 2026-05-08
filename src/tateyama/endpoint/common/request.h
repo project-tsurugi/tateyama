@@ -37,8 +37,8 @@ namespace tateyama::endpoint::common {
  * @brief request object for common_endpoint
  */
 class request : public tateyama::api::server::request {
-    constexpr static std::uint64_t FRAMEWORK_SERVICE_MESSAGE_VERSION_MAJOR = 0;
-    constexpr static std::uint64_t FRAMEWORK_SERVICE_MESSAGE_VERSION_MINOR = 3;
+    constexpr static std::uint64_t FRAMEWORK_SERVICE_MESSAGE_VERSION_MAJOR = 1;
+    constexpr static std::uint64_t FRAMEWORK_SERVICE_MESSAGE_VERSION_MINOR = 1;
 
     class blob_info_impl : public tateyama::api::server::blob_info {
     public:
@@ -154,11 +154,14 @@ protected:
     tateyama::session::session_variable_set& session_variable_set_;  // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes,misc-non-private-member-variables-in-classes)
 
     void parse_framework_header(std::string_view message, parse_result& res) {
-        std::map<std::string, std::pair<std::variant<std::string, proto::framework::common::BlobReferenceForBlobRelay>, bool>> blobs_sent{};
+        std::map<std::string, std::pair<std::variant<std::string, proto::framework::common::BlobRelayReference>, bool>> blobs_sent{};
         if (parse_header(message, res, blobs_sent)) {
             if (res.service_message_version_major_ > FRAMEWORK_SERVICE_MESSAGE_VERSION_MAJOR ||
                 (res.service_message_version_major_ ==  FRAMEWORK_SERVICE_MESSAGE_VERSION_MAJOR && res.service_message_version_minor_ > FRAMEWORK_SERVICE_MESSAGE_VERSION_MINOR)) {
-                throw std::runtime_error("unacceptable service message version");
+                using namespace std::string_literals;
+                throw std::runtime_error("unacceptable service message version ("s +
+                                         std::to_string(res.service_message_version_major_) + "."s +
+                                         std::to_string(res.service_message_version_minor_) + ")"s);
             }
             session_id_ = res.session_id_;
             service_id_ = res.service_id_;
@@ -215,7 +218,7 @@ private:
             request_->causing_file_ = p;
             return error;
         }
-        [[nodiscard]] blob_error operator()(const proto::framework::common::BlobReferenceForBlobRelay &value) {
+        [[nodiscard]] blob_error operator()(const proto::framework::common::BlobRelayReference &value) {
             if (resources_.blob_transfer() != resources::blob_transfer_type::blob_relay_streaming) {
                 return blob_error::not_allowed;
             }

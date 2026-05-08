@@ -65,6 +65,7 @@ bool service_adapter_impl::setup(framework::environment& env) {
 
                         datastore_resource_ = env.resource_repository().find<tateyama::datastore::resource::bridge>();
                         if (!datastore_resource_) {
+                            LOG(ERROR) << "cannot find the datastore_resource";
                             return false;
                         }
                         api_ = std::make_unique<data_relay_grpc::blob_relay::blob_relay_service::api>(
