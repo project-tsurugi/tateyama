@@ -89,6 +89,7 @@ parameter=value
 |dev_apply_max_polls | 整数 | apply演算子がUDTFの結果レコードを受け取る際、レコードの準備が完了していない場合にイールド前に行うポーリング回数の最大値。デフォルトは0。|開発用のため将来的に削除/変更される可能性あり|
 |dev_enable_maintenance_thread| ブール(true/false) | SQL実行エンジンがメンテナンススレッドを起動してストレージのバックグラウンド処理等に使用するか。デフォルトは true 。 | 開発用のため将来的に削除/変更される可能性あり|
 |dev_maintenance_interval_ms | 整数 | SQL実行エンジンが起動するメンテナンススレッドが一時停止した後に再開するまでの間隔(ms)。デフォルトは 100 。|開発用のため将来的に削除/変更される可能性あり|
+|dev_enable_truncate| ブール(true/false) | TRUNCATE TABLE文をサポートするか。デフォルトは false 。  | 開発用のため将来的に削除/変更される可能性あり|
 
 ## udfセクション
 

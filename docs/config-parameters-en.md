@@ -89,6 +89,7 @@ Target component
 |dev_apply_max_polls | Integer | maximum number of polling before apply operator yields when it receives UDTF result records and the next record is not ready yet. The default value is 0. | This is for development and may be deleted in the future. |
 |dev_enable_maintenance_thread| Boolean (true/false) | Whether SQL engine starts maintenance thread to process storages background. The default value is `true`. | This is for development and may be deleted in the future. |
 |dev_maintenance_interval_ms | Integer | The interval (ms) between resume and suspension of maintenance thread. The default value is 100. |This is for development and may be deleted in the future. |
+|dev_enable_truncate| Boolean (true/false) | Whether to support TRUNCATE TABLE statement. Default is `false`. | This is for development and may be deleted in the future. |
 
 ## udf section
 
