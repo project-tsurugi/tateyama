@@ -61,22 +61,23 @@ public:
 
         if (const auto& cfg = env.configuration(); cfg) {
             // for blob_relay
-            auto* grpc_server = cfg->get_section("grpc_server");
-            auto grpc_enabled_opt = grpc_server->get<bool>("enabled");
-            auto endpoint_opt = grpc_server->get<std::string>("endpoint");
-            auto secure_opt = grpc_server->get<bool>("secure");
-            auto* blob_relay = cfg->get_section("blob_relay");
-            if (grpc_enabled_opt && endpoint_opt && secure_opt && blob_relay) {
-                auto blob_relay_enabled_opt = blob_relay->get<bool>("enabled");
-                auto stream_chunk_size_opt = blob_relay->get<std::string>("stream_chunk_size");
-                if (blob_relay_enabled_opt) {
-                    if (blob_relay_enabled_opt.value()) {
-                        blob_relay_enabled_ = true;
-                        blob_relay_endpoint_ = endpoint_opt.value();
-                        blob_relay_secure_ = secure_opt.value();
-                        if (stream_chunk_size_opt) {
-                            using namespace std::literals::string_literals;
-                            blob_relay_streaming_params_.emplace("stream_chunk_size"s, stream_chunk_size_opt.value());
+            if (auto* grpc_server = cfg->get_section("grpc_server"); grpc_server) {
+                auto grpc_enabled_opt = grpc_server->get<bool>("enabled");
+                auto endpoint_opt = grpc_server->get<std::string>("endpoint");
+                auto secure_opt = grpc_server->get<bool>("secure");
+                auto* blob_relay = cfg->get_section("blob_relay");
+                if (grpc_enabled_opt && endpoint_opt && secure_opt && blob_relay) {
+                    auto blob_relay_enabled_opt = blob_relay->get<bool>("enabled");
+                    auto stream_chunk_size_opt = blob_relay->get<std::string>("stream_chunk_size");
+                    if (blob_relay_enabled_opt) {
+                        if (blob_relay_enabled_opt.value()) {
+                            blob_relay_enabled_ = true;
+                            blob_relay_endpoint_ = endpoint_opt.value();
+                            blob_relay_secure_ = secure_opt.value();
+                            if (stream_chunk_size_opt) {
+                                using namespace std::literals::string_literals;
+                                blob_relay_streaming_params_.emplace("stream_chunk_size"s, stream_chunk_size_opt.value());
+                            }
                         }
                     }
                 }

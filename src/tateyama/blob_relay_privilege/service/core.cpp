@@ -64,17 +64,18 @@ bool tateyama::blob_relay_privilege::service::core::operator()(const std::shared
                 std::string msg = "storage_id must be LIMESTONE_BLOB_STORE"s;
                 LOG(INFO) << msg;
                 send_error<tateyama::proto::blob_relay_privilege::response::GetBlob>(res, tateyama::proto::diagnostics::Code::INVALID_REQUEST, msg);
+                return false;
             }
             auto object_id = blob_reference.object_id();
             auto tag = blob_reference.tag();
-            auto ctag = datastore_resource_->datastore().generate_reference_tag(object_id, tid); 
+            auto ctag = datastore_resource_->datastore().generate_reference_tag(object_id, tid);
             if (tag != ctag) {
                 LOG(INFO) << "tag mismatch, given = "s + std::to_string(tag) + " and calculated = "s + std::to_string(ctag);
                 send_error<tateyama::proto::blob_relay_privilege::response::GetBlob>(res, tateyama::proto::diagnostics::Code::PERMISSION_ERROR, "tag mismatch");
-
+                return false;
             }
             auto blob_file = datastore_resource_->datastore().get_blob_file(object_id).path().native();
-        
+
             if (auto* mutable_success = rs.mutable_success(); mutable_success) {
                 mutable_success->set_server_file_path(blob_file);
                 res->body(rs.SerializeAsString());

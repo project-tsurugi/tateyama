@@ -164,11 +164,6 @@ protected:
     std::shared_ptr<session::resource::bridge> session_bridge_{};
     std::unique_ptr<ipc_client> client_{};
     session_info_test_for_ipc session_info_test_{};
-
-private:
-    std::istringstream iss_{""};
-    std::shared_ptr<tateyama::api::configuration::whole> cfg_{std::make_shared<tateyama::api::configuration::whole>(iss_, tateyama::test_utils::default_configuration_for_tests)};
-    tateyama::framework::environment env_{framework::boot_mode::database_server, cfg_};
 };
 
 TEST_F(ipc_session_test, cancel_request_reply) {

@@ -97,6 +97,8 @@ class stream_decline_test : public tateyama::test_utils::Test {
     }
 
     void TearDown() override {
+        listener_.terminate();
+        listener_.wait_worker_termination();
         thread_.join();
     }
 

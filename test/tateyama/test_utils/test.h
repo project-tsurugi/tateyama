@@ -19,7 +19,7 @@
 #include <tateyama/framework/environment.h>
 
 #include <tateyama/configuration/configuration_provider.h>
-#include "tateyama/configuration//resource/database_info_impl.h"
+#include "tateyama/configuration/resource/database_info_impl.h"
 #include "utility.h"
 
 #include <gtest/gtest.h>

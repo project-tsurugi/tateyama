@@ -89,7 +89,7 @@ static constexpr std::string_view default_configuration_for_tests {  // NOLINT
         "datachannel_buffer_size=64\n"
         "max_datachannel_buffers=16\n"
         "admin_sessions=1\n"
-        "allow_blob_privileged=true\n"
+        "allow_blob_privileged=false\n"
 
     "[stream_endpoint]\n"
         "enabled=false\n"
@@ -125,13 +125,13 @@ static constexpr std::string_view default_configuration_for_tests {  // NOLINT
         "administrators=*\n"
 
     "[grpc_server]\n"
-        "enabled=true\n"
+        "enabled=false\n"
         "listen_address=0.0.0.0:52345\n"
         "endpoint=dns:///localhost:52345\n"
         "secure=false\n"
 
     "[blob_relay]\n"
-        "enabled=true\n"
+        "enabled=false\n"
         "session_store=var/blob/sessions\n"
         "session_quota_size=\n"
         "local_enabled=true\n"

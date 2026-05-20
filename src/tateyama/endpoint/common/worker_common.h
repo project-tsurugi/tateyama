@@ -358,11 +358,11 @@ protected:
         constexpr static std::uint64_t ENDPOINT_BROKER_SMVMAJ_BLOB_RELAY_SUPPORT = 0;
         constexpr static std::uint64_t ENDPOINT_BROKER_SMVMIN_BLOB_RELAY_SUPPORT = 2;
         bool find_blob_transfer{false};
+
         for (const auto& e : rq.handshake().blob_transfer_media()) {
             auto type = e.blob_transfer_type();
             // If endpoint_broker_service_message_version is less than 0.2, BlobTransferType::PRIVILEGED is applied automatically.
-            if (type == proto::endpoint::request::BlobTransferType::PRIVILEGED ||
-                (rq.service_message_version_major() == ENDPOINT_BROKER_SMVMAJ_BLOB_RELAY_SUPPORT && rq.service_message_version_minor() < ENDPOINT_BROKER_SMVMIN_BLOB_RELAY_SUPPORT)) {
+            if (type == proto::endpoint::request::BlobTransferType::PRIVILEGED) {
                 if (config_.allow_blob_privileged_) {
                     (void) rs->mutable_privileged_mode();
                     resources_.blob_transfer(resources::blob_transfer_type::privileged);
@@ -391,8 +391,15 @@ protected:
                 break;
             }
         }
-        if (!find_blob_transfer &&
-            (rq.service_message_version_major() > ENDPOINT_BROKER_SMVMAJ_BLOB_RELAY_SUPPORT || rq.service_message_version_minor() >= ENDPOINT_BROKER_SMVMIN_BLOB_RELAY_SUPPORT)) {
+        if (!find_blob_transfer) {
+            if (rq.service_message_version_major() == ENDPOINT_BROKER_SMVMAJ_BLOB_RELAY_SUPPORT && rq.service_message_version_minor() < ENDPOINT_BROKER_SMVMIN_BLOB_RELAY_SUPPORT) {
+                if (config_.allow_blob_privileged_) {
+                    resources_.blob_transfer(resources::blob_transfer_type::privileged);
+                }
+                find_blob_transfer = true;
+            }
+        }
+        if (!find_blob_transfer) {
             using namespace std::literals::string_literals;
             handshake_error(res, tateyama::proto::diagnostics::Code::UNSUPPORTED_OPERATION, "the requested blob transfer method is unavailable"s);
             return false;

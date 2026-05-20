@@ -28,12 +28,21 @@ component::id_type blob_relay_privilege::id() const noexcept {
 }
 
 bool blob_relay_privilege::setup(environment& env) {
-    core_ = std::make_unique<core>(env);
+    if (auto* endpoint_config = env.configuration()->get_section("ipc_endpoint"); endpoint_config) {
+        if (auto allow_blob_privileged_opt = endpoint_config->get<bool>("allow_blob_privileged"); allow_blob_privileged_opt) {
+            if (allow_blob_privileged_opt.value()) {
+                core_ = std::make_unique<core>(env);
+            }
+        }
+    }
     return true;
 }
 
 bool blob_relay_privilege::start(environment& env) {
-    return core_->start(env);
+    if (core_) {
+        return core_->start(env);
+    }
+    return true;
 }
 
 bool blob_relay_privilege::shutdown(environment&) {
@@ -41,7 +50,11 @@ bool blob_relay_privilege::shutdown(environment&) {
 }
 
 bool blob_relay_privilege::operator()(std::shared_ptr<request> req, std::shared_ptr<response> res) {
-    return core_->operator()(req, res);
+    if (core_) {
+        return core_->operator()(req, res);
+        return true;
+    }
+    return false;
 }
 
 std::string_view blob_relay_privilege::label() const noexcept {

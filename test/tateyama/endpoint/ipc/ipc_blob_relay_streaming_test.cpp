@@ -103,7 +103,7 @@ public:
 
     void server() override {
         server_client_base::server(
-            [](tateyama::framework::server& sv, std::shared_ptr<tateyama::api::configuration::whole> const & cfg){}, true);
+            [](tateyama::framework::server& sv, std::shared_ptr<tateyama::api::configuration::whole> const & cfg){}, 'd');
     }
 
     void client_thread() override {
@@ -123,20 +123,22 @@ private:
 class ipc_blob_relay_streaming_test: public ipc_gtest_base {
     void SetUp() override {
         ipc_test_env::setup(
+            "[ipc_endpoint]\n"
+            "  allow_blob_privileged=true\n"
             "[grpc_server]\n"
-                "enabled=true\n"
-                "listen_address=0.0.0.0:62345\n"
-                "endpoint=dns:///localhost:62345\n"
-                "secure=false\n"
-                "fullchain_crt=\n"
-                "server_key=\n"
+            "  enabled=true\n"
+            "  listen_address=0.0.0.0:62345\n"
+            "  endpoint=dns:///localhost:62345\n"
+            "  secure=false\n"
+            "  fullchain_crt=\n"
+            "  server_key=\n"
             "[blob_relay]\n"
-                "enabled=true\n"
-                "session_store=var/blob/sessions\n"
-                "session_quota_size=\n"
-                "local_enabled=false\n"
-                "local_upload_copy_file=false\n"
-                "stream_chunk_size=1048576\n"
+            "  enabled=true\n"
+            "  session_store=var/blob/sessions\n"
+            "  session_quota_size=\n"
+            "  local_enabled=false\n"
+            "  local_upload_copy_file=false\n"
+            "  stream_chunk_size=1048576\n"
         );
     }
     void TearDown() override {
@@ -159,13 +161,13 @@ protected:
         auto* endpoint_handshake = endpoint_request.mutable_handshake();
         auto* blob_transfer_media = endpoint_handshake->add_blob_transfer_media();
         blob_transfer_media->set_blob_transfer_type(tateyama::proto::endpoint::request::BlobTransferType::RELAY);
-        
+
         auto* client_information = endpoint_handshake->mutable_client_information();
         client_information->set_connection_label("ipc_blob_relay_streaming_test");
 
         auto* wire_information = endpoint_handshake->mutable_wire_information();
         wire_information->mutable_ipc_information();
-        
+
         client.send(tateyama::framework::service_id_endpoint_broker, endpoint_request.SerializeAsString());
 
         tateyama::proto::framework::response::Header::PayloadType type{};

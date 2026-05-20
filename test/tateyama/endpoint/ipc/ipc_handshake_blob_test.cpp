@@ -21,11 +21,6 @@
 #include <tateyama/proto/endpoint/request.pb.h>
 #include <tateyama/proto/endpoint/response.pb.h>
 
-#include "tateyama/authentication/resource/authentication_adapter_test.h"
-#include "tateyama/authentication/resource/crypto/key.h"
-#include "crypto/rsa.h"
-#include "jwt/token_creator.h"
-
 #include "ipc_client.h"
 #include "ipc_gtest_base.h"
 
@@ -41,7 +36,7 @@ public:
     }
 
     void server() override {
-        server_client_base::server([](tateyama::framework::server& sv, std::shared_ptr<tateyama::api::configuration::whole> const & cfg){}, true);
+        server_client_base::server([](tateyama::framework::server& sv, std::shared_ptr<tateyama::api::configuration::whole> const & cfg){}, 'd');
     }
 
     void client_thread() override {
@@ -55,12 +50,16 @@ private:
 
 class ipc_handshake_blob_test: public ipc_gtest_base {
     void SetUp() override {
-        handler_ = std::make_unique<jwt::token_creator>(crypto::base64_decode(std::string(tateyama::authentication::resource::crypto::private_key)));
-        ipc_test_env::setup("[grpc_server]\n"
+        temporary_.prepare();
+        ipc_test_env::setup("[ipc_endpoint]\n"
+                            "  allow_blob_privileged=true\n"
+                            "[grpc_server]\n"
                             "  enabled=true\n"
                             "  listen_address=0.0.0.0:62345\n"
                             "  endpoint=dns:///localhost:62345\n"
                             "  secure=false\n"
+                            "[blob_relay]\n"
+                            "  enabled=true\n"
         );
     }
 
@@ -68,9 +67,6 @@ class ipc_handshake_blob_test: public ipc_gtest_base {
     }
 
 protected:
-    crypto::rsa_encrypter rsa_{crypto::base64_decode(std::string(tateyama::authentication::resource::crypto::public_key))};
-    std::unique_ptr<jwt::token_creator> handler_{};
-
     tateyama::proto::endpoint::request::Request endpoint_request() {
         tateyama::proto::endpoint::request::Request request{};
         request.set_service_message_version_major(0);
@@ -79,7 +75,7 @@ protected:
     }
 };
 
-TEST_F(ipc_handshake_blob_test, blob_does_noe_use) {
+TEST_F(ipc_handshake_blob_test, blob_does_not_use) {
     ipc_handshake_blob_test_server_client sc { cfg_,
         [this](ipc_client& client){
             auto request = endpoint_request();

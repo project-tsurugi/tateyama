@@ -46,15 +46,13 @@ public:
         const std::shared_ptr<response>& res
     );
 
-    
-
 private:
     bool activated_{};
     std::shared_ptr<::tateyama::datastore::resource::bridge> datastore_resource_{};
 
     constexpr static uint64_t LIMESTONE_BLOB_STORE = 1;
-    
-    template<typename T> 
+
+    template<typename T>
     void send_error(
         const std::shared_ptr<response>& res,
         const tateyama::proto::diagnostics::Code err_code,
