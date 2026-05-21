@@ -37,7 +37,7 @@ namespace tateyama::endpoint::common {
  * @brief request object for common_endpoint
  */
 class request : public tateyama::api::server::request {
-    constexpr static std::uint64_t FRAMEWORK_SERVICE_MESSAGE_VERSION_MAJOR = 1;
+    constexpr static std::uint64_t FRAMEWORK_SERVICE_MESSAGE_VERSION_MAJOR = 2;
     constexpr static std::uint64_t FRAMEWORK_SERVICE_MESSAGE_VERSION_MINOR = 1;
 
     class blob_info_impl : public tateyama::api::server::blob_info {
