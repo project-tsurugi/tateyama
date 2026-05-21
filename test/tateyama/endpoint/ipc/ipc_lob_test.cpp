@@ -17,10 +17,9 @@
 #include "tateyama/endpoint/ipc/bootstrap/ipc_worker.h"
 #include "tateyama/endpoint/header_utils.h"
 #include <tateyama/proto/endpoint/request.pb.h>
-#include "tateyama/configuration/resource/database_info_impl.h"
 #include "ipc_client.h"
 
-#include <gtest/gtest.h>
+#include "tateyama/test_utils/test.h"
 
 namespace tateyama::server {
 class ipc_listener_for_test {
@@ -108,7 +107,7 @@ private:
     std::set<std::tuple<std::string, std::filesystem::path, bool>> blobs_{};
 };
 
-class ipc_lob_test : public ::testing::Test {
+class ipc_lob_test : public tateyama::test_utils::Test {
     void SetUp() override {
         auto rv = ::system("if [ -f /dev/shm/ipc_lob_test ]; then rm -f /dev/shm/ipc_lob_test; fi");
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
@@ -123,17 +122,14 @@ class ipc_lob_test : public ::testing::Test {
         tateyama::server::ipc_listener_for_test::run(*worker_);
 
         // client part
-        tateyama::proto::endpoint::request::ClientInformation cci{};
-        cci.set_connection_label(std::string(label));
-        cci.set_application_name(std::string(application_name));
-        tateyama::proto::endpoint::request::Credential cred{};
-        // FIXME handle userName when a credential specification is fixed.
-        cci.set_allocated_credential(&cred);
         tateyama::proto::endpoint::request::Handshake hs{};
-        hs.set_allocated_client_information(&cci);
+        auto* cci = hs.mutable_client_information();
+        cci->set_connection_label(std::string(label));
+        cci->set_application_name(std::string(application_name));
+        auto* cred = cci->mutable_credential();
+        auto* blob_transfer_media = hs.add_blob_transfer_media();
+        blob_transfer_media->set_blob_transfer_type(tateyama::proto::endpoint::request::BlobTransferType::PRIVILEGED);
         client_ = std::make_unique<ipc_client>(database_name, my_session_id, hs);
-        (void)cci.release_credential();
-        (void)hs.release_client_information();
     }
 
     void TearDown() override {
@@ -143,10 +139,7 @@ class ipc_lob_test : public ::testing::Test {
         auto rv = ::system("if [ -f /dev/shm/ipc_lob_test ]; then rm -f /dev/shm/ipc_lob_test; fi");
     }
 
-    tateyama::endpoint::common::configuration conf_{tateyama::endpoint::common::connection_type::ipc, nullptr, database_info_, nullptr, administrators_};
-
-public:
-    tateyama::configuration::resource::database_info_impl database_info_{database_name, "iid-ipc-lob-test"};
+    tateyama::endpoint::common::configuration conf_{tateyama::endpoint::common::connection_type::ipc, test_environment_};
 
 protected:
     std::unique_ptr<bootstrap::server_wire_container_impl> wire_{};
@@ -169,9 +162,6 @@ protected:
             FAIL();
         }
     }
-
-private:
-    tateyama::endpoint::common::administrators administrators_{"*"};
 };
 
 TEST_F(ipc_lob_test, receive) {

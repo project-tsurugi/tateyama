@@ -17,10 +17,9 @@
 #include "tateyama/endpoint/ipc/bootstrap/ipc_worker.h"
 #include "tateyama/endpoint/header_utils.h"
 #include <tateyama/proto/endpoint/request.pb.h>
-#include "tateyama/configuration/resource/database_info_impl.h"
 #include "ipc_client.h"
 
-#include <gtest/gtest.h>
+#include "tateyama/test_utils/test.h"
 
 namespace tateyama::server {
 class ipc_listener_for_disallow_test {
@@ -108,7 +107,7 @@ private:
     std::set<std::tuple<std::string, std::filesystem::path, bool>> blobs_{};
 };
 
-class ipc_lob_disallow_test : public ::testing::Test {
+class ipc_lob_disallow_test : public tateyama::test_utils::Test {
     void SetUp() override {
         auto rv = ::system("if [ -f /dev/shm/ipc_lob_disallow_test ]; then rm -f /dev/shm/ipc_lob_disallow_test; fi");
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
@@ -143,10 +142,7 @@ class ipc_lob_disallow_test : public ::testing::Test {
         auto rv = ::system("if [ -f /dev/shm/ipc_lob_disallow_test ]; then rm -f /dev/shm/ipc_lob_disallow_test; fi");
     }
 
-    tateyama::endpoint::common::configuration conf_{tateyama::endpoint::common::connection_type::ipc, nullptr, database_info_, nullptr, administrators_};
-
-public:
-    tateyama::configuration::resource::database_info_impl database_info_{database_name, "iid-ipc-lob-disallow-test"};
+    tateyama::endpoint::common::configuration conf_{tateyama::endpoint::common::connection_type::ipc, test_environment_};
 
 protected:
     std::unique_ptr<bootstrap::server_wire_container_impl> wire_{};
@@ -169,9 +165,6 @@ protected:
             FAIL();
         }
     }
-
-private:
-    tateyama::endpoint::common::administrators administrators_{"*"};
 };
 
 TEST_F(ipc_lob_disallow_test, receive) {

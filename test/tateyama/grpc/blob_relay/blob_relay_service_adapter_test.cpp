@@ -27,6 +27,7 @@
 
 #include <gtest/gtest.h>
 #include <tateyama/test_utils/utility.h>
+#include "tateyama/test_utils/test_server.h"
 
 namespace tateyama::grpc::blob_relay {
 
@@ -42,7 +43,8 @@ public:
         session_store_config(ss);
         auto cfg = std::make_shared<api::configuration::whole>(ss, test_utils::default_configuration_for_tests);
         sv_ = std::make_unique<framework::server>(framework::boot_mode::database_server, cfg);
-        add_core_components(*sv_);
+//        add_core_components(*sv_);
+        tateyama::test_utils::add_core_components_for_datastore_test(*sv_);
 
         sv_->setup();
         // obtaining the blob_relay_service_adapter can be done after setup();
@@ -92,7 +94,10 @@ private:
         if (!std::filesystem::create_directory(session_store)) {
             throw std::runtime_error("cannot create directory for session store");
         }
+        ss << "[grpc_server]\n";
+        ss << "enabled=true\n";
         ss << "[blob_relay]\n";
+        ss << "enabled=true\n";
         ss << "session_store=" << session_store.string() << '\n';
         ss << "[datastore]\n";
         ss << "log_location=" << path() << '\n';

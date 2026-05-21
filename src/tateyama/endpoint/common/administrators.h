@@ -24,12 +24,16 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/trim.hpp>
 
+#include <tateyama/api/configuration.h>
+
 namespace tateyama::endpoint::common {
 /**
  * @brief An object to store the administrator's user name
  */
 class administrators {
   public:
+    explicit administrators(const std::shared_ptr<api::configuration::whole>& cfg) : administrators(administrator_names(cfg)) {
+    }
     explicit administrators(const std::string& names) {
         if (names.empty()) {
             throw std::runtime_error("authentication.administrators is empty");
@@ -56,6 +60,25 @@ class administrators {
   private:
     std::set<std::string> names_{};
     bool no_authentication_{};
+
+    static std::string administrator_names(const std::shared_ptr<api::configuration::whole>& cfg) {
+        if (cfg) {
+            auto* section = cfg->get_section("authentication");
+            if (auto enabled_opt = section->get<bool>("enabled"); enabled_opt) {
+                if (enabled_opt.value()) {
+                    if (auto names_opt = section->get<std::string>("administrators"); names_opt) {
+                        return names_opt.value();
+                    }
+                    throw std::runtime_error("cannot find authentication.administrators in tsurugi.ini");
+                }
+                return "*";
+            }
+            throw std::runtime_error("cannot find authentication.enabled in tsurugi.ini");
+        }
+
+        // for tests
+        return "*";
+    }
 };
 
 }  // tateyama::endpoint::common

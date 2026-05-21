@@ -21,7 +21,7 @@
 #include "tateyama/configuration/resource/database_info_impl.h"
 #include "stream_client.h"
 
-#include <gtest/gtest.h>
+#include "tateyama/test_utils/test.h"
 
 static constexpr std::string_view label = "label_fot_test";
 static constexpr std::string_view application_name = "application_name_fot_test";
@@ -57,7 +57,7 @@ private:
 
 class stream_listener_for_info_test {
 public:
-    stream_listener_for_info_test(info_service_for_test& service, tateyama::configuration::resource::database_info_impl& database_info) : service_(service), conf_(tateyama::endpoint::common::connection_type::stream, nullptr, database_info, nullptr, administrators_) {
+    stream_listener_for_info_test(info_service_for_test& service, tateyama::framework::environment& env) : service_(service), conf_(tateyama::endpoint::common::connection_type::stream, env) {
     }
     void operator()() {
         while (true) {
@@ -84,26 +84,29 @@ private:
     tateyama::endpoint::common::configuration conf_;
     connection_socket connection_socket_{tateyama::api::endpoint::stream::stream_client::PORT_FOR_TEST};
     std::unique_ptr<tateyama::endpoint::stream::bootstrap::stream_worker> worker_{};
-    tateyama::endpoint::common::administrators administrators_{"*"};
 };
 }
 
 
 namespace tateyama::api::endpoint::stream {
 
-class stream_info_test : public ::testing::Test {
+class stream_info_test : public tateyama::test_utils::Test {
     void SetUp() override {
-        thread_ = std::thread(std::ref(listener_));
+        set_database_info(&database_info_);
+        listener_ = std::make_unique<tateyama::endpoint::stream::stream_listener_for_info_test>(service_, test_environment_);
+        thread_ = std::thread(std::ref(*listener_));
     }
 
     void TearDown() override {
+        listener_->terminate();
+        listener_->wait_worker_termination();
         thread_.join();
     }
 
 public:
     tateyama::endpoint::stream::info_service_for_test service_{};
     tateyama::configuration::resource::database_info_impl database_info_{"stream_info_test", "iid-stream-info-test"};
-    tateyama::endpoint::stream::stream_listener_for_info_test listener_{service_, database_info_};
+    std::unique_ptr<tateyama::endpoint::stream::stream_listener_for_info_test> listener_{};
     std::thread thread_{};
 };
 
@@ -151,8 +154,8 @@ TEST_F(stream_info_test, basic) {
         EXPECT_TRUE(std::chrono::duration_cast<std::chrono::milliseconds>(now - s_start).count() < 500);
 
         client->close();
-        listener_.wait_worker_termination();
-        listener_.terminate();
+        listener_->wait_worker_termination();
+        listener_->terminate();
     } catch (std::runtime_error &ex) {
         std::cout << ex.what() << std::endl;
         FAIL();

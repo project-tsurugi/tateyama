@@ -25,6 +25,7 @@
 #include <tateyama/metrics/resource/bridge.h>
 #include <tateyama/system/service/bridge.h>
 #include "tateyama/configuration/resource/configuration_provider_impl.h"
+#include <tateyama/blob_relay_privilege/service/blob_relay_privilege.h>
 #ifdef ENABLE_ALTIMETER
 #include <tateyama/altimeter/service/bridge.h>
 #endif
@@ -32,6 +33,10 @@
 #include <tateyama/endpoint/ipc/bootstrap/ipc_endpoint.h>
 #include <tateyama/authentication/service/bridge.h>
 #include <tateyama/authentication/resource/bridge.h>
+#ifdef ENABLE_GRPC
+#include "tateyama/grpc/server_resource.h"
+#include <tateyama/grpc/blob_relay/service_adapter.h>
+#endif
 
 // for datastore test
 #include <tateyama/datastore/service/bridge.h>
@@ -54,7 +59,12 @@ namespace tateyama::test_utils {
 #endif
         svr.add_service(std::make_shared<tateyama::request::service::bridge>());
         svr.add_service(std::make_shared<tateyama::authentication::service::bridge>());
+#ifdef ENABLE_GRPC
+        svr.add_resource(std::make_shared<grpc::blob_relay::service_adapter>());
+        svr.add_resource(std::make_shared<grpc::grpc_server_resource>());
+#endif
         svr.add_service(std::make_shared<tateyama::system::service::system_service_bridge>());
+        svr.add_service(std::make_shared<tateyama::blob_relay_privilege::service::blob_relay_privilege>());
 
         svr.add_endpoint(std::make_shared<tateyama::framework::ipc_endpoint>());
     }
@@ -76,7 +86,12 @@ namespace tateyama::test_utils {
 #endif
         svr.add_service(std::make_shared<tateyama::request::service::bridge>());
         svr.add_service(std::make_shared<tateyama::authentication::service::bridge>());
+#ifdef ENABLE_GRPC
+        svr.add_resource(std::make_shared<grpc::blob_relay::service_adapter>());
+        svr.add_resource(std::make_shared<grpc::grpc_server_resource>());
+#endif
         svr.add_service(std::make_shared<tateyama::system::service::system_service_bridge>());
+        svr.add_service(std::make_shared<tateyama::blob_relay_privilege::service::blob_relay_privilege>());
 
         svr.add_endpoint(std::make_shared<tateyama::framework::ipc_endpoint>());
     }

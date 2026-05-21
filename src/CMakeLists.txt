@@ -59,6 +59,7 @@ file(GLOB SOURCES
         "tateyama/authentication/service/*.cpp"
         "tateyama/system/service/*.cpp"
         "tateyama/configuration/resource/*.cpp"
+        "tateyama/blob_relay_privilege/service/*.cpp"
 )
 if (ENABLE_ALTIMETER)
     file(GLOB ALTIMETER_SOURCES
@@ -182,6 +183,7 @@ target_include_directories(tateyama-impl
 target_link_libraries(tateyama-impl
         INTERFACE ${ENGINE}
         INTERFACE takatori
+        INTERFACE data-relay-grpc
         INTERFACE tbb
         INTERFACE numa
         INTERFACE moodycamel

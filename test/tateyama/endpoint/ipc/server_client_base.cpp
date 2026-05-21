@@ -48,8 +48,24 @@ void server_client_base::wait_client_exit() {
 }
 
 void server_client_base::server(std::function<void(tateyama::framework::server&, std::shared_ptr<tateyama::api::configuration::whole> const &)> f) {
+    server(f, 's');
+}
+void server_client_base::server(std::function<void(tateyama::framework::server&, std::shared_ptr<tateyama::api::configuration::whole> const &)> f, char type) {
     tateyama::framework::server sv { tateyama::framework::boot_mode::database_server, cfg_ };
-    tateyama::test_utils::add_core_components_for_test(sv);
+    switch (type) {
+    case 'f':
+        tateyama::framework::add_core_components(sv);
+        break;
+    case 'd':
+        tateyama::test_utils::add_core_components_for_datastore_test(sv);
+        break;
+    case 's':
+        tateyama::test_utils::add_core_components_for_test(sv);
+        break;
+    default:
+        std::cerr << "not suppoted test server type: " << type << std::endl;
+        std::abort();
+    }
     if (auto server_service = create_server_service(); server_service) {
         sv.add_service(server_service);
     }

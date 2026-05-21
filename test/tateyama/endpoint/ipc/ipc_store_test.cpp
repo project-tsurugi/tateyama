@@ -21,10 +21,9 @@
 #include "tateyama/endpoint/ipc/bootstrap/ipc_worker.h"
 #include "tateyama/endpoint/header_utils.h"
 #include <tateyama/proto/endpoint/request.pb.h>
-#include "tateyama/configuration/resource/database_info_impl.h"
 #include "ipc_client.h"
 
-#include <gtest/gtest.h>
+#include "tateyama/test_utils/test.h"
 
 namespace tateyama::server {
 class ipc_listener_for_store_test {
@@ -78,7 +77,7 @@ private:
     std::shared_ptr<tateyama::api::server::request> req_{};
 };
 
-class ipc_store_test : public ::testing::Test {
+class ipc_store_test : public tateyama::test_utils::Test {
     static constexpr std::size_t writer_count = 8;
 
     void SetUp() override {
@@ -89,7 +88,7 @@ class ipc_store_test : public ::testing::Test {
         session_name += std::to_string(my_session_id);
         auto wire = std::make_unique<bootstrap::server_wire_container_impl>(session_name, "dummy_mutex_file_name", datachannel_buffer_size, 16);
         session_bridge_ = std::make_shared<session::resource::bridge>();
-        conf_ = std::make_unique<tateyama::endpoint::common::configuration>(tateyama::endpoint::common::connection_type::ipc, session_bridge_, database_info_, nullptr, administrators_);
+        conf_ = std::make_unique<tateyama::endpoint::common::configuration>(tateyama::endpoint::common::connection_type::ipc, test_environment_);
         worker_ = std::make_unique<tateyama::endpoint::ipc::bootstrap::ipc_worker>(service_, *conf_, my_session_id, std::move(wire));
         tateyama::server::ipc_listener_for_store_test::run(*worker_);
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -104,13 +103,11 @@ class ipc_store_test : public ::testing::Test {
     int rv_;
 
 protected:
-    tateyama::configuration::resource::database_info_impl database_info_{database_name, "iid-ipc-store-test"};
     std::unique_ptr<tateyama::endpoint::common::configuration> conf_{};
     store_service service_{};
     std::unique_ptr<tateyama::endpoint::ipc::bootstrap::ipc_worker> worker_{};
     std::shared_ptr<session::resource::bridge> session_bridge_{};
     std::unique_ptr<ipc_client> client_{};
-    tateyama::endpoint::common::administrators administrators_{"*"};
 };
 
 

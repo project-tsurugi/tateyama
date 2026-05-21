@@ -22,6 +22,10 @@
 
 #include <tateyama/api/server/request.h>
 
+#include <tateyama/api/configuration.h>
+#include <tateyama/framework/routing_service.h>
+#include <tateyama/session/resource/bridge.h>
+#include <tateyama/status/resource/bridge.h>
 #include "tateyama/authentication/resource/bridge.h"
 #include "session_info_impl.h"
 
@@ -34,7 +38,19 @@ public:
     /**
      * @brief create empty object
      */
-    explicit listener_common(const std::string& name) : administrators_(name) {
+    explicit listener_common(tateyama::framework::environment& env)
+        : cfg_(env.configuration()),
+          router_(env.service_repository().find<framework::routing_service>()),
+          status_(env.resource_repository().find<status_info::resource::bridge>()) {
+    }
+
+    /**
+     * @brief create empty object for test (use this CTOR in test only)
+     */
+    explicit listener_common()
+        : cfg_(nullptr),
+          router_(nullptr),
+          status_(nullptr) {
     }
 
     /**
@@ -75,30 +91,9 @@ public:
     virtual void foreach_request(const callback& func) = 0;
 
 protected:
-    administrators administrators_;  // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes,misc-non-private-member-variables-in-classes)
-
-    static std::shared_ptr<tateyama::authentication::resource::bridge> authentication_bridge(tateyama::framework::environment& env) {
-        if (auto enabled_opt = env.configuration()->get_section("authentication")->get<bool>("enabled"); enabled_opt) {
-            if (enabled_opt.value()) {
-                return env.resource_repository().find<tateyama::authentication::resource::bridge>();
-            }
-        }
-        return nullptr;
-    }
-
-    static std::string administrator_names(tateyama::framework::environment& env) {
-        auto* section = env.configuration()->get_section("authentication");
-        if (auto enabled_opt = section->get<bool>("enabled"); enabled_opt) {
-            if (enabled_opt.value()) {
-                if (auto names_opt = section->get<std::string>("administrators"); names_opt) {
-                    return names_opt.value();
-                }
-                throw std::runtime_error("cannot find authentication.administrators in tsurugi.ini");
-            }
-            return "*";
-        }
-        throw std::runtime_error("cannot find authentication.enabled in tsurugi.ini");
-    }
+    const std::shared_ptr<api::configuration::whole> cfg_;  // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes,misc-non-private-member-variables-in-classes)
+    const std::shared_ptr<framework::routing_service> router_;  // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes,misc-non-private-member-variables-in-classes)
+    const std::shared_ptr<status_info::resource::bridge> status_;  // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes,misc-non-private-member-variables-in-classes)
 };
 
 }  // tateyama::endpoint::common

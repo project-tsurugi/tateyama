@@ -20,10 +20,9 @@
 
 #include "tateyama/endpoint/stream/bootstrap/stream_worker.h"
 #include "tateyama/endpoint/header_utils.h"
-#include "tateyama/configuration/resource/database_info_impl.h"
 #include "stream_client.h"
 
-#include <gtest/gtest.h>
+#include "tateyama/test_utils/test.h"
 
 static constexpr std::size_t my_session_id = 1234;
 static constexpr std::string_view request_test_message = "abcdefgh";
@@ -97,9 +96,9 @@ private:
 
 class stream_listener_for_session_test {
 public:
-    stream_listener_for_session_test(service_for_stream_session_test& service, std::shared_ptr<session::resource::bridge> session_bridge) :
+    stream_listener_for_session_test(service_for_stream_session_test& service, tateyama::framework::environment& env) :
         service_(service),
-        session_bridge_(session_bridge) {
+        env_(env) {
     }
     ~stream_listener_for_session_test() {
         connection_socket_.close();
@@ -110,7 +109,7 @@ public:
             stream = connection_socket_.accept();
 
             if (stream != nullptr) {
-                conf_ = std::make_unique<tateyama::endpoint::common::configuration>(tateyama::endpoint::common::connection_type::stream, session_bridge_, database_info_, nullptr, administrators_);
+                conf_ = std::make_unique<tateyama::endpoint::common::configuration>(tateyama::endpoint::common::connection_type::stream, env_);
                 worker_ = std::make_unique<tateyama::endpoint::stream::bootstrap::stream_worker>(service_, *conf_, my_session_id, std::move(stream), false);
                 worker_->invoke([&]{worker_->run();});
             } else {  // connect via pipe (request_terminate)
@@ -132,12 +131,10 @@ public:
 
 private:
     service_for_stream_session_test& service_;
-    std::shared_ptr<session::resource::bridge> session_bridge_;
+    tateyama::framework::environment& env_;
     std::unique_ptr<tateyama::endpoint::common::configuration> conf_{};
     connection_socket connection_socket_{tateyama::api::endpoint::stream::stream_client::PORT_FOR_TEST};
     std::unique_ptr<tateyama::endpoint::stream::bootstrap::stream_worker> worker_{};
-    tateyama::configuration::resource::database_info_impl database_info_{"stream_session_test", "iid-stream-session-test"};
-    tateyama::endpoint::common::administrators administrators_{"*"};
 };
 
 }
@@ -157,10 +154,11 @@ public:
     [[nodiscard]] tateyama::api::server::user_type user_type() const noexcept { return tateyama::api::server::user_type::administrator; }
 };
 
-class stream_session_test : public ::testing::Test {
+class stream_session_test : public tateyama::test_utils::Test {
     void SetUp() override {
         session_bridge_ = std::make_shared<session::resource::bridge>();
-        listener_ = std::make_unique<tateyama::endpoint::stream::stream_listener_for_session_test>(service_, session_bridge_);
+        test_environment_.resource_repository().add(session_bridge_);
+        listener_ = std::make_unique<tateyama::endpoint::stream::stream_listener_for_session_test>(service_, test_environment_);
         thread_ = std::thread(std::ref(*listener_));
         client_ = std::make_unique<stream_client>();
 

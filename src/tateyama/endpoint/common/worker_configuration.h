@@ -17,8 +17,13 @@
 
 #include <memory>
 
+#include <data_relay_grpc/blob_relay/service.h>
+#include <data_relay_grpc/common/session.h>
+#include <tateyama/grpc/blob_relay/service_adapter.h>
 #include <tateyama/session/resource/bridge.h>
 
+#include <tateyama/api/configuration.h>
+#include <tateyama/configuration/configuration_provider.h>
 #include <tateyama/api/server/session_store.h>
 #include <tateyama/session/variable_set.h>
 #include <tateyama/authentication/resource/bridge.h>
@@ -46,8 +51,38 @@ enum class connection_type : std::uint32_t {
 
 class alignas(64) configuration {
 public:
-    configuration(connection_type con, std::shared_ptr<tateyama::session::resource::bridge> session, const tateyama::api::server::database_info& database_info, std::shared_ptr<authentication::resource::bridge> auth, const tateyama::endpoint::common::administrators& administrators) :
-        con_(con), session_(std::move(session)), database_info_(database_info), auth_(std::move(auth)), administrators_(administrators) {
+    configuration(connection_type con, tateyama::framework::environment& env)
+        : con_(con),
+          session_(env.resource_repository().find<tateyama::session::resource::bridge>()),
+          database_info_(database_info(env)),
+          auth_(authentication_bridge(env)),
+          administrators_(env.configuration()),
+          blob_relay_service_(tateyama::endpoint::common::configuration::blob_service(env)) {
+
+        if (const auto& cfg = env.configuration(); cfg) {
+            // for blob_relay
+            if (auto* grpc_server = cfg->get_section("grpc_server"); grpc_server) {
+                auto grpc_enabled_opt = grpc_server->get<bool>("enabled");
+                auto endpoint_opt = grpc_server->get<std::string>("endpoint");
+                auto secure_opt = grpc_server->get<bool>("secure");
+                auto* blob_relay = cfg->get_section("blob_relay");
+                if (grpc_enabled_opt && endpoint_opt && secure_opt && blob_relay) {
+                    auto blob_relay_enabled_opt = blob_relay->get<bool>("enabled");
+                    auto stream_chunk_size_opt = blob_relay->get<std::string>("stream_chunk_size");
+                    if (blob_relay_enabled_opt) {
+                        if (blob_relay_enabled_opt.value()) {
+                            blob_relay_enabled_ = true;
+                            blob_relay_endpoint_ = endpoint_opt.value();
+                            blob_relay_secure_ = secure_opt.value();
+                            if (stream_chunk_size_opt) {
+                                using namespace std::literals::string_literals;
+                                blob_relay_streaming_params_.emplace("stream_chunk_size"s, stream_chunk_size_opt.value());
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
     void set_timeout(std::size_t refresh_timeout, std::size_t max_refresh_timeout) {
         if (refresh_timeout < 120) {
@@ -70,17 +105,46 @@ public:
         return database_info_;
     }
 
+    // for initialization
+    static api::server::database_info const& database_info(tateyama::framework::environment& env) {
+        if (auto configuration_provider = env.resource_repository().find<tateyama::configuration::configuration_provider>(); configuration_provider) {
+            return configuration_provider->database_info();
+        }
+        throw std::runtime_error("no configuration_provider");
+    }
+    static std::shared_ptr<tateyama::authentication::resource::bridge> authentication_bridge(tateyama::framework::environment& env) {
+        if (auto enabled_opt = env.configuration()->get_section("authentication")->get<bool>("enabled"); enabled_opt) {
+            if (enabled_opt.value()) {
+                return env.resource_repository().find<tateyama::authentication::resource::bridge>();
+            }
+        }
+        return nullptr;
+    }
+    static std::shared_ptr<data_relay_grpc::blob_relay::blob_relay_service> blob_service(tateyama::framework::environment& env) {
+        if (auto service_adapter = env.resource_repository().find<tateyama::grpc::blob_relay::service_adapter>(); service_adapter) {
+            return service_adapter->blob_relay_service();
+        }
+        return nullptr;
+    }
+
 private:
     const connection_type con_;
     const std::shared_ptr<tateyama::session::resource::bridge> session_;
     const tateyama::api::server::database_info& database_info_;
     const std::shared_ptr<authentication::resource::bridge> auth_;
-    const tateyama::endpoint::common::administrators& administrators_;
+    const administrators administrators_;
+    const std::shared_ptr<data_relay_grpc::blob_relay::blob_relay_service> blob_relay_service_;
     bool enable_timeout_{};
     bool allow_blob_privileged_{};
     std::size_t refresh_timeout_{};
     std::size_t max_refresh_timeout_{};
     std::size_t authentication_timeout_{};
+
+    // for blob_relay
+    bool blob_relay_enabled_{};
+    std::string blob_relay_endpoint_{};
+    bool blob_relay_secure_{};
+    std::map<std::string, std::string> blob_relay_streaming_params_{};
 
     friend class worker_common;
     friend class request;
@@ -91,9 +155,26 @@ private:
 
 class resources {
 public:
-    resources(const configuration& config, std::size_t session_id, std::string_view conn_info, const tateyama::endpoint::common::administrators& administrators)
+    class blob_session_container {
+    public:
+        explicit blob_session_container(data_relay_grpc::common::blob_session& blob_session) : blob_session_(blob_session) {
+        }
+        [[nodiscard]] data_relay_grpc::common::blob_session& blob_session() const {
+            return blob_session_;
+        }
+    private:
+        data_relay_grpc::common::blob_session& blob_session_;
+    };
+
+    enum class blob_transfer_type {
+        does_not_use = 0,
+        privileged = 1,
+        blob_relay_streaming = 2,
+    };
+
+    resources(const configuration& config, std::size_t session_id, std::string_view conn_info)
       : session_id_(session_id),
-        session_info_(session_id_, connection_label(config.con_), conn_info, administrators),
+        session_info_(session_id_, connection_label(config.con_), conn_info, config.administrators_),
         session_variable_set_(config.session_ ? config.session_->sessions_core().variable_declarations().make_variable_set() : tateyama::session::session_variable_set{}) {
     }
 
@@ -109,6 +190,18 @@ public:
     [[nodiscard]] inline tateyama::session::session_variable_set& session_variable_set() noexcept {
         return session_variable_set_;
     }
+    inline void blob_session(data_relay_grpc::common::blob_session& blob_session_created) {
+        blob_session_container_ = std::make_unique<blob_session_container>(blob_session_created);
+    }
+    [[nodiscard]] inline data_relay_grpc::common::blob_session& blob_session() const {
+        return blob_session_container_->blob_session();
+    }
+    inline void blob_transfer(blob_transfer_type type) {
+        blob_transfer_type_ = type;
+    }
+    [[nodiscard]] inline blob_transfer_type blob_transfer() const {
+        return blob_transfer_type_;
+    }
 
 private:
     // session id
@@ -122,6 +215,12 @@ private:
 
     // session store
     tateyama::api::server::session_store session_store_{};
+
+    // blob_session_container
+    std::unique_ptr<blob_session_container> blob_session_container_{};
+
+    // blob_transfer_type
+    blob_transfer_type blob_transfer_type_{};
 
     static std::string_view connection_label(connection_type con) {
         switch (con) {

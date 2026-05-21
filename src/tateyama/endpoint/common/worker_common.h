@@ -24,6 +24,7 @@
 #include <vector>
 #include <mutex>
 #include <chrono>
+#include <string>
 
 #include <tateyama/status.h>
 #include <tateyama/framework/routing_service.h>
@@ -53,7 +54,8 @@ public:
     worker_common(const configuration& config, std::size_t session_id, std::string_view conn_info)
         : connection_type_(config.con_),
           session_(config.session_),
-          resources_(config, session_id, conn_info, config.administrators_),
+          config_(config),
+          resources_(config, session_id, conn_info),
           session_context_(std::make_shared<tateyama::session::resource::session_context_impl>(resources_.session_info(), resources_.session_variable_set())),
           enable_timeout_(config.enable_timeout_),
           refresh_timeout_(config.refresh_timeout_),
@@ -191,7 +193,7 @@ protected:
     // local_id
     std::size_t local_id_{};  // NOLINT
 
-    bool handshake(tateyama::api::server::request* req, tateyama::api::server::response* res) {
+    bool handshake(tateyama::api::server::request* req, tateyama::api::server::response* res) {  //NOLINT(readability-function-cognitive-complexity)
         if (req->service_id() != tateyama::framework::service_id_endpoint_broker) {
             LOG_LP(INFO) << "request received is not handshake";
             std::stringstream ss;
@@ -210,8 +212,8 @@ protected:
 
         // check service mesage version;
         std::uint64_t smvm = rq.service_message_version_major();
-        if (smvm > SERVICE_MESSAGE_VERSION_MAJOR ||
-            (smvm == SERVICE_MESSAGE_VERSION_MAJOR && rq.service_message_version_minor() > SERVICE_MESSAGE_VERSION_MINOR)) {
+        if (smvm > ENDPOINT_BROKER_SERVICE_MESSAGE_VERSION_MAJOR ||
+            (smvm == ENDPOINT_BROKER_SERVICE_MESSAGE_VERSION_MAJOR && rq.service_message_version_minor() > ENDPOINT_BROKER_SERVICE_MESSAGE_VERSION_MINOR)) {
             handshake_error(res, tateyama::proto::diagnostics::Code::INVALID_REQUEST, "unsupported service message version");
             return false;
         }
@@ -351,6 +353,59 @@ protected:
         if (auto name_opt = session_info.username(); name_opt) {
             rs->set_user_name(std::string(name_opt.value()));
         }
+
+        // take care of blob handling mechanism
+        constexpr static std::uint64_t ENDPOINT_BROKER_SMVMAJ_BLOB_RELAY_SUPPORT = 0;
+        constexpr static std::uint64_t ENDPOINT_BROKER_SMVMIN_BLOB_RELAY_SUPPORT = 2;
+        bool find_blob_transfer{false};
+
+        for (const auto& e : rq.handshake().blob_transfer_media()) {
+            auto type = e.blob_transfer_type();
+            // If endpoint_broker_service_message_version is less than 0.2, BlobTransferType::PRIVILEGED is applied automatically.
+            if (type == proto::endpoint::request::BlobTransferType::PRIVILEGED) {
+                if (config_.allow_blob_privileged_) {
+                    (void) rs->mutable_privileged_mode();
+                    resources_.blob_transfer(resources::blob_transfer_type::privileged);
+                    find_blob_transfer = true;
+                    break;
+                }
+            } else if(type == proto::endpoint::request::BlobTransferType::RELAY) {
+                if (config_.blob_relay_enabled_ && config_.blob_relay_service_) {
+                    auto& blob_session = config_.blob_relay_service_->create_session();
+                    resources_.blob_session(blob_session);
+                    auto* blob_relay_info = rs->mutable_blob_relay_service_info();
+                    blob_relay_info->set_blob_session_id(blob_session.session_id());
+                    blob_relay_info->set_endpoint(config_.blob_relay_endpoint_);
+                    blob_relay_info->set_secure(config_.blob_relay_secure_);
+                    blob_relay_info->set_medium("streaming");
+                    auto* parameters = blob_relay_info->mutable_parameters();
+                    for(auto&& e: config_.blob_relay_streaming_params_) {
+                        parameters->insert({e.first, e.second});
+                    }
+                    resources_.blob_transfer(resources::blob_transfer_type::blob_relay_streaming);
+                    find_blob_transfer = true;
+                    break;
+                }
+            } else if(type == proto::endpoint::request::BlobTransferType::DOES_NOT_USE) {
+                find_blob_transfer = true;
+                break;
+            }
+        }
+        if (!find_blob_transfer) {
+            if (rq.service_message_version_major() == ENDPOINT_BROKER_SMVMAJ_BLOB_RELAY_SUPPORT && rq.service_message_version_minor() < ENDPOINT_BROKER_SMVMIN_BLOB_RELAY_SUPPORT) {
+                if (config_.allow_blob_privileged_) {
+                    resources_.blob_transfer(resources::blob_transfer_type::privileged);
+                }
+                find_blob_transfer = true;
+            }
+        }
+        if (!find_blob_transfer) {
+            using namespace std::literals::string_literals;
+            handshake_error(res, tateyama::proto::diagnostics::Code::UNSUPPORTED_OPERATION, "the requested blob transfer method is unavailable"s);
+            return false;
+        }
+
+        // send endpoint.response
         auto body = rp.SerializeAsString();
         res->body(body);
         return true;
@@ -751,9 +806,10 @@ protected:
     }
 
 private:
-    constexpr static std::uint64_t SERVICE_MESSAGE_VERSION_MAJOR = 1;
-    constexpr static std::uint64_t SERVICE_MESSAGE_VERSION_MINOR = 2;
+    constexpr static std::uint64_t ENDPOINT_BROKER_SERVICE_MESSAGE_VERSION_MAJOR = 0;
+    constexpr static std::uint64_t ENDPOINT_BROKER_SERVICE_MESSAGE_VERSION_MINOR = 2;
 
+    const configuration& config_;
     tateyama::endpoint::common::resources resources_;
     const std::shared_ptr<tateyama::session::resource::session_context_impl> session_context_;
     bool enable_timeout_;
