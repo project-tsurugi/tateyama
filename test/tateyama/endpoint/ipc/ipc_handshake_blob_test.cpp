@@ -49,24 +49,25 @@ private:
 };
 
 class ipc_handshake_blob_test: public ipc_gtest_base {
-    void SetUp() override {
-        temporary_.prepare();
-        ipc_test_env::setup("[ipc_endpoint]\n"
-                            "  allow_blob_privileged=true\n"
-                            "[grpc_server]\n"
-                            "  enabled=true\n"
-                            "  listen_address=0.0.0.0:62345\n"
-                            "  endpoint=dns:///localhost:62345\n"
-                            "  secure=false\n"
-                            "[blob_relay]\n"
-                            "  enabled=true\n"
+protected:
+    void prepare(const std::string& config) {
+        ipc_test_env::setup(config);
+    }
+
+    void prepare() {
+        prepare(
+            "[ipc_endpoint]\n"
+            "  allow_blob_privileged=true\n"
+            "[grpc_server]\n"
+            "  enabled=true\n"
+            "  listen_address=0.0.0.0:62345\n"
+            "  endpoint=dns:///localhost:62345\n"
+            "  secure=false\n"
+            "[blob_relay]\n"
+            "  enabled=true\n"
         );
     }
 
-    void TearDown() override {
-    }
-
-protected:
     tateyama::proto::endpoint::request::Request endpoint_request() {
         tateyama::proto::endpoint::request::Request request{};
         request.set_service_message_version_major(0);
@@ -76,6 +77,7 @@ protected:
 };
 
 TEST_F(ipc_handshake_blob_test, blob_does_not_use) {
+    prepare();
     ipc_handshake_blob_test_server_client sc { cfg_,
         [this](ipc_client& client){
             auto request = endpoint_request();
@@ -103,6 +105,7 @@ TEST_F(ipc_handshake_blob_test, blob_does_not_use) {
 }
 
 TEST_F(ipc_handshake_blob_test, blob_relay_privileged) {
+    prepare();
     ipc_handshake_blob_test_server_client sc { cfg_,
         [this](ipc_client& client){
             auto request = endpoint_request();
@@ -130,6 +133,7 @@ TEST_F(ipc_handshake_blob_test, blob_relay_privileged) {
 }
 
 TEST_F(ipc_handshake_blob_test, blob_relay_streaming) {
+    prepare();
     ipc_handshake_blob_test_server_client sc { cfg_,
         [this](ipc_client& client){
             auto request = endpoint_request();
@@ -156,6 +160,96 @@ TEST_F(ipc_handshake_blob_test, blob_relay_streaming) {
             EXPECT_EQ(blob_relay_service_info.medium(), "streaming");
             auto& parameters = blob_relay_service_info.parameters();
             EXPECT_TRUE(parameters.find("secure") == parameters.end());
+        }
+    };
+    sc.start_server_client();
+}
+
+TEST_F(ipc_handshake_blob_test, blob_does_not_use_01) {
+    prepare();
+    ipc_handshake_blob_test_server_client sc { cfg_,
+        [this](ipc_client& client){
+            tateyama::proto::endpoint::request::Request request{};
+            request.set_service_message_version_major(0);
+            request.set_service_message_version_minor(1);
+            auto* endpoint_handshake = request.mutable_handshake();
+            auto* blob_transfer_media = endpoint_handshake->add_blob_transfer_media();
+            blob_transfer_media->set_blob_transfer_type(tateyama::proto::endpoint::request::BlobTransferType::DOES_NOT_USE);
+            auto* wire_information = endpoint_handshake->mutable_wire_information();
+            wire_information->mutable_ipc_information();
+            client.send(tateyama::framework::service_id_endpoint_broker, request.SerializeAsString());
+
+            std::string res{};
+            tateyama::proto::framework::response::Header::PayloadType type{};
+            client.receive(res, type);
+            EXPECT_EQ(type, tateyama::proto::framework::response::Header::SERVICE_RESULT);
+            tateyama::proto::endpoint::response::Handshake response{};
+            if(!response.ParseFromString(res)) {
+                FAIL();
+            }
+            EXPECT_EQ(response.result_case(), tateyama::proto::endpoint::response::Handshake::kSuccess);
+            auto& success = response.success();
+            EXPECT_EQ(success.blob_transfer_case(), tateyama::proto::endpoint::response::Handshake_Success::BlobTransferCase::kPrivilegedMode);
+        }
+    };
+    sc.start_server_client();
+}
+
+TEST_F(ipc_handshake_blob_test, blob_relay_streaming_01) {
+    prepare();
+    ipc_handshake_blob_test_server_client sc { cfg_,
+        [this](ipc_client& client){
+            tateyama::proto::endpoint::request::Request request{};
+            request.set_service_message_version_major(0);
+            request.set_service_message_version_minor(1);
+            auto* endpoint_handshake = request.mutable_handshake();
+            auto* blob_transfer_media = endpoint_handshake->add_blob_transfer_media();
+            blob_transfer_media->set_blob_transfer_type(tateyama::proto::endpoint::request::BlobTransferType::RELAY);
+            auto* wire_information = endpoint_handshake->mutable_wire_information();
+            wire_information->mutable_ipc_information();
+            client.send(tateyama::framework::service_id_endpoint_broker, request.SerializeAsString());
+
+            std::string res{};
+            tateyama::proto::framework::response::Header::PayloadType type{};
+            client.receive(res, type);
+            EXPECT_EQ(type, tateyama::proto::framework::response::Header::SERVICE_RESULT);
+            tateyama::proto::endpoint::response::Handshake response{};
+            if(!response.ParseFromString(res)) {
+                FAIL();
+            }
+            EXPECT_EQ(response.result_case(), tateyama::proto::endpoint::response::Handshake::kSuccess);
+            auto& success = response.success();
+            EXPECT_EQ(success.blob_transfer_case(), tateyama::proto::endpoint::response::Handshake_Success::BlobTransferCase::kPrivilegedMode);
+        }
+    };
+    sc.start_server_client();
+}
+
+TEST_F(ipc_handshake_blob_test, blob_does_not_use_03) {
+    prepare();
+    ipc_handshake_blob_test_server_client sc { cfg_,
+        [this](ipc_client& client){
+            tateyama::proto::endpoint::request::Request request{};
+            request.set_service_message_version_major(0);
+            request.set_service_message_version_minor(3);
+            auto* endpoint_handshake = request.mutable_handshake();
+            auto* blob_transfer_media = endpoint_handshake->add_blob_transfer_media();
+            blob_transfer_media->set_blob_transfer_type(tateyama::proto::endpoint::request::BlobTransferType::DOES_NOT_USE);
+            auto* wire_information = endpoint_handshake->mutable_wire_information();
+            wire_information->mutable_ipc_information();
+            client.send(tateyama::framework::service_id_endpoint_broker, request.SerializeAsString());
+
+            std::string res{};
+            tateyama::proto::framework::response::Header::PayloadType type{};
+            client.receive(res, type);
+            EXPECT_EQ(type, tateyama::proto::framework::response::Header::SERVICE_RESULT);
+            tateyama::proto::endpoint::response::Handshake response{};
+            if(!response.ParseFromString(res)) {
+                FAIL();
+            }
+            EXPECT_EQ(response.result_case(), tateyama::proto::endpoint::response::Handshake::kError);
+            auto& error = response.error();
+            EXPECT_EQ(error.code(), tateyama::proto::diagnostics::Code::INVALID_REQUEST);
         }
     };
     sc.start_server_client();
