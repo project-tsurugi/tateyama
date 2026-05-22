@@ -104,6 +104,7 @@ parameter=value
 | plugin_directory | String | UDF プラグイン (.so ファイル) を配置するディレクトリへのパス。デフォルトは $TSURUGI_HOME/var/plugins/ | |
 | endpoint | String | Tsurugi Database と UDF サーバ間の通信に利用する gRPC サーバのエンドポイント。デフォルトは "dns:///localhost:50051" | |
 | secure | ブール(true/false) | セキュアなgRPC通信路の利用可否。デフォルト値はfalse。 |
+| timeout | Integer | UDF サーバへの各 RPC 呼び出しに対するタイムアウト時間を秒単位で指定する。未指定の場合、タイムアウトは設定しない。 | 0 を指定した場合、タイムアウトを無効化する。 |
 
 ## ipc_endpointセクション
 
