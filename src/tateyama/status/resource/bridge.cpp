@@ -55,12 +55,10 @@ bool bridge::setup(environment& env) {
     std::string status_file_name{file_prefix};
     status_file_name += digest_;
     status_file_name += ".stat";
-    boost::interprocess::shared_memory_object::remove(status_file_name.c_str());
-    shm_remover_ = std::make_unique<shm_remover>(status_file_name);
     try {
         configuration_ = env.resource_repository().find<configuration::configuration_provider>();
-        segment_ = std::make_unique<boost::interprocess::managed_shared_memory>(boost::interprocess::create_only, status_file_name.c_str(), shm_size(threads_opt.value() + admin_sessions_opt.value()));
-        resource_status_memory_ = std::make_unique<resource_status_memory>(*segment_);
+        boost::interprocess::shared_memory_object::remove(status_file_name.c_str());
+        resource_status_memory_ = std::make_unique<resource_status_memory>(status_file_name, shm_size(threads_opt.value() + admin_sessions_opt.value()));
         resource_status_memory_->set_pid();
         resource_status_memory_->set_database_name(configuration_->database_info().name());
         return true;

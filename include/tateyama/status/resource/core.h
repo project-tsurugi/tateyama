@@ -68,7 +68,6 @@ enum class shutdown_type : std::uint8_t {
  */
 class resource_status_memory {
   public:
-    static constexpr std::string_view area_name = "status_info";
     static constexpr std::size_t inactive_session_id = UINT64_MAX;
     static constexpr std::size_t mergin = 2;
 
@@ -151,19 +150,19 @@ class resource_status_memory {
     };
 
     // serves as a relay for access to resource_status
-    explicit resource_status_memory(boost::interprocess::managed_shared_memory& mem, bool owner = true) : mem_(mem), owner_(owner) {
-        std::string name(area_name);
+    resource_status_memory(const std::string& file_name, std::size_t size);
+    // for client (other than tateyama)
+    explicit resource_status_memory(boost::interprocess::managed_shared_memory& mem, bool owner = false) : owner_(owner) {
         if (owner) {
-            mem_.destroy<resource_status>(name.c_str());
-            resource_status_ = mem_.construct<resource_status>(name.c_str())(mem_.get_segment_manager());
-        } else {
-            resource_status_ = mem_.find<resource_status>(name.c_str()).first;
+            throw std::runtime_error("illegal usage");
         }
+        resource_status_ = mem.find<resource_status>(AREA_NAME.c_str()).first;
     }
     ~resource_status_memory() {
         try {
             if (owner_ && resource_status_) {
-                mem_.destroy<resource_status>(std::string(area_name).c_str());
+                mem_->destroy<resource_status>(AREA_NAME.c_str());
+                boost::interprocess::shared_memory_object::remove(file_name_.c_str());
             }
         } catch (std::exception& e) {
             LOG(WARNING) << e.what();
@@ -211,10 +210,13 @@ class resource_status_memory {
     void remove_shm_entry(std::size_t session_id, std::size_t slot);
 
 private:
+    std::unique_ptr<boost::interprocess::managed_shared_memory> mem_;
+    std::string file_name_;
     resource_status* resource_status_{};
-    boost::interprocess::managed_shared_memory& mem_;
     bool owner_{};
     std::mutex mutex_{};
+
+    const std::string AREA_NAME{"status_info"};
 };
 
 } // namespace tateyama::status_info

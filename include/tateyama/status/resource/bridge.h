@@ -31,6 +31,7 @@
 #include <tateyama/configuration/configuration_provider.h>
 
 namespace tateyama::status_info::resource {
+using namespace std::string_literals;
 
 /**
  * @brief status resource bridge for tateyama framework
@@ -38,24 +39,6 @@ namespace tateyama::status_info::resource {
  * This object should be responsible only for life-cycle management.
  */
 class bridge : public framework::resource {
-    class shm_remover {
-    public:
-        explicit shm_remover(std::string name) : name_(std::move(name)) {
-            boost::interprocess::shared_memory_object::remove(name_.c_str());
-        }
-        ~shm_remover(){
-            boost::interprocess::shared_memory_object::remove(name_.c_str());
-        }
-
-        shm_remover(shm_remover const& other) = delete;
-        shm_remover& operator=(shm_remover const& other) = delete;
-        shm_remover(shm_remover&& other) noexcept = delete;
-        shm_remover& operator=(shm_remover&& other) noexcept = delete;
-
-    private:
-        std::string name_;
-    };
-
 public:
     static constexpr id_type tag = framework::resource_id_status;
 
@@ -149,13 +132,10 @@ public:
     [[nodiscard]] std::string_view database_name() const;
 
 private:
-    bool deactivated_{false};
-
-    std::unique_ptr<shm_remover> shm_remover_{};
-    std::unique_ptr<boost::interprocess::managed_shared_memory> segment_;
     std::unique_ptr<resource_status_memory> resource_status_memory_{};
     std::string digest_{};
     std::shared_ptr<tateyama::configuration::configuration_provider> configuration_{};
+    bool deactivated_{false};
 
     void set_digest(const std::string& path_string);
 
@@ -166,6 +146,8 @@ private:
         size += initial_size / 2;                         // a little bit of leeway
         return ((size / 4096) + 1) * 4096;                // round up to the page size
     }
+
+    const std::string shm_name_{"resource_status_memory"s};
 };
 
 } // namespace tateyama::status_info::resource
