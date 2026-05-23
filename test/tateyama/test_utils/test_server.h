@@ -18,6 +18,7 @@
 #include <tateyama/framework/server.h>
 #include <tateyama/framework/repository.h>
 #include <tateyama/status/resource/bridge.h>
+#include "tateyama/status/resource/resource_status_adapter.h"
 #include <tateyama/framework/routing_service.h>
 #include <tateyama/session/service/bridge.h>
 #include <tateyama/session/resource/bridge.h>

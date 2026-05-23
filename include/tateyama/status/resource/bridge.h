@@ -31,7 +31,8 @@
 #include <tateyama/configuration/configuration_provider.h>
 
 namespace tateyama::status_info::resource {
-using namespace std::string_literals;
+
+class resource_status_adapter;
 
 /**
  * @brief status resource bridge for tateyama framework
@@ -132,7 +133,8 @@ public:
     [[nodiscard]] std::string_view database_name() const;
 
 private:
-    std::unique_ptr<resource_status_memory> resource_status_memory_{};
+    std::unique_ptr<resource_status_adapter> resource_status_adapter_{};
+    resource_status_memory* resource_status_memory_{};
     std::string digest_{};
     std::shared_ptr<tateyama::configuration::configuration_provider> configuration_{};
     bool deactivated_{false};
@@ -146,8 +148,6 @@ private:
         size += initial_size / 2;                         // a little bit of leeway
         return ((size / 4096) + 1) * 4096;                // round up to the page size
     }
-
-    const std::string shm_name_{"resource_status_memory"s};
 };
 
 } // namespace tateyama::status_info::resource

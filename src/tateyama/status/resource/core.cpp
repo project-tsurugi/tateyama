@@ -26,17 +26,9 @@
 
 namespace tateyama::status_info {   // FIXME should be tateyama::status::resource
 
-// constructer for tateyama, creates shared memroy
-resource_status_memory::resource_status_memory(const std::string& file_name, std::size_t size)
-    : mem_(std::make_unique<boost::interprocess::managed_shared_memory>(boost::interprocess::create_only, file_name.c_str(), size)),
-      file_name_(file_name),
-      owner_(true) {
-
-    mem_->destroy<resource_status>(AREA_NAME.c_str());
-    resource_status_ = mem_->construct<resource_status>(AREA_NAME.c_str())(mem_->get_segment_manager());
-}
-
 // resource_status_memory
+resource_status_memory::resource_status_memory(resource_status* address) : resource_status_(address) {
+}
 void resource_status_memory::set_pid() {
     resource_status_->pid_ = ::getpid();
 }

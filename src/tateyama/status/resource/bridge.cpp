@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2023 Project Tsurugi.
+ * Copyright 2018-2026 Project Tsurugi.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@
 
 #include <tateyama/api/server/database_info.h>
 #include <tateyama/status/resource/bridge.h>
+#include "resource_status_adapter.h"
 
 namespace tateyama::status_info::resource {
 
@@ -58,7 +59,8 @@ bool bridge::setup(environment& env) {
     try {
         configuration_ = env.resource_repository().find<configuration::configuration_provider>();
         boost::interprocess::shared_memory_object::remove(status_file_name.c_str());
-        resource_status_memory_ = std::make_unique<resource_status_memory>(status_file_name, shm_size(threads_opt.value() + admin_sessions_opt.value()));
+        resource_status_adapter_ = std::make_unique<resource_status_adapter>(status_file_name, shm_size(threads_opt.value() + admin_sessions_opt.value()));
+        resource_status_memory_=resource_status_adapter_->resource_status_memory_address();
         resource_status_memory_->set_pid();
         resource_status_memory_->set_database_name(configuration_->database_info().name());
         return true;

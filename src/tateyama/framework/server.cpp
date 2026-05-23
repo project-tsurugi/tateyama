@@ -37,6 +37,7 @@
 #include <tateyama/datastore/resource/bridge.h>
 #include <tateyama/debug/service.h>
 #include <tateyama/status/resource/bridge.h>
+#include "tateyama/status/resource/resource_status_adapter.h"
 #include <tateyama/diagnostic/resource/diagnostic_resource.h>
 #include <tateyama/utils/boolalpha.h>
 #include <tateyama/session/service/bridge.h>

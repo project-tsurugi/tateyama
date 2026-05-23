@@ -67,9 +67,10 @@ enum class shutdown_type : std::uint8_t {
  * @brief status of tsurugidb, placed on boost shared memory
  */
 class resource_status_memory {
-  public:
+public:
     static constexpr std::size_t inactive_session_id = UINT64_MAX;
     static constexpr std::size_t mergin = 2;
+    static constexpr std::string_view area_name = "status_info";
 
     // placed on a boost shared memory
     class resource_status {
@@ -149,25 +150,17 @@ class resource_status_memory {
         friend class resource_status_memory;
     };
 
-    // serves as a relay for access to resource_status
-    resource_status_memory(const std::string& file_name, std::size_t size);
-    // for client (other than tateyama)
-    explicit resource_status_memory(boost::interprocess::managed_shared_memory& mem, bool owner = false) : owner_(owner) {
+    // CTOR for tateyama
+    explicit resource_status_memory(resource_status* address);
+
+    // CTOR for client (other than tateyama)
+    explicit resource_status_memory(boost::interprocess::managed_shared_memory& mem, bool owner = false) {
         if (owner) {
             throw std::runtime_error("illegal usage");
         }
-        resource_status_ = mem.find<resource_status>(AREA_NAME.c_str()).first;
+        resource_status_ = mem.find<resource_status>(std::string(area_name).c_str()).first;
     }
-    ~resource_status_memory() {
-        try {
-            if (owner_ && resource_status_) {
-                mem_->destroy<resource_status>(AREA_NAME.c_str());
-                boost::interprocess::shared_memory_object::remove(file_name_.c_str());
-            }
-        } catch (std::exception& e) {
-            LOG(WARNING) << e.what();
-        }
-    }
+    ~resource_status_memory() = default;
 
     resource_status_memory(resource_status_memory const& other) = delete;
     resource_status_memory& operator=(resource_status_memory const& other) = delete;
@@ -210,13 +203,8 @@ class resource_status_memory {
     void remove_shm_entry(std::size_t session_id, std::size_t slot);
 
 private:
-    std::unique_ptr<boost::interprocess::managed_shared_memory> mem_;
-    std::string file_name_;
     resource_status* resource_status_{};
-    bool owner_{};
     std::mutex mutex_{};
-
-    const std::string AREA_NAME{"status_info"};
 };
 
 } // namespace tateyama::status_info
