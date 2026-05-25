@@ -379,10 +379,10 @@ TEST_F(stream_session_test, graceful_shutdown_before_request) {
 
         // ensure shutdown request has been processed by the worker
         std::this_thread::sleep_for(std::chrono::milliseconds(2500));
-        EXPECT_TRUE(listener_->worker()->is_terminated());
+        ASSERT_TRUE(listener_->worker()->is_terminated());
 
         // client part (send request)
-        EXPECT_FALSE(client_->send(service_id_of_session_service, std::string(request_test_message)));
+        ASSERT_FALSE(client_->send(service_id_of_session_service, std::string(request_test_message)));
     } catch (std::runtime_error &ex) {
         std::cout << ex.what() << std::endl;
         FAIL();
