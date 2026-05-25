@@ -43,8 +43,7 @@ public:
         session_store_config(ss);
         auto cfg = std::make_shared<api::configuration::whole>(ss, test_utils::default_configuration_for_tests);
         sv_ = std::make_unique<framework::server>(framework::boot_mode::database_server, cfg);
-//        add_core_components(*sv_);
-        tateyama::test_utils::add_core_components_for_datastore_test(*sv_);
+        tateyama::framework::add_core_components(*sv_);
 
         sv_->setup();
         // obtaining the blob_relay_service_adapter can be done after setup();

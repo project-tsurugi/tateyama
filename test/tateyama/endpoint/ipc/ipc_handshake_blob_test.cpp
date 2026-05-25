@@ -36,7 +36,7 @@ public:
     }
 
     void server() override {
-        server_client_base::server([](tateyama::framework::server& sv, std::shared_ptr<tateyama::api::configuration::whole> const & cfg){}, 'd');
+        server_client_base::server([](tateyama::framework::server& sv, std::shared_ptr<tateyama::api::configuration::whole> const & cfg){}, 'f');
     }
 
     void client_thread() override {
@@ -74,9 +74,35 @@ protected:
         request.set_service_message_version_minor(2);
         return request;
     }
+
+    bool gate() {
+        return pid_ != 0;
+    }
+
+private:
+    void SetUp() override {
+        pid_ = fork();
+        if (pid_ > 0) {
+            int status = 0;
+            if (waitpid(pid_, &status, 0) < 0) {
+                FAIL();
+            }
+        }
+    }
+
+    void TearDown() override {
+        if (pid_ == 0) {
+            exit(0);
+        }
+    }
+
+    pid_t pid_;
 };
 
 TEST_F(ipc_handshake_blob_test, blob_does_not_use) {
+    if (gate()) {
+        return;
+    }
     prepare();
     ipc_handshake_blob_test_server_client sc { cfg_,
         [this](ipc_client& client){
@@ -105,6 +131,9 @@ TEST_F(ipc_handshake_blob_test, blob_does_not_use) {
 }
 
 TEST_F(ipc_handshake_blob_test, blob_relay_privileged) {
+    if (gate()) {
+        return;
+    }
     prepare();
     ipc_handshake_blob_test_server_client sc { cfg_,
         [this](ipc_client& client){
@@ -133,6 +162,9 @@ TEST_F(ipc_handshake_blob_test, blob_relay_privileged) {
 }
 
 TEST_F(ipc_handshake_blob_test, blob_relay_streaming) {
+    if (gate()) {
+        return;
+    }
     prepare();
     ipc_handshake_blob_test_server_client sc { cfg_,
         [this](ipc_client& client){
@@ -166,6 +198,9 @@ TEST_F(ipc_handshake_blob_test, blob_relay_streaming) {
 }
 
 TEST_F(ipc_handshake_blob_test, blob_does_not_use_01) {
+    if (gate()) {
+        return;
+    }
     prepare();
     ipc_handshake_blob_test_server_client sc { cfg_,
         [this](ipc_client& client){
@@ -196,6 +231,9 @@ TEST_F(ipc_handshake_blob_test, blob_does_not_use_01) {
 }
 
 TEST_F(ipc_handshake_blob_test, blob_relay_streaming_01) {
+    if (gate()) {
+        return;
+    }
     prepare();
     ipc_handshake_blob_test_server_client sc { cfg_,
         [this](ipc_client& client){
@@ -226,6 +264,9 @@ TEST_F(ipc_handshake_blob_test, blob_relay_streaming_01) {
 }
 
 TEST_F(ipc_handshake_blob_test, blob_does_not_use_03) {
+    if (gate()) {
+        return;
+    }
     prepare();
     ipc_handshake_blob_test_server_client sc { cfg_,
         [this](ipc_client& client){

@@ -103,7 +103,7 @@ public:
 
     void server() override {
         server_client_base::server(
-            [](tateyama::framework::server& sv, std::shared_ptr<tateyama::api::configuration::whole> const & cfg){}, 'd');
+            [](tateyama::framework::server& sv, std::shared_ptr<tateyama::api::configuration::whole> const & cfg){}, 'f');
     }
 
     void client_thread() override {

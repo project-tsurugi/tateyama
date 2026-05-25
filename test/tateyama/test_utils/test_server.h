@@ -39,10 +39,6 @@
 #include <tateyama/grpc/blob_relay/service_adapter.h>
 #endif
 
-// for datastore test
-#include <tateyama/datastore/service/bridge.h>
-#include <tateyama/datastore/resource/bridge.h>
-
 namespace tateyama::test_utils {
 
     static void add_core_components_for_test(tateyama::framework::server& svr) {
@@ -54,33 +50,6 @@ namespace tateyama::test_utils {
 
         svr.add_service(std::make_shared<tateyama::framework::routing_service>());
         svr.add_service(std::make_shared<tateyama::metrics::service::bridge>());
-        svr.add_service(std::make_shared<tateyama::session::service::bridge>());
-#ifdef ENABLE_ALTIMETER
-        svr.add_service(std::make_shared<altimeter::service::bridge>());
-#endif
-        svr.add_service(std::make_shared<tateyama::request::service::bridge>());
-        svr.add_service(std::make_shared<tateyama::authentication::service::bridge>());
-#ifdef ENABLE_GRPC
-        svr.add_resource(std::make_shared<grpc::blob_relay::service_adapter>());
-        svr.add_resource(std::make_shared<grpc::grpc_server_resource>());
-#endif
-        svr.add_service(std::make_shared<tateyama::system::service::system_service_bridge>());
-        svr.add_service(std::make_shared<tateyama::blob_relay_privilege::service::blob_relay_privilege>());
-
-        svr.add_endpoint(std::make_shared<tateyama::framework::ipc_endpoint>());
-    }
-
-    static void add_core_components_for_datastore_test(tateyama::framework::server& svr) {
-        svr.add_resource(std::make_shared<configuration::resource::configuration_provider_impl>());
-        svr.add_resource(std::make_shared<tateyama::metrics::resource::bridge>());
-        svr.add_resource(std::make_shared<tateyama::status_info::resource::bridge>());
-        svr.add_resource(std::make_shared<datastore::resource::bridge>());
-        svr.add_resource(std::make_shared<tateyama::session::resource::bridge>());
-        svr.add_resource(std::make_shared<authentication::resource::bridge>());
-
-        svr.add_service(std::make_shared<tateyama::framework::routing_service>());
-        svr.add_service(std::make_shared<tateyama::metrics::service::bridge>());
-        svr.add_service(std::make_shared<datastore::service::bridge>());
         svr.add_service(std::make_shared<tateyama::session::service::bridge>());
 #ifdef ENABLE_ALTIMETER
         svr.add_service(std::make_shared<altimeter::service::bridge>());

@@ -38,7 +38,12 @@ public:
         dscfg->set("log_location", log_location);
         {
             std::error_code ec;
-            std::filesystem::create_directory(std::filesystem::path(log_location), ec);
+            auto log_directory = std::filesystem::path(log_location);
+            if (std::filesystem::exists(log_location)) {
+                std::filesystem::remove_all(log_location, ec);
+                BOOST_ASSERT(!ec);
+            }
+            std::filesystem::create_directory(log_directory);
             BOOST_ASSERT(!ec);
         }
 

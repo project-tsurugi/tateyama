@@ -75,7 +75,7 @@ TEST_F(session_test, session_list) {
     auto cfg = api::configuration::create_configuration("", tateyama::test_utils::default_configuration_for_tests);
     set_dbpath(*cfg);
     framework::server sv{framework::boot_mode::database_server, cfg};
-    tateyama::test_utils::add_core_components_for_test(sv);
+    tateyama::framework::add_core_components(sv);
     sv.start();
     auto router = sv.find_service<framework::routing_service>();
     EXPECT_TRUE(router);
@@ -121,7 +121,7 @@ TEST_F(session_test, session_get_by_id) {
     auto cfg = api::configuration::create_configuration("", tateyama::test_utils::default_configuration_for_tests);
     set_dbpath(*cfg);
     framework::server sv{framework::boot_mode::database_server, cfg};
-    tateyama::test_utils::add_core_components_for_test(sv);
+    tateyama::framework::add_core_components(sv);
     sv.start();
     auto router = sv.find_service<framework::routing_service>();
     EXPECT_TRUE(router);
@@ -167,7 +167,7 @@ TEST_F(session_test, session_get_by_label) {
     auto cfg = api::configuration::create_configuration("", tateyama::test_utils::default_configuration_for_tests);
     set_dbpath(*cfg);
     framework::server sv{framework::boot_mode::database_server, cfg};
-    tateyama::test_utils::add_core_components_for_test(sv);
+    tateyama::framework::add_core_components(sv);
     sv.start();
     auto router = sv.find_service<framework::routing_service>();
     EXPECT_TRUE(router);
@@ -213,7 +213,7 @@ TEST_F(session_test, session_get_variable) {
     auto cfg = api::configuration::create_configuration("", tateyama::test_utils::default_configuration_for_tests);
     set_dbpath(*cfg);
     framework::server sv{framework::boot_mode::database_server, cfg};
-    tateyama::test_utils::add_core_components_for_test(sv);
+    tateyama::framework::add_core_components(sv);
     sv.start();
     auto router = sv.find_service<framework::routing_service>();
     EXPECT_TRUE(router);
@@ -256,7 +256,7 @@ TEST_F(session_test, session_set_variable) {
     auto cfg = api::configuration::create_configuration("", tateyama::test_utils::default_configuration_for_tests);
     set_dbpath(*cfg);
     framework::server sv{framework::boot_mode::database_server, cfg};
-    tateyama::test_utils::add_core_components_for_test(sv);
+    tateyama::framework::add_core_components(sv);
     sv.start();
     auto router = sv.find_service<framework::routing_service>();
     EXPECT_TRUE(router);
@@ -327,7 +327,7 @@ TEST_F(session_test, session_unset_variable_monostate) {
     auto cfg = api::configuration::create_configuration("", tateyama::test_utils::default_configuration_for_tests);
     set_dbpath(*cfg);
     framework::server sv{framework::boot_mode::database_server, cfg};
-    tateyama::test_utils::add_core_components_for_test(sv);
+    tateyama::framework::add_core_components(sv);
     sv.start();
     auto router = sv.find_service<framework::routing_service>();
     EXPECT_TRUE(router);
@@ -422,7 +422,7 @@ TEST_F(session_test, session_unset_variable_value) {
     auto cfg = api::configuration::create_configuration("", tateyama::test_utils::default_configuration_for_tests);
     set_dbpath(*cfg);
     framework::server sv{framework::boot_mode::database_server, cfg};
-    tateyama::test_utils::add_core_components_for_test(sv);
+    tateyama::framework::add_core_components(sv);
     sv.start();
     auto router = sv.find_service<framework::routing_service>();
     EXPECT_TRUE(router);
@@ -518,7 +518,7 @@ TEST_F(session_test, session_shutdown) {
     auto cfg = api::configuration::create_configuration("", tateyama::test_utils::default_configuration_for_tests);
     set_dbpath(*cfg);
     framework::server sv{framework::boot_mode::database_server, cfg};
-    tateyama::test_utils::add_core_components_for_test(sv);
+    tateyama::framework::add_core_components(sv);
     sv.start();
     auto router = sv.find_service<framework::routing_service>();
     EXPECT_TRUE(router);

@@ -70,7 +70,7 @@ TEST_F(session_gc_test, session_list) {
     auto cfg = api::configuration::create_configuration("", tateyama::test_utils::default_configuration_for_tests);
     set_dbpath(*cfg);
     framework::server sv{framework::boot_mode::database_server, cfg};
-    tateyama::test_utils::add_core_components_for_test(sv);
+    tateyama::framework::add_core_components(sv);
     sv.start();
     auto router = sv.find_service<framework::routing_service>();
     EXPECT_TRUE(router);

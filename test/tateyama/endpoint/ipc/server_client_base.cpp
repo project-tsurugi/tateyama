@@ -56,9 +56,6 @@ void server_client_base::server(std::function<void(tateyama::framework::server&,
     case 'f':
         tateyama::framework::add_core_components(sv);
         break;
-    case 'd':
-        tateyama::test_utils::add_core_components_for_datastore_test(sv);
-        break;
     case 's':
         tateyama::test_utils::add_core_components_for_test(sv);
         break;
