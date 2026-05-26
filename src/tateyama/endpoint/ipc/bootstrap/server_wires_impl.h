@@ -179,7 +179,8 @@ public:
         void write(char const* data, std::size_t length) override {
             current_record_size += length;
             if ((current_record_size + tateyama::common::wire::length_header::size) > datachannel_buffer_size_) {
-                throw std::runtime_error("too large record size");
+                using namespace std::literals::string_literals;
+                throw std::runtime_error("too large record size, a " + std::to_string(current_record_size) + "-byte record is larger than the " + std::to_string(datachannel_buffer_size_) + "-byte buffer"s);
             }
             if (!annex_mode_) {
                 if (shm_resultset_wire_->check_room(length)) {
@@ -264,6 +265,7 @@ public:
             managed_shm_ptr_->destroy<tateyama::common::wire::shm_resultset_wires>(rsw_name_.c_str());
             try {
                 shm_resultset_wires_ = managed_shm_ptr_->construct<tateyama::common::wire::shm_resultset_wires>(rsw_name_.c_str())(managed_shm_ptr_, count, datachannel_buffer_size_);
+                VLOG_LP(log_trace) << "allocate " << datachannel_buffer_size_ << " byte " << rsw_name_ << " buffer in the shared memory, leaving " << managed_shm_ptr_->get_free_memory() << " bytes remaining.";
             } catch(const boost::interprocess::interprocess_exception& ex) {
                 throw std::runtime_error(ex.what());
             } catch (std::exception &ex) {
@@ -284,6 +286,7 @@ public:
                 if (server_ && !force_close_) {
                     std::lock_guard<std::mutex> lock(mtx_shm_);
                     managed_shm_ptr_->destroy<tateyama::common::wire::shm_resultset_wires>(rsw_name_.c_str());
+                    VLOG_LP(log_trace) << "free " << datachannel_buffer_size_ << " byte " << rsw_name_ << " buffer in the shared memory, and the free space increased to " << managed_shm_ptr_->get_free_memory() << " bytes.";
                 }
             } catch (std::exception& e) {
                 LOG_LP(WARNING) << e.what();
@@ -611,14 +614,16 @@ public:
             boost::interprocess::permissions unrestricted_permissions;
             unrestricted_permissions.set_unrestricted();
 
+            std::size_t shared_memory_size = proportional_memory_size(datachannel_buffer_size_, max_datachannel_buffers);
             managed_shared_memory_ =
-                std::make_unique<boost::interprocess::managed_shared_memory>(boost::interprocess::create_only, name_.c_str(), proportional_memory_size(datachannel_buffer_size_, max_datachannel_buffers), nullptr, unrestricted_permissions);
+                std::make_unique<boost::interprocess::managed_shared_memory>(boost::interprocess::create_only, name_.c_str(), shared_memory_size, nullptr, unrestricted_permissions);
             auto req_wire = managed_shared_memory_->construct<tateyama::common::wire::unidirectional_message_wire>(tateyama::common::wire::request_wire_name)(managed_shared_memory_.get(), request_buffer_size);
             auto res_wire = managed_shared_memory_->construct<tateyama::common::wire::unidirectional_response_wire>(tateyama::common::wire::response_wire_name)(managed_shared_memory_.get(), response_buffer_size);
             status_provider_ = managed_shared_memory_->construct<tateyama::common::wire::status_provider>(tateyama::common::wire::status_provider_name)(managed_shared_memory_.get(), mutex_file);
 
             request_wire_.initialize(req_wire, req_wire->get_bip_address(managed_shared_memory_.get()));
             response_wire_.initialize(res_wire, res_wire->get_bip_address(managed_shared_memory_.get()));
+            VLOG_LP(log_trace) << "create " << shared_memory_size << " byte of shred memory for the session, free space remaining is " << managed_shared_memory_->get_free_memory() << " byte.";
         } catch(const boost::interprocess::interprocess_exception& ex) {
             std::stringstream ss{};
             ss << "failed to allocate shared memory for IPC endpoint due to /dev/shm/" << name_.c_str() << " creation failure, reason: " << ex.what();
