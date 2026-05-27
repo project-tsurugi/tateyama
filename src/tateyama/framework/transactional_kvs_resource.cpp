@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2025 Project Tsurugi.
+ * Copyright 2018-2026 Project Tsurugi.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,6 +66,11 @@ static bool extract_config(environment& env, sharksfin::DatabaseOptions& options
                     static constexpr std::string_view KEY_INDEX_RESTORE_THREADS{"index_restore_threads"};
                     options.attribute(KEY_INDEX_RESTORE_THREADS, std::to_string(sz));
                 }
+            }
+            if(auto res = cc->get<bool>("dev_iterator_based_scan"); res) {
+                auto b = res.value();
+                static constexpr std::string_view KEY_ITERATOR_BASED_SCAN{"iterator_based_scan"};
+                options.attribute(KEY_ITERATOR_BASED_SCAN, b ? "true" : "false");
             }
         }
     } catch(std::exception const& e) {

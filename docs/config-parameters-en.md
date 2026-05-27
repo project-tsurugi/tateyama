@@ -22,6 +22,7 @@ Target component
 | epoch_duration  | Integer | Length of the epoch (us). The default is 3000. |
 | waiting_resolver_threads | Integer | Number of threads that process the waiting and pre-commit of the LTXs in the waiting list. Default is 2. |
 | index_restore_threads | Integer | Number of threads that process index recovery from datastore on startup. Default is 4. |
+| dev_iterator_based_scan | Boolean (true/false) | Make scan operations iterator-based. | This is for development and may be deleted in the future. |
 
 ## datastore section
 
