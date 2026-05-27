@@ -171,20 +171,18 @@ class whole {
 public:
     whole(std::string_view file_name, std::string_view default_property) {
         file_ = std::filesystem::path(std::string(file_name));
-        std::ifstream stream{};
+        std::stringstream empty_ss{};
         if (std::filesystem::exists(file_)) {
             property_file_exist_ = true;
-            stream = std::ifstream{file_.c_str()};
-            initialize(stream, default_property);
+            initialize(default_property, empty_ss);
         } else {
             vlog_info_ << "cannot find " << file_name << ", thus we use default property only." << std::endl;  // NOLINT
-            std::stringstream empty_ss{};
-            initialize(empty_ss, default_property);
+            initialize(default_property, empty_ss, false);
         }
     }
     // this constructor works as if property file exists and its content is provided as istream
     whole(std::istream& content, std::string_view default_property) {
-        initialize(content, default_property);
+        initialize(default_property, content);
     }
     // default_property can be empty only for test purpose
     explicit whole(std::string_view file_name) : whole(file_name, "") {};
@@ -316,7 +314,7 @@ private:
 
     static std::string_view default_property();
 
-    void initialize(std::istream& content, std::string_view default_property) {
+    void initialize(std::string_view default_property, std::istream& content, bool throw_exception = true) {
         auto default_conf_string = std::string(default_property);
         if (!default_conf_string.empty()) {
             std::istringstream default_iss(default_conf_string);  // NOLINT
@@ -327,8 +325,15 @@ private:
         }
 
         try {
-            boost::property_tree::read_ini(content, property_tree_);
+            if (property_file_exist_) {
+                boost::property_tree::read_ini(file_.string(), property_tree_);
+            } else {
+                boost::property_tree::read_ini(content, property_tree_);
+            }
         } catch (boost::property_tree::ini_parser_error &e) {
+            if (throw_exception) {
+                throw e;
+            }
             vlog_info_ << "error reading input, thus we use default property only. msg:" << e.what() << std::endl;  // NOLINT
         }
         if (default_valid_) {
@@ -398,7 +403,7 @@ inline std::shared_ptr<whole> create_configuration(std::string_view file_name = 
     try {
         return std::make_shared<whole>(file_name, default_property);
     } catch (boost::property_tree::ptree_error &e) {
-        LOG_LP(ERROR) << "cannot create configuration, file name is '" << file_name << "'.";
+        LOG_LP(ERROR) << "cannot create configuration, as '" << e.what() << '\'';
         return nullptr;
     }
 }
