@@ -131,7 +131,7 @@ public:
     public:
         resultset_wire_container_impl(tateyama::common::wire::shm_resultset_wire* resultset_wire, resultset_wires_container_impl& resultset_wires_container_impl, std::size_t datachannel_buffer_size)
             : shm_resultset_wire_(resultset_wire), envelope_(resultset_wires_container_impl), datachannel_buffer_size_(datachannel_buffer_size) {
-            VLOG_LP(log_trace) << "creates a resultset_wire with a size of " << datachannel_buffer_size_ << " bytes";
+            VLOG_LP(log_trace) << "creates a " << datachannel_buffer_size_ << "-byte buffer for " << envelope_.rsw_name_ << " in the shared memory, leaving " << envelope_.managed_shm_ptr_->get_free_memory() << " byte remaining.";
         }
         ~resultset_wire_container_impl() override {
             if (thread_invoked_) {
@@ -180,7 +180,7 @@ public:
             current_record_size += length;
             if ((current_record_size + tateyama::common::wire::length_header::size) > datachannel_buffer_size_) {
                 using namespace std::literals::string_literals;
-                throw std::runtime_error("too large record size, a " + std::to_string(current_record_size) + "-byte record is larger than the " + std::to_string(datachannel_buffer_size_) + "-byte buffer"s);
+                throw std::runtime_error("too large record size, a sum of " + std::to_string(current_record_size) + "-byte record and " + std::to_string(sizeof(tateyama::common::wire::length_header)) + "-byte header is larger than the " + std::to_string(datachannel_buffer_size_) + "-byte buffer"s);
             }
             if (!annex_mode_) {
                 if (shm_resultset_wire_->check_room(length)) {
@@ -265,7 +265,6 @@ public:
             managed_shm_ptr_->destroy<tateyama::common::wire::shm_resultset_wires>(rsw_name_.c_str());
             try {
                 shm_resultset_wires_ = managed_shm_ptr_->construct<tateyama::common::wire::shm_resultset_wires>(rsw_name_.c_str())(managed_shm_ptr_, count, datachannel_buffer_size_);
-                VLOG_LP(log_trace) << "allocate " << datachannel_buffer_size_ << " byte " << rsw_name_ << " buffer in the shared memory, leaving " << managed_shm_ptr_->get_free_memory() << " bytes remaining.";
             } catch(const boost::interprocess::interprocess_exception& ex) {
                 throw std::runtime_error(ex.what());
             } catch (std::exception &ex) {
@@ -393,6 +392,8 @@ public:
         std::atomic_flag notify_eor_{};
         mutable std::mutex mtx_released_writers_{};
         
+        friend class resultset_wire_container_impl;
+
         void notify_eor_conditional() {
             if ((writers_.load() == completed_writers_.load()) && eor_.load()) {
                 if (!notify_eor_.test_and_set()) {
