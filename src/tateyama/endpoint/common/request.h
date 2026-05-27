@@ -154,8 +154,8 @@ protected:
     tateyama::session::session_variable_set& session_variable_set_;  // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes,misc-non-private-member-variables-in-classes)
 
     void parse_framework_header(std::string_view message, parse_result& res) {
-        std::map<std::string, std::pair<std::variant<std::string, proto::framework::common::BlobRelayReference>, bool>> blobs_sent{};
-        if (parse_header(message, res, blobs_sent)) {
+        std::map<std::string, std::pair<std::variant<std::string, proto::framework::common::BlobRelayReference>, bool>> blobs_arrived{};
+        if (parse_header(message, res, blobs_arrived)) {
             if (res.service_message_version_major_ > FRAMEWORK_SERVICE_MESSAGE_VERSION_MAJOR ||
                 (res.service_message_version_major_ ==  FRAMEWORK_SERVICE_MESSAGE_VERSION_MAJOR && res.service_message_version_minor_ > FRAMEWORK_SERVICE_MESSAGE_VERSION_MINOR)) {
                 using namespace std::string_literals;
@@ -166,12 +166,8 @@ protected:
             session_id_ = res.session_id_;
             service_id_ = res.service_id_;
 
-            if (!blobs_sent.empty()) {
-                if (!conf_.allow_blob_privileged_) {
-                    blob_error_ = blob_error::not_allowed;
-                    return;
-                }
-                for (auto&& e: blobs_sent) {
+            if (!blobs_arrived.empty()) {
+                for (auto&& e: blobs_arrived) {
                     blob_error_ = std::visit(blob_handler(this, e.first, e.second.second, resources_), e.second.first);
                     if (blob_error_ != blob_error::ok) {
                         // error, already set blob_error_ and causing_file_ in std::visit() */
@@ -204,7 +200,7 @@ private:
         }
 
         [[nodiscard]] blob_error operator()(const std::string &value) {
-            if (resources_.blob_transfer() != resources::blob_transfer_type::privileged) {
+            if (!request_->conf_.allow_blob_privileged_ || resources_.blob_transfer() != resources::blob_transfer_type::privileged) {
                 return blob_error::not_allowed;
             }
 
