@@ -180,7 +180,7 @@ public:
             current_record_size += length;
             if ((current_record_size + tateyama::common::wire::length_header::size) > datachannel_buffer_size_) {
                 using namespace std::literals::string_literals;
-                throw std::runtime_error("too large record size, a sum of " + std::to_string(current_record_size) + "-byte record and " + std::to_string(sizeof(tateyama::common::wire::length_header)) + "-byte header is larger than the " + std::to_string(datachannel_buffer_size_) + "-byte buffer"s);
+                throw std::runtime_error("too large record size, a sum of " + std::to_string(current_record_size) + "-byte record and " + std::to_string(sizeof(tateyama::common::wire::length_header::length_type)) + "-byte header is larger than the " + std::to_string(datachannel_buffer_size_) + "-byte buffer"s);
             }
             if (!annex_mode_) {
                 if (shm_resultset_wire_->check_room(length)) {
