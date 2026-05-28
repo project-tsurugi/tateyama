@@ -199,7 +199,7 @@ public:
     inline void blob_transfer(blob_transfer_type type) {
         blob_transfer_type_ = type;
     }
-    [[nodiscard]] inline blob_transfer_type blob_transfer() const {
+    [[nodiscard]] inline blob_transfer_type blob_transfer() const noexcept {
         return blob_transfer_type_;
     }
 

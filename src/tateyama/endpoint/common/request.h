@@ -70,6 +70,7 @@ public:
         not_found,
         not_accessible,
         not_regular_file,
+        tag_mismatch,
     };
 
     request(tateyama::endpoint::common::resources& resources,
@@ -136,13 +137,18 @@ public:
     [[nodiscard]] std::string blob_error_message() const noexcept {
         std::ostringstream ss{};
         switch (blob_error_) {
-            case blob_error::ok: return {""};
-            case blob_error::not_allowed: return {"BLOB handling in privileged mode is not allowed"};
-            case blob_error::not_found: ss << "tsurugidb failed to receive BLOB file in privileged mode (file not found): "; break;
-            case blob_error::not_accessible: ss << "tsurugidb failed to receive BLOB file in privileged mode (cannot read file): "; break;
-            case blob_error::not_regular_file: ss << "tsurugidb failed to receive BLOB file in privileged mode (not regular file): "; break;
+        case blob_error::ok: return {""};
+        case blob_error::not_allowed:
+            ss << "BLOB handling in " << blob_transfer_mode() << " mode is not allowed";
+            return ss.str();
+        case blob_error::not_found: ss << "tsurugidb failed to receive BLOB file in " << blob_transfer_mode() << " mode (file not found)"; break;
+        case blob_error::not_accessible: ss << "tsurugidb failed to receive BLOB file in " << blob_transfer_mode() << " mode (cannot read file)"; break;
+        case blob_error::not_regular_file: ss << "tsurugidb failed to receive BLOB file in " << blob_transfer_mode() << " mode (not regular file)"; break;
+        case blob_error::tag_mismatch: ss << "tsurugidb failed to receive BLOB file in " << blob_transfer_mode() << " mode (tag mismatch)"; break;
         }
-        ss << causing_file_;
+        if (!causing_file_.string().empty()) {
+            ss << ": " << causing_file_;
+        }
         return ss.str();
     }
 
@@ -234,7 +240,7 @@ private:
                         return blob_error::not_found;
                     }
                     request_->causing_file_ = blob_path_opt.value();
-                    return blob_error::not_allowed;
+                    return blob_error::tag_mismatch;
                 }
                 request_->causing_file_ = blob_path_opt.value();
                 return error;
@@ -278,8 +284,18 @@ private:
             case blob_error::not_found: return "not_found"sv;
             case blob_error::not_accessible: return "not_accessible"sv;
             case blob_error::not_regular_file: return "not_regular_file"sv;
+            case blob_error::tag_mismatch: return "tag_mismatch"sv;
         }
         std::abort();
+    }
+
+    [[nodiscard]] inline std::string_view blob_transfer_mode() const noexcept {
+        using namespace std::string_view_literals;
+        switch (resources_.blob_transfer()) {
+            case endpoint::common::resources::blob_transfer_type::privileged: return "privileged"sv;
+            case endpoint::common::resources::blob_transfer_type::blob_relay_streaming: return "blob_relay_streaming"sv;
+            default: return "do not use"sv;
+        }
     }
 
     [[nodiscard]] static bool is_readable(const std::filesystem::path& p) {
