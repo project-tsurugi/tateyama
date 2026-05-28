@@ -116,6 +116,7 @@ public:
                 break;
             }
         }
+        exited_.store(true);
     }
     void terminate() {
         connection_socket_.request_terminate();
@@ -129,12 +130,17 @@ public:
         return worker_.get();
     }
 
+    bool check_exited() {
+        return exited_.load();
+    }
+
 private:
     service_for_stream_session_test& service_;
     tateyama::framework::environment& env_;
     std::unique_ptr<tateyama::endpoint::common::configuration> conf_{};
     connection_socket connection_socket_{tateyama::api::endpoint::stream::stream_client::PORT_FOR_TEST};
     std::unique_ptr<tateyama::endpoint::stream::bootstrap::stream_worker> worker_{};
+    std::atomic_bool exited_{};
 };
 
 }
@@ -174,6 +180,9 @@ class stream_session_test : public tateyama::test_utils::Test {
         listener_->terminate();
 
         thread_.join();
+        while (!listener_->check_exited()) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
     }
 
 public:
