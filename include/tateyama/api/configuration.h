@@ -24,6 +24,7 @@
 #include <iterator>
 #include <sstream>
 #include <filesystem>
+#include <stdexcept>
 
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/ini_parser.hpp>
@@ -172,12 +173,17 @@ public:
     whole(std::string_view file_name, std::string_view default_property) {
         file_ = std::filesystem::path(std::string(file_name));
         std::stringstream empty_ss{};
-        if (std::filesystem::exists(file_)) {
-            property_file_exist_ = true;
-            initialize(default_property, empty_ss);
-        } else {
-            vlog_info_ << "cannot find " << file_name << ", thus we use default property only." << std::endl;  // NOLINT
-            initialize(default_property, empty_ss, false);
+        try {
+            if (std::filesystem::exists(file_)) {
+                property_file_exist_ = true;
+                initialize(default_property, empty_ss);
+            } else {
+                vlog_info_ << "cannot find " << file_name << ", thus we use default property only." << std::endl;  // NOLINT
+                initialize(default_property, empty_ss, false);
+            }
+        } catch (std::filesystem::filesystem_error const& e) {
+            using namespace std::string_literals;
+            throw std::runtime_error("cannot assess "s + file_.string() + ", as '" + e.what() + "'");
         }
     }
     // this constructor works as if property file exists and its content is provided as istream
@@ -293,7 +299,7 @@ private:
                 BOOST_FOREACH(const boost::property_tree::ptree::value_type &p, s.second) {
                     try {
                         default_section.get<std::string>(p.first);
-                    } catch (boost::property_tree::ptree_error &e) {
+                    } catch (boost::property_tree::ptree_error const& e) {
                         if (default_required) {
                             LOG_LP(ERROR) << "property '" << p.first << "' is not in the '" << section_name << "' section in the default configuration.";
 //                          rv = false;  //  FIXME  As a provisional measure, treat as not an error if the property is not in the default configuration.
@@ -301,7 +307,7 @@ private:
                         continue;
                     }
                 }
-            } catch (boost::property_tree::ptree_error &e) {
+            } catch (boost::property_tree::ptree_error const& e) {
                 if (default_required) {
                     LOG_LP(ERROR) << "section '" << section_name << "' is not in the default configuration.";
 //                  rv = false;  //  FIXME  As a provisional measure, treat as not an error if the property is not in the default configuration.
@@ -330,9 +336,9 @@ private:
             } else {
                 boost::property_tree::read_ini(content, property_tree_);
             }
-        } catch (boost::property_tree::ini_parser_error &e) {
+        } catch (boost::property_tree::ini_parser_error const& e) {
             if (throw_exception) {
-                throw e;
+                throw;
             }
             vlog_info_ << "error reading input, thus we use default property only. msg:" << e.what() << std::endl;  // NOLINT
         }
@@ -343,7 +349,7 @@ private:
                 try {
                     auto& pt = property_tree_.get_child(v.first);
                     map_.emplace(v.first, std::make_unique<section>(pt, dt, this, default_required));
-                } catch (boost::property_tree::ptree_error &e) {
+                } catch (boost::property_tree::ptree_error const& e) {
                     vlog_info_ << "cannot find " << v.first << " section in the input, thus we use default property only." << std::endl;  // NOLINT
                     map_.emplace(v.first, std::make_unique<section>(dt, this, default_required));
                 }
@@ -402,7 +408,10 @@ inline bool operator!=(whole const& a, whole const& b) noexcept {
 inline std::shared_ptr<whole> create_configuration(std::string_view file_name = "", std::string_view default_property = "") {
     try {
         return std::make_shared<whole>(file_name, default_property);
-    } catch (boost::property_tree::ptree_error &e) {
+    } catch (boost::property_tree::ptree_error const& e) {
+        LOG_LP(ERROR) << "cannot create configuration, as '" << e.what() << '\'';
+        return nullptr;
+    } catch (std::runtime_error const& e) {
         LOG_LP(ERROR) << "cannot create configuration, as '" << e.what() << '\'';
         return nullptr;
     }
