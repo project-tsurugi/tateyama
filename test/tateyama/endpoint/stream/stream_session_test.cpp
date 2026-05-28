@@ -18,6 +18,8 @@
 #include <mutex>
 #include <condition_variable>
 
+#include <boost/thread/barrier.hpp>
+
 #include "tateyama/endpoint/stream/bootstrap/stream_worker.h"
 #include "tateyama/endpoint/header_utils.h"
 #include "stream_client.h"
@@ -100,9 +102,6 @@ public:
         service_(service),
         env_(env) {
     }
-    ~stream_listener_for_session_test() {
-        connection_socket_.close();
-    }
     void operator()() {
         while (true) {
             std::unique_ptr<stream_socket> stream{};
@@ -116,22 +115,22 @@ public:
                 break;
             }
         }
-        exited_.store(true);
+        connection_socket_.close();        
+        sync_.wait();
     }
     void terminate() {
         connection_socket_.request_terminate();
+        sync_.wait();
     }
 
     void wait_worker_termination() {
-        while (!worker_->is_terminated());
+        while (!worker_->is_terminated()) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
     }
 
     auto* worker() {
         return worker_.get();
-    }
-
-    bool check_exited() {
-        return exited_.load();
     }
 
 private:
@@ -140,7 +139,7 @@ private:
     std::unique_ptr<tateyama::endpoint::common::configuration> conf_{};
     connection_socket connection_socket_{tateyama::api::endpoint::stream::stream_client::PORT_FOR_TEST};
     std::unique_ptr<tateyama::endpoint::stream::bootstrap::stream_worker> worker_{};
-    std::atomic_bool exited_{};
+    boost::barrier sync_{2};
 };
 
 }
@@ -166,6 +165,7 @@ class stream_session_test : public tateyama::test_utils::Test {
         test_environment_.resource_repository().add(session_bridge_);
         listener_ = std::make_unique<tateyama::endpoint::stream::stream_listener_for_session_test>(service_, test_environment_);
         thread_ = std::thread(std::ref(*listener_));
+        thread_.detach();
         client_ = std::make_unique<stream_client>();
 
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
@@ -178,11 +178,6 @@ class stream_session_test : public tateyama::test_utils::Test {
         // terminate listener
         listener_->wait_worker_termination();
         listener_->terminate();
-
-        thread_.join();
-        while (!listener_->check_exited()) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
-        }
     }
 
 public:
