@@ -25,6 +25,8 @@
 #include <string_view>
 #include <functional>
 
+#include <boost/version.hpp>
+
 #include <glog/logging.h>
 #include <tateyama/logging.h>
 
@@ -38,7 +40,11 @@ class server_wire_container_impl : public server_wire_container
     static constexpr std::size_t request_buffer_size = (1<<12);   //  4K bytes NOLINT
     static constexpr std::size_t response_buffer_size = (1<<13);  //  8K bytes NOLINT
     static constexpr std::size_t data_channel_overhead = 7700;   //  by experiment NOLINT
+#if BOOST_VERSION < 108600
     static constexpr std::size_t total_overhead = (1<<14);   //  16K bytes by experiment NOLINT
+#else
+    static constexpr std::size_t total_overhead = ((1<<14) + (1<<16));   //  16K + 64K bytes to avoid new boost bug NOLINT
+#endif
 
 public:
     class resultset_wires_container_impl;
