@@ -22,6 +22,7 @@ parameter=value
 | epoch_duration  | 整数 | エポックの長さ(us)。デフォルトは3000。 |
 | waiting_resolver_threads | 整数 | コミット待ちとなったLTX群の待ち判定とプレコミット処理を行うスレッド数。デフォルト2。 |
 | index_restore_threads    | 整数 | 起動時のデータストアからのインデックス復元処理を行うスレッド数。デフォルトは4。 |
+| dev_iterator_based_scan  | ブール(true/false) | scanの挙動をイテレータベースとするか。デフォルトはfalse。 | 開発用のため将来的に削除/変更される可能性あり |
 
 ## datastoreセクション
 
