@@ -401,7 +401,24 @@ protected:
         }
         if (!find_blob_transfer) {
             using namespace std::literals::string_literals;
-            handshake_error(res, tateyama::proto::diagnostics::Code::UNSUPPORTED_OPERATION, "the requested blob transfer method is unavailable"s);
+
+            std::string types{};
+            bool visited{};
+            for (const auto& e : rq.handshake().blob_transfer_media()) {
+                if (visited) {
+                    types += " or ";
+                }
+                auto type = e.blob_transfer_type();
+                if (type == proto::endpoint::request::BlobTransferType::PRIVILEGED) {
+                    types += "PRIVILEGED";
+                } else if(type == proto::endpoint::request::BlobTransferType::RELAY) {
+                    types += "RELAY";
+                } else if(type == proto::endpoint::request::BlobTransferType::DOES_NOT_USE) {
+                    types += "DOES_NOT_USE";
+                }
+                visited = true;
+            }
+            handshake_error(res, tateyama::proto::diagnostics::Code::UNSUPPORTED_OPERATION, "the requested blob transfer method ("s + types + ") is unavailable"s);
             return false;
         }
 
