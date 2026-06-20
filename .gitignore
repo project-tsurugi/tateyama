@@ -5,6 +5,9 @@
 ~*
 .~*
 
+# Windows
+desktop.ini
+
 # Mac
 .DS_Store
 
