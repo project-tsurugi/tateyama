@@ -19,7 +19,6 @@
 #include <variant>
 #include <ios>
 #include <functional>
-#include <emmintrin.h>
 #include <deque>
 #include <thread>
 
@@ -33,6 +32,7 @@
 #include <tateyama/common.h>
 #include <tateyama/task_scheduler/context.h>
 #include <tateyama/task_scheduler/impl/queue.h>
+#include <tateyama/task_scheduler/impl/spin_wait_hint.h>
 #include <tateyama/task_scheduler/impl/thread_control.h>
 #include <tateyama/task_scheduler/impl/thread_initialization_info.h>
 #include <tateyama/task_scheduler/task_scheduler_cfg.h>
@@ -158,7 +158,7 @@ public:
                 if(try_local_and_sticky(ctx, q, sq)) {
                     return true;
                 }
-                _mm_pause();
+                spin_wait_hint();
             }
             bool stolen = steal_and_execute(ctx);
             if(stolen) {
@@ -203,7 +203,7 @@ public:
         std::size_t empty_work_count = 0;
         while(sq.active() || q.active()) {
             if(! process_next(ctx, q, sq)) {
-                _mm_pause();
+                spin_wait_hint();
                 if(! sq.active() && ! q.active()) break;
                 suspend_worker_if_needed(empty_work_count, ctx);
             } else {

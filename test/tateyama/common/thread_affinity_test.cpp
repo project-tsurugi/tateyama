@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <tateyama/task_scheduler/impl/spin_wait_hint.h>
 #include <tateyama/utils/thread_affinity.h>
 
 #include <regex>
 #include <future>
-#include <xmmintrin.h>
 #include <gtest/gtest.h>
 #include <gflags/gflags.h>
 
@@ -48,7 +48,7 @@ public:
                 };
                 auto b = clock::now();
                 while(std::chrono::duration_cast<std::chrono::milliseconds>(clock::now() -b).count() < duration_ms_) {
-                    _mm_pause(); // spin so that the cpu activity is visible
+                    tateyama::task_scheduler::spin_wait_hint(); // spin so that the cpu activity is visible
                 }
             }));
         }

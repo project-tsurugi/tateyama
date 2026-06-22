@@ -19,7 +19,6 @@
 #include <variant>
 #include <ios>
 #include <functional>
-#include <emmintrin.h>
 #include <deque>
 
 #include <glog/logging.h>

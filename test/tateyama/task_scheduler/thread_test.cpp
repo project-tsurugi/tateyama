@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <tateyama/task_scheduler/impl/spin_wait_hint.h>
 #include <tateyama/task_scheduler/impl/thread_control.h>
 
 #include <regex>
-#include <xmmintrin.h>
 #include <gtest/gtest.h>
 
 #include <thread>
@@ -150,7 +150,7 @@ TEST_F(thread_test, wait_initialization) {
         void init(thread_initialization_info const& info) {
             (void) info;
             while(! initialized_) {
-                _mm_pause();
+                spin_wait_hint();
             }
         }
         void set_initialized() {

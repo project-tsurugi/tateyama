@@ -17,10 +17,10 @@
 #include <vector>
 #include <chrono>
 #include <future>
-#include <xmmintrin.h>
 
 #include <glog/logging.h>
 
+#include <tateyama/task_scheduler/impl/spin_wait_hint.h>
 #include <tateyama/utils/thread_affinity.h>
 
 DEFINE_int64(duration, 5000, "Run duration in milli-seconds");  //NOLINT
@@ -85,7 +85,7 @@ public:
                 };
                 auto b = clock::now();
                 while(std::chrono::duration_cast<std::chrono::milliseconds>(clock::now() -b).count() < duration) {
-                    _mm_pause(); // spin so that the cpu activity is visible
+                    tateyama::task_scheduler::spin_wait_hint(); // spin so that the cpu activity is visible
                 }
             }));
         }
