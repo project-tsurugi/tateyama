@@ -85,6 +85,46 @@ public:
         return std::nullopt;
     }
 
+    template<typename T>
+    [[nodiscard]] inline std::optional<std::vector<T>> get(std::string_view n, std::string delimiter) const {
+        std::vector<T> vector{};
+        std::string value{};
+        auto name = std::string(n);
+        if (auto it = property_tree_.find(name) ; it != property_tree_.not_found()) {
+            value = it->second.data();
+            if (value.empty()) {
+                return std::nullopt;
+            }
+        }
+        if (default_valid_) {
+            if (auto it = default_tree_.find(name) ; it != default_tree_.not_found()) {
+                value = it->second.data();
+                if (value.empty()) {
+                    return std::nullopt;
+                }
+            }
+        } else {
+            // To support hidden configuration parameter, comment out the error msg for now.
+            // if (default_required_) {
+            //     LOG_LP(ERROR) << "both tree did not have such property: " << name;
+            // }
+            return std::nullopt;
+        }
+
+        std::vector<std::string> string_vector{};
+        boost::algorithm::split(string_vector, value, boost::is_any_of(delimiter));
+        for (auto& e: string_vector) {
+            boost::algorithm::trim(e);
+            try {
+                vector.emplace_back(boost::lexical_cast<T>(e));
+            } catch (boost::bad_lexical_cast &) {
+                VLOG_LP(log_trace) << "value of " << name << " is '" << value << "', which can not be converted to the type specified";
+                throw std::runtime_error("the parameter string can not be converted to the type specified");
+            }
+        }
+        return vector;
+    }
+
     // just to suppress clang clang-diagnostic-unused-private-field error
     inline void dummy_message_output(std::string_view name) const {  
         if (default_required_) {
@@ -164,6 +204,51 @@ template<>
         }
         LOG_LP(ERROR) << "value of " << name << " is '" << str << "', which is not boolean";
         throw std::runtime_error("the parameter string can not be converted to bool");
+    }
+    return std::nullopt;
+}
+
+
+
+template<>
+[[nodiscard]] inline std::optional<std::vector<std::string>> section::get<std::string>(std::string_view name, std::string delimiter) const {
+    std::vector<std::string> sv{};
+    std::optional<std::string> opt = get<std::string>(name);
+    if (opt) {
+        const auto& str = opt.value();
+        boost::algorithm::split(sv, str, boost::is_any_of(delimiter));
+        for (auto& e: sv) {
+            boost::algorithm::trim(e);
+        }
+        return sv;
+    }
+    return std::nullopt;
+}
+
+template<>
+[[nodiscard]] inline std::optional<std::vector<bool>> section::get<bool>(std::string_view name, std::string delimiter) const {
+    using boost::algorithm::iequals;
+
+    std::vector<bool> bv{};
+    std::optional<std::string> opt = get<std::string>(name);
+    if (opt) {
+        const auto& str = opt.value();
+        std::vector<std::string> sv{};
+        boost::algorithm::split(sv, str, boost::is_any_of(delimiter));
+        for (auto& e: sv) {
+            boost::algorithm::trim(e);
+            if (iequals(e, "true") || iequals(e, "yes") || e == "1") {
+                bv.emplace_back(true);
+                continue;
+            }
+            if (iequals(e, "false") || iequals(e, "no") || e == "0") {
+                bv.emplace_back(false);
+                continue;
+            }
+            LOG_LP(ERROR) << "value of " << name << " includes '" << e << "', which is not boolean";
+            throw std::runtime_error("the parameter string can not be converted to bool");
+        }
+        return bv;
     }
     return std::nullopt;
 }
