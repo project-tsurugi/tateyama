@@ -86,7 +86,7 @@ public:
     }
 
     template<typename T>
-    [[nodiscard]] inline std::optional<std::vector<T>> get(std::string_view n, std::string delimiter) const {
+    [[nodiscard]] inline std::optional<std::vector<T>> get(std::string_view n, const std::string& delimiter) const {
         std::vector<T> vector{};
         std::string value{};
         auto name = std::string(n);
@@ -211,7 +211,7 @@ template<>
 
 
 template<>
-[[nodiscard]] inline std::optional<std::vector<std::string>> section::get<std::string>(std::string_view name, std::string delimiter) const {
+[[nodiscard]] inline std::optional<std::vector<std::string>> section::get<std::string>(std::string_view name, const std::string& delimiter) const {
     std::vector<std::string> sv{};
     std::optional<std::string> opt = get<std::string>(name);
     if (opt) {
@@ -226,7 +226,7 @@ template<>
 }
 
 template<>
-[[nodiscard]] inline std::optional<std::vector<bool>> section::get<bool>(std::string_view name, std::string delimiter) const {
+[[nodiscard]] inline std::optional<std::vector<bool>> section::get<bool>(std::string_view name, const std::string& delimiter) const {
     using boost::algorithm::iequals;
 
     std::vector<bool> bv{};
