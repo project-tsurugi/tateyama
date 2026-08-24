@@ -86,23 +86,10 @@ public:
     }
 
     template<typename T>
-    [[nodiscard]] inline std::optional<std::vector<T>> get(std::string_view n, const std::string& delimiter) const {
-        std::vector<T> vector{};
+    [[nodiscard]] inline std::optional<std::vector<T>> get(std::string_view name, const std::string& delimiter) const {
         std::string value{};
-        auto name = std::string(n);
-        if (auto it = property_tree_.find(name) ; it != property_tree_.not_found()) {
-            value = it->second.data();
-            if (value.empty()) {
-                return std::nullopt;
-            }
-        }
-        if (default_valid_) {
-            if (auto it = default_tree_.find(name) ; it != default_tree_.not_found()) {
-                value = it->second.data();
-                if (value.empty()) {
-                    return std::nullopt;
-                }
-            }
+        if (auto opt = get<std::string>(name); opt) {
+            value = opt.value();
         } else {
             // To support hidden configuration parameter, comment out the error msg for now.
             // if (default_required_) {
@@ -111,6 +98,7 @@ public:
             return std::nullopt;
         }
 
+        std::vector<T> vector{};
         std::vector<std::string> string_vector{};
         boost::algorithm::split(string_vector, value, boost::is_any_of(delimiter));
         for (auto& e: string_vector) {
