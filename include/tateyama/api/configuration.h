@@ -485,7 +485,7 @@ template<>
         boost::algorithm::split(sv, str, boost::is_any_of(delimiter));
         for (auto& e: sv) {
             if (e.empty()) {
-                pv.emplace_back(std::filesystem::path{});
+                pv.emplace_back();
                 continue;
             }
             std::filesystem::path ep = e;
