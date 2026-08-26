@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 #include <sstream>
+#include <filesystem>
 
 #include <tateyama/framework/server.h>
 #include <tateyama/configuration/configuration_provider.h>
@@ -34,7 +35,7 @@ public:
             "  database_name=database_name_for_test1,database_name_for_test2\n"
             "  allow_blob_privileged=true,false\n"
             "[blob_relay]\n"
-            "  session_store=deamon_path_1|deamon_path_2\n"
+            "  session_store=store_path_1|/store_path_2\n"
             "  sstream_chunk_size=11|22\n"
         };
         cfg_ = std::make_shared<tateyama::api::configuration::whole>(ss, tateyama::test_utils::default_configuration_for_tests);
@@ -49,7 +50,7 @@ TEST_F(configuration_vector_test, string) {
     auto* ipc_endpoint_section = cfg_->get_section("ipc_endpoint");
     EXPECT_NE(nullptr, ipc_endpoint_section);
 
-    auto ov = ipc_endpoint_section->get<std::string>("database_name", ",");
+    auto ov = ipc_endpoint_section->get_vector<std::string>("database_name", ",");
     EXPECT_TRUE(ov);
     EXPECT_EQ(2, ov.value().size());
     EXPECT_EQ("database_name_for_test1", ov.value().at(0));
@@ -60,7 +61,7 @@ TEST_F(configuration_vector_test, bool) {
     auto* ipc_endpoint_section = cfg_->get_section("ipc_endpoint");
     EXPECT_NE(nullptr, ipc_endpoint_section);
 
-    auto ov = ipc_endpoint_section->get<bool>("allow_blob_privileged", ",");
+    auto ov = ipc_endpoint_section->get_vector<bool>("allow_blob_privileged", ",");
     EXPECT_TRUE(ov);
     EXPECT_EQ(2, ov.value().size());
     EXPECT_EQ(true, ov.value().at(0));
@@ -71,17 +72,31 @@ TEST_F(configuration_vector_test, blob_relay) {
     auto* blob_relay_section = cfg_->get_section("blob_relay");
     ASSERT_NE(nullptr, blob_relay_section);
 
-    auto pv = blob_relay_section->get<std::string>("session_store", "|");
+    auto pv = blob_relay_section->get_vector<std::string>("session_store", "|");
     EXPECT_TRUE(pv);
     EXPECT_EQ(2, pv.value().size());
-    EXPECT_EQ("deamon_path_1", pv.value().at(0));
-    EXPECT_EQ("deamon_path_2", pv.value().at(1));
+    EXPECT_EQ("store_path_1", pv.value().at(0));
+    EXPECT_EQ("/store_path_2", pv.value().at(1));
 
-    auto sv = blob_relay_section->get<std::uint32_t>("sstream_chunk_size", "|");
+    auto sv = blob_relay_section->get_vector<std::uint32_t>("sstream_chunk_size", "|");
     EXPECT_TRUE(sv);
     EXPECT_EQ(2, sv.value().size());
     EXPECT_EQ(11, sv.value().at(0));
     EXPECT_EQ(22, sv.value().at(1));
+}
+
+TEST_F(configuration_vector_test, blob_relay_path) {
+    std::filesystem::path bp = "/tmp";
+    cfg_->base_path(bp);
+
+    auto* blob_relay_section = cfg_->get_section("blob_relay");
+    ASSERT_NE(nullptr, blob_relay_section);
+
+    auto pv = blob_relay_section->get_vector<std::filesystem::path>("session_store", "|");
+    EXPECT_TRUE(pv);
+    EXPECT_EQ(2, pv.value().size());
+    EXPECT_EQ("/tmp/store_path_1", pv.value().at(0));
+    EXPECT_EQ("/store_path_2", pv.value().at(1));
 }
 
 }

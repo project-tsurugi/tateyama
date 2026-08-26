@@ -86,7 +86,7 @@ public:
     }
 
     template<typename T>
-    [[nodiscard]] inline std::optional<std::vector<T>> get(std::string_view name, const std::string& delimiter) const {
+    [[nodiscard]] inline std::optional<std::vector<T>> get_vector(std::string_view name, const std::string& delimiter) const {
         std::string value{};
         if (auto opt = get<std::string>(name); opt) {
             value = opt.value();
@@ -199,7 +199,7 @@ template<>
 
 
 template<>
-[[nodiscard]] inline std::optional<std::vector<std::string>> section::get<std::string>(std::string_view name, const std::string& delimiter) const {
+[[nodiscard]] inline std::optional<std::vector<std::string>> section::get_vector<std::string>(std::string_view name, const std::string& delimiter) const {
     std::vector<std::string> sv{};
     std::optional<std::string> opt = get<std::string>(name);
     if (opt) {
@@ -214,7 +214,7 @@ template<>
 }
 
 template<>
-[[nodiscard]] inline std::optional<std::vector<bool>> section::get<bool>(std::string_view name, const std::string& delimiter) const {
+[[nodiscard]] inline std::optional<std::vector<bool>> section::get_vector<bool>(std::string_view name, const std::string& delimiter) const {
     using boost::algorithm::iequals;
 
     std::vector<bool> bv{};
@@ -470,6 +470,42 @@ template<>
     }
     return std::nullopt;
 }
+
+/**
+ * @brief get std::vector of std::filesystem::epath from configuration file
+ * @return the std::vector of file path from the specified parameter. if each file path is not absolute path (does not begin with '/'), the base path is given at the beginning of the file path.
+ */
+template<>
+[[nodiscard]] inline std::optional<std::vector<std::filesystem::path>> section::get_vector<std::filesystem::path>(std::string_view name, const std::string& delimiter) const {
+    std::vector<std::filesystem::path> pv{};
+    std::optional<std::string> opt = get<std::string>(name);
+    if (opt) {
+        const auto& str = opt.value();
+        std::vector<std::string> sv{};
+        boost::algorithm::split(sv, str, boost::is_any_of(delimiter));
+        for (auto& e: sv) {
+            if (e.empty()) {
+                pv.emplace_back(std::filesystem::path{});
+                continue;
+            }
+            std::filesystem::path ep = e;
+            if (ep.is_absolute()) {
+                pv.emplace_back(ep);
+                continue;
+            }
+            auto bp = parent_->base_path();
+            if (bp) {
+                pv.emplace_back(bp.value() / ep);
+                continue;
+            }
+            LOG_LP(ERROR) << "values of " << name << " includes '" << e << "', which is relative path and the the base path is empty";
+            throw std::runtime_error("the parameter string is relative path and the base path is empty");
+        }
+        return pv;
+    }
+    return std::nullopt;
+}
+
 
 /**
  * @brief inequality comparison operator
