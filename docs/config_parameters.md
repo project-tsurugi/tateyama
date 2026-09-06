@@ -103,8 +103,8 @@ parameter=value
 |パラメーター名 | 型 | 値 |備考|
 |---:| :---: | :--- |---|
 | plugin_directory | String | UDF プラグイン (.so ファイル) を配置するディレクトリへのパス。デフォルトは $TSURUGI_HOME/var/plugins/ | |
-| endpoint | String | Tsurugi Database と UDF サーバ間の通信に利用する gRPC サーバのエンドポイント。デフォルトは "dns:///localhost:50051" | |
-| secure | ブール(true/false) | セキュアなgRPC通信路の利用可否。デフォルト値はfalse。 |
+| endpoint | String | Tsurugi Database と UDF サーバ間の通信に利用する gRPC サーバのエンドポイント。`\|` 区切りで複数指定可能。複数指定した場合はラウンドロビン方式で接続先を選択する。デフォルトは "dns:///localhost:50051" | UDF プラグイン設定ファイルで指定されている場合は、プラグイン側の設定を優先する。 |
+| secure | ブール(true/false) | セキュアな gRPC 通信路の利用可否。`\|` 区切りで複数指定可能。1個の場合はすべての `endpoint` に適用し、複数の場合は `endpoint` と同数指定して位置ごとに対応させる。デフォルト値は `false`。 | UDF プラグイン設定ファイルで指定されている場合は、プラグイン側の設定を優先する。 |
 | timeout | Integer | UDF サーバへの各 RPC 呼び出しに対するタイムアウト時間を秒単位で指定する。未指定の場合、タイムアウトは設定しない。 | 0 を指定した場合、タイムアウトを無効化する。 |
 
 ## ipc_endpointセクション
@@ -194,7 +194,7 @@ parameter=value
 |---:| :---: | :--- |---|
 |enabled | ブール(true/false) | gRPC サーバーを有効にするかどうか、デフォルト値は`false` |
 |listen_address | 文字列 | サーバーが Listen 先のアドレスとポート、デフォルト値は`0.0.0.0:52345` |
-|endpoint | 文字列 | リモートから見た gRPC サーバーのエンドポイント URI、デフォルト値は`dns:///localhost:52345` |
+|endpoint | 文字列 | リモートから見た gRPC サーバーのエンドポイント URI。UDF で複数の接続先を使用する場合は `\|` 区切りで複数指定可能。1個の場合はすべての UDF サーバー設定に適用し、複数の場合は `[udf] endpoint` と同数指定して位置ごとに対応させる。デフォルト値は `dns:///localhost:52345` | UDF プラグイン設定ファイルで指定されている場合は、プラグイン側の設定を優先する。 |
 |secure | ブール(true/false) | gRPC サーバーのセキュアポートを有効にするかどうか、デフォルト値は`false` |
 |fullchain_crt | 文字列 | フルチェイン証明書ファイルのパス、デフォルト値はなし（`secure=true`の場合は設定必須） | gRPC サーバーのセキュアポートを有効にする場合のみ使用
 |server_key | 文字列 | サーバ鍵ファイルのパス、デフォルト値はなし（`secure=true`の場合は設定必須） | gRPC サーバーのセキュアポートを有効にする場合のみ使用

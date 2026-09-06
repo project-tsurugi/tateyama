@@ -104,8 +104,8 @@ Target component
 | Parameter name | Type | Value | Remarks |
 |---:| :---: | :--- |---|
 | plugin_directory | String | Path to the directory where UDF plugins (.so files) are stored. Default value is $TSURUGI_HOME/var/plugins/. ||
-| endpoint | String | gRPC server endpoint for communication between Tsurugi Database and UDF server. Default value is "dns:///localhost:50051". ||
-| secure | Boolean (true/false) | Whether to use a secure gRPC communication channel. The default value is false. |
+| endpoint | String | gRPC server endpoint for communication between Tsurugi Database and UDF servers. Multiple endpoints can be specified using `\|` as a delimiter. When multiple endpoints are specified, the destination is selected in round-robin order. Default value is "dns:///localhost:50051". | If specified in the UDF plugin configuration file, the plugin setting takes precedence. |
+| secure | Boolean (true/false) | Whether to use a secure gRPC communication channel. Multiple values can be specified using `\|` as a delimiter. A single value is applied to all `endpoint` entries; otherwise, the number of values must match the number of `endpoint` entries and values are associated by position. The default value is `false`. | If specified in the UDF plugin configuration file, the plugin setting takes precedence. |
 | timeout | Integer | UDF RPC call timeout in seconds. If this parameter is not specified, no timeout is set. If set to 0, timeout is disabled. ||
 
 ## ipc_endpoint section
@@ -196,7 +196,7 @@ Target component
 |---:| :---: | :--- |---|
 | enabled | Boolean(true/false) | Whether to enable the gRPC server. The default value is false. |
 | listen_address | String | The address and port the server listens on. The default value is '0.0.0.0:52345' |
-| endpoint | String | Endpoint of the gRPC server. The default value is 'dns:///localhost:52345' |
+| endpoint | String | Endpoint URI of the gRPC server. When multiple UDF destinations are configured, multiple values can be specified using `\|` as a delimiter. A single value is applied to all UDF destinations; otherwise, the number of values must match `[udf] endpoint` and values are associated by position. The default value is `dns:///localhost:52345`. | If specified in the UDF plugin configuration file, the plugin setting takes precedence. |
 | secure | Boolean(true/false) | Whether to enable secure ports for the gRPC server. The default value is false. |
 | fullchain_crt | String | Path to the full chain certificate file. No default value, as this must be set when `secure` is true. | Use only when enabling secure ports for the gRPC server.
 | server_key | String |  The path to the server key file. No default value, as this must be set when `secure` is true. | Use only when enabling secure ports for the gRPC server.
