@@ -15,6 +15,7 @@
  */
 #pragma once
 
+#include <stdexcept>
 #include <memory>
 
 #include <data_relay_grpc/blob_relay/service.h>
@@ -194,7 +195,10 @@ public:
         blob_session_container_ = std::make_unique<blob_session_container>(blob_session_created);
     }
     [[nodiscard]] inline data_relay_grpc::common::blob_session& blob_session() const {
-        return blob_session_container_->blob_session();
+        if (blob_session_container_) {
+            return blob_session_container_->blob_session();
+        }
+        throw std::runtime_error("no blob_session");
     }
     inline void blob_transfer(blob_transfer_type type) {
         blob_transfer_type_ = type;
