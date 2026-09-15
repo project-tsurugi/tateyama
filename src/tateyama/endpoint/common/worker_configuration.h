@@ -163,6 +163,11 @@ public:
         ~blob_session_container() {
             blob_session_.dispose();
         }
+        blob_session_container(blob_session_container const&) = delete;
+        blob_session_container(blob_session_container&&) = delete;
+        blob_session_container& operator = (blob_session_container const&) = delete;
+        blob_session_container& operator = (blob_session_container&&) = delete;
+
         [[nodiscard]] data_relay_grpc::common::blob_session& blob_session() const {
             return blob_session_;
         }
