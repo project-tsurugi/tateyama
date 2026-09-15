@@ -15,6 +15,7 @@
  */
 #pragma once
 
+#include <stdexcept>
 #include <memory>
 
 #include <data_relay_grpc/blob_relay/service.h>
@@ -159,6 +160,14 @@ public:
     public:
         explicit blob_session_container(data_relay_grpc::common::blob_session& blob_session) : blob_session_(blob_session) {
         }
+        ~blob_session_container() {
+            blob_session_.dispose();
+        }
+        blob_session_container(blob_session_container const&) = delete;
+        blob_session_container(blob_session_container&&) = delete;
+        blob_session_container& operator = (blob_session_container const&) = delete;
+        blob_session_container& operator = (blob_session_container&&) = delete;
+
         [[nodiscard]] data_relay_grpc::common::blob_session& blob_session() const {
             return blob_session_;
         }
@@ -194,7 +203,10 @@ public:
         blob_session_container_ = std::make_unique<blob_session_container>(blob_session_created);
     }
     [[nodiscard]] inline data_relay_grpc::common::blob_session& blob_session() const {
-        return blob_session_container_->blob_session();
+        if (blob_session_container_) {
+            return blob_session_container_->blob_session();
+        }
+        throw std::runtime_error("no blob_session");
     }
     inline void blob_transfer(blob_transfer_type type) {
         blob_transfer_type_ = type;

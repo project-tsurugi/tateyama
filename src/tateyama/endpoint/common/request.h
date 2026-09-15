@@ -225,25 +225,31 @@ private:
                 return blob_error::not_allowed;
             }
 
-            auto& blob_session = request_->resources_.blob_session();
-            auto object_id = value.object_id();
-            if (auto blob_path_opt = blob_session.find(object_id); blob_path_opt) {
-                auto error = request_->blob_error_ = check_blob_path(std::filesystem::path(blob_path_opt.value()));
-                if(error == blob_error::ok) {
-                    if (blob_session.compute_tag(object_id) == value.tag()) {
-                        if (auto path_opt = blob_session.find(object_id); path_opt) {
-                            auto& blobs = request_->blobs_;
-                            blobs.emplace(name_, std::make_pair(path_opt.value(), temporary_));
-                            return blob_error::ok;
+            try {
+                auto& blob_session = request_->resources_.blob_session();
+                auto object_id = value.object_id();
+                if (auto blob_path_opt = blob_session.find(object_id); blob_path_opt) {
+                    auto error = request_->blob_error_ = check_blob_path(std::filesystem::path(blob_path_opt.value()));
+                    if(error == blob_error::ok) {
+                        if (blob_session.compute_tag(object_id) == value.tag()) {
+                            if (auto path_opt = blob_session.find(object_id); path_opt) {
+                                auto& blobs = request_->blobs_;
+                                blobs.emplace(name_, std::make_pair(path_opt.value(), temporary_));
+                                return blob_error::ok;
+                            }
+                            request_->causing_file_ = blob_path_opt.value();
+                            return blob_error::not_found;
                         }
                         request_->causing_file_ = blob_path_opt.value();
-                        return blob_error::not_found;
+                        return blob_error::tag_mismatch;
                     }
                     request_->causing_file_ = blob_path_opt.value();
-                    return blob_error::tag_mismatch;
+                    return error;
                 }
-                request_->causing_file_ = blob_path_opt.value();
-                return error;
+            } catch (std::runtime_error const& ex) {
+                request_->blob_error_ = blob_error::not_allowed;
+                // no blob session
+                return blob_error::not_allowed;
             }
             request_->blob_error_ = blob_error::not_found;
             // causing_file_ can not be determined in this case
