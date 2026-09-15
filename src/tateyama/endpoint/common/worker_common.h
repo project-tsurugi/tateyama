@@ -68,12 +68,6 @@ public:
         update_expiration_time(true);
     }
     virtual ~worker_common() {
-        try {
-            auto& blob_session = resources_.blob_session();
-            blob_session.dispose();
-        } catch (std::runtime_error &ex) {
-            // no problem, simply blob_session was not created.
-        }
         if(thread_.joinable()) thread_.join();
         auto& session_info = resources_.session_info();
         if (auto name_opt = session_info.username(); name_opt) {

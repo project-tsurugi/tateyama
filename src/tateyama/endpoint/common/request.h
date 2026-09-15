@@ -246,9 +246,10 @@ private:
                     request_->causing_file_ = blob_path_opt.value();
                     return error;
                 }
-            } catch (std::runtime_error &ex) {
+            } catch (std::runtime_error const& ex) {
                 request_->blob_error_ = blob_error::not_allowed;
                 // no blob session
+                return blob_error::not_allowed;
             }
             request_->blob_error_ = blob_error::not_found;
             // causing_file_ can not be determined in this case

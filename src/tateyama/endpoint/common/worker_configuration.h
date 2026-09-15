@@ -160,6 +160,9 @@ public:
     public:
         explicit blob_session_container(data_relay_grpc::common::blob_session& blob_session) : blob_session_(blob_session) {
         }
+        ~blob_session_container() {
+            blob_session_.dispose();
+        }
         [[nodiscard]] data_relay_grpc::common::blob_session& blob_session() const {
             return blob_session_;
         }

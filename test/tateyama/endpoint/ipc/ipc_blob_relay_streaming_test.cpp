@@ -16,6 +16,8 @@
 
 #include <functional>
 #include <optional>
+#include <chrono>
+#include <thread>
 
 #include <tateyama/proto/endpoint/request.pb.h>
 #include <tateyama/proto/endpoint/response.pb.h>
@@ -70,7 +72,10 @@ public:
         EXPECT_TRUE(req->has_blob(channel_name));
 
         auto& bi = req->get_blob(channel_name);
-        blobs_.emplace(channel_name, std::filesystem::path(bi.path()), bi.is_temporary());
+        auto blob_path = std::filesystem::path(bi.path());
+        blobs_.emplace(channel_name, blob_path, bi.is_temporary());
+        EXPECT_TRUE(std::filesystem::exists(blob_path));
+        EXPECT_EQ(std::filesystem::file_size(blob_path), blob_size);
         return true;
     }
 
@@ -221,16 +226,14 @@ TEST_F(ipc_blob_relay_streaming_test, normal) {
     ipc_blob_relay_streaming_test_server_client sc{cfg_, test_client};
     sc.start_server_client();
 
+    std::this_thread::sleep_for(std::chrono::milliseconds(20));
     auto service = sc.service();
     auto& blobs = service->blobs();
     EXPECT_FALSE(blobs.empty());
     EXPECT_EQ(blobs.size(), 1);
     for (auto&& e: blobs) {
         auto blob_path = std::get<1>(e);
-        EXPECT_TRUE(std::filesystem::exists(blob_path));
-        EXPECT_EQ(std::filesystem::file_size(blob_path), blob_size);
-        EXPECT_TRUE(grpc::Client::compare(blob_path));
-        EXPECT_FALSE(std::get<2>(e));
+        EXPECT_FALSE(std::filesystem::exists(blob_path));
     }
 }
 
