@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <ctime>
 #include <fstream>
 #include <sstream>
 #include <string>
@@ -36,7 +37,7 @@ public:
 class configuration_log_sink : public google::LogSink {
 public:
     void send(google::LogSeverity severity, const char*, const char*, int,
-              const google::LogMessageTime&, const char* message, std::size_t length) override {
+              const std::tm*, const char* message, std::size_t length) override {
         if (severity == google::GLOG_ERROR) {
             messages_.append(message, length);
         }
