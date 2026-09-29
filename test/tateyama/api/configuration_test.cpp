@@ -13,13 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <ctime>
+#include <fstream>
 #include <sstream>
+#include <string>
 #include <string_view>
 
 #include <tateyama/api/configuration.h>
 
 #include <gtest/gtest.h>
 #include <tateyama/test_utils/utility.h>
+#include <tateyama/test_utils/temporary_folder.h>
 
 namespace tateyama::api {
 
@@ -28,6 +32,18 @@ using namespace std::literals::string_literals;
 class configuration_test : public ::testing::Test {
 public:
 
+};
+
+class configuration_log_sink : public google::LogSink {
+public:
+    void send(google::LogSeverity severity, const char*, const char*, int,
+              const std::tm*, const char* message, std::size_t length) override {
+        if (severity == google::GLOG_ERROR) {
+            messages_.append(message, length);
+        }
+    }
+
+    std::string messages_{};
 };
 
 using namespace std::string_view_literals;
@@ -150,6 +166,26 @@ TEST_F(configuration_test, warn_on_invalid_property) {
     };
     std::stringstream ss0{content};
     configuration::whole cfg{ss0};
+}
+
+TEST_F(configuration_test, diagnose_unknown_section) {
+    test_utils::temporary_folder folder{};
+    folder.prepare();
+    auto file = folder.path() + "/tsurugi.ini";
+    {
+        std::ofstream output{file};
+        output << "[new_section]\noption=value\n";
+    }
+    configuration_log_sink sink{};
+    google::AddLogSink(&sink);
+    configuration::whole cfg{file, "[sql]\nthread_pool_size=1\n[datastore]\nlog_location=\n"};
+    google::RemoveLogSink(&sink);
+
+    EXPECT_NE(sink.messages_.find("section 'new_section'"), std::string::npos);
+    EXPECT_NE(sink.messages_.find(file), std::string::npos);
+    EXPECT_NE(sink.messages_.find("is not in the default configuration"), std::string::npos);
+    EXPECT_NE(cfg.get_section("sql"), nullptr);
+    folder.clean();
 }
 
 TEST_F(configuration_test, empty_string) {

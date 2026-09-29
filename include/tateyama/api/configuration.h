@@ -382,7 +382,8 @@ private:
                 }
             } catch (boost::property_tree::ptree_error const& e) {
                 if (default_required) {
-                    LOG_LP(ERROR) << "section '" << section_name << "' is not in the default configuration.";
+                    LOG_LP(ERROR) << "section '" << section_name << "' in configuration file '"
+                                  << file_.string() << "' is not in the default configuration.";
 //                  rv = false;  //  FIXME  As a provisional measure, treat as not an error if the property is not in the default configuration.
                 }
                 continue;
