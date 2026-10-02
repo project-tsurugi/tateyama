@@ -49,7 +49,6 @@ target_link_libraries(${test_target}
         PRIVATE grpc++
         PRIVATE grpc
         PRIVATE gpr
-        PRIVATE absl_synchronization
 )
 endif()
 
