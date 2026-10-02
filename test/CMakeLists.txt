@@ -47,7 +47,9 @@ if (ENABLE_GRPC)
 target_link_libraries(${test_target}
         PRIVATE data-relay-grpc
         PRIVATE grpc++
+        PRIVATE grpc
         PRIVATE gpr
+        PRIVATE absl_synchronization
 )
 endif()
 
@@ -97,6 +99,7 @@ if (ENABLE_GRPC)
     file(GLOB GRPC_SOURCES
         "tateyama/grpc/*.cpp"
         "tateyama/grpc/blob_relay/*.cpp"
+        "tateyama/grpc/distributed_query/*.cpp"
     )
     list(APPEND SRCS ${GRPC_SOURCES})
 endif()

@@ -57,6 +57,7 @@
 #ifdef ENABLE_GRPC
 #include "tateyama/grpc/server_resource.h"
 #include <tateyama/grpc/blob_relay/service_adapter.h>
+#include <tateyama/grpc/distributed_query/service_adapter.h>
 #endif
 
 namespace tateyama::framework {
@@ -210,6 +211,7 @@ void add_core_components(server& svr) {
     svr.add_resource(std::make_shared<authentication::resource::bridge>());
 #ifdef ENABLE_GRPC
     svr.add_resource(std::make_shared<grpc::blob_relay::service_adapter>());
+    svr.add_resource(std::make_shared<grpc::distributed_query::service_adapter>());
     svr.add_resource(std::make_shared<grpc::grpc_server_resource>());
 #endif
 
