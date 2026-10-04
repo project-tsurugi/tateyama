@@ -52,17 +52,18 @@ add_test(
         NAME distributed_query_role_test
         COMMAND ${test_target} --gtest_filter=distributed_query_role_test.* --gtest_output=xml:distributed_query_role_test_gtest_result.xml
 )
-foreach(grpc_config_mode IN ITEMS ON OFF)
-    add_test(
-        NAME grpc_static_package_config_${grpc_config_mode}
-        COMMAND ${CMAKE_COMMAND}
-            -DTEST_ROOT=${CMAKE_CURRENT_BINARY_DIR}/grpc-package-${grpc_config_mode}
-            -DUSE_GRPC_CONFIG=${grpc_config_mode}
-            -DCXX_COMPILER=${CMAKE_CXX_COMPILER}
-            -DCONFIG_TEMPLATE=${CMAKE_SOURCE_DIR}/cmake/Config.cmake.in
-            -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/grpc_package_config_test.cmake
-    )
-endforeach()
+# Validate the dependency mode selected by this build. The alternate mode may
+# not be installed (for example, Ubuntu can provide only pkg-config metadata).
+set(grpc_config_mode ${USE_GRPC_CONFIG})
+add_test(
+    NAME grpc_static_package_config_${grpc_config_mode}
+    COMMAND ${CMAKE_COMMAND}
+        -DTEST_ROOT=${CMAKE_CURRENT_BINARY_DIR}/grpc-package-${grpc_config_mode}
+        -DUSE_GRPC_CONFIG=${grpc_config_mode}
+        -DCXX_COMPILER=${CMAKE_CXX_COMPILER}
+        -DCONFIG_TEMPLATE=${CMAKE_SOURCE_DIR}/cmake/Config.cmake.in
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/grpc_package_config_test.cmake
+)
 endif()
 
 function (add_test_executable source_file)
