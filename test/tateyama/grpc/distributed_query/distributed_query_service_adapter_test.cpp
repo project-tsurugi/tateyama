@@ -27,6 +27,7 @@
 
 #include <tateyama/framework/server.h>
 #include <tateyama/grpc/distributed_query/service_adapter.h>
+#include <tateyama/grpc/server_resource.h>
 #include <tateyama/proto/distributed_query/hello.grpc.pb.h>
 #include <tateyama/test_utils/utility.h>
 
@@ -483,6 +484,17 @@ TEST_F(distributed_query_service_adapter_test, maps_handler_resource_exhaustion)
     EXPECT_TRUE(status.error_details().empty());
 }
 
+class fail_once_setup_resource final : public framework::resource {
+public:
+    bool setup(framework::environment&) override { return attempts_++ > 0; }
+    bool start(framework::environment&) override { return true; }
+    bool shutdown(framework::environment&) override { return true; }
+    [[nodiscard]] id_type id() const noexcept override { return max_system_reserved_id + 1; }
+    [[nodiscard]] std::string_view label() const noexcept override { return "fail_once_setup_resource"; }
+private:
+    unsigned attempts_{};
+};
+
 class distributed_query_role_test : public ::testing::Test, public test_utils::utility {
 public:
     void SetUp() override { temporary_.prepare(); }
@@ -491,7 +503,7 @@ public:
         temporary_.clean();
     }
 protected:
-    bool setup(std::string const& roles, bool grpc_enabled = true) {
+    bool setup(std::string const& roles, bool grpc_enabled = true, bool fail_once = false) {
         std::stringstream ss{};
         ss << roles << "[grpc_server]\nenabled=" << (grpc_enabled ? "true" : "false")
            << "\nlisten_address=localhost:62347\n[blob_relay]\nenabled=true\nsession_store=" << path()
@@ -499,7 +511,14 @@ protected:
         auto cfg = std::make_shared<api::configuration::whole>(ss, std::string{test_utils::default_configuration_for_tests} + "\n[distributed_query_remote]\nenabled=false\n[distributed_query_coordinator]\nenabled=false\n");
         set_dbpath(*cfg);
         server_ = std::make_unique<framework::server>(framework::boot_mode::database_server, cfg);
-        framework::add_core_components(*server_);
+        if (fail_once) {
+            // Isolate this adapter's retry lifecycle from other core services.
+            server_->add_resource(std::make_shared<tateyama::grpc::grpc_server_resource>());
+            server_->add_resource(std::make_shared<service_adapter>());
+            server_->add_resource(std::make_shared<fail_once_setup_resource>());
+        } else {
+            framework::add_core_components(*server_);
+        }
         return server_->setup();
     }
     ::grpc::Status hello() {
@@ -528,6 +547,13 @@ TEST_F(distributed_query_role_test, coordinator_only_does_not_register_remote_se
 
 TEST_F(distributed_query_role_test, dual_roles_register_remote_service) {
     ASSERT_TRUE(setup("[distributed_query_coordinator]\nenabled=true\n[distributed_query_remote]\nenabled=true\n"));
+    ASSERT_TRUE(server_->start());
+    EXPECT_TRUE(hello().ok());
+}
+
+TEST_F(distributed_query_role_test, setup_retry_preserves_registered_remote_service) {
+    ASSERT_FALSE(setup("[distributed_query_remote]\nenabled=true\n", true, true));
+    // start() retries setup after a later resource failed and shutdown ran.
     ASSERT_TRUE(server_->start());
     EXPECT_TRUE(hello().ok());
 }

@@ -59,9 +59,13 @@ bool service_adapter_impl::setup(framework::environment& env) {
         return false;
     }
 
-    service_ = std::make_shared<service>();
-    service_->set_remote_process_handler(handler_);
-    server_resource->add_service(service_.get());
+    // The listener retains raw service pointers across setup retries.
+    if (!service_) {
+        auto remote_service = std::make_shared<service>();
+        remote_service->set_remote_process_handler(handler_);
+        server_resource->add_service(remote_service.get());
+        service_ = std::move(remote_service);
+    }
     return true;
 }
 
