@@ -53,7 +53,13 @@ class remote_process_handler {
 public:
     using cancellation_check = std::function<bool()>;
 
+    remote_process_handler() = default;
     virtual ~remote_process_handler() = default;
+
+    remote_process_handler(remote_process_handler const&) = default;
+    remote_process_handler& operator=(remote_process_handler const&) = default;
+    remote_process_handler(remote_process_handler&&) noexcept = default;
+    remote_process_handler& operator=(remote_process_handler&&) noexcept = default;
 
     [[nodiscard]] virtual remote_process_result operator()(std::string_view payload) = 0;
 

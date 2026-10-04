@@ -75,7 +75,7 @@ namespace {
     proto::distributed_query::ExecuteRemoteProcessRequest const* request,
     ::grpc::ServerWriter<proto::distributed_query::ExecuteRemoteProcessResponse>* writer)
 {
-    constexpr std::size_t max_message_size = 64U * 1024U * 1024U;
+    constexpr std::size_t max_message_size = std::size_t{64} * 1024U * 1024U;
     if (request->ByteSizeLong() > max_message_size) {
         return {::grpc::StatusCode::RESOURCE_EXHAUSTED, "remote process request exceeds 64 MiB"};
     }
@@ -104,9 +104,9 @@ namespace {
     if (!result.success) {
         if (result.error_kind == remote_process_error_kind::sql_error && !result.sql_error_details.empty()) {
             auto details = sql_status_details(result.error, result.sql_error_details);
-            return {::grpc::StatusCode::UNKNOWN, std::move(result.error), std::move(details)};
+            return {::grpc::StatusCode::UNKNOWN, result.error, details};
         }
-        return {to_grpc_status(result.error_kind), std::move(result.error)};
+        return {to_grpc_status(result.error_kind), result.error};
     }
     proto::distributed_query::ExecuteRemoteProcessResponse response{};
     response.set_sequence_number(0);
