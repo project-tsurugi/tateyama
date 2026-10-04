@@ -27,15 +27,29 @@ service_adapter_impl::service_adapter_impl() = default;
 service_adapter_impl::~service_adapter_impl() = default;
 
 bool service_adapter_impl::setup(framework::environment& env) {
-    bool grpc_enabled{false};
     const auto& cfg = env.configuration();
+    bool remote_enabled{false};
+    if (auto* remote_config = cfg->get_section("distributed_query_remote"); remote_config) {
+        try {
+            remote_enabled = remote_config->get<bool>("enabled").value_or(false);
+        } catch (std::exception const& e) {
+            LOG(ERROR) << "invalid distributed_query_remote.enabled: " << e.what();
+            return false;
+        }
+    }
+    LOG(INFO) << "distributed_query_remote.enabled=" << remote_enabled;
+    if (!remote_enabled) {
+        return true;
+    }
+    bool grpc_enabled{false};
     if (auto* grpc_config = cfg->get_section("grpc_server"); grpc_config) {
         if (auto grpc_enabled_opt = grpc_config->get<bool>("enabled"); grpc_enabled_opt) {
             grpc_enabled = grpc_enabled_opt.value();
         }
     }
     if (!grpc_enabled) {
-        return true;
+        LOG(ERROR) << "distributed_query_remote.enabled=true requires grpc_server.enabled=true";
+        return false;
     }
 
     auto server_resource =

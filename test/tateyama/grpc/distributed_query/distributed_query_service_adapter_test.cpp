@@ -108,6 +108,7 @@ public:
         temporary_.prepare();
 
         std::stringstream ss{};
+        ss << "[distributed_query_remote]\nenabled=true\n";
         ss << "[grpc_server]\n";
         ss << "enabled=true\n";
         ss << "listen_address=" << endpoint << '\n';
@@ -115,7 +116,7 @@ public:
         ss << "log_location=" << path() << '\n';
         auto cfg = std::make_shared<api::configuration::whole>(
             ss,
-            test_utils::default_configuration_for_tests);
+            std::string{test_utils::default_configuration_for_tests} + "\n[distributed_query_remote]\nenabled=false\n[distributed_query_coordinator]\nenabled=false\n");
         server_ = std::make_unique<framework::server>(
             framework::boot_mode::database_server,
             cfg);
@@ -463,6 +464,67 @@ TEST_F(distributed_query_service_adapter_test, maps_handler_resource_exhaustion)
     auto status = execute_remote_process(*stub, context, request, response);
     EXPECT_EQ(::grpc::StatusCode::RESOURCE_EXHAUSTED, status.error_code());
     EXPECT_TRUE(status.error_details().empty());
+}
+
+class distributed_query_role_test : public ::testing::Test, public test_utils::utility {
+public:
+    void SetUp() override { temporary_.prepare(); }
+    void TearDown() override {
+        if (server_) { server_->shutdown(); }
+        temporary_.clean();
+    }
+protected:
+    bool setup(std::string const& roles, bool grpc_enabled = true) {
+        std::stringstream ss{};
+        ss << roles << "[grpc_server]\nenabled=" << (grpc_enabled ? "true" : "false")
+           << "\nlisten_address=localhost:62347\n[blob_relay]\nenabled=true\nsession_store=" << path()
+           << "/blob\n[datastore]\nlog_location=" << path() << '\n';
+        auto cfg = std::make_shared<api::configuration::whole>(ss, std::string{test_utils::default_configuration_for_tests} + "\n[distributed_query_remote]\nenabled=false\n[distributed_query_coordinator]\nenabled=false\n");
+        set_dbpath(*cfg);
+        server_ = std::make_unique<framework::server>(framework::boot_mode::database_server, cfg);
+        framework::add_core_components(*server_);
+        return server_->setup();
+    }
+    ::grpc::Status hello() {
+        auto channel = ::grpc::CreateChannel("localhost:62347", ::grpc::InsecureChannelCredentials());
+        auto stub = proto::distributed_query::DistributedQuery::NewStub(channel);
+        proto::distributed_query::HelloRequest request{};
+        proto::distributed_query::HelloResponse response{};
+        ::grpc::ClientContext context{};
+        context.set_deadline(std::chrono::system_clock::now() + std::chrono::seconds{3});
+        return stub->Hello(&context, request, &response);
+    }
+    std::unique_ptr<framework::server> server_{};
+};
+
+TEST_F(distributed_query_role_test, omitted_roles_do_not_register_remote_service) {
+    ASSERT_TRUE(setup(""));
+    ASSERT_TRUE(server_->start());
+    EXPECT_EQ(::grpc::StatusCode::UNIMPLEMENTED, hello().error_code());
+}
+
+TEST_F(distributed_query_role_test, coordinator_only_does_not_register_remote_service) {
+    ASSERT_TRUE(setup("[distributed_query_coordinator]\nenabled=true\n[distributed_query_remote]\nenabled=false\n"));
+    ASSERT_TRUE(server_->start());
+    EXPECT_EQ(::grpc::StatusCode::UNIMPLEMENTED, hello().error_code());
+}
+
+TEST_F(distributed_query_role_test, dual_roles_register_remote_service) {
+    ASSERT_TRUE(setup("[distributed_query_coordinator]\nenabled=true\n[distributed_query_remote]\nenabled=true\n"));
+    ASSERT_TRUE(server_->start());
+    EXPECT_TRUE(hello().ok());
+}
+
+TEST_F(distributed_query_role_test, remote_requires_grpc) {
+    EXPECT_FALSE(setup("[distributed_query_remote]\nenabled=true\n", false));
+}
+
+TEST_F(distributed_query_role_test, disabled_remote_does_not_require_grpc) {
+    EXPECT_TRUE(setup("[distributed_query_remote]\nenabled=false\n", false));
+}
+
+TEST_F(distributed_query_role_test, invalid_remote_flag_is_rejected) {
+    EXPECT_FALSE(setup("[distributed_query_remote]\nenabled=invalid\n"));
 }
 
 } // namespace tateyama::grpc::distributed_query

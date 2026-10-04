@@ -48,6 +48,10 @@ target_link_libraries(${test_target}
         PRIVATE data-relay-grpc
         PRIVATE ${TATEYAMA_GRPC_TARGET}
 )
+add_test(
+        NAME distributed_query_role_test
+        COMMAND ${test_target} --gtest_filter=distributed_query_role_test.* --gtest_output=xml:distributed_query_role_test_gtest_result.xml
+)
 endif()
 
 function (add_test_executable source_file)
