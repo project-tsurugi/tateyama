@@ -142,8 +142,7 @@ target_link_libraries(${ENGINE}
 if (ENABLE_GRPC)
 target_link_libraries(${ENGINE}
         PRIVATE data-relay-grpc
-        PRIVATE grpc++
-        PRIVATE grpc
+        PRIVATE ${TATEYAMA_GRPC_TARGET}
 )
 endif()
 
