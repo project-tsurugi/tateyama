@@ -15,6 +15,8 @@
  */
 
 #include <fstream>
+#include <algorithm>
+#include <stdexcept>
 
 #include <glog/logging.h>
 
@@ -81,6 +83,7 @@ bool resource_impl::setup(environment& env) {
 }
 
 bool resource_impl::start(environment&) {
+    if (started_) { return false; }
     started_ = true;
     if (grpc_enabled_) {
         try {
@@ -115,18 +118,58 @@ bool resource_impl::shutdown(environment&) {
             grpc_server_thread_.join();
         }
     }
+    if (started_) {
+        // A failed setup has not started the listener, so keep its registrations.
+        grpc_server_.reset();
+        services_.clear();
+        registrations_.clear();
+    }
     return true;
 }
 
 resource_impl::~resource_impl() {
+    if (grpc_server_) { grpc_server_->request_shutdown(); }
+    if (grpc_server_thread_.joinable()) { grpc_server_thread_.join(); }
     VLOG(log_info) << "/:tateyama:lifecycle:component:<dtor> " << grpc_server_resource::component_label;
 };
 
-void resource_impl::add_service(::grpc::Service* service) {
+void resource_impl::add_services(std::string key, std::vector<std::shared_ptr<::grpc::Service>> services) {
     if (started_) {
         throw std::runtime_error("The gRPC server has already started");
     }
-    services_.emplace_back(service);
+    if (key.empty() || services.empty()) {
+        throw std::invalid_argument("A registration requires a key and services");
+    }
+    for (std::size_t i = 0; i < services.size(); ++i) {
+        auto const& candidate = services[i];
+        if (!candidate || candidate.use_count() == 0) {
+            throw std::invalid_argument("A service requires a non-null pointer and an owner");
+        }
+        for (std::size_t j = 0; j < i; ++j) {
+            if (services[j].get() == candidate.get()) {
+                throw std::invalid_argument("Duplicate service in registration");
+            }
+        }
+    }
+    if (auto existing = registrations_.find(key); existing != registrations_.end()) {
+        auto const& previous = existing->second;
+        bool identical = previous.size() == services.size();
+        for (std::size_t i = 0; identical && i < services.size(); ++i) {
+            identical = previous[i].get() == services[i].get()
+                && !previous[i].owner_before(services[i]) && !services[i].owner_before(previous[i]);
+        }
+        if (identical) { return; }
+        throw std::invalid_argument("Registration key already belongs to different services");
+    }
+    for (auto const& candidate : services) {
+        if (std::find(services_.begin(), services_.end(), candidate.get()) != services_.end()) {
+            throw std::invalid_argument("Service already registered under another key");
+        }
+    }
+    // Allocate before publishing, so a failed registration leaves no raw pointers.
+    services_.reserve(services_.size() + services.size());
+    auto entry = registrations_.emplace(std::move(key), std::move(services));
+    for (auto const& service : entry.first->second) { services_.push_back(service.get()); }
 }
 
 }
