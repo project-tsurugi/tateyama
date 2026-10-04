@@ -1,0 +1,62 @@
+# Verify the production package template with an installed static library.
+# Consumers deliberately do not discover gRPC themselves.
+function(run_checked)
+    execute_process(COMMAND ${ARGV} RESULT_VARIABLE result OUTPUT_VARIABLE output ERROR_VARIABLE error)
+    if(NOT result EQUAL 0)
+        message(FATAL_ERROR "Command failed (${result}): ${ARGV}\n${output}\n${error}")
+    endif()
+endfunction()
+
+file(MAKE_DIRECTORY "${TEST_ROOT}/producer" "${TEST_ROOT}/consumer")
+# Initial-cache files preserve prefix lists when passing through execute_process.
+file(WRITE "${TEST_ROOT}/producer-hints.cmake"
+    "set(CMAKE_PREFIX_PATH [==[${DEPENDENCY_PREFIX_PATH}]==] CACHE STRING \"\" FORCE)\n")
+file(WRITE "${TEST_ROOT}/consumer-hints.cmake"
+    "set(CMAKE_PREFIX_PATH [==[${TEST_ROOT}/install;${DEPENDENCY_PREFIX_PATH}]==] CACHE STRING \"\" FORCE)\n")
+if(DEPENDENCY_GRPC_DIR)
+    foreach(kind producer consumer)
+        file(APPEND "${TEST_ROOT}/${kind}-hints.cmake"
+            "set(gRPC_DIR [==[${DEPENDENCY_GRPC_DIR}]==] CACHE PATH \"\" FORCE)\n")
+    endforeach()
+endif()
+file(WRITE "${TEST_ROOT}/producer/CMakeLists.txt" [=[
+cmake_minimum_required(VERSION 3.20)
+project(grpc_export_probe LANGUAGES CXX)
+set(ENABLE_GRPC ON)
+set(BUILD_SHARED_LIBS OFF)
+set(package_name grpc-export-probe)
+if(USE_GRPC_CONFIG)
+    find_package(gRPC CONFIG REQUIRED)
+    set(grpc_target gRPC::grpc++)
+else()
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(GRPC REQUIRED IMPORTED_TARGET grpc++)
+    set(grpc_target PkgConfig::GRPC)
+endif()
+add_library(engine STATIC probe.cpp)
+target_link_libraries(engine PRIVATE ${grpc_target})
+configure_file("${CONFIG_TEMPLATE}" "${CMAKE_CURRENT_BINARY_DIR}/${package_name}-config.cmake" @ONLY)
+install(TARGETS engine EXPORT probe ARCHIVE DESTINATION lib)
+install(EXPORT probe NAMESPACE probe:: FILE "${package_name}-targets.cmake" DESTINATION lib/cmake/${package_name})
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${package_name}-config.cmake" DESTINATION lib/cmake/${package_name})
+]=])
+file(WRITE "${TEST_ROOT}/producer/probe.cpp" "#include <grpc/grpc.h>\nvoid package_probe() { grpc_init(); grpc_shutdown(); }\n")
+file(WRITE "${TEST_ROOT}/consumer/CMakeLists.txt" [=[
+cmake_minimum_required(VERSION 3.20)
+project(grpc_export_consumer LANGUAGES CXX)
+find_package(grpc-export-probe CONFIG REQUIRED)
+add_executable(consumer main.cpp)
+target_link_libraries(consumer PRIVATE probe::engine)
+]=])
+file(WRITE "${TEST_ROOT}/consumer/main.cpp" "void package_probe();\nint main() { package_probe(); }\n")
+run_checked("${CMAKE_COMMAND}" -S "${TEST_ROOT}/producer" -B "${TEST_ROOT}/producer-build" -G Ninja
+     -C "${TEST_ROOT}/producer-hints.cmake"
+    "-DCMAKE_CXX_COMPILER=${CXX_COMPILER}" "-DUSE_GRPC_CONFIG=${USE_GRPC_CONFIG}"
+    "-DCONFIG_TEMPLATE=${CONFIG_TEMPLATE}" "-DCMAKE_INSTALL_PREFIX=${TEST_ROOT}/install")
+run_checked("${CMAKE_COMMAND}" --build "${TEST_ROOT}/producer-build")
+run_checked("${CMAKE_COMMAND}" --install "${TEST_ROOT}/producer-build")
+run_checked("${CMAKE_COMMAND}" -S "${TEST_ROOT}/consumer" -B "${TEST_ROOT}/consumer-build" -G Ninja
+    -C "${TEST_ROOT}/consumer-hints.cmake"
+    "-DCMAKE_CXX_COMPILER=${CXX_COMPILER}")
+run_checked("${CMAKE_COMMAND}" --build "${TEST_ROOT}/consumer-build")
+run_checked("${TEST_ROOT}/consumer-build/consumer")

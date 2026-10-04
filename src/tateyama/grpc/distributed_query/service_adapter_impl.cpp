@@ -1,0 +1,79 @@
+/*
+ * Copyright 2026-2026 Project Tsurugi.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include "service_adapter_impl.h"
+
+#include <glog/logging.h>
+
+#include <tateyama/grpc/server_resource.h>
+
+namespace tateyama::grpc::distributed_query {
+
+service_adapter_impl::service_adapter_impl() = default;
+
+service_adapter_impl::~service_adapter_impl() = default;
+
+bool service_adapter_impl::setup(framework::environment& env) {
+    const auto& cfg = env.configuration();
+    bool remote_enabled{false};
+    if (auto* remote_config = cfg->get_section("distributed_query_remote"); remote_config) {
+        try {
+            remote_enabled = remote_config->get<bool>("enabled").value_or(false);
+        } catch (std::exception const& e) {
+            LOG(ERROR) << "invalid distributed_query_remote.enabled: " << e.what();
+            return false;
+        }
+    }
+    LOG(INFO) << "distributed_query_remote.enabled=" << remote_enabled;
+    if (!remote_enabled) {
+        return true;
+    }
+    bool grpc_enabled{false};
+    if (auto* grpc_config = cfg->get_section("grpc_server"); grpc_config) {
+        if (auto grpc_enabled_opt = grpc_config->get<bool>("enabled"); grpc_enabled_opt) {
+            grpc_enabled = grpc_enabled_opt.value();
+        }
+    }
+    if (!grpc_enabled) {
+        LOG(ERROR) << "distributed_query_remote.enabled=true requires grpc_server.enabled=true";
+        return false;
+    }
+
+    auto server_resource =
+        env.resource_repository().find<tateyama::grpc::grpc_server_resource>();
+    if (!server_resource) {
+        LOG(ERROR) << "cannot find the grpc_server_resource";
+        return false;
+    }
+
+    // The listener retains raw service pointers across setup retries.
+    if (!service_) {
+        auto remote_service = std::make_shared<service>();
+        remote_service->set_remote_process_handler(handler_);
+        server_resource->add_service(remote_service.get());
+        service_ = std::move(remote_service);
+    }
+    return true;
+}
+
+void service_adapter_impl::set_remote_process_handler(std::shared_ptr<remote_process_handler> handler) {
+    handler_ = std::move(handler);
+    if (service_) {
+        service_->set_remote_process_handler(handler_);
+    }
+}
+
+} // namespace tateyama::grpc::distributed_query

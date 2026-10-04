@@ -46,8 +46,25 @@ target_link_libraries(${test_target}
 if (ENABLE_GRPC)
 target_link_libraries(${test_target}
         PRIVATE data-relay-grpc
-        PRIVATE grpc++
-        PRIVATE gpr
+        PRIVATE ${TATEYAMA_GRPC_TARGET}
+)
+add_test(
+        NAME distributed_query_role_test
+        COMMAND ${test_target} --gtest_filter=distributed_query_role_test.* --gtest_output=xml:distributed_query_role_test_gtest_result.xml
+)
+# Validate the dependency mode selected by this build. The alternate mode may
+# not be installed (for example, Ubuntu can provide only pkg-config metadata).
+set(grpc_config_mode ${USE_GRPC_CONFIG})
+add_test(
+    NAME grpc_static_package_config_${grpc_config_mode}
+    COMMAND ${CMAKE_COMMAND}
+        -DTEST_ROOT=${CMAKE_CURRENT_BINARY_DIR}/grpc-package-${grpc_config_mode}
+        -DUSE_GRPC_CONFIG=${grpc_config_mode}
+        -DCXX_COMPILER=${CMAKE_CXX_COMPILER}
+        "-DDEPENDENCY_PREFIX_PATH=${CMAKE_PREFIX_PATH}"
+        "-DDEPENDENCY_GRPC_DIR=${gRPC_DIR}"
+        -DCONFIG_TEMPLATE=${CMAKE_SOURCE_DIR}/cmake/Config.cmake.in
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/grpc_package_config_test.cmake
 )
 endif()
 
@@ -97,6 +114,7 @@ if (ENABLE_GRPC)
     file(GLOB GRPC_SOURCES
         "tateyama/grpc/*.cpp"
         "tateyama/grpc/blob_relay/*.cpp"
+        "tateyama/grpc/distributed_query/*.cpp"
     )
     list(APPEND SRCS ${GRPC_SOURCES})
 endif()
