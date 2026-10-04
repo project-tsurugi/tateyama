@@ -17,6 +17,8 @@
 
 #include <grpcpp/grpcpp.h>
 #include <vector>
+#include <memory>
+#include <string>
 
 #include <tateyama/framework/component_ids.h>
 #include <tateyama/framework/resource.h>
@@ -38,11 +40,16 @@ public:
     grpc_server_resource();
     
     /**
-      * @brief add a service to the gRPC server..
-      * @param service the service to be registered
-      * @throw std::runtime_error if gRPC server is already started
-      */
-    void add_service(::grpc::Service* service);
+     * @brief register an owned group of services before listener startup.
+     * @param key stable unique name of the registration source
+     * @param services services with ownership of all objects they depend on
+     * @details Repeating the same key, pointers, and owners is a no-op.
+     * Aliasing shared pointers may retain an aggregate service owner.
+     * Registrations survive failed setup; shutdown after startup releases them.
+     * @throw std::invalid_argument for empty/null registrations or conflicts
+     * @throw std::runtime_error after listener startup
+     */
+    void add_services(std::string key, std::vector<std::shared_ptr<::grpc::Service>> services);
 
     bool setup(framework::environment& env) override;
 

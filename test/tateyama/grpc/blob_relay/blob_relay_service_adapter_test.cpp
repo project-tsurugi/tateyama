@@ -42,6 +42,7 @@ public:
         std::stringstream ss{};
         session_store_config(ss);
         auto cfg = std::make_shared<api::configuration::whole>(ss, test_utils::default_configuration_for_tests);
+        set_dbpath(*cfg);
         sv_ = std::make_unique<framework::server>(framework::boot_mode::database_server, cfg);
         tateyama::framework::add_core_components(*sv_);
 

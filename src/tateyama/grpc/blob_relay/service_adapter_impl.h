@@ -61,8 +61,12 @@ public:
     
 private:
     std::shared_ptr<::tateyama::datastore::resource::bridge> datastore_resource_{};
-    std::shared_ptr<data_relay_grpc::blob_relay::blob_relay_service> service_handler_{};
-    std::unique_ptr<data_relay_grpc::blob_relay::blob_relay_service::api> api_{};
+    struct service_owner {
+        // Reverse destruction order keeps the API alive until the service is gone.
+        std::unique_ptr<data_relay_grpc::blob_relay::blob_relay_service::api> api{};
+        std::shared_ptr<data_relay_grpc::blob_relay::blob_relay_service> service{};
+    };
+    std::shared_ptr<service_owner> owner_{};
 
     bool blob_relay_enabled_{};
 };
