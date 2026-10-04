@@ -45,8 +45,8 @@ std::string_view grpc_server_resource::label() const noexcept {
     return component_label;
 }
 
-void grpc_server_resource::add_service(::grpc::Service* service) {
-    impl_->add_service(service);
+void grpc_server_resource::add_services(std::string key, std::vector<std::shared_ptr<::grpc::Service>> services) {
+    impl_->add_services(std::move(key), std::move(services));
 }
 
 }

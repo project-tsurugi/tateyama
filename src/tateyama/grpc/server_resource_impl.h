@@ -18,6 +18,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <memory>
+#include <map>
 #include <optional>
 #include <string>
 #include <thread>
@@ -62,12 +63,13 @@ public:
      */
     resource_impl() = default;
 
-    void add_service(::grpc::Service* service);
+    void add_services(std::string key, std::vector<std::shared_ptr<::grpc::Service>> services);
 
 private:
     std::unique_ptr<tateyama_grpc_server> grpc_server_{};
     std::thread grpc_server_thread_{};
     std::vector<::grpc::Service*> services_{};
+    std::map<std::string, std::vector<std::shared_ptr<::grpc::Service>>> registrations_{};
 
     std::string grpc_listen_address_{};
     std::filesystem::path fullchain_crt_{};
