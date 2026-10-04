@@ -16,6 +16,7 @@
 
 #include <atomic>
 #include <chrono>
+#include <future>
 #include <memory>
 #include <sstream>
 #include <thread>
@@ -67,9 +68,12 @@ public:
         cancellation_check const& is_cancelled) override
     {
         using namespace std::chrono_literals;
-        for (std::size_t i = 0; i < 2000; ++i) {
+        entered_.set_value();
+        auto const end = std::chrono::steady_clock::now() + 10s;
+        while (std::chrono::steady_clock::now() < end) {
             if (is_cancelled()) {
                 cancellation_observed_.store(true);
+                cancelled_.set_value();
                 return {false, {}, "cancelled", remote_process_error_kind::cancelled};
             }
             std::this_thread::sleep_for(1ms);
@@ -77,12 +81,17 @@ public:
         return {false, {}, "cancellation was not observed", remote_process_error_kind::internal};
     }
 
+    [[nodiscard]] std::future<void> entered() { return entered_.get_future(); }
+    [[nodiscard]] std::future<void> cancelled() { return cancelled_.get_future(); }
+
     [[nodiscard]] bool cancellation_observed() const noexcept {
         return cancellation_observed_.load();
     }
 
 private:
     std::atomic_bool cancellation_observed_{};
+    std::promise<void> entered_{};
+    std::promise<void> cancelled_{};
 };
 
 ::grpc::Status execute_remote_process(
@@ -262,13 +271,20 @@ TEST_F(distributed_query_service_adapter_test, execute_remote_process_exposes_cl
     request.set_payload("block-bytes");
     proto::distributed_query::ExecuteRemoteProcessResponse response{};
     ::grpc::ClientContext context{};
-    context.set_deadline(std::chrono::system_clock::now() + 10ms);
+    context.set_deadline(std::chrono::system_clock::now() + 15s);
+    auto entered = handler->entered();
+    auto cancelled = handler->cancelled();
+    auto call = std::async(std::launch::async, [&] {
+        return execute_remote_process(*stub, context, request, response);
+    });
 
-    auto status = execute_remote_process(*stub, context, request, response);
-    EXPECT_EQ(::grpc::StatusCode::DEADLINE_EXCEEDED, status.error_code());
-    for (std::size_t i = 0; i < 100 && !handler->cancellation_observed(); ++i) {
-        std::this_thread::sleep_for(1ms);
-    }
+    EXPECT_EQ(std::future_status::ready, entered.wait_for(5s));
+    // Cancel even if entry confirmation timed out, so failure cannot leave a live RPC.
+    context.TryCancel();
+    EXPECT_EQ(std::future_status::ready, call.wait_for(20s));
+    auto status = call.get();
+    EXPECT_EQ(::grpc::StatusCode::CANCELLED, status.error_code());
+    EXPECT_EQ(std::future_status::ready, cancelled.wait_for(5s));
     EXPECT_TRUE(handler->cancellation_observed());
 }
 
