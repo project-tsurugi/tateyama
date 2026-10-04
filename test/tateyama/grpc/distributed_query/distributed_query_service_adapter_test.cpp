@@ -126,6 +126,7 @@ public:
         auto cfg = std::make_shared<api::configuration::whole>(
             ss,
             std::string{test_utils::default_configuration_for_tests} + "\n[distributed_query_remote]\nenabled=false\n[distributed_query_coordinator]\nenabled=false\n");
+        set_dbpath(*cfg);
         server_ = std::make_unique<framework::server>(
             framework::boot_mode::database_server,
             cfg);

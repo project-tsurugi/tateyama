@@ -8,6 +8,17 @@ function(run_checked)
 endfunction()
 
 file(MAKE_DIRECTORY "${TEST_ROOT}/producer" "${TEST_ROOT}/consumer")
+# Initial-cache files preserve prefix lists when passing through execute_process.
+file(WRITE "${TEST_ROOT}/producer-hints.cmake"
+    "set(CMAKE_PREFIX_PATH [==[${DEPENDENCY_PREFIX_PATH}]==] CACHE STRING \"\" FORCE)\n")
+file(WRITE "${TEST_ROOT}/consumer-hints.cmake"
+    "set(CMAKE_PREFIX_PATH [==[${TEST_ROOT}/install;${DEPENDENCY_PREFIX_PATH}]==] CACHE STRING \"\" FORCE)\n")
+if(DEPENDENCY_GRPC_DIR)
+    foreach(kind producer consumer)
+        file(APPEND "${TEST_ROOT}/${kind}-hints.cmake"
+            "set(gRPC_DIR [==[${DEPENDENCY_GRPC_DIR}]==] CACHE PATH \"\" FORCE)\n")
+    endforeach()
+endif()
 file(WRITE "${TEST_ROOT}/producer/CMakeLists.txt" [=[
 cmake_minimum_required(VERSION 3.20)
 project(grpc_export_probe LANGUAGES CXX)
@@ -39,11 +50,13 @@ target_link_libraries(consumer PRIVATE probe::engine)
 ]=])
 file(WRITE "${TEST_ROOT}/consumer/main.cpp" "void package_probe();\nint main() { package_probe(); }\n")
 run_checked("${CMAKE_COMMAND}" -S "${TEST_ROOT}/producer" -B "${TEST_ROOT}/producer-build" -G Ninja
+     -C "${TEST_ROOT}/producer-hints.cmake"
     "-DCMAKE_CXX_COMPILER=${CXX_COMPILER}" "-DUSE_GRPC_CONFIG=${USE_GRPC_CONFIG}"
     "-DCONFIG_TEMPLATE=${CONFIG_TEMPLATE}" "-DCMAKE_INSTALL_PREFIX=${TEST_ROOT}/install")
 run_checked("${CMAKE_COMMAND}" --build "${TEST_ROOT}/producer-build")
 run_checked("${CMAKE_COMMAND}" --install "${TEST_ROOT}/producer-build")
 run_checked("${CMAKE_COMMAND}" -S "${TEST_ROOT}/consumer" -B "${TEST_ROOT}/consumer-build" -G Ninja
-    "-DCMAKE_CXX_COMPILER=${CXX_COMPILER}" "-DCMAKE_PREFIX_PATH=${TEST_ROOT}/install")
+    -C "${TEST_ROOT}/consumer-hints.cmake"
+    "-DCMAKE_CXX_COMPILER=${CXX_COMPILER}")
 run_checked("${CMAKE_COMMAND}" --build "${TEST_ROOT}/consumer-build")
 run_checked("${TEST_ROOT}/consumer-build/consumer")

@@ -61,6 +61,8 @@ add_test(
         -DTEST_ROOT=${CMAKE_CURRENT_BINARY_DIR}/grpc-package-${grpc_config_mode}
         -DUSE_GRPC_CONFIG=${grpc_config_mode}
         -DCXX_COMPILER=${CMAKE_CXX_COMPILER}
+        "-DDEPENDENCY_PREFIX_PATH=${CMAKE_PREFIX_PATH}"
+        "-DDEPENDENCY_GRPC_DIR=${gRPC_DIR}"
         -DCONFIG_TEMPLATE=${CMAKE_SOURCE_DIR}/cmake/Config.cmake.in
         -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/grpc_package_config_test.cmake
 )
