@@ -46,8 +46,17 @@ target_link_libraries(${test_target}
 if (ENABLE_GRPC)
 target_link_libraries(${test_target}
         PRIVATE data-relay-grpc
-        PRIVATE grpc++
-        PRIVATE gpr
+        PRIVATE ${TATEYAMA_GRPC_TARGET}
+)
+# Exercise the gRPC discovery mode selected for this build.
+add_test(
+    NAME grpc_static_package_config_${USE_GRPC_CONFIG}
+    COMMAND ${CMAKE_COMMAND}
+        -DTEST_ROOT=${CMAKE_CURRENT_BINARY_DIR}/grpc-package-${USE_GRPC_CONFIG}
+        -DUSE_GRPC_CONFIG=${USE_GRPC_CONFIG}
+        -DCXX_COMPILER=${CMAKE_CXX_COMPILER}
+        -DCONFIG_TEMPLATE=${CMAKE_SOURCE_DIR}/cmake/Config.cmake.in
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/grpc_package_config_test.cmake
 )
 endif()
 
