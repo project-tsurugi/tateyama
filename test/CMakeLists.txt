@@ -46,9 +46,7 @@ target_link_libraries(${test_target}
 if (ENABLE_GRPC)
 target_link_libraries(${test_target}
         PRIVATE data-relay-grpc
-        PRIVATE grpc++
-        PRIVATE grpc
-        PRIVATE gpr
+        PRIVATE ${TATEYAMA_GRPC_TARGET}
 )
 endif()
 
