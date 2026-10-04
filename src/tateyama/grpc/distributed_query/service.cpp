@@ -17,6 +17,10 @@
 #include "service.h"
 
 #include <glog/logging.h>
+#include <google/protobuf/any.pb.h>
+#include <google/protobuf/io/coded_stream.h>
+#include <google/protobuf/io/zero_copy_stream_impl_lite.h>
+#include <google/protobuf/wire_format_lite.h>
 
 namespace tateyama::grpc::distributed_query {
 
@@ -31,8 +35,28 @@ namespace {
         case remote_process_error_kind::cancelled: return ::grpc::StatusCode::CANCELLED;
         case remote_process_error_kind::timeout: return ::grpc::StatusCode::DEADLINE_EXCEEDED;
         case remote_process_error_kind::internal: return ::grpc::StatusCode::INTERNAL;
+        case remote_process_error_kind::resource_exhausted: return ::grpc::StatusCode::RESOURCE_EXHAUSTED;
+        case remote_process_error_kind::sql_error: return ::grpc::StatusCode::UNKNOWN;
     }
     return ::grpc::StatusCode::UNKNOWN;
+}
+
+// google.rpc.Status wire contract: code=1, message=2, repeated Any details=3.
+// Keep SQL/Google RPC generated types out of the Tateyama/Jogasaki API boundary.
+[[nodiscard]] std::string sql_status_details(std::string const& message, std::string const& sql_error) {
+    google::protobuf::Any detail{};
+    detail.set_type_url("type.googleapis.com/jogasaki.proto.sql.response.Error");
+    detail.set_value(sql_error);
+    std::string encoded{};
+    {
+        google::protobuf::io::StringOutputStream stream{&encoded};
+        google::protobuf::io::CodedOutputStream output{&stream};
+        using wire = google::protobuf::internal::WireFormatLite;
+        wire::WriteInt32(1, static_cast<int>(::grpc::StatusCode::UNKNOWN), &output);
+        wire::WriteString(2, message, &output);
+        wire::WriteBytes(3, detail.SerializeAsString(), &output);
+    }
+    return encoded;
 }
 
 } // namespace
@@ -51,8 +75,13 @@ namespace {
     proto::distributed_query::ExecuteRemoteProcessRequest const* request,
     ::grpc::ServerWriter<proto::distributed_query::ExecuteRemoteProcessResponse>* writer)
 {
+    constexpr std::size_t max_message_size = 64U * 1024U * 1024U;
+    if (request->ByteSizeLong() > max_message_size) {
+        return {::grpc::StatusCode::RESOURCE_EXHAUSTED, "remote process request exceeds 64 MiB"};
+    }
     if (!request->has_metadata() ||
         !request->metadata().has_protocol_version() ||
+        request->metadata().protocol_version().major() == 0 ||
         request->metadata().coordinator_job_id().empty() ||
         request->metadata().remote_execution_id().empty() ||
         request->metadata().attempt_number() == 0) {
@@ -73,11 +102,18 @@ namespace {
         return context->IsCancelled();
     });
     if (!result.success) {
+        if (result.error_kind == remote_process_error_kind::sql_error && !result.sql_error_details.empty()) {
+            auto details = sql_status_details(result.error, result.sql_error_details);
+            return {::grpc::StatusCode::UNKNOWN, std::move(result.error), std::move(details)};
+        }
         return {to_grpc_status(result.error_kind), std::move(result.error)};
     }
     proto::distributed_query::ExecuteRemoteProcessResponse response{};
     response.set_sequence_number(0);
     response.set_payload(std::move(result.payload));
+    if (response.ByteSizeLong() > max_message_size) {
+        return {::grpc::StatusCode::RESOURCE_EXHAUSTED, "remote process result exceeds 64 MiB"};
+    }
     if (!writer->Write(response)) {
         return {::grpc::StatusCode::CANCELLED, "remote process result stream was closed"};
     }

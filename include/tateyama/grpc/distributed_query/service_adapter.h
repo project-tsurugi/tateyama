@@ -35,6 +35,8 @@ enum class remote_process_error_kind {
     cancelled,
     timeout,
     internal,
+    resource_exhausted,
+    sql_error,
 };
 
 struct remote_process_result {
@@ -42,6 +44,9 @@ struct remote_process_result {
     std::string payload{};
     std::string error{};
     remote_process_error_kind error_kind{remote_process_error_kind::invalid_request};
+    // Serialized jogasaki.proto.sql.response.Error, produced by the SQL engine.
+    // Used only for sql_error; Tateyama transports it without depending on Jogasaki.
+    std::string sql_error_details{};
 };
 
 class remote_process_handler {
