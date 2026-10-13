@@ -37,6 +37,7 @@
 #ifdef ENABLE_GRPC
 #include "tateyama/grpc/server_resource.h"
 #include <tateyama/grpc/blob_relay/service_adapter.h>
+#include <tateyama/grpc/distributed_query/service_adapter.h>
 #endif
 
 namespace tateyama::test_utils {
@@ -58,6 +59,7 @@ namespace tateyama::test_utils {
         svr.add_service(std::make_shared<tateyama::authentication::service::bridge>());
 #ifdef ENABLE_GRPC
         svr.add_resource(std::make_shared<grpc::blob_relay::service_adapter>());
+        svr.add_resource(std::make_shared<grpc::distributed_query::service_adapter>());
         svr.add_resource(std::make_shared<grpc::grpc_server_resource>());
 #endif
         svr.add_service(std::make_shared<tateyama::system::service::system_service_bridge>());
