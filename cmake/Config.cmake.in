@@ -1,1 +1,14 @@
+include(CMakeFindDependencyMacro)
+
+# Static engine exports retain private dependencies as LINK_ONLY targets.
+# Recreate the gRPC target selected when this package was built.
+if(@ENABLE_GRPC@ AND NOT @BUILD_SHARED_LIBS@)
+    if(@USE_GRPC_CONFIG@)
+        find_dependency(gRPC CONFIG)
+    else()
+        find_dependency(PkgConfig)
+        pkg_check_modules(GRPC REQUIRED IMPORTED_TARGET grpc++)
+    endif()
+endif()
+
 include("${CMAKE_CURRENT_LIST_DIR}/@package_name@-targets.cmake")
