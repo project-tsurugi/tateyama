@@ -1,0 +1,187 @@
+syntax = "proto3";
+
+package tateyama.grpc.proto;
+
+import "tateyama/proto/distributed_query/hello.proto";
+import "tateyama/proto/distributed_query/remote_execution_block.proto";
+
+// L3-07 formal Distributed Query service.
+// The execution block is a shared transport definition independent of engine classes.
+service DistributedQueryService {
+    rpc ExecuteRemoteProcess(RemoteProcessRequest) returns (stream RemoteProcessResult);
+    rpc GetRemoteCatalog(RemoteCatalogRequest) returns (stream RemoteCatalogResponse);
+}
+
+message CatalogRequestMetadata {
+    tateyama.proto.distributed_query.ProtocolVersion protocol_version = 1;
+    string request_id = 2;
+}
+
+message RemoteCatalogRequest {
+    CatalogRequestMetadata metadata = 1;
+}
+
+message RemoteEmptyType {
+}
+
+message RemoteDecimalType {
+    // Preserve field presence on Protobuf versions predating proto3 optional.
+    oneof precision_presence {
+        uint64 precision = 1;
+    }
+    // Preserve field presence on Protobuf versions predating proto3 optional.
+    oneof scale_presence {
+        uint64 scale = 2;
+    }
+}
+
+message RemoteVaryingLengthType {
+    bool varying = 1;
+    // Preserve field presence on Protobuf versions predating proto3 optional.
+    oneof length_presence {
+        uint64 length = 2;
+    }
+}
+
+message RemoteTimeZoneType {
+    bool with_time_zone = 1;
+}
+
+message RemoteRowIdType {
+    uint64 sequence = 1;
+}
+
+message RemoteTableTypeColumn {
+    string name = 1;
+    RemoteDataType data_type = 2;
+}
+
+message RemoteTableType {
+    repeated RemoteTableTypeColumn columns = 1;
+}
+
+message RemoteDataType {
+    oneof value {
+        RemoteEmptyType boolean_type = 1;
+        RemoteEmptyType int1_type = 2;
+        RemoteEmptyType int2_type = 3;
+        RemoteEmptyType int4_type = 4;
+        RemoteEmptyType int8_type = 5;
+        RemoteEmptyType float4_type = 6;
+        RemoteEmptyType float8_type = 7;
+        RemoteDecimalType decimal_type = 8;
+        RemoteVaryingLengthType character_type = 9;
+        RemoteVaryingLengthType octet_type = 10;
+        RemoteVaryingLengthType bit_type = 11; // not in phase-1 (BIT is unsupported)
+        RemoteEmptyType date_type = 12;
+        RemoteTimeZoneType time_of_day_type = 13;
+        RemoteTimeZoneType time_point_type = 14;
+        RemoteEmptyType datetime_interval_type = 15; // not in phase-1 (INTERVAL is not specified)
+        RemoteEmptyType blob_type = 16;
+        RemoteEmptyType clob_type = 17;
+        RemoteEmptyType unknown_type = 18;
+        RemoteRowIdType row_id_type = 19;
+        RemoteTableType table_type = 20;
+    }
+}
+
+enum RemoteSortDirection {
+    REMOTE_SORT_DIRECTION_UNSPECIFIED = 0;
+    REMOTE_SORT_DIRECTION_ASCENDING = 1;
+    REMOTE_SORT_DIRECTION_DESCENDING = 2;
+}
+
+message RemoteSchema {
+    string schema_name = 1;
+    repeated uint64 table_index_list = 2;
+    repeated uint64 index_index_list = 3;
+    repeated uint64 function_index_list = 4;
+    repeated uint64 aggregate_function_index_list = 5;
+}
+
+message RemoteColumn {
+    string column_name = 1;
+    RemoteDataType data_type = 2;
+    bool nullable = 3;
+}
+
+message RemoteTable {
+    uint64 remote_definition_id = 1;
+    string table_name = 2;
+    repeated uint64 column_index_list = 3;
+}
+
+message RemoteIndexKey {
+    // Preserve field presence on Protobuf versions predating proto3 optional.
+    oneof column_index_presence {
+        uint64 column_index = 1;
+    }
+    RemoteSortDirection direction = 2;
+}
+
+enum RemoteIndexFeature {
+    REMOTE_INDEX_FEATURE_UNSPECIFIED = 0;
+    REMOTE_INDEX_FEATURE_PRIMARY = 1;
+    REMOTE_INDEX_FEATURE_FIND = 2;
+    REMOTE_INDEX_FEATURE_SCAN = 3;
+    REMOTE_INDEX_FEATURE_UNIQUE = 4;
+    REMOTE_INDEX_FEATURE_UNIQUE_CONSTRAINT = 5;
+}
+
+message RemoteIndex {
+    uint64 remote_definition_id = 1;
+    string index_name = 2;
+    // Preserve field presence on Protobuf versions predating proto3 optional.
+    oneof table_index_presence {
+        uint64 table_index = 3;
+    }
+    repeated RemoteIndexFeature features = 4;
+    repeated RemoteIndexKey keys = 5;
+    repeated uint64 value_column_index_list = 6;
+}
+
+enum RemoteFunctionFeature {
+    REMOTE_FUNCTION_FEATURE_UNSPECIFIED = 0;
+    REMOTE_FUNCTION_FEATURE_SCALAR = 1;
+    REMOTE_FUNCTION_FEATURE_TABLE_VALUED = 2;
+}
+
+message RemoteFunction {
+    uint64 remote_definition_id = 1;
+    string function_name = 2;
+    repeated RemoteDataType parameter_types = 3;
+    RemoteDataType return_type = 4;
+    repeated RemoteFunctionFeature features = 5;
+}
+
+message RemoteAggregateFunction {
+    uint64 remote_definition_id = 1;
+    string function_name = 2;
+    repeated RemoteDataType parameter_types = 3;
+    RemoteDataType return_type = 4;
+    bool incremental = 5;
+}
+
+message RemoteCatalog {
+    repeated RemoteSchema schema_list = 1;
+    repeated RemoteTable table_list = 2;
+    repeated RemoteColumn column_list = 3;
+    repeated RemoteIndex index_list = 4;
+    repeated RemoteFunction function_list = 5;
+    repeated RemoteAggregateFunction aggregate_function_list = 6;
+}
+
+message RemoteCatalogResponse {
+    uint64 sequence_number = 1;
+    RemoteCatalog catalog_fragment = 2;
+}
+
+message RemoteProcessRequest {
+    tateyama.proto.distributed_query.RequestMetadata metadata = 1;
+    RemoteExecutionBlock execution_block = 2;
+}
+
+message RemoteProcessResult {
+    uint64 sequence_number = 1;
+    repeated bytes record_list = 2;
+}

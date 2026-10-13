@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package tateyama.proto.distributed_query;
+
+service DistributedQuery {
+    rpc Hello(HelloRequest) returns (HelloResponse);
+}
+
+message HelloRequest {
+}
+
+message HelloResponse {
+}
+
+message ProtocolVersion {
+    uint32 major = 1;
+    uint32 minor = 2;
+}
+
+message RequestMetadata {
+    ProtocolVersion protocol_version = 1;
+    string coordinator_job_id = 2;
+    string remote_execution_id = 3;
+    uint32 attempt_number = 4;
+}
