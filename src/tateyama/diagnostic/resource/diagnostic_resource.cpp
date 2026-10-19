@@ -43,7 +43,7 @@ diagnostic_resource::~diagnostic_resource() {
 }
 
 void diagnostic_resource::add_print_callback(std::string_view id, std::function<void(std::ostream&)> func) {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::scoped_lock<std::mutex> lock(mutex_);
     bool found = false;
     for (auto&& e : handlers_) {
         if (e.first == id) {
@@ -57,7 +57,7 @@ void diagnostic_resource::add_print_callback(std::string_view id, std::function<
 }
 
 void diagnostic_resource::diagnostic_resource::remove_print_callback(std::string_view id) {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::scoped_lock<std::mutex> lock(mutex_);
     auto r = std::remove_if(handlers_.begin(), handlers_.end(), [id](const std::pair<std::string, std::function<void(std::ostream&)>>& e) { return e.first == id; });
     handlers_.erase(r, handlers_.end());
 }

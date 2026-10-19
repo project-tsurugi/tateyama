@@ -22,7 +22,7 @@ tateyama::status loopback_data_channel::acquire(std::shared_ptr<tateyama::api::s
     auto wrt = std::make_shared<loopback_data_writer>();
     writer = wrt;
     {
-        std::lock_guard<std::mutex> lock(mtx_writers_);
+        std::scoped_lock<std::mutex> lock(mtx_writers_);
         writers_.emplace_back(std::move(wrt));
     }
     return tateyama::status::ok;
@@ -32,7 +32,7 @@ tateyama::status loopback_data_channel::release(tateyama::api::server::writer &w
     tateyama::status result = tateyama::status::not_found;
     const auto wrt = dynamic_cast<loopback_data_writer*>(&writer);
     {
-        std::lock_guard<std::mutex> lock(mtx_writers_);
+        std::scoped_lock<std::mutex> lock(mtx_writers_);
         for (auto it = writers_.cbegin(); it != writers_.cend(); it++) {
             if (it->get() == wrt) {
                 writers_.erase(it);
@@ -45,7 +45,7 @@ tateyama::status loopback_data_channel::release(tateyama::api::server::writer &w
         return result;
     }
     {
-        std::lock_guard<std::mutex> lock(mtx_committed_data_list_);
+        std::scoped_lock<std::mutex> lock(mtx_committed_data_list_);
         auto list = wrt->release_committed_data();
         committed_data_list_.reserve(committed_data_list_.size() + list.size());
         committed_data_list_.insert(committed_data_list_.end(), std::make_move_iterator(list.begin()),

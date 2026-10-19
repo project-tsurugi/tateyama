@@ -128,7 +128,7 @@ public:
         os << "    session id = " << resources_.session_id() << "\n";
         os << "      processing requests" << "\n";
         {
-            std::lock_guard<std::mutex> lock(mtx_reqreses_);
+            std::scoped_lock<std::mutex> lock(mtx_reqreses_);
             for (auto itr{reqreses_.begin()}, end{reqreses_.end()}; itr != end; ++itr) {
                 os << "       slot " << std::dec << itr->first << "\n";
                 os << "         service id = " << itr->second.first->service_id() << "\n";
@@ -157,7 +157,7 @@ public:
     void foreach_request(const listener_common::callback& func) {
         std::vector<std::shared_ptr<tateyama::endpoint::common::request>> targets{};
         {
-            std::lock_guard<std::mutex> lock(mtx_reqreses_);
+            std::scoped_lock<std::mutex> lock(mtx_reqreses_);
             for (auto itr{reqreses_.begin()}, end{reqreses_.end()}; itr != end; itr++) {
                 auto& ptr = itr->second.first;
                 if (ptr.use_count() > 1) {
@@ -473,7 +473,7 @@ protected:
                 sp->set_completed();
             }
             {
-                std::lock_guard<std::mutex> lock(mtx_reqreses_);
+                std::scoped_lock<std::mutex> lock(mtx_reqreses_);
                 if (auto itr = reqreses_.find(slot); itr != reqreses_.end()) {
                     itr->second.second->cancel();
                 }
@@ -613,7 +613,7 @@ protected:
             resultset_force_close();
             request_shutdown(shutdown_type);
             {
-                std::lock_guard<std::mutex> lock(mtx_reqreses_);
+                std::scoped_lock<std::mutex> lock(mtx_reqreses_);
                 shutdown_response_.emplace(index, res);
             }
             return true;
@@ -660,7 +660,7 @@ protected:
     void shutdown_complete() {
         std::vector<std::shared_ptr<tateyama::api::server::response>> targets{};
         {
-            std::lock_guard<std::mutex> lock(mtx_reqreses_);
+            std::scoped_lock<std::mutex> lock(mtx_reqreses_);
             for (auto&& e: shutdown_response_) {
                 targets.emplace_back(e.second);
             }
@@ -678,7 +678,7 @@ protected:
 
     [[nodiscard]] bool register_reqres(std::size_t slot, const std::shared_ptr<tateyama::endpoint::common::request>& request, const std::shared_ptr<tateyama::endpoint::common::response>& response) noexcept {
         {
-            std::lock_guard<std::mutex> lock(mtx_reqreses_);
+            std::scoped_lock<std::mutex> lock(mtx_reqreses_);
             if (auto itr = reqreses_.find(slot); itr != reqreses_.end()) {
                 reqreses_.erase(itr);  // shound not happen
             }
@@ -692,7 +692,7 @@ protected:
     }
 
     void remove_reqres(std::size_t slot) noexcept {
-        std::lock_guard<std::mutex> lock(mtx_reqreses_);
+        std::scoped_lock<std::mutex> lock(mtx_reqreses_);
         if (auto&& itr = reqreses_.find(slot); itr != reqreses_.end()) {
             reqreses_.erase(itr);
         }
@@ -711,7 +711,7 @@ protected:
     void care_reqreses() {
         std::vector<std::shared_ptr<tateyama::endpoint::common::response>> targets{};
         {
-            std::lock_guard<std::mutex> lock(mtx_reqreses_);
+            std::scoped_lock<std::mutex> lock(mtx_reqreses_);
             for (auto itr{reqreses_.begin()}, end{reqreses_.end()}; itr != end; ) {
                 auto&& pair = itr->second;
                 auto && res = itr->second.second;
@@ -735,7 +735,7 @@ protected:
             return false;
         }
 
-        std::lock_guard<std::mutex> lock(mtx_reqreses_);
+        std::scoped_lock<std::mutex> lock(mtx_reqreses_);
         if (shutdown_response_.empty()) {
             return reqreses_.empty();
         }
@@ -750,7 +750,7 @@ protected:
     void foreach_reqreses(const std::function<void(tateyama::endpoint::common::response&)>& func) {
         std::vector<std::shared_ptr<tateyama::endpoint::common::response>> targets{};
         {
-            std::lock_guard<std::mutex> lock(mtx_reqreses_);
+            std::scoped_lock<std::mutex> lock(mtx_reqreses_);
             for (auto itr{reqreses_.begin()}, end{reqreses_.end()}; itr != end; ) {
                 auto& ptr = itr->second.second;
                 if (ptr.use_count() > 1) {

@@ -267,7 +267,7 @@ public:
         //   for server
         resultset_wires_container_impl(boost::interprocess::managed_shared_memory* managed_shm_ptr, std::string_view name, std::size_t count, std::mutex& mtx_shm, std::size_t datachannel_buffer_size)
             : managed_shm_ptr_(managed_shm_ptr), rsw_name_(name), server_(true), mtx_shm_(mtx_shm), datachannel_buffer_size_(datachannel_buffer_size) {
-            std::lock_guard<std::mutex> lock(mtx_shm_);
+            std::scoped_lock<std::mutex> lock(mtx_shm_);
             managed_shm_ptr_->destroy<tateyama::common::wire::shm_resultset_wires>(rsw_name_.c_str());
             try {
                 shm_resultset_wires_ = managed_shm_ptr_->construct<tateyama::common::wire::shm_resultset_wires>(rsw_name_.c_str())(managed_shm_ptr_, count, datachannel_buffer_size_);
@@ -289,7 +289,7 @@ public:
         ~resultset_wires_container_impl() override {
             try {
                 if (server_ && !force_close_) {
-                    std::lock_guard<std::mutex> lock(mtx_shm_);
+                    std::scoped_lock<std::mutex> lock(mtx_shm_);
                     managed_shm_ptr_->destroy<tateyama::common::wire::shm_resultset_wires>(rsw_name_.c_str());
                     VLOG_LP(log_trace) << "free " << datachannel_buffer_size_ << " byte " << rsw_name_ << " buffer in the shared memory, and the free space increased to " << managed_shm_ptr_->get_free_memory() << " bytes.";
                 }
@@ -307,7 +307,7 @@ public:
         resultset_wires_container_impl& operator = (resultset_wires_container_impl&&) = delete;
 
         unq_p_resultset_wire_conteiner acquire() override {
-            std::lock_guard<std::mutex> lock(mtx_shm_);
+            std::scoped_lock<std::mutex> lock(mtx_shm_);
             try {
                 auto rv = std::unique_ptr<resultset_wire_container_impl, resultset_wire_deleter_type>{
                     new resultset_wire_container_impl{shm_resultset_wires_->acquire(), *this, datachannel_buffer_size_}, resultset_wire_deleter_impl};
@@ -425,7 +425,7 @@ public:
     public:
         garbage_collector_impl() = default;
         ~garbage_collector_impl() override {
-            std::lock_guard<std::mutex> lock(mtx_put_);
+            std::scoped_lock<std::mutex> lock(mtx_put_);
             resultset_wires_set_.clear();
         }
 
@@ -438,7 +438,7 @@ public:
         garbage_collector_impl& operator = (garbage_collector_impl&&) = delete;
 
         void put(unq_p_resultset_wires_conteiner wires) override {
-            std::lock_guard<std::mutex> lock(mtx_put_);
+            std::scoped_lock<std::mutex> lock(mtx_put_);
             if (force_close_) {
                 wires->force_close();
             }
@@ -447,7 +447,7 @@ public:
         void dump() override {
             if (!force_close_) {
                 if (mtx_dump_.try_lock()) {
-                    std::lock_guard<std::mutex> lock(mtx_put_);
+                    std::scoped_lock<std::mutex> lock(mtx_put_);
 
                     auto it = resultset_wires_set_.begin();
                     while (it != resultset_wires_set_.end()) {
@@ -462,11 +462,11 @@ public:
             }
         }
         bool empty() override {
-            std::lock_guard<std::mutex> lock(mtx_put_);
+            std::scoped_lock<std::mutex> lock(mtx_put_);
             return resultset_wires_set_.empty() || force_close_;
         }
         void force_close() override {
-            std::lock_guard<std::mutex> lock(mtx_put_);
+            std::scoped_lock<std::mutex> lock(mtx_put_);
             for (const auto& it : resultset_wires_set_) {
                 it->force_close();
             }
@@ -532,21 +532,21 @@ public:
         }
         void write(const char* from, tateyama::common::wire::response_header header, bool blockable) override {
             if (thread_active_) {
-                std::lock_guard<std::mutex> lock(thread_mtx_);
+                std::scoped_lock<std::mutex> lock(thread_mtx_);
                 if (thread_active_) {
                     responses_.emplace(std::string(from, header.get_length()), header);
                     return;
                 }
             }
             {
-                std::lock_guard<std::mutex> lock(write_mtx_);
+                std::scoped_lock<std::mutex> lock(write_mtx_);
                 if (blockable || wire_->is_writable(header)) {
                     wire_->write(bip_buffer_, from, header);
                     return;
                 }
             }
             {
-                std::lock_guard<std::mutex> lock(thread_mtx_);
+                std::scoped_lock<std::mutex> lock(thread_mtx_);
                 responses_.emplace(std::string(from, header.get_length()), header);
                 writer_thread_ = std::thread(std::ref(*this));
                 writer_thread_.detach();
@@ -559,7 +559,7 @@ public:
                 std::string r{};
                 tateyama::common::wire::response_header h{};
                 {
-                    std::lock_guard<std::mutex> lock(thread_mtx_);
+                    std::scoped_lock<std::mutex> lock(thread_mtx_);
                     if (responses_.empty()) {
                         thread_active_ = false;
                         break;
@@ -571,7 +571,7 @@ public:
                     responses_.pop();
                 }
                 {
-                    std::lock_guard<std::mutex> lock(write_mtx_);
+                    std::scoped_lock<std::mutex> lock(write_mtx_);
                     wire_->write(bip_buffer_, r.data(), h);
                 }
             }
