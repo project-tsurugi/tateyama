@@ -65,7 +65,7 @@ static void set_entry(::tateyama::proto::session::response::SessionInfo* entry, 
 std::optional<error_descriptor> bridge::find_only_one_session(std::string_view session_specifier, session_context::numeric_id_type& numeric_id) {
     if (session_specifier.at(0) == ':') {
         try {
-            numeric_id = std::stol(std::string(session_specifier.data() + 1, session_specifier.length() -1));
+            numeric_id = std::stol(std::string(std::addressof(session_specifier.at(1)), session_specifier.length() -1));
             return std::nullopt;
         } catch (std::exception &ex) {
             return std::make_pair(tateyama::proto::session::diagnostic::ErrorCode::INVALID_ARGUMENT, "invalid session id");
