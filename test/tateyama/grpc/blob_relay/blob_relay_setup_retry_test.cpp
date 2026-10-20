@@ -81,11 +81,6 @@ protected:
 
 TEST_F(blob_relay_setup_retry_test, normal_start_serves_rpc) {
     ASSERT_TRUE(server_->setup());
-    auto relay = server_->find_resource<service_adapter>()->blob_relay_service();
-    std::vector<std::shared_ptr<::grpc::Service>> services{};
-    for (auto* service : relay->services()) { services.emplace_back(relay, service); }
-    // Re-registering the same owned group must not duplicate RPC methods.
-    server_->find_resource<grpc_server_resource>()->add_services("blob_relay", std::move(services));
     ASSERT_TRUE(server_->start());
     check_rpc();
 }
@@ -104,6 +99,19 @@ TEST_F(blob_relay_setup_retry_test, later_setup_failure_preserves_service_on_ret
     check_rpc();
     auto& session = adapter->blob_relay_service()->create_session();
     session.dispose();
+}
+
+TEST_F(blob_relay_setup_retry_test, retained_service_keeps_its_dependencies_alive) {
+    ASSERT_TRUE(server_->setup());
+    auto relay = server_->find_resource<service_adapter>()->blob_relay_service();
+    std::weak_ptr<datastore::resource::bridge> datastore = server_->find_resource<datastore::resource::bridge>();
+    ASSERT_TRUE(server_->shutdown());
+    server_.reset();
+    ASSERT_FALSE(datastore.expired());
+    auto& session = relay->create_session();
+    session.dispose();
+    relay.reset();
+    EXPECT_TRUE(datastore.expired());
 }
 
 } // namespace tateyama::grpc::blob_relay

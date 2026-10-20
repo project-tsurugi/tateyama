@@ -38,10 +38,9 @@ service_adapter_impl::service_adapter_impl() = default;
 service_adapter_impl::~service_adapter_impl() = default;
 
 bool service_adapter_impl::setup(framework::environment& env) {
-    // The listener retains the registered raw pointers across setup retries.
-    // Keep both the service and its API alive, and avoid registering twice.
+    // Keep the same service and API across setup retries.
     if (owner_) {
-        return true;
+        return register_services(env);
     }
     const auto& cfg = env.configuration();
 
@@ -68,16 +67,16 @@ bool service_adapter_impl::setup(framework::environment& env) {
                     try {
                         using data_relay_grpc::blob_relay::blob_session;
 
-                        datastore_resource_ = env.resource_repository().find<tateyama::datastore::resource::bridge>();
-                        if (!datastore_resource_) {
+                        auto datastore = env.resource_repository().find<tateyama::datastore::resource::bridge>();
+                        if (!datastore) {
                             LOG(ERROR) << "cannot find the datastore_resource";
                             return false;
                         }
                         auto owner = std::make_shared<service_owner>();
                         owner->api = std::make_unique<data_relay_grpc::blob_relay::blob_relay_service::api>(
-                            [datastore = datastore_resource_](blob_session::blob_id_type bid, blob_session::transaction_id_type tid) {
+                            [datastore](blob_session::blob_id_type bid, blob_session::transaction_id_type tid) {
                                 return datastore->datastore().generate_reference_tag(bid, tid); },
-                            [datastore = datastore_resource_](blob_session::blob_id_type bid) {
+                            [datastore](blob_session::blob_id_type bid) {
                                 return std::filesystem::path{datastore->datastore().get_blob_file(bid).path().native()};
                             }
                         );
@@ -88,16 +87,10 @@ bool service_adapter_impl::setup(framework::environment& env) {
                             return false;
                         }
 
-                        if (auto sr = env.resource_repository().find<tateyama::grpc::grpc_server_resource>(); sr) {
-                            owner->service = relay_service;
-                            std::vector<std::shared_ptr<::grpc::Service>> services{};
-                            for (auto* service : relay_service->services()) {
-                                services.emplace_back(owner, service);
-                            }
-                            sr->add_services("blob_relay", std::move(services));
-                        }
                         owner->service = std::move(relay_service);
+                        // Retain the owner even if registration fails part-way through.
                         owner_ = std::move(owner);
+                        return register_services(env);
 
                     } catch (std::exception &ex) {
                         LOG(ERROR) << ex.what();
@@ -108,6 +101,22 @@ bool service_adapter_impl::setup(framework::environment& env) {
         }
     }
     return true;
+}
+
+bool service_adapter_impl::register_services(framework::environment& env) {
+    try {
+        if (auto listener = env.resource_repository().find<grpc_server_resource>(); listener) {
+            auto const& services = owner_->service->services();
+            while (registered_service_count_ < services.size()) {
+                listener->add_service(services[registered_service_count_]);
+                ++registered_service_count_;
+            }
+        }
+        return true;
+    } catch (std::exception& ex) {
+        LOG(ERROR) << ex.what();
+        return false;
+    }
 }
 
 }
