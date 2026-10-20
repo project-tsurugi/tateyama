@@ -30,7 +30,7 @@ namespace tateyama::grpc::blob_relay {
 using namespace framework;
 
 std::shared_ptr<data_relay_grpc::blob_relay::blob_relay_service> service_adapter_impl::blob_relay_service() {
-    return service_handler_;
+    return owner_ ? std::shared_ptr<data_relay_grpc::blob_relay::blob_relay_service>{owner_, owner_->service.get()} : nullptr;
 }
 
 service_adapter_impl::service_adapter_impl() = default;
@@ -38,6 +38,10 @@ service_adapter_impl::service_adapter_impl() = default;
 service_adapter_impl::~service_adapter_impl() = default;
 
 bool service_adapter_impl::setup(framework::environment& env) {
+    // Keep the same service and API across setup retries.
+    if (owner_) {
+        return register_services(env);
+    }
     const auto& cfg = env.configuration();
 
     // grpc section
@@ -63,30 +67,30 @@ bool service_adapter_impl::setup(framework::environment& env) {
                     try {
                         using data_relay_grpc::blob_relay::blob_session;
 
-                        datastore_resource_ = env.resource_repository().find<tateyama::datastore::resource::bridge>();
-                        if (!datastore_resource_) {
+                        auto datastore = env.resource_repository().find<tateyama::datastore::resource::bridge>();
+                        if (!datastore) {
                             LOG(ERROR) << "cannot find the datastore_resource";
                             return false;
                         }
-                        api_ = std::make_unique<data_relay_grpc::blob_relay::blob_relay_service::api>(
-                            [this](blob_session::blob_id_type bid, blob_session::transaction_id_type tid) {
-                                return datastore_resource_->datastore().generate_reference_tag(bid, tid); },
-                            [this](blob_session::blob_id_type bid) {
-                                return std::filesystem::path{datastore_resource_->datastore().get_blob_file(bid).path().native()};
+                        auto owner = std::make_shared<service_owner>();
+                        owner->api = std::make_unique<data_relay_grpc::blob_relay::blob_relay_service::api>(
+                            [datastore](blob_session::blob_id_type bid, blob_session::transaction_id_type tid) {
+                                return datastore->datastore().generate_reference_tag(bid, tid); },
+                            [datastore](blob_session::blob_id_type bid) {
+                                return std::filesystem::path{datastore->datastore().get_blob_file(bid).path().native()};
                             }
                         );
                         // create the relay service
-                        service_handler_ = service_handler::create_service(blob_relay_config, *api_);
-                        if (!service_handler_) {
+                        auto relay_service = service_handler::create_service(blob_relay_config, *owner->api);
+                        if (!relay_service) {
                             LOG(ERROR) << "cannot start the blob relay service";
                             return false;
                         }
 
-                        if (auto sr = env.resource_repository().find<tateyama::grpc::grpc_server_resource>(); sr) {
-                            for(auto&& e: service_handler_->services()) {
-                                sr->add_service(e);
-                            }
-                        }
+                        owner->service = std::move(relay_service);
+                        // Retain the owner even if registration fails part-way through.
+                        owner_ = std::move(owner);
+                        return register_services(env);
 
                     } catch (std::exception &ex) {
                         LOG(ERROR) << ex.what();
@@ -97,6 +101,22 @@ bool service_adapter_impl::setup(framework::environment& env) {
         }
     }
     return true;
+}
+
+bool service_adapter_impl::register_services(framework::environment& env) {
+    try {
+        if (auto listener = env.resource_repository().find<grpc_server_resource>(); listener) {
+            auto const& services = owner_->service->services();
+            while (registered_service_count_ < services.size()) {
+                listener->add_service(services[registered_service_count_]);
+                ++registered_service_count_;
+            }
+        }
+        return true;
+    } catch (std::exception& ex) {
+        LOG(ERROR) << ex.what();
+        return false;
+    }
 }
 
 }
