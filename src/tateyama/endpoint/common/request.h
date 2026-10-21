@@ -316,7 +316,7 @@ private:
 
     class temporary_file {
     public:
-        temporary_file(std::filesystem::path& file_path) : file_path_(file_path) {
+        explicit temporary_file(std::filesystem::path& file_path) : file_path_(file_path) {
         }
         ~temporary_file() {
             try {
@@ -326,6 +326,12 @@ private:
                 LOG(INFO) << ex.what();
             }
         }
+
+        temporary_file(temporary_file const&) = delete;
+        temporary_file(temporary_file&&) = delete;
+        temporary_file& operator = (temporary_file const&) = delete;
+        temporary_file& operator = (temporary_file&&) = delete;
+
     private:
         std::filesystem::path file_path_;
     };
