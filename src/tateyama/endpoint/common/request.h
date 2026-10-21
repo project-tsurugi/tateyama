@@ -22,7 +22,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <variant>
-#include <set>
+#include <vector>
 #include <unistd.h>
 
 #include <tateyama/api/server/request.h>
@@ -32,7 +32,6 @@
 #include "tateyama/endpoint/common/endpoint_proto_utils.h"
 #include "worker_configuration.h"
 #include <tateyama/proto/framework/common.pb.h>
-#include "pointer_comp.h"
 
 namespace tateyama::endpoint::common {
 /**
@@ -154,7 +153,14 @@ public:
         return ss.str();
     }
     void remove_blob_file_in_session_store() {
-        blob_files_in_session_store_.clear();
+        if (!blob_object_ids_.empty()) {
+            try {
+                resources_.blob_session().remove(blob_object_ids_.begin(), blob_object_ids_.end());
+            } catch (std::exception& ex) {
+                LOG(INFO) << ex.what();
+            }
+            blob_object_ids_.clear();
+        }
     }
 
 protected:
@@ -240,7 +246,7 @@ private:
                             if (auto path_opt = blob_session.find(object_id); path_opt) {
                                 auto& blobs = request_->blobs_;
                                 blobs.emplace(name_, std::make_pair(path_opt.value(), temporary_));
-                                request_->add_blob_file_in_session_store(path_opt.value());
+                                request_->blob_object_ids_.emplace_back(object_id);
                                 return blob_error::ok;
                             }
                             request_->causing_file_ = blob_path_opt.value();
@@ -314,31 +320,7 @@ private:
         return access(p.c_str(), R_OK) == 0;
     }
 
-    class temporary_file {
-    public:
-        explicit temporary_file(std::filesystem::path& file_path) : file_path_(file_path) {
-        }
-        ~temporary_file() {
-            try {
-                std::error_code ec{};
-                std::filesystem::remove(file_path_, ec);
-            } catch (std::exception &ex) {
-                LOG(INFO) << ex.what();
-            }
-        }
-
-        temporary_file(temporary_file const&) = delete;
-        temporary_file(temporary_file&&) = delete;
-        temporary_file& operator = (temporary_file const&) = delete;
-        temporary_file& operator = (temporary_file&&) = delete;
-
-    private:
-        std::filesystem::path file_path_;
-    };
-    std::set<std::unique_ptr<temporary_file>, pointer_comp<temporary_file>> blob_files_in_session_store_{};
-    void add_blob_file_in_session_store(std::filesystem::path& file_path) {
-        blob_files_in_session_store_.emplace(std::make_unique<temporary_file>(file_path));
-    }
+    std::vector<data_relay_grpc::common::blob_session::blob_id_type> blob_object_ids_{};
 
     friend class blob_handler;
 };
