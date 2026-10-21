@@ -694,6 +694,7 @@ protected:
     void remove_reqres(std::size_t slot) noexcept {
         std::scoped_lock<std::mutex> lock(mtx_reqreses_);
         if (auto&& itr = reqreses_.find(slot); itr != reqreses_.end()) {
+            itr->second.first->remove_blob_file_in_session_store();
             reqreses_.erase(itr);
         }
     }
