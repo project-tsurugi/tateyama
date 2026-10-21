@@ -22,6 +22,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <variant>
+#include <vector>
 #include <unistd.h>
 
 #include <tateyama/api/server/request.h>
@@ -151,6 +152,16 @@ public:
         }
         return ss.str();
     }
+    void remove_blob_file_in_session_store() {
+        if (!blob_object_ids_.empty()) {
+            try {
+                resources_.blob_session().remove(blob_object_ids_.begin(), blob_object_ids_.end());
+            } catch (std::exception& ex) {
+                LOG(INFO) << ex.what();
+            }
+            blob_object_ids_.clear();
+        }
+    }
 
 protected:
     const tateyama::api::server::session_info& session_info_;  // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes,misc-non-private-member-variables-in-classes)
@@ -235,6 +246,7 @@ private:
                             if (auto path_opt = blob_session.find(object_id); path_opt) {
                                 auto& blobs = request_->blobs_;
                                 blobs.emplace(name_, std::make_pair(path_opt.value(), temporary_));
+                                request_->blob_object_ids_.emplace_back(object_id);
                                 return blob_error::ok;
                             }
                             request_->causing_file_ = blob_path_opt.value();
@@ -307,6 +319,8 @@ private:
     [[nodiscard]] static bool is_readable(const std::filesystem::path& p) {
         return access(p.c_str(), R_OK) == 0;
     }
+
+    std::vector<data_relay_grpc::common::blob_session::blob_id_type> blob_object_ids_{};
 
     friend class blob_handler;
 };

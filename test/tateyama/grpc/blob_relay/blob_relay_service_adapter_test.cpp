@@ -148,6 +148,7 @@ TEST_F(blob_relay_service_adapter_test, entries_and_remove) {
     EXPECT_EQ(blobs.at(0), bid);
     
     blob_session.remove(blobs.begin(), blobs.end());
+    EXPECT_TRUE(blob_session.entries().empty());
     EXPECT_FALSE(std::filesystem::exists(blob_file_path));
 
     blob_session.dispose();

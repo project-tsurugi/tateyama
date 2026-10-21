@@ -65,18 +65,39 @@ public:
     id_type id() const noexcept override { return service_id_of_blob_relay_streaming_test_service; }
     bool operator ()(std::shared_ptr<tateyama::api::server::request> req,
                      std::shared_ptr<tateyama::api::server::response> res) override {
-        visit_++;
-        req_ = std::dynamic_pointer_cast<tateyama::endpoint::common::request>(req);
-        res->body(response_test_message);
 
-        EXPECT_TRUE(req->has_blob(channel_name));
+        if (req->payload() == request_test_message) {
 
-        auto& bi = req->get_blob(channel_name);
-        auto blob_path = std::filesystem::path(bi.path());
-        blobs_.emplace(channel_name, blob_path, bi.is_temporary());
-        EXPECT_TRUE(std::filesystem::exists(blob_path));
-        EXPECT_EQ(std::filesystem::file_size(blob_path), blob_size);
-        return true;
+            visit_++;
+            req_ = std::dynamic_pointer_cast<tateyama::endpoint::common::request>(req);
+
+            EXPECT_TRUE(req->has_blob(channel_name));
+            auto& bi = req->get_blob(channel_name);
+            auto blob_path = std::filesystem::path(bi.path());
+            blobs_.emplace(channel_name, blob_path, bi.is_temporary());
+            EXPECT_TRUE(std::filesystem::exists(blob_path));
+            EXPECT_EQ(std::filesystem::file_size(blob_path), blob_size);
+
+            res->body(response_test_message);
+            return true;
+
+        } else if (req->payload() == channel_name) {
+
+            if (!visit_) {
+                res->body("no visit");
+                return true;
+            }
+            for (auto&& e: blobs_) {
+                if (channel_name == std::get<0>(e)) {
+                    res->body(std::filesystem::exists(std::get<1>(e)) ? "exists" : "not exist");
+                    return true;
+                }
+            }
+            res->body("not registerd blob by the channel name");
+            return true;
+
+        }
+        return false;
     }
 
     std::shared_ptr<tateyama::endpoint::common::request> request() {
@@ -204,6 +225,15 @@ protected:
 
             return res;
         };
+    std::function<std::string(ipc_client&, tateyama::proto::framework::response::Header::PayloadType&, std::string& channel_name)> request_for_existence_ =
+        [this](ipc_client& client, tateyama::proto::framework::response::Header::PayloadType& type, std::string& cn){
+            client.send(service_id_of_blob_relay_streaming_test_service, cn);
+
+            std::string res{};
+            client.receive(res, type);
+
+            return res;
+        };
 };
 
 TEST_F(ipc_blob_relay_streaming_test, normal) {
@@ -222,6 +252,13 @@ TEST_F(ipc_blob_relay_streaming_test, normal) {
         auto response = request_(client, type, blobs);
         EXPECT_EQ(type, tateyama::proto::framework::response::Header::SERVICE_RESULT);
         EXPECT_EQ(response, response_test_message);
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+
+        std::string cn{channel_name};
+        auto existence = request_for_existence_(client, type, cn);
+        EXPECT_EQ(type, tateyama::proto::framework::response::Header::SERVICE_RESULT);
+        EXPECT_EQ(existence, "not exist");
     };
     ipc_blob_relay_streaming_test_server_client sc{cfg_, test_client};
     sc.start_server_client();
