@@ -62,16 +62,7 @@ public:
     void receive(std::string &message);
     void receive() { receive(response_); }
     void receive(std::string &message, tateyama::proto::framework::response::Header::PayloadType& type);
-    void disconnect() {
-        if (!send_bye_) {
-            send(REQUEST_SESSION_BYE, TERMINATION_REQUEST, "");
-            send_bye_ = true;
-            std::string dmy{};
-            receive(dmy);
-        }
-    }
     void close() {
-        disconnect();
         ::close(sockfd_);
     }
 

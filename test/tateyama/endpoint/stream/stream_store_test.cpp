@@ -295,11 +295,10 @@ TEST_F(stream_store_test, dispose_on_disconnect) {
             EXPECT_TRUE(store.put<element_one>(1, e1));
             auto idx = e1->idx();
 
-            client_->disconnect();
+            client_->close();
             EXPECT_TRUE(e1->wait(idx + 1));
             EXPECT_TRUE(e1->disposed());
 
-            client_->close();
             listener_.wait_worker_termination();
             listener_.terminate();
         }
