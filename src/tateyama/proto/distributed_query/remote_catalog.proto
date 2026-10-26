@@ -106,7 +106,9 @@ message RemoteColumn {
 }
 
 message RemoteTable {
-    uint64 remote_definition_id = 1;
+    oneof remote_definition_id_presence {
+        uint64 remote_definition_id = 1;
+    }
     string table_name = 2;
     repeated uint64 column_index_list = 3;
 }
@@ -129,7 +131,9 @@ enum RemoteIndexFeature {
 }
 
 message RemoteIndex {
-    uint64 remote_definition_id = 1;
+    oneof remote_definition_id_presence {
+        uint64 remote_definition_id = 1;
+    }
     string index_name = 2;
     // Preserve field presence on Protobuf versions predating proto3 optional.
     oneof table_index_presence {
