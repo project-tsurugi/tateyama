@@ -1012,6 +1012,43 @@ TEST_F(remote_catalog_service_test, streams_complete_catalog_and_keeps_execution
     EXPECT_TRUE(stub->Hello(&context, hello, &hello_response).ok());
 }
 
+TEST_F(remote_catalog_service_test, definition_ids_preserve_zero_and_absence_over_rpc) {
+    for (bool table_id_present : {false, true}) {
+        for (bool index_id_present : {false, true}) {
+            SCOPED_TRACE(::testing::Message{} << "table ID present=" << table_id_present
+                                             << ", index ID present=" << index_id_present);
+            auto catalog = sample_catalog();
+            auto* table = catalog.mutable_table_list(0);
+            auto* index = catalog.mutable_index_list(0);
+            table->clear_remote_definition_id();
+            index->clear_remote_definition_id();
+            if (table_id_present) table->set_remote_definition_id(0);
+            if (index_id_present) index->set_remote_definition_id(0);
+            auto expected = catalog.SerializeAsString();
+            auto handler = std::make_shared<fixed_catalog_handler>(remote_catalog_result{true, expected, {}});
+            adapter()->set_remote_catalog_handler(handler);
+            std::vector<catalog_wire::RemoteCatalogResponse> responses{};
+            auto status = get_catalog(valid_catalog_request(), responses);
+            ASSERT_TRUE(status.ok()) << status.error_message();
+            ASSERT_EQ(1U, responses.size());
+            EXPECT_EQ(0U, responses[0].sequence_number());
+            auto restored = merge(responses);
+            ASSERT_EQ(1, restored.table_list_size());
+            ASSERT_EQ(1, restored.index_list_size());
+            EXPECT_EQ(table_id_present ? catalog_wire::RemoteTable::kRemoteDefinitionId
+                                      : catalog_wire::RemoteTable::REMOTE_DEFINITION_ID_PRESENCE_NOT_SET,
+                restored.table_list(0).remote_definition_id_presence_case());
+            EXPECT_EQ(index_id_present ? catalog_wire::RemoteIndex::kRemoteDefinitionId
+                                      : catalog_wire::RemoteIndex::REMOTE_DEFINITION_ID_PRESENCE_NOT_SET,
+                restored.index_list(0).remote_definition_id_presence_case());
+            EXPECT_EQ(0U, restored.table_list(0).remote_definition_id());
+            EXPECT_EQ(0U, restored.index_list(0).remote_definition_id());
+            EXPECT_EQ(expected, restored.SerializeAsString());
+            EXPECT_EQ(1U, handler->calls.load());
+        }
+    }
+}
+
 TEST_F(remote_catalog_service_test, empty_catalog_is_zero_messages_and_ok) {
     adapter()->set_remote_catalog_handler(std::make_shared<fixed_catalog_handler>(remote_catalog_result{true, {}, {}}));
     std::vector<catalog_wire::RemoteCatalogResponse> responses{};
@@ -1084,6 +1121,16 @@ TEST_F(remote_catalog_service_test, large_catalog_is_split_within_message_limit)
         auto* column = catalog.add_column_list();
         column->set_column_name(std::string(std::size_t{40} * 1024U * 1024U, static_cast<char>('a' + i)));
         column->mutable_data_type()->mutable_int8_type();
+        auto* table = catalog.add_table_list();
+        table->set_table_name("t" + std::to_string(i));
+        table->add_column_index_list(i);
+        auto* index = catalog.add_index_list();
+        index->set_index_name("pk" + std::to_string(i));
+        index->set_table_index(i);
+        if (i == 0) {
+            table->set_remote_definition_id(0);
+            index->set_remote_definition_id(0);
+        }
     }
     auto expected = catalog.SerializeAsString();
     adapter()->set_remote_catalog_handler(std::make_shared<fixed_catalog_handler>(remote_catalog_result{true, expected, {}}));
@@ -1091,12 +1138,29 @@ TEST_F(remote_catalog_service_test, large_catalog_is_split_within_message_limit)
     auto status = get_catalog(valid_catalog_request(), responses);
     ASSERT_TRUE(status.ok()) << status.error_message();
     ASSERT_EQ(2U, responses.size());
+    std::size_t elements{};
     for (std::size_t i = 0; i < responses.size(); ++i) {
         EXPECT_EQ(i, responses[i].sequence_number());
         EXPECT_LE(responses[i].ByteSizeLong(), remote_catalog_max_message_size);
-        EXPECT_EQ(1U, element_count(responses[i].catalog_fragment()));
+        EXPECT_EQ(1, responses[i].catalog_fragment().column_list_size());
+        EXPECT_GT(element_count(responses[i].catalog_fragment()), 0U);
+        elements += element_count(responses[i].catalog_fragment());
     }
-    EXPECT_EQ(expected, merge(responses).SerializeAsString());
+    EXPECT_EQ(element_count(catalog), elements);
+    auto restored = merge(responses);
+    ASSERT_EQ(2, restored.table_list_size());
+    ASSERT_EQ(2, restored.index_list_size());
+    EXPECT_EQ(catalog_wire::RemoteTable::kRemoteDefinitionId,
+        restored.table_list(0).remote_definition_id_presence_case());
+    EXPECT_EQ(catalog_wire::RemoteIndex::kRemoteDefinitionId,
+        restored.index_list(0).remote_definition_id_presence_case());
+    EXPECT_EQ(0U, restored.table_list(0).remote_definition_id());
+    EXPECT_EQ(0U, restored.index_list(0).remote_definition_id());
+    EXPECT_EQ(catalog_wire::RemoteTable::REMOTE_DEFINITION_ID_PRESENCE_NOT_SET,
+        restored.table_list(1).remote_definition_id_presence_case());
+    EXPECT_EQ(catalog_wire::RemoteIndex::REMOTE_DEFINITION_ID_PRESENCE_NOT_SET,
+        restored.index_list(1).remote_definition_id_presence_case());
+    EXPECT_EQ(expected, restored.SerializeAsString());
 }
 
 TEST_F(remote_catalog_service_test, single_oversized_element_is_resource_exhausted_without_response) {
