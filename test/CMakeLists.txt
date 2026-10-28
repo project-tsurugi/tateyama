@@ -48,6 +48,16 @@ target_link_libraries(${test_target}
         PRIVATE data-relay-grpc
         PRIVATE ${TATEYAMA_GRPC_TARGET}
 )
+add_test(
+        NAME distributed_query_role_test
+        COMMAND ${test_target} --gtest_filter=distributed_query_role_test.* --gtest_output=xml:distributed_query_role_test_gtest_result.xml
+)
+foreach(catalog_test remote_catalog_service_test remote_catalog_split_test)
+    add_test(
+            NAME ${catalog_test}
+            COMMAND ${test_target} --gtest_filter=${catalog_test}.* --gtest_output=xml:${catalog_test}_gtest_result.xml
+    )
+endforeach()
 # Exercise the gRPC discovery mode selected for this build.
 add_test(
     NAME grpc_static_package_config_${USE_GRPC_CONFIG}
@@ -106,6 +116,7 @@ if (ENABLE_GRPC)
     file(GLOB GRPC_SOURCES
         "tateyama/grpc/*.cpp"
         "tateyama/grpc/blob_relay/*.cpp"
+        "tateyama/grpc/distributed_query/*.cpp"
     )
     list(APPEND SRCS ${GRPC_SOURCES})
 endif()
