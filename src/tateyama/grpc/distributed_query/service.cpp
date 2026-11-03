@@ -37,6 +37,7 @@ namespace tateyama::grpc::distributed_query {
         case remote_process_error_kind::timeout: return ::grpc::StatusCode::DEADLINE_EXCEEDED;
         case remote_process_error_kind::internal: return ::grpc::StatusCode::INTERNAL;
         case remote_process_error_kind::resource_exhausted: return ::grpc::StatusCode::RESOURCE_EXHAUSTED;
+        case remote_process_error_kind::failed_precondition: return ::grpc::StatusCode::FAILED_PRECONDITION;
         case remote_process_error_kind::sql_error: return ::grpc::StatusCode::UNKNOWN;
     }
     return ::grpc::StatusCode::UNKNOWN;

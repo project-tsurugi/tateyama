@@ -38,6 +38,7 @@ enum class remote_process_error_kind {
     internal,
     resource_exhausted,
     sql_error,
+    failed_precondition,
 };
 
 struct remote_process_result {

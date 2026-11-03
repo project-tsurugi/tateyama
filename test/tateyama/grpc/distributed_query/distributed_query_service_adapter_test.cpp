@@ -850,6 +850,23 @@ TEST_F(distributed_query_service_adapter_test, maps_handler_resource_exhaustion)
     EXPECT_TRUE(status.error_details().empty());
 }
 
+TEST_F(distributed_query_service_adapter_test, maps_handler_failed_precondition) {
+    auto adapter = std::dynamic_pointer_cast<service_adapter>(
+        server_->find_resource_by_id(framework::resource_id_distributed_query_service));
+    ASSERT_TRUE(adapter);
+    adapter->set_remote_process_handler(std::make_shared<fixed_result_handler>(
+        remote_process_result{false, {}, "worker catalog definition mismatch", remote_process_error_kind::failed_precondition}));
+    auto stub = catalog_wire::DistributedQueryService::NewStub(
+        ::grpc::CreateChannel(std::string{endpoint}, ::grpc::InsecureChannelCredentials()));
+    catalog_wire::RemoteProcessRequest request{};
+    set_valid_metadata(request);
+    catalog_wire::RemoteProcessResult response{};
+    ::grpc::ClientContext context{};
+    auto status = execute_remote_process(*stub, context, request, response);
+    EXPECT_EQ(::grpc::StatusCode::FAILED_PRECONDITION, status.error_code());
+    EXPECT_TRUE(status.error_details().empty());
+}
+
 namespace {
 
 class fixed_catalog_handler final : public remote_catalog_handler {
