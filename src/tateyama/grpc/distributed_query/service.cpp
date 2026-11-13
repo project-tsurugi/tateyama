@@ -15,7 +15,9 @@
  */
 
 #include "service.h"
+#include "observation.h"
 
+#include <chrono>
 #include <cstdint>
 #include <exception>
 
@@ -76,8 +78,31 @@ namespace tateyama::grpc::distributed_query {
     ::grpc::ServerWriter<::tateyama::grpc::proto::RemoteProcessResult>* writer)
 {
     constexpr std::size_t max_message_size = std::size_t{64} * 1024U * 1024U;
-    if (request->ByteSizeLong() > max_message_size) {
-        return {::grpc::StatusCode::RESOURCE_EXHAUSTED, "remote process request exceeds 64 MiB"};
+    rpc_metrics::call observed{metrics_};
+    auto const started = std::chrono::steady_clock::now();
+    auto const request_bytes = request->ByteSizeLong();
+    auto const& metadata = request->metadata();
+    std::uint64_t sequence{};
+    std::size_t response_bytes{};
+    std::size_t row_count{};
+    remote_process_result result{};
+    auto finish = [&](::grpc::Status status) {
+        observed.finish(static_cast<int>(status.error_code()));
+        auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - started);
+        LOG(INFO) << "distributed query rpc:ExecuteRemoteProcess event:finish"
+                  << " job_id:" << observation_id(metadata.coordinator_job_id()) << " execution_id:" << observation_id(metadata.remote_execution_id())
+                  << " attempt:" << metadata.attempt_number()
+                  << " protocol_version:" << metadata.protocol_version().major() << '.' << metadata.protocol_version().minor()
+                  << " request_bytes:" << request_bytes << " response_bytes:" << response_bytes
+                  << " response_count:" << sequence << " row_count:" << row_count
+                  << " elapsed_us:" << elapsed.count()
+                  << " grpc_status:" << static_cast<int>(status.error_code())
+                  << " grpc_message:" << observation_id(status.error_message())
+                  << worker_observation(result.observation);
+        return status;
+    };
+    if (request_bytes > max_message_size) {
+        return finish({::grpc::StatusCode::RESOURCE_EXHAUSTED, "remote process request exceeds 64 MiB"});
     }
     if (!request->has_execution_block() || !request->has_metadata() ||
         !request->metadata().has_protocol_version() ||
@@ -85,25 +110,28 @@ namespace tateyama::grpc::distributed_query {
         request->metadata().coordinator_job_id().empty() ||
         request->metadata().remote_execution_id().empty() ||
         request->metadata().attempt_number() == 0) {
-        return {::grpc::StatusCode::INVALID_ARGUMENT, "remote process request metadata is incomplete"};
+        return finish({::grpc::StatusCode::INVALID_ARGUMENT, "remote process request metadata is incomplete"});
     }
     if (request->metadata().protocol_version().major() != 1) {
-        return {::grpc::StatusCode::FAILED_PRECONDITION, "unsupported remote process protocol major version"};
+        return finish({::grpc::StatusCode::FAILED_PRECONDITION, "unsupported remote process protocol major version"});
     }
     call_guard active{*this, context};
     std::shared_ptr<remote_process_handler> handler{};
     {
         std::scoped_lock<std::mutex> lock{mutex_};
         handler = handler_;
-        if (!handler) {
-            return {::grpc::StatusCode::UNIMPLEMENTED, "remote process handler is not registered"};
+        if (handler) {
+            active_calls_.insert(context);
         }
-        active_calls_.insert(context);
     }
-    std::uint64_t sequence{};
+    if (!handler) {
+        return finish({::grpc::StatusCode::UNIMPLEMENTED, "remote process handler is not registered"});
+    }
+    LOG(INFO) << "distributed query rpc:ExecuteRemoteProcess event:start"
+              << " job_id:" << observation_id(metadata.coordinator_job_id()) << " execution_id:" << observation_id(metadata.remote_execution_id())
+              << " attempt:" << metadata.attempt_number();
     bool oversized{};
     bool closed{};
-    remote_process_result result{};
     try {
         result = handler->execute_records(request->execution_block().SerializeAsString(), [context] {
             return context->IsCancelled();
@@ -113,7 +141,8 @@ namespace tateyama::grpc::distributed_query {
             response.set_sequence_number(sequence);
             for (auto const& record : records) response.add_record_list(record);
             if (records.empty()) return true;
-            if (response.ByteSizeLong() > max_message_size) {
+            auto const bytes = response.ByteSizeLong();
+            if (bytes > max_message_size) {
                 oversized = true;
                 return false;
             }
@@ -122,23 +151,27 @@ namespace tateyama::grpc::distributed_query {
                 return false;
             }
             ++sequence;
+            response_bytes += bytes;
+            row_count += records.size();
             return true;
         });
     } catch (std::exception const& e) {
-        return {::grpc::StatusCode::INTERNAL, e.what()};
+        result.observation.phase = "handler_exception";
+        return finish({::grpc::StatusCode::INTERNAL, e.what()});
     } catch (...) {
-        return {::grpc::StatusCode::INTERNAL, "remote process handler threw an unknown exception"};
+        result.observation.phase = "handler_exception";
+        return finish({::grpc::StatusCode::INTERNAL, "remote process handler threw an unknown exception"});
     }
-    if (oversized) return {::grpc::StatusCode::RESOURCE_EXHAUSTED, "remote process result exceeds 64 MiB"};
-    if (closed || context->IsCancelled()) return {::grpc::StatusCode::CANCELLED, "remote process result stream was closed"};
+    if (oversized) return finish({::grpc::StatusCode::RESOURCE_EXHAUSTED, "remote process result exceeds 64 MiB"});
+    if (closed || context->IsCancelled()) return finish({::grpc::StatusCode::CANCELLED, "remote process result stream was closed"});
     if (!result.success) {
         if (result.error_kind == remote_process_error_kind::sql_error && !result.sql_error_details.empty()) {
             auto details = sql_status_details(result.error, result.sql_error_details);
-            return {::grpc::StatusCode::UNKNOWN, result.error, details};
+            return finish({::grpc::StatusCode::UNKNOWN, result.error, details});
         }
-        return {to_grpc_status(result.error_kind), result.error};
+        return finish({to_grpc_status(result.error_kind), result.error});
     }
-    return ::grpc::Status::OK;
+    return finish(::grpc::Status::OK);
 }
 
 void service::set_remote_process_handler(std::shared_ptr<remote_process_handler> handler) {

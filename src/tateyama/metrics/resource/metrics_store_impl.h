@@ -52,7 +52,7 @@ class metrics_store_impl {
     using second_map_type = std::map<tateyama::metrics::metrics_metadata, std::pair<tateyama::metrics::metrics_item_slot, std::shared_ptr<metrics_item_slot_impl>>, metadata_less>;
 
 public:
-    metrics_item_slot& register_item(const metrics_metadata& metadata);
+    metrics_item_slot& register_item(const metrics_metadata& metadata, std::function<double()> reader = {});
 
     void register_aggregation(const metrics_aggregation& aggregation);
 

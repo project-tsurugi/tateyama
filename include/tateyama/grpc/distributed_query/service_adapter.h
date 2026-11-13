@@ -16,6 +16,8 @@
 #pragma once
 
 #include <functional>
+#include <optional>
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <string_view>
@@ -41,6 +43,19 @@ enum class remote_process_error_kind {
     failed_precondition,
 };
 
+// Per-call observations only: not serialized into the IR, result records, or SQL response.
+struct remote_process_observation {
+    std::string phase{"not_started"};
+    std::optional<std::uint64_t> local_job_id{};
+    std::optional<std::uint64_t> transaction_handle{};
+    std::string transaction_id{};
+    std::optional<int> begin_status{};
+    std::optional<int> commit_status{};
+    bool rollback_requested{};
+    std::optional<int> rollback_status{}; // unset when the existing abort API returns void
+    std::optional<int> close_status{}; // database handle removal, not KVS rollback
+};
+
 struct remote_process_result {
     bool success{};
     std::string payload{};
@@ -49,6 +64,7 @@ struct remote_process_result {
     // Serialized jogasaki.proto.sql.response.Error, produced by the SQL engine.
     // Used only for sql_error; Tateyama transports it without depending on Jogasaki.
     std::string sql_error_details{};
+    remote_process_observation observation{};
 };
 
 class remote_process_handler {

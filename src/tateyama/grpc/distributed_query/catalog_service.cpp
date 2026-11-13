@@ -146,11 +146,13 @@ template <class Field, class Add>
     wire::RemoteCatalogRequest const* request,
     ::grpc::ServerWriter<wire::RemoteCatalogResponse>* writer)
 {
+    rpc_metrics::call observed{metrics_};
     auto started = std::chrono::steady_clock::now();
     std::size_t fragments_sent{};
     std::size_t bytes_sent{};
     std::string counts{};
     auto finish = [&](::grpc::Status status) {
+        observed.finish(static_cast<int>(status.error_code()));
         auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - started);
         auto const& metadata = request->metadata();
         LOG(INFO) << "GetRemoteCatalog request_id:" << metadata.request_id()

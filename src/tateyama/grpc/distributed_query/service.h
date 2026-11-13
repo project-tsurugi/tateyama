@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 #pragma once
+#include "rpc_metrics.h"
 
 #include <grpcpp/grpcpp.h>
 
@@ -30,7 +31,7 @@ namespace tateyama::grpc::distributed_query {
 
 class service final : public ::tateyama::proto::distributed_query::DistributedQuery::Service {
 public:
-    service() = default;
+    explicit service(tateyama::metrics::metrics_store* store = nullptr) : metrics_(store, "ExecuteRemoteProcess") {}
 
     ::grpc::Status Hello(
         ::grpc::ServerContext* context,
@@ -47,6 +48,7 @@ public:
     void set_remote_process_handler(std::shared_ptr<remote_process_handler> handler);
 
 private:
+    rpc_metrics metrics_;
     struct call_guard {
         call_guard(service& owner, ::grpc::ServerContext* context) : owner_(owner), context_(context) {}
         call_guard(call_guard const&) = delete;

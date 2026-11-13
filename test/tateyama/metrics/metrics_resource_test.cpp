@@ -19,6 +19,8 @@
 #include <tateyama/metrics/resource/bridge.h>
 
 #include <gtest/gtest.h>
+#include <atomic>
+#include <thread>
 #include <tateyama/test_utils/utility.h>
 
 namespace tateyama::metrics {
@@ -66,6 +68,23 @@ protected:
         std::vector<std::string> {}
     };
 };
+
+TEST_F(metrics_resource_test, sampled_counter_is_read_live_and_survives_its_owner) {
+    auto counter = std::make_shared<std::atomic_uint64_t>();
+    std::weak_ptr<std::atomic_uint64_t> weak = counter;
+    metrics_store_->register_item(metadata_session_count_, [counter] { return static_cast<double>(counter->load(std::memory_order_relaxed)); });
+    std::thread producer{[counter] { for (int i = 0; i < 10000; ++i) counter->fetch_add(1, std::memory_order_relaxed); }};
+    double previous{};
+    for (int i = 0; i < 100; ++i) {
+        metrics_store_->enumerate_items([&](auto const& metadata, double value) { if (metadata.key() == "session_count") { EXPECT_GE(value, previous); previous = value; } });
+    }
+    producer.join();
+    counter.reset();
+    EXPECT_FALSE(weak.expired());
+    metrics_store_->enumerate_items([](auto const&, double value) { EXPECT_EQ(10000, value); });
+    EXPECT_TRUE(metrics_store_->unregister_element("session_count"));
+    EXPECT_TRUE(weak.expired());
+}
 
 TEST_F(metrics_resource_test, basic) {
     auto& session_count = metrics_store_->register_item(metadata_session_count_);

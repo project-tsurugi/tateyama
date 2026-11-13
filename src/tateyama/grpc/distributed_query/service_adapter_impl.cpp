@@ -61,13 +61,13 @@ bool service_adapter_impl::setup(framework::environment& env) {
 
     // The listener retains raw service pointers across setup retries.
     if (!service_) {
-        auto remote_service = std::make_shared<service>();
+        auto remote_service = std::make_shared<service>(tateyama::metrics::find_metrics_store(env));
         remote_service->set_remote_process_handler(handler_);
         server_resource->add_service(remote_service.get());
         service_ = std::move(remote_service);
     }
     if (!catalog_service_) {
-        auto remote_catalog_service = std::make_shared<catalog_service>();
+        auto remote_catalog_service = std::make_shared<catalog_service>(tateyama::metrics::find_metrics_store(env));
         remote_catalog_service->set_remote_catalog_handler(catalog_handler_);
         remote_catalog_service->set_execution_service(service_);
         server_resource->add_service(remote_catalog_service.get());

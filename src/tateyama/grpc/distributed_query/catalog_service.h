@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 #pragma once
+#include "rpc_metrics.h"
 
 #include <condition_variable>
 #include <cstddef>
@@ -53,7 +54,7 @@ constexpr std::size_t remote_catalog_max_message_size = std::size_t{64} * 1024U 
 
 class catalog_service final : public ::tateyama::grpc::proto::DistributedQueryService::Service {
 public:
-    catalog_service() = default;
+    explicit catalog_service(tateyama::metrics::metrics_store* store = nullptr) : metrics_(store, "GetRemoteCatalog") {}
 
     ::grpc::Status GetRemoteCatalog(
         ::grpc::ServerContext* context,
@@ -71,6 +72,7 @@ public:
     void set_remote_catalog_handler(std::shared_ptr<remote_catalog_handler> handler);
 
 private:
+    rpc_metrics metrics_;
     struct call_guard {
         call_guard(catalog_service& owner, ::grpc::ServerContext* context) : owner_(owner), context_(context) {}
         call_guard(call_guard const&) = delete;

@@ -21,9 +21,9 @@
 
 namespace tateyama::metrics::resource {
 
-metrics_item_slot& metrics_store_impl::register_item(const metrics_metadata& metadata) {
+metrics_item_slot& metrics_store_impl::register_item(const metrics_metadata& metadata, std::function<double()> reader) {
     const std::string key{metadata.key()};
-    const auto register_item_internal = [&metadata, &key](std::map<std::string, std::unique_ptr<second_map_type>>& metrics, std::mutex& mtx) {
+    const auto register_item_internal = [&metadata, &key, &reader](std::map<std::string, std::unique_ptr<second_map_type>>& metrics, std::mutex& mtx) {
         std::unique_lock<std::mutex> lock(mtx);        
         if (metrics.find(key) == metrics.end()) {
             metrics.emplace(key, std::make_unique<second_map_type>());
@@ -36,7 +36,7 @@ metrics_item_slot& metrics_store_impl::register_item(const metrics_metadata& met
         if (fmap->find(metadata) != fmap->end()) {
             throw std::runtime_error("already exist");
         }
-        auto item = std::make_shared<metrics_item_slot_impl>();
+        auto item = std::make_shared<metrics_item_slot_impl>(std::move(reader));
         fmap->emplace(metadata, std::make_pair(tateyama::metrics::metrics_item_slot(item), item));
     };
     if (metadata.is_visible()) {

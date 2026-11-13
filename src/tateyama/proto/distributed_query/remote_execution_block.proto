@@ -26,8 +26,10 @@ message Operator {
   }
   Source source = 5;
   // Explicit presence, including zero, for older Protobuf generators.
-  oneof filter_expression_id_presence {
-    uint64 filter_expression_id = 6;
+  reserved 6;
+  reserved "filter_expression_id";
+  oneof filter_expression_index_presence {
+    uint64 filter_expression_index = 9;
   }
   repeated ProjectColumn project_columns = 7;
   Offer offer = 8;
@@ -43,10 +45,10 @@ enum OperatorKind {
 }
 
 message StorageReference {
-  // Explicit presence, including zero, for older Protobuf generators.
-  oneof definition_id_presence {
-    uint64 definition_id = 1;
-  }
+  reserved 1;
+  reserved "definition_id";
+  // Canonical decimal worker index ID. Empty means missing; "0" is valid.
+  string remote_definition_id = 4;
   string table_name = 2;
   string index_name = 3;
 }
@@ -56,7 +58,9 @@ message Source {
   repeated SourceColumn columns = 2;
   Endpoint lower = 3;
   Endpoint upper = 4;
-  repeated uint64 find_key_expression_ids = 5;
+  reserved 5;
+  reserved "find_key_expression_ids";
+  repeated uint64 find_key_expression_indexes = 7;
   // Explicit presence, including zero, for older Protobuf generators.
   oneof limit_presence {
     uint64 limit = 6;
@@ -76,7 +80,9 @@ message SourceColumn {
 
 message Endpoint {
   EndpointKind kind = 1;
-  repeated uint64 key_expression_ids = 2;
+  reserved 2;
+  reserved "key_expression_ids";
+  repeated uint64 key_expression_indexes = 3;
 }
 
 enum EndpointKind {
@@ -88,7 +94,8 @@ enum EndpointKind {
 }
 
 message ScalarExpression {
-  uint64 expression_id = 1;
+  reserved 1, 8;
+  reserved "expression_id", "operand_expression_ids";
   ScalarExpressionKind kind = 2;
   string operator_kind = 3;
   string value_kind = 4;
@@ -98,7 +105,8 @@ message ScalarExpression {
   oneof variable_id_presence {
     uint64 variable_id = 7;
   }
-  repeated uint64 operand_expression_ids = 8;
+  // Each operand must precede this expression in scalar_expressions.
+  repeated uint64 operand_expression_indexes = 11;
   bytes type_payload = 9;
   bytes literal_payload = 10;
 }
@@ -115,7 +123,11 @@ enum ScalarExpressionKind {
 
 message ProjectColumn {
   uint64 destination_variable_id = 1;
-  uint64 value_expression_id = 2;
+  reserved 2;
+  reserved "value_expression_id";
+  oneof expression_index_presence {
+    uint64 expression_index = 3;
+  }
 }
 
 message Offer {

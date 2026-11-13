@@ -79,6 +79,8 @@ public:
      */
     [[nodiscard]] tateyama::metrics::resource::core const& core() const noexcept;
 
+    [[nodiscard]] tateyama::metrics::metrics_store* available_metrics_store() noexcept { return metrics_store_.get(); }
+
     tateyama::metrics::metrics_store& metrics_store() {
         return *metrics_store_;
     }

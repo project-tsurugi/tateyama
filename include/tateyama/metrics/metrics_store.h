@@ -23,6 +23,8 @@
 #include <tateyama/metrics/metrics_aggregation.h>
 #include <tateyama/metrics/metrics_metadata.h>
 
+namespace tateyama::framework { class environment; }
+
 namespace tateyama::metrics::resource {
 class metrics_store_impl;
 }
@@ -32,6 +34,9 @@ namespace tateyama::metrics {
 /**
  * @brief A storage that holds the latest value of individual metrics items.
  */
+class metrics_store;
+[[nodiscard]] metrics_store* find_metrics_store(framework::environment& environment);
+
 class metrics_store {
 public:
     /**
@@ -41,6 +46,12 @@ public:
      * @throws std::runtime_error if another item with the same key is already in this store
      */
     metrics_item_slot& register_item(const metrics_metadata& metadata);
+
+    /** @brief register a value sampled on collection.
+     * @details The reader must be non-blocking and must not reenter this store. It can capture
+     * shared ownership of atomic counters. Do not write the returned slot when using a reader.
+     */
+    metrics_item_slot& register_item(const metrics_metadata& metadata, std::function<double()> reader);
     // NOTE: or std::shared_ptr ?
 
     /**

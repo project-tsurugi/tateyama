@@ -15,6 +15,8 @@
  */
 #pragma once
 
+#include <functional>
+#include <utility>
 #include <tateyama/metrics/metrics_item_slot.h>
 
 namespace tateyama::metrics::resource {
@@ -22,17 +24,19 @@ namespace tateyama::metrics::resource {
 class metrics_item_slot_impl {
 public:
     metrics_item_slot_impl() = default;
+    explicit metrics_item_slot_impl(std::function<double()> reader) : reader_(std::move(reader)) {}
 
     void set(double value) {
         value_ = value;
     }
 
     [[nodiscard]] double value() const {
-        return value_;
+        return reader_ ? reader_() : value_;
     }
 
 private:
     double value_{};
+    std::function<double()> reader_{};
 };
 
 }

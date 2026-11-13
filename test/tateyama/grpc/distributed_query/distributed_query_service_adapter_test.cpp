@@ -28,8 +28,14 @@
 #include <grpcpp/grpcpp.h>
 #include <gtest/gtest.h>
 #include <google/rpc/status.pb.h>
+#include <tateyama/proto/metrics/response.pb.h>
 
 #include <tateyama/framework/server.h>
+#include <tateyama/metrics/resource/bridge.h>
+#include <tateyama/metrics/resource/metrics_store_impl.h>
+#include <algorithm>
+#include <tateyama/grpc/distributed_query/rpc_metrics.h>
+#include <tateyama/grpc/distributed_query/observation.h>
 #include <tateyama/grpc/distributed_query/catalog_service.h>
 #include <tateyama/grpc/distributed_query/service_adapter.h>
 #include <tateyama/grpc/server_resource.h>
@@ -230,6 +236,79 @@ catalog_wire::RemoteProcessRequest typed_request() {
     return request;
 }
 } // namespace
+
+TEST_F(distributed_query_service_adapter_test, publishes_real_rpc_metrics_on_success_and_invalid_metadata) {
+    auto adapter = std::dynamic_pointer_cast<service_adapter>(server_->find_resource_by_id(framework::resource_id_distributed_query_service));
+    auto metrics = std::dynamic_pointer_cast<tateyama::metrics::resource::bridge>(server_->find_resource_by_id(framework::resource_id_metrics));
+    ASSERT_TRUE(metrics);
+    adapter->set_remote_process_handler(std::make_shared<typed_streaming_handler>());
+    auto stub = catalog_wire::DistributedQueryService::NewStub(::grpc::CreateChannel(std::string{endpoint}, ::grpc::InsecureChannelCredentials()));
+    for (bool valid : {true, false}) {
+        auto request = typed_request();
+        if (!valid) request.clear_metadata();
+        ::grpc::ClientContext context{};
+        context.set_deadline(std::chrono::system_clock::now() + std::chrono::seconds{10});
+        auto reader = stub->ExecuteRemoteProcess(&context, request);
+        catalog_wire::RemoteProcessResult response{};
+        while (reader->Read(&response)) {}
+        EXPECT_EQ(valid ? ::grpc::StatusCode::OK : ::grpc::StatusCode::INVALID_ARGUMENT, reader->Finish().error_code());
+    }
+    bool requests{}, active{}, errors{};
+    metrics->metrics_store().enumerate_items([&](auto const& metadata, double value) {
+        auto const& attrs = metadata.attributes();
+        if (std::find(attrs.begin(), attrs.end(), std::make_tuple(std::string{"rpc"}, std::string{"ExecuteRemoteProcess"})) == attrs.end()) return;
+        if (metadata.key() == "distributed_query_requests_total") { EXPECT_EQ(2, value); requests = true; }
+        if (metadata.key() == "distributed_query_requests_active") { EXPECT_EQ(0, value); active = true; }
+        if (metadata.key() == "distributed_query_errors_total" && std::find(attrs.begin(), attrs.end(), std::make_tuple(std::string{"status"}, std::string{"3"})) != attrs.end()) { EXPECT_EQ(1, value); errors = true; }
+    });
+    EXPECT_TRUE(requests && active && errors);
+}
+
+TEST(distributed_query_observation_test, distinguishes_unobserved_abort_and_bounds_identifiers) {
+    remote_process_observation observed{};
+    observed.phase = "finish";
+    observed.local_job_id = 7;
+    observed.begin_status = 0;
+    observed.rollback_requested = true;
+    observed.close_status = 0;
+    auto text = worker_observation(observed);
+    EXPECT_NE(std::string::npos, text.find("worker_job_id:7"));
+    EXPECT_NE(std::string::npos, text.find("rtx_rollback_requested:1"));
+    EXPECT_NE(std::string::npos, text.find("rtx_rollback_status:unobserved"));
+    EXPECT_EQ("a_b", observation_id("a\nb"));
+    EXPECT_EQ(128, observation_id(std::string(1000, 'x')).size());
+}
+
+TEST(distributed_query_observation_test, unwinding_an_unfinished_call_counts_unknown) {
+    auto body = std::make_unique<tateyama::metrics::resource::metrics_store_impl>();
+    tateyama::metrics::metrics_store store{std::move(body)};
+    rpc_metrics metrics{&store, "test"};
+    { rpc_metrics::call call{metrics}; }
+    bool active{}, errors{};
+    store.enumerate_items([&](auto const& metadata, double value) {
+        if (metadata.key() == "distributed_query_requests_active") { EXPECT_EQ(0, value); active = true; }
+        if (metadata.key() == "distributed_query_errors_total" && std::get<1>(metadata.attributes().at(1)) == "2") { EXPECT_EQ(1, value); errors = true; }
+    });
+    EXPECT_TRUE(active && errors);
+}
+
+TEST(distributed_query_observation_test, concurrent_calls_count_once_and_release_active_requests) {
+    auto body = std::make_unique<tateyama::metrics::resource::metrics_store_impl>();
+    tateyama::metrics::metrics_store store{std::move(body)};
+    rpc_metrics metrics{&store, "test"};
+    std::vector<std::thread> threads{};
+    for (int i = 0; i < 4; ++i) threads.emplace_back([&] {
+        for (int n = 0; n < 1000; ++n) { rpc_metrics::call call{metrics}; call.finish(3); call.finish(0); }
+    });
+    for (auto& thread : threads) thread.join();
+    bool requests{}, active{}, errors{};
+    store.enumerate_items([&](auto const& metadata, double value) {
+        if (metadata.key() == "distributed_query_requests_total") { EXPECT_EQ(4000, value); requests = true; }
+        if (metadata.key() == "distributed_query_requests_active") { EXPECT_EQ(0, value); active = true; }
+        if (metadata.key() == "distributed_query_errors_total" && std::get<1>(metadata.attributes().at(1)) == "3") { EXPECT_EQ(4000, value); errors = true; }
+    });
+    EXPECT_TRUE(requests && active && errors);
+}
 
 TEST_F(distributed_query_service_adapter_test, typed_rpc_streams_records_and_enforces_response_limit) {
     auto adapter = std::dynamic_pointer_cast<service_adapter>(
@@ -990,6 +1069,34 @@ protected:
         return reader->Finish();
     }
 };
+
+TEST_F(remote_catalog_service_test, exports_catalog_counts_without_counting_success_as_error) {
+    adapter()->set_remote_catalog_handler(std::make_shared<fixed_catalog_handler>(remote_catalog_result{true, {}, {}}));
+    std::vector<catalog_wire::RemoteCatalogResponse> responses{};
+    ASSERT_TRUE(get_catalog(valid_catalog_request(), responses).ok());
+    auto metrics = std::dynamic_pointer_cast<tateyama::metrics::resource::bridge>(server_->find_resource_by_id(framework::resource_id_metrics));
+    ASSERT_TRUE(metrics);
+    bool requests{}, active{};
+    metrics->metrics_store().enumerate_items([&](auto const& metadata, double value) {
+        auto const& attrs = metadata.attributes();
+        if (std::find(attrs.begin(), attrs.end(), std::make_tuple(std::string{"rpc"}, std::string{"GetRemoteCatalog"})) == attrs.end()) return;
+        if (metadata.key() == "distributed_query_requests_total") { EXPECT_EQ(1, value); requests = true; }
+        if (metadata.key() == "distributed_query_requests_active") { EXPECT_EQ(0, value); active = true; }
+        if (metadata.key() == "distributed_query_errors_total") EXPECT_EQ(0, value);
+    });
+    EXPECT_TRUE(requests && active);
+    proto::metrics::response::MetricsInformation response{};
+    metrics->core().show(response);
+    bool exported{};
+    for (auto const& item : response.items()) {
+        if (item.key() != "distributed_query_requests_total") continue;
+        for (auto const& element : item.value().array().elements()) {
+            auto attr = element.attributes().find("rpc");
+            if (attr != element.attributes().end() && attr->second == "GetRemoteCatalog") { EXPECT_EQ(1, element.value()); exported = true; }
+        }
+    }
+    EXPECT_TRUE(exported);
+}
 
 TEST_F(remote_catalog_service_test, unimplemented_without_handler) {
     std::vector<catalog_wire::RemoteCatalogResponse> responses{};
