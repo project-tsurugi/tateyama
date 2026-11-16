@@ -91,6 +91,14 @@ parameter=value
 |dev_enable_maintenance_thread| ブール(true/false) | SQL実行エンジンがメンテナンススレッドを起動してストレージのバックグラウンド処理等に使用するか。デフォルトは true 。 | 開発用のため将来的に削除/変更される可能性あり|
 |dev_maintenance_interval_ms | 整数 | SQL実行エンジンが起動するメンテナンススレッドが一時停止した後に再開するまでの間隔(ms)。デフォルトは 100 。|開発用のため将来的に削除/変更される可能性あり|
 |dev_enable_truncate| ブール(true/false) | TRUNCATE TABLE文をサポートするか。デフォルトは true。  | 開発用のため将来的に削除/変更される可能性あり|
+|dev_enable_scan_limit| ブール(true/false) | TOP-N最適化のため、SQLコンパイラがscanに付与する件数制限を使用するか(SQLコンパイラにruntime_feature::scan_limitを渡す)。デフォルトは true。 | 開発用のため将来的に削除/変更される可能性あり|
+|dev_enable_ordered_scan| ブール(true/false) | TOP-N最適化のため、SQLコンパイラが指定した向きの順序でscanが出力するようにするか(runtime_feature::ordered_scanを渡す)。デフォルトは true。 | 開発用のため将来的に削除/変更される可能性あり|
+|dev_enable_ordered_forward| ブール(true/false) | TOP-N最適化のため、forward exchangeで入出力の順序を保持するか(runtime_feature::ordered_forwardを渡す)。`dev_enable_ordered_scan=true` の場合のみ有効。デフォルトは true。 | 開発用のため将来的に削除/変更される可能性あり|
+|dev_enable_backward_scan| ブール(true/false) | TOP-N最適化のため、SQLコンパイラが逆方向を指定したscanでインデックスを逆順に読むか(runtime_feature::backward_scanを渡す)。`dev_enable_scan_limit=true` または `dev_enable_ordered_scan=true` の場合のみ有効。デフォルトは true。 | 開発用のため将来的に削除/変更される可能性あり|
+|dev_enable_ties_ordered_by_primary_key| ブール(true/false) | TOP-N最適化のため、セカンダリインデックスのキーが同じエントリが主キーの順に並ぶことをSQLコンパイラに通知するか(index_feature::ties_ordered_by_primary_keyを付与する)。デフォルトは true。 | 開発用のため将来的に削除/変更される可能性あり|
+|dev_enable_apply_preserves_order| ブール(true/false) | TOP-N最適化のため、apply演算子が入力レコードの順序で出力することをSQLコンパイラに通知するか(runtime_feature::apply_preserves_orderを渡す)。デフォルトは true。 | 開発用のため将来的に削除/変更される可能性あり|
+|dev_enable_early_stop| ブール(true/false) | 件数制限のあるforward exchangeが件数分のレコードを受け取った際に上流の処理を早期に終了させるか。デフォルトは true。 | 開発用のため将来的に削除/変更される可能性あり|
+|dev_scan_impl| 文字列 | scan演算子が使用するトランザクションエンジンのscanの実装。`auto`(SQL実行エンジンが文に応じて選択)、`legacy`(常に従来のscan)、`iscan`(常にイテレーターベースのscan)のいずれか。デフォルトは `auto`。 | 開発用のため将来的に削除/変更される可能性あり|
 
 ## udfセクション
 
