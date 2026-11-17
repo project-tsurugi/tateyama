@@ -200,7 +200,7 @@ public:
                 if (session_id == 0) {  // means timeout
                     continue;
                 }
-                if (connection_queue.is_terminated()) {
+                if (connection_queue.is_terminated() || status_->get_shutdown_request() != tateyama::status_info::shutdown_type::nothing) {
                     VLOG_LP(log_trace) << "receive terminate request";
                     terminate_workers();
                     connection_queue.confirm_terminated();

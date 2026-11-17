@@ -472,6 +472,16 @@ public:
             }
             force_close_ = true;
         }
+        void notify_error(resultset_wires_container* resultset_wires) override {
+            if (resultset_wires) {
+                std::scoped_lock<std::mutex> lock(mtx_put_);
+                for (const auto& it : resultset_wires_set_) {
+                    if (it.get() == resultset_wires) {
+                        it->force_close();
+                    }
+                }
+            }
+        }
 
     private:
         std::set<unq_p_resultset_wires_conteiner> resultset_wires_set_{};
