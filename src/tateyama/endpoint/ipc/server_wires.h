@@ -101,6 +101,7 @@ public:
         virtual void dump() = 0;
         virtual bool empty() = 0;
         virtual void force_close() = 0;
+        virtual void notify_error(resultset_wires_container* resultset_wires) = 0;
     };
 
     server_wire_container() = default;

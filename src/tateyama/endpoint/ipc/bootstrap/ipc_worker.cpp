@@ -89,7 +89,7 @@ void ipc_worker::run() {  // NOLINT(readability-function-cognitive-complexity)
             update_expiration_time();
             auto request = std::make_shared<ipc_request>(*wire_, hdr, resources(), local_id_++, conf_);
             std::size_t index = hdr.get_idx();
-            bool exit_frag = false;
+            bool exit_flag = false;
             switch (request->service_id()) {
             case tateyama::framework::service_id_endpoint_broker:
             {
@@ -99,7 +99,7 @@ void ipc_worker::run() {  // NOLINT(readability-function-cognitive-complexity)
                                       std::dynamic_pointer_cast<tateyama::endpoint::common::response>(response),
                                       index)) {
                     VLOG_LP(log_info) << "terminate worker because endpoint service returns an error";
-                    exit_frag = true;
+                    exit_flag = true;
                 }
                 break;  // break the switch, and set exit_flag true to break the while loop
             }
@@ -117,14 +117,14 @@ void ipc_worker::run() {  // NOLINT(readability-function-cognitive-complexity)
                     care_reqreses();
                     if (check_shutdown_request() && is_completed()) {
                         VLOG_LP(log_trace) << "received and completed shutdown request: session_id = " << std::to_string(session_id());
-                        exit_frag = true;
+                        exit_flag = true;
                     }
                     break;  // break the switch, and set exit_flag true to break the while loop
                 }
                 if (!service_(std::dynamic_pointer_cast<tateyama::api::server::request>(request),
                               std::dynamic_pointer_cast<tateyama::api::server::response>(response))) {
                     VLOG_LP(log_info) << "terminate worker because service returns an error";
-                    exit_frag = true;
+                    exit_flag = true;
                 }
                 break;  // break the switch, and set exit_flag true to break the while loop
             }
@@ -140,7 +140,7 @@ void ipc_worker::run() {  // NOLINT(readability-function-cognitive-complexity)
                     if (!service_(std::dynamic_pointer_cast<tateyama::api::server::request>(request),
                                   std::dynamic_pointer_cast<tateyama::api::server::response>(response))) {
                         VLOG_LP(log_info) << "terminate worker because service returns an error";
-                        exit_frag = true;
+                        exit_flag = true;
                     }
                 } else {
                     notify_client(response.get(), tateyama::proto::diagnostics::SESSION_CLOSED, "this session is already shutdown");
@@ -148,7 +148,7 @@ void ipc_worker::run() {  // NOLINT(readability-function-cognitive-complexity)
                 break;  // break the switch, and set exit_flag true to break the while loop
             }
             }
-            if (exit_frag) {
+            if (exit_flag) {
                 break;  // break the while loop
             }
             request->dispose();
