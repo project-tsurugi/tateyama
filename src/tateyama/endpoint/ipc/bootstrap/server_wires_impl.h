@@ -170,6 +170,7 @@ public:
                     lock.unlock();
                     if (auto rv = annex->transfer(shm_resultset_wire_, released_); !rv) {
                         VLOG_LP(log_trace) << "exit writer annex mode because the result set is closed by the client";
+                        write_complete();
                         break;
                     }
                 }

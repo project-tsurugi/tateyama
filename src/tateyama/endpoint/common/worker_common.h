@@ -785,6 +785,7 @@ protected:
         bool rv{false};
         foreach_reqreses([&rv, this](tateyama::endpoint::common::response& r){
             bool find = false;
+            std::scoped_lock<std::mutex> lock(mtx_reqreses_);
             for (auto &&e : shutdown_response_) {
                 if (&r == e.second.get()) {
                     find = true;
