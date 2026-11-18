@@ -289,9 +289,13 @@ public:
         }
         ~resultset_wires_container_impl() override {
             try {
-                if (server_ && !force_close_) {
+                if (server_) {
                     std::scoped_lock<std::mutex> lock(mtx_shm_);
-                    managed_shm_ptr_->destroy<tateyama::common::wire::shm_resultset_wires>(rsw_name_.c_str());
+                    if (!force_close_) {
+                        managed_shm_ptr_->destroy<tateyama::common::wire::shm_resultset_wires>(rsw_name_.c_str());
+                    } else {
+                        managed_shm_ptr_->destroy_ptr(shm_resultset_wires_);
+                    }
                     VLOG_LP(log_trace) << "free " << datachannel_buffer_size_ << " byte " << rsw_name_ << " buffer in the shared memory, and the free space increased to " << managed_shm_ptr_->get_free_memory() << " bytes.";
                 }
             } catch (std::exception& e) {
