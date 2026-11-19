@@ -18,6 +18,7 @@
 #include <chrono>
 #include <cstdint>
 #include <future>
+#include <limits>
 #include <memory>
 #include <sstream>
 #include <stdexcept>
@@ -289,6 +290,29 @@ TEST(distributed_query_observation_test, unwinding_an_unfinished_call_counts_unk
         if (metadata.key() == "distributed_query_errors_total" && std::get<1>(metadata.attributes().at(1)) == "2") { EXPECT_EQ(1, value); errors = true; }
     });
     EXPECT_TRUE(active && errors);
+}
+
+TEST(distributed_query_observation_test, metric_status_boundaries_preserve_counts) {
+    auto body = std::make_unique<tateyama::metrics::resource::metrics_store_impl>();
+    tateyama::metrics::metrics_store store{std::move(body)};
+    rpc_metrics metrics{&store, "test"};
+    for (int status : {0, 1, 16, -1, 17, std::numeric_limits<int>::max()}) {
+        rpc_metrics::call call{metrics};
+        call.finish(status);
+    }
+    bool requests{}, active{};
+    std::size_t error_series{};
+    store.enumerate_items([&](auto const& metadata, double value) {
+        if (metadata.key() == "distributed_query_requests_total") { EXPECT_EQ(6, value); requests = true; }
+        if (metadata.key() == "distributed_query_requests_active") { EXPECT_EQ(0, value); active = true; }
+        if (metadata.key() == "distributed_query_errors_total") {
+            auto const& status = std::get<1>(metadata.attributes().at(1));
+            EXPECT_EQ(status == "2" ? 3 : (status == "1" || status == "16" ? 1 : 0), value);
+            ++error_series;
+        }
+    });
+    EXPECT_TRUE(requests && active);
+    EXPECT_EQ(16, error_series);
 }
 
 TEST(distributed_query_observation_test, concurrent_calls_count_once_and_release_active_requests) {

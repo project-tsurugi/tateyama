@@ -30,7 +30,7 @@ public:
         add("distributed_query_requests_active", [stats] { return static_cast<double>(stats->active.load(std::memory_order_relaxed)); }, {{"rpc", rpc}});
         add("distributed_query_elapsed_microseconds_total", [stats] { return static_cast<double>(stats->elapsed_us.load(std::memory_order_relaxed)); }, {{"rpc", rpc}});
         for (std::size_t i = 1; i < stats->errors.size(); ++i) {
-            add("distributed_query_errors_total", [stats, i] { return static_cast<double>(stats->errors[i].load(std::memory_order_relaxed)); }, {{"rpc", rpc}, {"status", std::to_string(i)}});
+            add("distributed_query_errors_total", [stats, i] { return static_cast<double>(stats->errors.at(i).load(std::memory_order_relaxed)); }, {{"rpc", rpc}, {"status", std::to_string(i)}});
         }
     }
     class call {
@@ -41,13 +41,15 @@ public:
         }
         call(call const&) = delete;
         call& operator=(call const&) = delete;
+        call(call&&) = delete;
+        call& operator=(call&&) = delete;
         ~call() { finish(2); } // unhandled exception = UNKNOWN; never record it as success
         void finish(int status) noexcept {
             if (finished_) return;
             finished_ = true;
             if (status != 0) {
-                auto index = status > 0 && status < 17 ? static_cast<std::size_t>(status) : std::size_t{2};
-                counters_->errors[index].fetch_add(1, std::memory_order_relaxed);
+                auto index = status > 0 && status < static_cast<int>(counters_->errors.size()) ? static_cast<std::size_t>(status) : std::size_t{2};
+                counters_->errors.at(index).fetch_add(1, std::memory_order_relaxed);
             }
             auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - started_).count();
             counters_->elapsed_us.fetch_add(static_cast<std::uint64_t>(elapsed), std::memory_order_relaxed);
