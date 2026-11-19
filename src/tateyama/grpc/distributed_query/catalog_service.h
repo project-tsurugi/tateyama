@@ -66,6 +66,8 @@ public:
         ::tateyama::grpc::proto::RemoteProcessRequest const* request,
         ::grpc::ServerWriter<::tateyama::grpc::proto::RemoteProcessResult>* writer) override;
 
+    void register_metrics(tateyama::metrics::metrics_store* store) { metrics_.register_in(store); }
+
     void set_execution_service(std::shared_ptr<service> execution) { execution_ = std::move(execution); }
 
     // Clearing cancels and drains calls; invoke outside an executing handler.

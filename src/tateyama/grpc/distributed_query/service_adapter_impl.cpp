@@ -72,6 +72,9 @@ bool service_adapter_impl::setup(framework::environment& env) {
         server_resource->add_service(remote_catalog_service.get());
         catalog_service_ = std::move(remote_catalog_service);
     }
+    auto* metrics_store = tateyama::metrics::find_metrics_store(env);
+    service_->register_metrics(metrics_store);
+    catalog_service_->register_metrics(metrics_store);
     return true;
 }
 

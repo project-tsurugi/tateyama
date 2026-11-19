@@ -31,20 +31,10 @@ class core;
 
 struct metadata_less {
     bool operator()(const tateyama::metrics::metrics_metadata& a, const tateyama::metrics::metrics_metadata& b) const noexcept {
-        if (a.key() < b.key()) {
-            return true;
+        if (a.key() != b.key()) {
+            return a.key() < b.key();
         }
-        auto& a_attrs = a.attributes();
-        auto& b_attrs = b.attributes();
-        if (a_attrs.size() != a_attrs.size()) {
-            return a_attrs.size() < b_attrs.size();
-        }
-        for (std::size_t i = 0; i < a_attrs.size(); i++) {
-            if (a_attrs.at(i) < b_attrs.at(i)) {
-                return true;
-            }
-        }        
-        return false;
+        return a.attributes() < b.attributes();
     }
 };
 

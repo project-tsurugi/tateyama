@@ -127,6 +127,12 @@ foreach(file ${SRCS})
     add_test_executable(${file})
 endforeach()
 
+if (ENABLE_GRPC)
+    # These suites inherit the same listener endpoint and run in separate processes.
+    set_tests_properties(distributed_query_service_adapter_test remote_catalog_service_test
+        PROPERTIES RESOURCE_LOCK distributed_query_listener)
+endif()
+
 file (GLOB RESULTSET_TRANSFER_TEST_SOURCES
   "tateyama/endpoint/ipc/ipc_resultset_writer_limit_test.cpp"
   "tateyama/endpoint/ipc/server_client_base.cpp"

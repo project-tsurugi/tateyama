@@ -15,6 +15,7 @@
  */
 
 #include "catalog_service.h"
+#include "observation.h"
 
 #include <chrono>
 #include <cstdint>
@@ -155,10 +156,10 @@ template <class Field, class Add>
         observed.finish(static_cast<int>(status.error_code()));
         auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - started);
         auto const& metadata = request->metadata();
-        LOG(INFO) << "GetRemoteCatalog request_id:" << metadata.request_id()
+        LOG(INFO) << "GetRemoteCatalog request_id:" << observation_id(metadata.request_id())
                   << " version:" << metadata.protocol_version().major() << "." << metadata.protocol_version().minor()
                   << " peer:" << context->peer() << " status:" << status.error_code()
-                  << " message:" << status.error_message() << counts << " fragments:" << fragments_sent
+                  << " message:" << observation_id(status.error_message()) << counts << " fragments:" << fragments_sent
                   << " request_bytes:" << request->ByteSizeLong() << " response_bytes:" << bytes_sent
                   << " elapsed_ms:" << elapsed.count();
         return status;
@@ -223,6 +224,9 @@ template <class Field, class Add>
         }
         ++fragments_sent;
         bytes_sent += size;
+    }
+    if (context->IsCancelled()) {
+        return finish({::grpc::StatusCode::CANCELLED, "remote catalog request was cancelled"});
     }
     return finish(::grpc::Status::OK);
 }

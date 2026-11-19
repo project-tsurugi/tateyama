@@ -37,6 +37,8 @@ public:
         ::tateyama::grpc::proto::RemoteProcessRequest const* request,
         ::grpc::ServerWriter<::tateyama::grpc::proto::RemoteProcessResult>* writer);
 
+    void register_metrics(tateyama::metrics::metrics_store* store) { metrics_.register_in(store); }
+
     // Clearing the handler cancels and waits for active calls before returning.
     // Must be called outside an executing handler.
     void set_remote_process_handler(std::shared_ptr<remote_process_handler> handler);

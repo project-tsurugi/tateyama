@@ -8,6 +8,7 @@
 #include <chrono>
 #include <memory>
 #include <string>
+#include <utility>
 #include <tateyama/metrics/metrics_store.h>
 
 namespace tateyama::grpc::distributed_query {
@@ -19,19 +20,25 @@ public:
         std::atomic_uint64_t elapsed_us{};
         std::array<std::atomic_uint64_t, 17> errors{};
     };
-    explicit rpc_metrics(tateyama::metrics::metrics_store* store, std::string const& rpc)
-        : counters_(std::make_shared<counters>()) {
+    explicit rpc_metrics(tateyama::metrics::metrics_store* store, std::string rpc)
+        : counters_(std::make_shared<counters>()), rpc_(std::move(rpc)) {
+        register_in(store);
+    }
+    // Readers own the registration marker; replacing the store expires it even if its address is reused.
+    void register_in(tateyama::metrics::metrics_store* store) {
         if (!store) return;
+        if (auto registered = registration_.lock(); registered && registered->store == store) return;
+        auto stats = std::make_shared<metric_registration>(metric_registration{counters_, store});
         auto add = [&](std::string const& key, auto reader, std::vector<std::tuple<std::string, std::string>> attributes) {
             store->register_item(tateyama::metrics::metrics_metadata{key, key, std::move(attributes), {}}, std::move(reader));
         };
-        auto stats = counters_;
-        add("distributed_query_requests_total", [stats] { return static_cast<double>(stats->requests.load(std::memory_order_relaxed)); }, {{"rpc", rpc}});
-        add("distributed_query_requests_active", [stats] { return static_cast<double>(stats->active.load(std::memory_order_relaxed)); }, {{"rpc", rpc}});
-        add("distributed_query_elapsed_microseconds_total", [stats] { return static_cast<double>(stats->elapsed_us.load(std::memory_order_relaxed)); }, {{"rpc", rpc}});
-        for (std::size_t i = 1; i < stats->errors.size(); ++i) {
-            add("distributed_query_errors_total", [stats, i] { return static_cast<double>(stats->errors.at(i).load(std::memory_order_relaxed)); }, {{"rpc", rpc}, {"status", std::to_string(i)}});
+        add("distributed_query_requests_total", [stats] { return static_cast<double>(stats->values->requests.load(std::memory_order_relaxed)); }, {{"rpc", rpc_}});
+        add("distributed_query_requests_active", [stats] { return static_cast<double>(stats->values->active.load(std::memory_order_relaxed)); }, {{"rpc", rpc_}});
+        add("distributed_query_elapsed_microseconds_total", [stats] { return static_cast<double>(stats->values->elapsed_us.load(std::memory_order_relaxed)); }, {{"rpc", rpc_}});
+        for (std::size_t i = 1; i < stats->values->errors.size(); ++i) {
+            add("distributed_query_errors_total", [stats, i] { return static_cast<double>(stats->values->errors.at(i).load(std::memory_order_relaxed)); }, {{"rpc", rpc_}, {"status", std::to_string(i)}});
         }
+        registration_ = stats;
     }
     class call {
     public:
@@ -61,6 +68,12 @@ public:
         bool finished_{};
     };
 private:
+    struct metric_registration {
+        std::shared_ptr<counters> values;
+        tateyama::metrics::metrics_store* store;
+    };
     std::shared_ptr<counters> counters_;
+    std::string rpc_;
+    std::weak_ptr<metric_registration> registration_;
 };
 }

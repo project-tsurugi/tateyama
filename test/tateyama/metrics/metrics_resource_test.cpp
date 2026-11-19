@@ -21,6 +21,8 @@
 #include <gtest/gtest.h>
 #include <atomic>
 #include <thread>
+#include <map>
+#include <stdexcept>
 #include <tateyama/test_utils/utility.h>
 
 namespace tateyama::metrics {
@@ -114,3 +116,38 @@ TEST_F(metrics_resource_test, basic) {
 }
 
 }
+
+namespace tateyama::metrics {
+TEST_F(metrics_resource_test, crossed_labels_have_strict_ordering_and_remain_distinct) {
+    using attributes = std::vector<std::tuple<std::string, std::string>>;
+    std::vector<metrics_metadata> cases{
+        {"distributed_query_errors_total", "", {{"rpc", "ExecuteRemoteProcess"}, {"status", "2"}}, {}},
+        {"distributed_query_errors_total", "", {{"rpc", "GetRemoteCatalog"}, {"status", "1"}}, {}},
+        {"distributed_query_errors_total", "", {}, {}},
+        {"distributed_query_errors_total", "", {{"rpc", "ExecuteRemoteProcess"}}, {}},
+        {"distributed_query_errors_total", "", {{"rpc", "ExecuteRemoteProcess"}, {"status", "1"}}, {}},
+        {"other", "", {}, {}}, {"other", "", {{"rpc", "A"}}, {}},
+    };
+    resource::metadata_less less{};
+    for (auto const& a : cases) {
+        EXPECT_FALSE(less(a, a));
+        for (auto const& b : cases) {
+            EXPECT_FALSE(less(a, b) && less(b, a));
+            for (auto const& c : cases) if (less(a, b) && less(b, c)) EXPECT_TRUE(less(a, c));
+        }
+    }
+    using key = std::pair<std::string, attributes>;
+    std::map<key, double> expected{}, actual{};
+    for (std::size_t i = 0; i < cases.size(); ++i) {
+        auto const& m = cases.at(i);
+        auto value = static_cast<double>(i + 1);
+        metrics_store_->register_item(m) = value;
+        expected.emplace(key{std::string{m.key()}, m.attributes()}, value);
+    }
+    EXPECT_THROW(metrics_store_->register_item(cases.front()), std::runtime_error);
+    metrics_store_->enumerate_items([&](auto const& m, double value) {
+        EXPECT_TRUE(actual.emplace(key{std::string{m.key()}, m.attributes()}, value).second);
+    });
+    EXPECT_EQ(expected, actual);
+}
+} // namespace tateyama::metrics

@@ -18,6 +18,9 @@
 #include <chrono>
 #include <cstdint>
 #include <future>
+#include <ctime>
+#include <mutex>
+#include <optional>
 #include <limits>
 #include <memory>
 #include <sstream>
@@ -28,6 +31,7 @@
 
 #include <grpcpp/grpcpp.h>
 #include <gtest/gtest.h>
+#include <glog/logging.h>
 #include <google/rpc/status.pb.h>
 #include <tateyama/proto/metrics/response.pb.h>
 
@@ -1343,37 +1347,52 @@ TEST_F(remote_catalog_service_test, client_cancellation_ends_rpc) {
 
 TEST_F(remote_catalog_service_test, unregister_waits_for_catalog_handler_before_releasing_database) {
     using namespace std::chrono_literals;
-    auto handler = std::make_shared<blocking_catalog_handler>(sample_catalog().SerializeAsString());
-    auto resource = adapter();
-    resource->set_remote_catalog_handler(handler);
-    auto stub = catalog_wire::DistributedQueryService::NewStub(
-        ::grpc::CreateChannel(std::string{endpoint}, ::grpc::InsecureChannelCredentials()));
-    ::grpc::ClientContext context{};
-    context.set_deadline(std::chrono::system_clock::now() + 15s);
-    auto entered = handler->entered();
-    auto call = std::async(std::launch::async, [&] {
-        auto reader = stub->GetRemoteCatalog(&context, valid_catalog_request());
-        catalog_wire::RemoteCatalogResponse response{};
-        while (reader->Read(&response)) {}
-        return reader->Finish();
-    });
-    EXPECT_EQ(std::future_status::ready, entered.wait_for(5s));
-    std::promise<void> clearing{};
-    auto started = clearing.get_future();
-    auto clear = std::async(std::launch::async, [&] {
-        clearing.set_value();
-        resource->set_remote_catalog_handler({});
-    });
-    EXPECT_EQ(std::future_status::ready, started.wait_for(5s));
-    EXPECT_EQ(std::future_status::timeout, clear.wait_for(50ms));
-    handler->release();
-    ASSERT_EQ(std::future_status::ready, clear.wait_for(10s));
-    clear.get();
-    ASSERT_EQ(std::future_status::ready, call.wait_for(10s));
-    EXPECT_EQ(::grpc::StatusCode::CANCELLED, call.get().error_code());
-    std::vector<catalog_wire::RemoteCatalogResponse> responses{};
-    EXPECT_EQ(::grpc::StatusCode::UNIMPLEMENTED, get_catalog(valid_catalog_request(), responses).error_code());
-    EXPECT_TRUE(responses.empty());
+    int cancelled_calls{};
+    for (bool empty : {false, true}) {
+        auto handler = std::make_shared<blocking_catalog_handler>(empty ? std::string{} : sample_catalog().SerializeAsString());
+        auto resource = adapter();
+        resource->set_remote_catalog_handler(handler);
+        auto stub = catalog_wire::DistributedQueryService::NewStub(
+            ::grpc::CreateChannel(std::string{endpoint}, ::grpc::InsecureChannelCredentials()));
+        ::grpc::ClientContext context{};
+        context.set_deadline(std::chrono::system_clock::now() + 15s);
+        auto entered = handler->entered();
+        auto call = std::async(std::launch::async, [&] {
+            auto reader = stub->GetRemoteCatalog(&context, valid_catalog_request());
+            catalog_wire::RemoteCatalogResponse response{};
+            while (reader->Read(&response)) {}
+            return reader->Finish();
+        });
+        EXPECT_EQ(std::future_status::ready, entered.wait_for(5s));
+        std::promise<void> clearing{};
+        auto started = clearing.get_future();
+        auto clear = std::async(std::launch::async, [&] {
+            clearing.set_value();
+            resource->set_remote_catalog_handler({});
+        });
+        EXPECT_EQ(std::future_status::ready, started.wait_for(5s));
+        EXPECT_EQ(std::future_status::timeout, clear.wait_for(50ms));
+        handler->release();
+        ASSERT_EQ(std::future_status::ready, clear.wait_for(10s));
+        clear.get();
+        ASSERT_EQ(std::future_status::ready, call.wait_for(10s));
+        EXPECT_EQ(::grpc::StatusCode::CANCELLED, call.get().error_code());
+        ++cancelled_calls;
+        auto metrics = server_->find_resource<tateyama::metrics::resource::bridge>();
+        bool cancelled_series{};
+        metrics->metrics_store().enumerate_items([&](auto const& metadata, double value) {
+            auto const& attributes = metadata.attributes();
+            if (metadata.key() == "distributed_query_errors_total" &&
+                std::find(attributes.begin(), attributes.end(), std::make_tuple(std::string{"rpc"}, std::string{"GetRemoteCatalog"})) != attributes.end() &&
+                std::find(attributes.begin(), attributes.end(), std::make_tuple(std::string{"status"}, std::string{"1"})) != attributes.end()) {
+                EXPECT_EQ(cancelled_calls, value); cancelled_series = true;
+            }
+        });
+        EXPECT_TRUE(cancelled_series);
+        std::vector<catalog_wire::RemoteCatalogResponse> responses{};
+        EXPECT_EQ(::grpc::StatusCode::UNIMPLEMENTED, get_catalog(valid_catalog_request(), responses).error_code());
+        EXPECT_TRUE(responses.empty());
+    }
 }
 
 TEST(remote_catalog_split_test, fragments_are_contiguous_non_empty_and_sequenced) {
@@ -1446,7 +1465,7 @@ public:
         temporary_.clean();
     }
 protected:
-    bool setup(std::string const& roles, bool grpc_enabled = true, bool fail_once = false) {
+    bool setup(std::string const& roles, bool grpc_enabled = true, bool fail_once = false, bool with_metrics = false) {
         std::stringstream ss{};
         ss << roles << "[grpc_server]\nenabled=" << (grpc_enabled ? "true" : "false")
            << "\nlisten_address=localhost:62347\n[blob_relay]\nenabled=true\nsession_store=" << path()
@@ -1456,6 +1475,7 @@ protected:
         server_ = std::make_unique<framework::server>(framework::boot_mode::database_server, cfg);
         if (fail_once) {
             // Isolate this adapter's retry lifecycle from other core services.
+            if (with_metrics) server_->add_resource(std::make_shared<tateyama::metrics::resource::bridge>());
             server_->add_resource(std::make_shared<tateyama::grpc::grpc_server_resource>());
             server_->add_resource(std::make_shared<service_adapter>());
             server_->add_resource(std::make_shared<fail_once_setup_resource>());
@@ -1532,6 +1552,94 @@ TEST_F(distributed_query_role_test, disabled_remote_does_not_require_grpc) {
 
 TEST_F(distributed_query_role_test, invalid_remote_flag_is_rejected) {
     EXPECT_FALSE(setup("[distributed_query_remote]\nenabled=invalid\n"));
+}
+
+
+TEST(distributed_query_observation_test, counters_rebind_after_store_replacement_at_the_same_address) {
+    using store_type = tateyama::metrics::metrics_store;
+    using impl_type = tateyama::metrics::resource::metrics_store_impl;
+    std::optional<store_type> store{};
+    store.emplace(std::make_unique<impl_type>());
+    auto* address = std::addressof(*store);
+    rpc_metrics metrics{address, "test"};
+    { rpc_metrics::call call{metrics}; call.finish(3); }
+    EXPECT_NO_THROW(metrics.register_in(std::addressof(*store)));
+    store.reset();
+    store.emplace(std::make_unique<impl_type>());
+    EXPECT_EQ(address, std::addressof(*store));
+    metrics.register_in(std::addressof(*store));
+    EXPECT_NO_THROW(metrics.register_in(std::addressof(*store)));
+    { rpc_metrics::call call{metrics}; call.finish(0); }
+    std::size_t series{};
+    bool requests{}, errors{};
+    store->enumerate_items([&](auto const& m, double value) {
+        ++series;
+        if (m.key() == "distributed_query_requests_total") { EXPECT_EQ(2, value); requests = true; }
+        if (m.key() == "distributed_query_errors_total" &&
+            std::find(m.attributes().begin(), m.attributes().end(), std::make_tuple(std::string{"status"}, std::string{"3"})) != m.attributes().end()) {
+            EXPECT_EQ(1, value); errors = true;
+        }
+    });
+    EXPECT_TRUE(requests && errors);
+    EXPECT_EQ(19, series);
+}
+
+class catalog_log_capture final : public google::LogSink {
+public:
+    catalog_log_capture() : previous_minloglevel_(FLAGS_minloglevel) { FLAGS_minloglevel = 0; google::AddLogSink(this); }
+    ~catalog_log_capture() override { google::RemoveLogSink(this); FLAGS_minloglevel = previous_minloglevel_; }
+    void send(google::LogSeverity, char const*, char const*, int, std::tm const*, char const* message, std::size_t length) override {
+        std::string text{message, length};
+        if (text.find("GetRemoteCatalog request_id:") == std::string::npos) return;
+        std::lock_guard lock{mutex_};
+        messages_.push_back(std::move(text));
+    }
+    std::vector<std::string> messages() const { std::lock_guard lock{mutex_}; return messages_; }
+private:
+    int previous_minloglevel_{};
+    mutable std::mutex mutex_{};
+    std::vector<std::string> messages_{};
+};
+
+TEST_F(remote_catalog_service_test, bounds_and_sanitizes_request_ids_in_actual_logs) {
+    adapter()->set_remote_catalog_handler(std::make_shared<fixed_catalog_handler>(remote_catalog_result{true, {}, {}}));
+    catalog_log_capture capture{};
+    for (bool valid : {true, false}) {
+        auto request = valid_catalog_request();
+        request.mutable_metadata()->set_request_id("bad\n\t" + std::string(4096, 'x'));
+        if (!valid) request.mutable_metadata()->clear_protocol_version();
+        std::vector<catalog_wire::RemoteCatalogResponse> responses{};
+        EXPECT_EQ(valid ? ::grpc::StatusCode::OK : ::grpc::StatusCode::INVALID_ARGUMENT, get_catalog(request, responses).error_code());
+    }
+    adapter()->set_remote_catalog_handler({});
+    auto messages = capture.messages();
+    ASSERT_EQ(2, messages.size());
+    for (auto const& message : messages) {
+        EXPECT_NE(std::string::npos, message.find("request_id:bad__" + std::string(123, 'x') + " version:"));
+        EXPECT_EQ(std::string::npos, message.find('\n'));
+        EXPECT_EQ(std::string::npos, message.find('\t'));
+    }
+}
+
+TEST_F(distributed_query_role_test, setup_retry_exports_both_rpcs_in_the_replacement_metrics_store) {
+    ASSERT_FALSE(setup("[distributed_query_remote]\nenabled=true\n", true, true, true));
+    ASSERT_TRUE(server_->start());
+    EXPECT_EQ(::grpc::StatusCode::INVALID_ARGUMENT, execution_probe());
+    EXPECT_EQ(::grpc::StatusCode::INVALID_ARGUMENT, catalog_probe());
+    auto metrics = server_->find_resource<tateyama::metrics::resource::bridge>();
+    ASSERT_TRUE(metrics);
+    std::size_t series{}, requests{}, errors{};
+    metrics->metrics_store().enumerate_items([&](auto const& m, double value) {
+        ++series;
+        if (m.key() == "distributed_query_requests_total") { EXPECT_EQ(1, value); ++requests; }
+        if (m.key() == "distributed_query_errors_total" &&
+            std::find(m.attributes().begin(), m.attributes().end(), std::make_tuple(std::string{"status"}, std::string{"3"})) != m.attributes().end()) {
+            EXPECT_EQ(1, value); ++errors;
+        }
+    });
+    EXPECT_EQ(38, series);
+    EXPECT_EQ(2, requests);
+    EXPECT_EQ(2, errors);
 }
 
 } // namespace tateyama::grpc::distributed_query
