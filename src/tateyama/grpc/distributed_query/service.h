@@ -18,7 +18,6 @@
 
 #include <grpcpp/grpcpp.h>
 
-#include <tateyama/proto/distributed_query/hello.grpc.pb.h>
 #include <tateyama/proto/distributed_query/remote_catalog.grpc.pb.h>
 
 #include <tateyama/grpc/distributed_query/service_adapter.h>
@@ -29,14 +28,9 @@
 
 namespace tateyama::grpc::distributed_query {
 
-class service final : public ::tateyama::proto::distributed_query::DistributedQuery::Service {
+class service final {
 public:
     explicit service(tateyama::metrics::metrics_store* store = nullptr) : metrics_(store, "ExecuteRemoteProcess") {}
-
-    ::grpc::Status Hello(
-        ::grpc::ServerContext* context,
-        ::tateyama::proto::distributed_query::HelloRequest const* request,
-        ::tateyama::proto::distributed_query::HelloResponse* response) override;
 
     ::grpc::Status ExecuteRemoteProcess(
         ::grpc::ServerContext* context,

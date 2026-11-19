@@ -39,7 +39,6 @@
 #include <tateyama/grpc/distributed_query/catalog_service.h>
 #include <tateyama/grpc/distributed_query/service_adapter.h>
 #include <tateyama/grpc/server_resource.h>
-#include <tateyama/proto/distributed_query/hello.grpc.pb.h>
 #include <tateyama/proto/distributed_query/remote_catalog.grpc.pb.h>
 #include <tateyama/test_utils/utility.h>
 
@@ -411,20 +410,6 @@ TEST_F(distributed_query_service_adapter_test, typed_rpc_transports_complete_rec
     EXPECT_FALSE(reader->Read(&response));
     EXPECT_TRUE(reader->Finish().ok());
     EXPECT_EQ(request.execution_block().SerializeAsString(), handler->received());
-}
-
-TEST_F(distributed_query_service_adapter_test, hello) {
-    auto channel = ::grpc::CreateChannel(
-        std::string{endpoint},
-        ::grpc::InsecureChannelCredentials());
-    auto stub = proto::distributed_query::DistributedQuery::NewStub(channel);
-
-    proto::distributed_query::HelloRequest request{};
-    proto::distributed_query::HelloResponse response{};
-    ::grpc::ClientContext context{};
-
-    auto status = stub->Hello(&context, request, &response);
-    EXPECT_TRUE(status.ok()) << status.error_message();
 }
 
 TEST_F(distributed_query_service_adapter_test, execute_remote_process) {
@@ -1127,13 +1112,21 @@ TEST_F(remote_catalog_service_test, streams_complete_catalog_and_keeps_execution
         restored.function_list(0).return_type().decimal_type().scale_presence_case());
     EXPECT_EQ(1U, handler->calls.load());
 
-    // the existing execution service is still served next to the catalog service
-    auto stub = proto::distributed_query::DistributedQuery::NewStub(
+    // The formal execution RPC remains available alongside catalog retrieval.
+    auto execution = std::make_shared<test_remote_process_handler>();
+    adapter()->set_remote_process_handler(execution);
+    auto stub = catalog_wire::DistributedQueryService::NewStub(
         ::grpc::CreateChannel(std::string{endpoint}, ::grpc::InsecureChannelCredentials()));
-    proto::distributed_query::HelloRequest hello{};
-    proto::distributed_query::HelloResponse hello_response{};
+    catalog_wire::RemoteProcessRequest request{};
+    set_valid_metadata(request);
+    set_test_payload(request, "catalog-and-execution");
+    catalog_wire::RemoteProcessResult response{};
     ::grpc::ClientContext context{};
-    EXPECT_TRUE(stub->Hello(&context, hello, &hello_response).ok());
+    context.set_deadline(std::chrono::system_clock::now() + std::chrono::seconds{3});
+    auto execution_status = execute_remote_process(*stub, context, request, response);
+    EXPECT_TRUE(execution_status.ok()) << execution_status.error_message();
+    EXPECT_EQ("catalog-and-execution", execution->received());
+
 }
 
 TEST_F(remote_catalog_service_test, definition_ids_preserve_zero_and_absence_over_rpc) {
@@ -1447,14 +1440,18 @@ protected:
         }
         return server_->setup();
     }
-    ::grpc::Status hello() {
-        auto channel = ::grpc::CreateChannel("localhost:62347", ::grpc::InsecureChannelCredentials());
-        auto stub = proto::distributed_query::DistributedQuery::NewStub(channel);
-        proto::distributed_query::HelloRequest request{};
-        proto::distributed_query::HelloResponse response{};
+    // INVALID_ARGUMENT proves the formal execution RPC is registered.
+    ::grpc::StatusCode execution_probe() {
+        auto stub = catalog_wire::DistributedQueryService::NewStub(
+            ::grpc::CreateChannel("localhost:62347", ::grpc::InsecureChannelCredentials()));
+        catalog_wire::RemoteProcessRequest request{};
         ::grpc::ClientContext context{};
         context.set_deadline(std::chrono::system_clock::now() + std::chrono::seconds{3});
-        return stub->Hello(&context, request, &response);
+        auto reader = stub->ExecuteRemoteProcess(&context, request);
+        catalog_wire::RemoteProcessResult response{};
+        while (reader->Read(&response)) {
+        }
+        return reader->Finish().error_code();
     }
     // INVALID_ARGUMENT proves the catalog service is registered; an unregistered service is UNIMPLEMENTED
     ::grpc::StatusCode catalog_probe() {
@@ -1475,21 +1472,21 @@ protected:
 TEST_F(distributed_query_role_test, omitted_roles_do_not_register_remote_service) {
     ASSERT_TRUE(setup(""));
     ASSERT_TRUE(server_->start());
-    EXPECT_EQ(::grpc::StatusCode::UNIMPLEMENTED, hello().error_code());
+    EXPECT_EQ(::grpc::StatusCode::UNIMPLEMENTED, execution_probe());
     EXPECT_EQ(::grpc::StatusCode::UNIMPLEMENTED, catalog_probe());
 }
 
 TEST_F(distributed_query_role_test, coordinator_only_does_not_register_remote_service) {
     ASSERT_TRUE(setup("[distributed_query_coordinator]\nenabled=true\n[distributed_query_remote]\nenabled=false\n"));
     ASSERT_TRUE(server_->start());
-    EXPECT_EQ(::grpc::StatusCode::UNIMPLEMENTED, hello().error_code());
+    EXPECT_EQ(::grpc::StatusCode::UNIMPLEMENTED, execution_probe());
     EXPECT_EQ(::grpc::StatusCode::UNIMPLEMENTED, catalog_probe());
 }
 
 TEST_F(distributed_query_role_test, dual_roles_register_remote_service) {
     ASSERT_TRUE(setup("[distributed_query_coordinator]\nenabled=true\n[distributed_query_remote]\nenabled=true\n"));
     ASSERT_TRUE(server_->start());
-    EXPECT_TRUE(hello().ok());
+    EXPECT_EQ(::grpc::StatusCode::INVALID_ARGUMENT, execution_probe());
     EXPECT_EQ(::grpc::StatusCode::INVALID_ARGUMENT, catalog_probe());
 }
 
@@ -1497,7 +1494,7 @@ TEST_F(distributed_query_role_test, setup_retry_preserves_registered_remote_serv
     ASSERT_FALSE(setup("[distributed_query_remote]\nenabled=true\n", true, true));
     // start() retries setup after a later resource failed and shutdown ran.
     ASSERT_TRUE(server_->start());
-    EXPECT_TRUE(hello().ok());
+    EXPECT_EQ(::grpc::StatusCode::INVALID_ARGUMENT, execution_probe());
     EXPECT_EQ(::grpc::StatusCode::INVALID_ARGUMENT, catalog_probe());
 }
 

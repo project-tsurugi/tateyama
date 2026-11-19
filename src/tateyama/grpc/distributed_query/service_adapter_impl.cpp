@@ -63,7 +63,6 @@ bool service_adapter_impl::setup(framework::environment& env) {
     if (!service_) {
         auto remote_service = std::make_shared<service>(tateyama::metrics::find_metrics_store(env));
         remote_service->set_remote_process_handler(handler_);
-        server_resource->add_service(remote_service.get());
         service_ = std::move(remote_service);
     }
     if (!catalog_service_) {

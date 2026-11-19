@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package tateyama.grpc.proto;
 
-import "tateyama/proto/distributed_query/hello.proto";
+import "tateyama/proto/distributed_query/request_metadata.proto";
 import "tateyama/proto/distributed_query/remote_execution_block.proto";
 
 // L3-07 formal Distributed Query service.

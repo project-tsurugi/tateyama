@@ -63,15 +63,6 @@ namespace tateyama::grpc::distributed_query {
     return encoded;
 }
 
-::grpc::Status service::Hello(
-    ::grpc::ServerContext*,
-    ::tateyama::proto::distributed_query::HelloRequest const*,
-    ::tateyama::proto::distributed_query::HelloResponse*)
-{
-    LOG(INFO) << "hello";
-    return ::grpc::Status::OK;
-}
-
 ::grpc::Status service::ExecuteRemoteProcess(
     ::grpc::ServerContext* context,
     ::tateyama::grpc::proto::RemoteProcessRequest const* request,
