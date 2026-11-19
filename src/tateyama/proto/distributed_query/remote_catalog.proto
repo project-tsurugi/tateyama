@@ -128,6 +128,8 @@ enum RemoteIndexFeature {
     REMOTE_INDEX_FEATURE_SCAN = 3;
     REMOTE_INDEX_FEATURE_UNIQUE = 4;
     REMOTE_INDEX_FEATURE_UNIQUE_CONSTRAINT = 5;
+    // Entries with equal index keys follow the primary key order; this adds no searchable key columns.
+    REMOTE_INDEX_FEATURE_TIES_ORDERED_BY_PRIMARY_KEY = 6;
 }
 
 message RemoteIndex {
