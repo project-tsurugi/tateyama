@@ -224,7 +224,7 @@ parameter=value
 
 |パラメーター名 | 型 | 値 |備考|
 |---:| :---: | :--- |---|
-|enabled | ブール(true/false) | 分散クエリのcoordinatorを有効にするかどうか、デフォルト値は`false` | `true`の場合、`distributed_query_client`に1つ以上の接続先が必要。 |
+|enabled | ブール(true/false) | 分散クエリのcoordinatorを有効にするかどうか、デフォルト値は`false` | `true`の場合、`distributed_query_client`に1つ以上の接続先が必要。`false`の場合、`distributed_query_client`は使用・検証しない。 |
 
 ## distributed_query_remoteセクション
 
@@ -249,10 +249,10 @@ parameter=value
 
 |パラメーター名 | 型 | 値 |備考|
 |---:| :---: | :--- |---|
-|name | 文字列 | remote server名、デフォルト値は空文字列（接続先なし）。 | `CREATE FOREIGN CATALOG`の`SERVER`で指定する名前。複数指定は`\|`区切り。重複不可。`local`と`__`で始まる名前は使用不可。 |
+|name | 文字列 | remote server名、デフォルト値は空文字列（接続先なし）。 | `CREATE FOREIGN CATALOG`の`SERVER`で指定する名前。複数指定は`\|`区切り。コンパイラの識別子共通規則に従う。重複不可。`local`、および`__`で始まる名前は使用不可。 |
 |uri | 文字列 | 接続先のURI、デフォルト値は空文字列（接続先なし）。 | `dns:///host:port`または`unix:///絶対パス`。複数指定は`\|`区切り。`name`と同数・同順で指定。UNIXドメインソケットでは`secure=false`とする。 |
-|secure | ブール(true/false) | 接続先との通信にTLSを使用するかどうか、デフォルト値は`false` | 複数指定は`\|`区切りで、`name`と同数・同順にする。省略時は全接続先に既定値を適用。 |
-|root_cert | 文字列 | TLSの検証に使用するルート証明書、デフォルト値は`grpc_default` | `grpc_default`はgRPC既定のルート証明書を使用。それ以外はPEM形式のX.509証明書ファイルのパス。相対パスは`TSURUGI_HOME`を基準とする。複数指定は`\|`区切りで、`name`と同数・同順にする。省略時は全接続先に既定値を適用。`secure=false`の場合は使用しない。 |
+|secure | 文字列 | 接続先との通信にTLSを使用するかどうか（`true`/`false`）、デフォルト値は`false` | 指定する場合は`name`と同数・同順の`\|`区切りリストとする。省略時は全接続先に既定値を適用。 |
+|root_cert | 文字列 | TLSの検証に使用するルート証明書、デフォルト値は`grpc_default` | `grpc_default`はgRPC既定のルート証明書を使用。それ以外はPEM形式のX.509証明書ファイルのパス。相対パスは`TSURUGI_HOME`を基準とする。指定する場合は`name`と同数・同順の`\|`区切りリストとする。省略時は全接続先に既定値を適用。`secure=false`の場合は使用しない。 |
 
 ## blob_relayセクション
 

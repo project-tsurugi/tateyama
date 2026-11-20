@@ -226,7 +226,7 @@ Target component
 
 | Parameter name | Type | Value | Remarks |
 |---:| :---: | :--- |---|
-| enabled | Boolean(true/false) | Whether to enable the distributed query coordinator. The default value is false. | When true, at least one destination in `distributed_query_client` is required. |
+| enabled | Boolean(true/false) | Whether to enable the distributed query coordinator. The default value is false. | When true, at least one destination in `distributed_query_client` is required. When false, `distributed_query_client` is neither used nor validated. |
 
 ## distributed_query_remote section
 
@@ -251,10 +251,10 @@ Target component
 
 | Parameter name | Type | Value | Remarks |
 |---:| :---: | :--- |---|
-| name | String | Remote server name. The default value is an empty string (no destination). | The name specified by `SERVER` in `CREATE FOREIGN CATALOG`. Separate multiple names with `\|`. Duplicate names, `local`, and names starting with `__` are not allowed. |
+| name | String | Remote server name. The default value is an empty string (no destination). | The name specified by `SERVER` in `CREATE FOREIGN CATALOG`. Separate multiple names with `\|`. Names must follow the compiler's common identifier rules. Duplicate names, `local`, and names starting with `__` are not allowed. |
 | uri | String | Destination URI. The default value is an empty string (no destination). | `dns:///host:port` or `unix:///absolute/path`. Separate multiple values with `\|`, matching the number and order of `name`. UNIX domain sockets require `secure=false`. |
-| secure | Boolean(true/false) | Whether to use TLS for the connection. The default value is false. | Separate multiple values with `\|`, matching the number and order of `name`. When omitted, the default applies to every destination. |
-| root_cert | String | Root certificates used to verify TLS connections. The default value is `grpc_default`. | `grpc_default` uses the gRPC default root certificates. Otherwise, specify a path to a PEM file containing X.509 certificates. Relative paths are resolved from `TSURUGI_HOME`. Separate multiple values with `\|`, matching the number and order of `name`. When omitted, the default applies to every destination. Not used when `secure=false`. |
+| secure | String | Whether to use TLS for the connection (`true`/`false`). The default value is false. | When specified, use a `\|`-separated list matching the number and order of `name`. When omitted, the default applies to every destination. |
+| root_cert | String | Root certificates used to verify TLS connections. The default value is `grpc_default`. | `grpc_default` uses the gRPC default root certificates. Otherwise, specify a path to a PEM file containing X.509 certificates. Relative paths are resolved from `TSURUGI_HOME`. When specified, use a `\|`-separated list matching the number and order of `name`. When omitted, the default applies to every destination. Not used when `secure=false`. |
 
 ## blob_relay section
 
