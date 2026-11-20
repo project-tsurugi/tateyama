@@ -22,6 +22,7 @@
 #include <string>
 
 #include <data_relay_grpc/proto/blob_relay/blob_relay_local.grpc.pb.h>
+#include <google/protobuf/unknown_field_set.h>
 
 #include <tateyama/framework/server.h>
 #include <tateyama/framework/component_ids.h>
@@ -49,19 +50,42 @@ class blob_relay_setup_retry_test : public ::testing::Test, public test_utils::u
 public:
     void SetUp() override {
         temporary_.prepare();
-        std::stringstream ss{};
-        ss << "[grpc_server]\nenabled=true\nlisten_address=localhost:62348\n"
-           << "[blob_relay]\nenabled=true\nsession_store=" << path() << "/session_store\n";
-        auto cfg = std::make_shared<api::configuration::whole>(ss, test_utils::default_configuration_for_tests);
-        set_dbpath(*cfg);
-        server_ = std::make_unique<framework::server>(framework::boot_mode::database_server, cfg);
-        framework::add_core_components(*server_);
+        prepare_server(false);
     }
     void TearDown() override {
         if (server_) { server_->shutdown(); }
         temporary_.clean();
     }
 protected:
+    void prepare_server(bool remote_enabled) {
+        std::stringstream ss{};
+        ss << "[grpc_server]\nenabled=true\nlisten_address=localhost:62348\n"
+           << "[blob_relay]\nenabled=true\nsession_store=" << path() << "/session_store\n";
+        ss << "[distributed_query_remote]\nenabled=" << (remote_enabled ? "true" : "false") << '\n';
+        auto cfg = std::make_shared<api::configuration::whole>(ss, std::string{test_utils::default_configuration_for_tests} + "\n[distributed_query_remote]\nenabled=false\n[distributed_query_coordinator]\nenabled=false\n");
+        set_dbpath(*cfg);
+        server_ = std::make_unique<framework::server>(framework::boot_mode::database_server, cfg);
+        framework::add_core_components(*server_);
+    }
+
+    void check_request_limit(std::size_t size, ::grpc::StatusCode expected) {
+        namespace proto = data_relay_grpc::proto::blob_relay::blob_relay_local;
+        auto channel = ::grpc::CreateChannel("localhost:62348", ::grpc::InsecureChannelCredentials());
+        auto stub = proto::BlobRelayLocal::NewStub(channel);
+        proto::GetLocalRequest request{};
+        request.set_api_version(std::numeric_limits<std::uint64_t>::max());
+        // Unknown fields exercise transport size without changing the BLOB operation.
+        request.GetReflection()->MutableUnknownFields(&request)->AddLengthDelimited(100, std::string(size, 'x'));
+        proto::GetLocalResponse response{};
+        ::grpc::ClientContext context{};
+        context.set_deadline(std::chrono::system_clock::now() + std::chrono::seconds{10});
+        auto status = stub->Get(&context, request, &response);
+        EXPECT_EQ(expected, status.error_code());
+        if (expected == ::grpc::StatusCode::UNAVAILABLE) {
+            EXPECT_NE(std::string::npos, status.error_message().find("the requested API version"));
+        }
+    }
+
     void check_rpc() {
         namespace proto = data_relay_grpc::proto::blob_relay::blob_relay_local;
         auto channel = ::grpc::CreateChannel("localhost:62348", ::grpc::InsecureChannelCredentials());
@@ -112,6 +136,21 @@ TEST_F(blob_relay_setup_retry_test, retained_service_keeps_its_dependencies_aliv
     session.dispose();
     relay.reset();
     EXPECT_TRUE(datastore.expired());
+}
+
+TEST_F(blob_relay_setup_retry_test, disabled_worker_preserves_default_receive_limit) {
+    ASSERT_TRUE(server_->setup());
+    ASSERT_TRUE(server_->start());
+    check_rpc();
+    check_request_limit(5U * 1024U * 1024U, ::grpc::StatusCode::RESOURCE_EXHAUSTED);
+}
+
+TEST_F(blob_relay_setup_retry_test, enabled_worker_preserves_default_receive_limit) {
+    prepare_server(true);
+    ASSERT_TRUE(server_->setup());
+    ASSERT_TRUE(server_->start());
+    check_rpc();
+    check_request_limit(5U * 1024U * 1024U, ::grpc::StatusCode::RESOURCE_EXHAUSTED);
 }
 
 } // namespace tateyama::grpc::blob_relay

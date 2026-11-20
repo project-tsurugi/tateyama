@@ -64,10 +64,8 @@ void tateyama_grpc_server::operator()() {
     }
     // Build and start gRPC server with service added
     ::grpc::ServerBuilder builder{};
-    // The shared listener must admit distributed-query messages up to 64 MiB.
-    // The adapter also checks the serialized response before writing it.
-    constexpr int max_message_size = 64 * 1024 * 1024;
-    builder.SetMaxReceiveMessageSize(max_message_size);
+    // Keep the gRPC default receive limit (4 MiB) for the shared BLOB/RDMA listener.
+    // Distributed-query requests are subject to the same transport limit.
     // Set GRPC_ARG_ALLOW_REUSEPORT to 0 (off)
     builder.AddChannelArgument(GRPC_ARG_ALLOW_REUSEPORT, 0);
     // Set ListeningPort

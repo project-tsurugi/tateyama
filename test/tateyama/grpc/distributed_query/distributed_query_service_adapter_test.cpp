@@ -838,7 +838,7 @@ TEST_F(distributed_query_service_adapter_test, sql_error_without_details_falls_b
     EXPECT_TRUE(status.error_details().empty());
 }
 
-TEST_F(distributed_query_service_adapter_test, accepts_messages_larger_than_default_grpc_limit) {
+TEST_F(distributed_query_service_adapter_test, accepts_large_response_with_request_below_default_grpc_limit) {
     auto adapter = std::dynamic_pointer_cast<service_adapter>(
         server_->find_resource_by_id(framework::resource_id_distributed_query_service));
     ASSERT_TRUE(adapter);
@@ -852,7 +852,7 @@ TEST_F(distributed_query_service_adapter_test, accepts_messages_larger_than_defa
         ::grpc::CreateCustomChannel(std::string{endpoint}, ::grpc::InsecureChannelCredentials(), args));
     catalog_wire::RemoteProcessRequest request{};
     set_valid_metadata(request);
-    set_test_payload(request, std::string(size, 'q'));
+    set_test_payload(request, std::string(3U * 1024U * 1024U, 'q'));
     catalog_wire::RemoteProcessResult response{};
     ::grpc::ClientContext context{};
     auto status = execute_remote_process(*stub, context, request, response);
@@ -861,24 +861,31 @@ TEST_F(distributed_query_service_adapter_test, accepts_messages_larger_than_defa
     EXPECT_EQ(1U, handler->calls.load());
 }
 
-TEST_F(distributed_query_service_adapter_test, rejects_oversized_request_without_calling_handler) {
+TEST_F(distributed_query_service_adapter_test, enforces_default_grpc_request_limit_before_handler) {
     auto adapter = std::dynamic_pointer_cast<service_adapter>(
         server_->find_resource_by_id(framework::resource_id_distributed_query_service));
     ASSERT_TRUE(adapter);
     auto handler = std::make_shared<fixed_result_handler>(remote_process_result{true, "ok", {}});
     adapter->set_remote_process_handler(handler);
-    ::grpc::ChannelArguments args{};
-    args.SetMaxSendMessageSize(65 * 1024 * 1024);
     auto stub = catalog_wire::DistributedQueryService::NewStub(
-        ::grpc::CreateCustomChannel(std::string{endpoint}, ::grpc::InsecureChannelCredentials(), args));
-    catalog_wire::RemoteProcessRequest request{};
-    set_valid_metadata(request);
-    set_test_payload(request, std::string(64U * 1024U * 1024U, 'q'));
-    catalog_wire::RemoteProcessResult response{};
-    ::grpc::ClientContext context{};
-    auto status = execute_remote_process(*stub, context, request, response);
-    EXPECT_EQ(::grpc::StatusCode::RESOURCE_EXHAUSTED, status.error_code());
-    EXPECT_EQ(0U, handler->calls.load());
+        ::grpc::CreateChannel(std::string{endpoint}, ::grpc::InsecureChannelCredentials()));
+    constexpr std::size_t limit = 4U * 1024U * 1024U;
+    for (auto const size : {limit - 1, limit, limit + 1}) {
+        catalog_wire::RemoteProcessRequest request{};
+        set_valid_metadata(request);
+        set_test_payload(request, std::string(size, 'q'));
+        auto const overhead = request.ByteSizeLong() - size;
+        request.mutable_execution_block()->clear_operators();
+        set_test_payload(request, std::string(size - overhead, 'q'));
+        ASSERT_EQ(size, request.ByteSizeLong());
+        catalog_wire::RemoteProcessResult response{};
+        ::grpc::ClientContext context{};
+        context.set_deadline(std::chrono::system_clock::now() + std::chrono::seconds{10});
+        auto status = execute_remote_process(*stub, context, request, response);
+        EXPECT_EQ(size <= limit ? ::grpc::StatusCode::OK : ::grpc::StatusCode::RESOURCE_EXHAUSTED,
+            status.error_code());
+    }
+    EXPECT_EQ(2U, handler->calls.load());
 }
 
 TEST_F(distributed_query_service_adapter_test, rejects_oversized_serialized_result) {
