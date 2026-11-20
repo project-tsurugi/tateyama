@@ -251,9 +251,9 @@ Target component
 
 | Parameter name | Type | Value | Remarks |
 |---:| :---: | :--- |---|
-| name | String | Remote server name. The default value is an empty string (no destination). | The name specified by `SERVER` in `CREATE FOREIGN CATALOG`. Separate multiple names with `\|`. Names must follow the compiler's common identifier rules. Duplicate names, `local`, and names starting with `__` are not allowed. |
-| uri | String | Destination URI. The default value is an empty string (no destination). | `dns:///host:port` or `unix:///absolute/path`. Separate multiple values with `\|`, matching the number and order of `name`. UNIX domain sockets require `secure=false`. |
-| secure | String | Whether to use TLS for the connection (`true`/`false`). The default value is false. | When specified, use a `\|`-separated list matching the number and order of `name`. When omitted, the default applies to every destination. |
+| name | String | Remote server name. The default value is an empty string (no destination). | The name specified by `SERVER` in `CREATE FOREIGN CATALOG`. Separate multiple names with `\|`. Names must follow the common identifier rules used throughout Tsurugi. Duplicate names, `local`, and names starting with `__` are not allowed. |
+| uri | String | Destination URI. The default value is an empty string (no destination). | `dns:///host:port` or `unix:///absolute/path`. Separate multiple values with `\|`, matching the number and order of `name`. |
+| secure | String | Whether to use TLS for the connection (`true`/`false`). The default value is false. | When specified, use a `\|`-separated list matching the number and order of `name`. When omitted, the default applies to every destination. For UNIX domain sockets, `false` is required. |
 | root_cert | String | Root certificates used to verify TLS connections. The default value is `grpc_default`. | `grpc_default` uses the gRPC default root certificates. Otherwise, specify a path to a PEM file containing X.509 certificates. Relative paths are resolved from `TSURUGI_HOME`. When specified, use a `\|`-separated list matching the number and order of `name`. When omitted, the default applies to every destination. Not used when `secure=false`. |
 
 ## blob_relay section
