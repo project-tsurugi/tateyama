@@ -214,6 +214,46 @@ parameter=value
 |fullchain_crt | 文字列 | フルチェイン証明書ファイルのパス、デフォルト値はなし（`secure=true`の場合は設定必須） | gRPC サーバーのセキュアポートを有効にする場合のみ使用
 |server_key | 文字列 | サーバ鍵ファイルのパス、デフォルト値はなし（`secure=true`の場合は設定必須） | gRPC サーバーのセキュアポートを有効にする場合のみ使用
 
+## distributed_query_coordinatorセクション
+
+セクション名
+  - distributed_query_coordinator
+
+対象コンポーネント
+  - SQLサービス・リソース(jogasaki)
+
+|パラメーター名 | 型 | 値 |備考|
+|---:| :---: | :--- |---|
+|enabled | ブール(true/false) | 分散クエリのcoordinatorを有効にするかどうか、デフォルト値は`false` | `true`の場合、`distributed_query_client`に1つ以上の接続先が必要。`false`の場合、`distributed_query_client`は使用・検証しない。 |
+
+## distributed_query_remoteセクション
+
+セクション名
+  - distributed_query_remote
+
+対象コンポーネント
+  - SQLサービス・リソース(jogasaki)
+  - grpc(tateyama)
+
+|パラメーター名 | 型 | 値 |備考|
+|---:| :---: | :--- |---|
+|enabled | ブール(true/false) | 分散クエリのworkerとしてcatalog取得とprocess実行のRPCを受け付けるかどうか、デフォルト値は`false` | `true`の場合、`grpc_server.enabled=true`が必要。 |
+
+## distributed_query_clientセクション
+
+セクション名
+  - distributed_query_client
+
+対象コンポーネント
+  - SQLサービス・リソース(jogasaki)
+
+|パラメーター名 | 型 | 値 |備考|
+|---:| :---: | :--- |---|
+|name | 文字列 | remote server名、デフォルト値は空文字列（接続先なし）。 | `CREATE FOREIGN CATALOG`の`SERVER`で指定する名前。複数指定は`\|`区切り。Tsurugi 全体の識別子共通規則に従う。重複不可。`local`、および`__`で始まる名前は使用不可。 |
+|uri | 文字列 | 接続先のURI、デフォルト値は空文字列（接続先なし）。 | `dns:///host:port`または`unix:///絶対パス`。複数指定は`\|`区切り。`name`と同数・同順で指定。 |
+|secure | 文字列 | 接続先との通信にTLSを使用するかどうか（`true`/`false`）、デフォルト値は`false` | 指定する場合は`name`と同数・同順の`\|`区切りリストとする。省略時は全接続先に既定値を適用。UNIXドメインソケットでは`false`とする。 |
+|root_cert | 文字列 | TLSの検証に使用するルート証明書、デフォルト値は`grpc_default` | `grpc_default`はgRPC既定のルート証明書を使用。それ以外はPEM形式のX.509証明書ファイルのパス。相対パスは`TSURUGI_HOME`を基準とする。指定する場合は`name`と同数・同順の`\|`区切りリストとする。省略時は全接続先に既定値を適用。`secure=false`の場合は使用しない。 |
+
 ## blob_relayセクション
 
 セクション名

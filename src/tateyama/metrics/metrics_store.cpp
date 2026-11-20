@@ -15,14 +15,26 @@
  */
 
 #include "resource/metrics_store_impl.h"
+#include "resource/bridge.h"
+#include <tateyama/framework/environment.h>
+#include <tateyama/framework/repository.h>
 
 namespace tateyama::metrics {
+
+metrics_store* find_metrics_store(framework::environment& environment) {
+    auto resource = environment.resource_repository().find<resource::bridge>();
+    return resource ? resource->available_metrics_store() : nullptr;
+}
 
 metrics_store::metrics_store(std::unique_ptr<tateyama::metrics::resource::metrics_store_impl> arg) noexcept : body_(std::move(arg)) {
 }
 
 metrics_item_slot& metrics_store::register_item(const metrics_metadata& metadata) {
     return body_->register_item(metadata);
+}
+
+metrics_item_slot& metrics_store::register_item(const metrics_metadata& metadata, std::function<double()> reader) {
+    return body_->register_item(metadata, std::move(reader));
 }
 
 void metrics_store::register_aggregation(const metrics_aggregation& aggregation) {

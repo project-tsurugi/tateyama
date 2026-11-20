@@ -72,6 +72,7 @@ if (ENABLE_GRPC)
     file(GLOB GRPC_SOURCES
         "tateyama/grpc/*.cpp"
         "tateyama/grpc/blob_relay/*.cpp"
+        "tateyama/grpc/distributed_query/*.cpp"
     )
     list(APPEND SOURCES ${GRPC_SOURCES})
 endif()
