@@ -33,7 +33,7 @@ tateyama::status ipc_response::body(std::string_view body) {
         VLOG_LP(log_trace) << static_cast<const void*>(&server_wire_) << " length = " << body.length() << " slot = " << index_;  //NOLINT
         if (data_channel_) {
             std::dynamic_pointer_cast<ipc_data_channel>(data_channel_)->shutdown();  // Guard against improper operation
-            data_channel_ = nullptr;
+            data_channel_.reset();
         }
 
         std::stringstream ss{};
@@ -88,7 +88,10 @@ void ipc_response::error(proto::diagnostics::Record const& record) {
         VLOG_LP(log_trace) << static_cast<const void*>(&server_wire_) << " slot = " << index_;  //NOLINT
         if (data_channel_) {
             std::dynamic_pointer_cast<ipc_data_channel>(data_channel_)->shutdown();  // Guard against improper operation
-            data_channel_ = nullptr;
+            data_channel_.reset();
+        }
+        if (resultset_wires_shutdown_ && check_cancel()) {
+            garbage_collector_.notify_error(resultset_wires_shutdown_);
         }
 
         std::string s{};
@@ -132,6 +135,7 @@ tateyama::status ipc_response::acquire_channel(std::string_view name, std::share
     }
     try {
         data_channel_ = std::make_shared<ipc_data_channel>(server_wire_.create_resultset_wires(name, max_writer_count), garbage_collector_);
+        resultset_wires_shutdown_ = std::dynamic_pointer_cast<ipc_data_channel>(data_channel_)->resultset_wires_.get();
     } catch (std::exception &ex) {
         ch = nullptr;
 

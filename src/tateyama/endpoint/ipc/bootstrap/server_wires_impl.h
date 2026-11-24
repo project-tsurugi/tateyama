@@ -288,10 +288,12 @@ public:
         }
         ~resultset_wires_container_impl() override {
             try {
-                if (server_ && !force_close_) {
+                if (server_) {
                     std::scoped_lock<std::mutex> lock(mtx_shm_);
-                    managed_shm_ptr_->destroy<tateyama::common::wire::shm_resultset_wires>(rsw_name_.c_str());
-                    VLOG_LP(log_trace) << "free " << datachannel_buffer_size_ << " byte " << rsw_name_ << " buffer in the shared memory, and the free space increased to " << managed_shm_ptr_->get_free_memory() << " bytes.";
+                    if (shm_resultset_wires_) {
+                        managed_shm_ptr_->destroy<tateyama::common::wire::shm_resultset_wires>(rsw_name_.c_str());
+                        VLOG_LP(log_trace) << "free " << datachannel_buffer_size_ << " byte " << rsw_name_ << " buffer in the shared memory, and the free space increased to " << managed_shm_ptr_->get_free_memory() << " bytes.";
+                    }
                 }
             } catch (std::exception& e) {
                 LOG_LP(WARNING) << e.what();
@@ -340,10 +342,13 @@ public:
             }
             return true;
         }
-        // in case lost client or shutdown request
-        void force_close() override {
+        void force_close() override {  // in case of the client timeout of keep alive and/or cancel request
             shm_resultset_wires_->set_closed();
-            force_close_ = true;
+            if (server_) {
+                std::scoped_lock<std::mutex> lock(mtx_shm_);
+                boost::interprocess::shared_memory_object::remove(rsw_name_.c_str());
+                shm_resultset_wires_ = nullptr;
+            }
         }
 
         void add_released_writer(unq_p_resultset_wire_conteiner resultset_wire) {
@@ -387,7 +392,6 @@ public:
         std::string rsw_name_;
         tateyama::common::wire::shm_resultset_wires* shm_resultset_wires_{};
         bool server_;
-        bool force_close_{};
         std::mutex& mtx_shm_;
         std::size_t datachannel_buffer_size_;
 
@@ -465,12 +469,24 @@ public:
             std::scoped_lock<std::mutex> lock(mtx_put_);
             return resultset_wires_set_.empty() || force_close_;
         }
-        void force_close() override {
+        void force_close() override {  // in case of the client timeout of keep alive
             std::scoped_lock<std::mutex> lock(mtx_put_);
             for (const auto& it : resultset_wires_set_) {
                 it->force_close();
+                resultset_wires_set_.erase(it);
             }
             force_close_ = true;
+        }
+        void notify_error(resultset_wires_container* resultset_wires) override {
+            if (resultset_wires) {
+                std::scoped_lock<std::mutex> lock(mtx_put_);
+                for (const auto& it : resultset_wires_set_) {
+                    if (it.get() == resultset_wires) {
+                        it->force_close();
+                        resultset_wires_set_.erase(it);
+                    }
+                }
+            }
         }
 
     private:
@@ -580,7 +596,7 @@ public:
         void notify_shutdown() override {
             wire_->notify_shutdown();
         }
-        void force_close() {
+        void force_close() {  // in case of the client timeout of keep alive
             wire_->force_close();
         }
 
@@ -678,7 +694,7 @@ public:
     }
 
     /**
-     * @brief notify worker thread of the client timeout
+     * @brief notify worker thread of the client timeout of keep alive
      */
     void force_close() override {
         response_wire_.force_close();

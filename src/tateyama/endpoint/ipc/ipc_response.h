@@ -106,7 +106,7 @@ public:
         worker_(worker) {
     }
     ~ipc_response() override {
-        data_channel_ = nullptr;
+        data_channel_.reset();
     }
 
     /**
@@ -128,6 +128,7 @@ private:
     garbage_collector& garbage_collector_;
     const std::function<void(void)> clean_up_;
     const std::thread::id worker_;
+    server_wire_container::resultset_wires_container* resultset_wires_shutdown_{};
 
     void server_diagnostics(std::string_view diagnostic_record);
 };
