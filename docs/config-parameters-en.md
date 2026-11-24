@@ -106,6 +106,7 @@ Target component
 |dev_index_indirect_access_weight| Number | The weight applied by the SQL compiler to the secondary index access which looks up the primary index again, when it chooses the index. It must be greater than 0. The default value is 2.0. | This is for development and may be deleted in the future. |
 |dev_index_sort_cost| Number | The cost factor of sorting added by the SQL compiler to the index candidate without the order required by the downstream, relative to the cost of reading a row. It must be greater than or equal to 0. Effective only when `dev_enable_ordered_scan = true`. The default value is 0.1. | This is for development and may be deleted in the future. |
 |dev_index_max_early_stop_limit_count| Integer | The maximum `n` of `ORDER BY ... LIMIT n` for which the SQL compiler chooses the index satisfying the order without comparing the estimation. It must be greater than or equal to 0. Effective only when `dev_enable_scan_limit = true`. The default value is 10000. | This is for development and may be deleted in the future. |
+|dev_table_metadata_lock_shards| Integer | The number of shards of the reader lock used to refer to the table metadata (definitions of tables and indices). It must be greater than or equal to 1. If omitted or empty, the default value of the SQL compiler (currently 16) is used. | This is for development and may be deleted in the future. |
 
 ## udf section
 
