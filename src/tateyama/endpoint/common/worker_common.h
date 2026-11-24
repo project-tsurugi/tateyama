@@ -732,7 +732,7 @@ protected:
     }
 
     bool is_completed() {
-        if (has_incomplete_resultset() || has_incomplete_response()) {
+        if (has_incomplete_resultset()) {
             return false;
         }
 
@@ -783,19 +783,7 @@ protected:
 
     [[nodiscard]] bool has_incomplete_response() {
         bool rv{false};
-        foreach_reqreses([&rv, this](tateyama::endpoint::common::response& r){
-            bool find = false;
-            std::scoped_lock<std::mutex> lock(mtx_reqreses_);
-            for (auto &&e : shutdown_response_) {
-                if (&r == e.second.get()) {
-                    find = true;
-                    break;
-                }
-            }
-            if (!find && !r.is_completed()) {
-                rv = true;
-            }
-        });
+        foreach_reqreses([&rv](tateyama::endpoint::common::response& r){if(!r.is_completed()){rv = true;}});
         return rv;
     }
 
