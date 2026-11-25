@@ -16,6 +16,7 @@
 #include "tateyama/datastore/resource/bridge.h"
 
 #include <any>
+#include <optional>
 
 #include <tateyama/framework/component_ids.h>
 #include <tateyama/framework/resource.h>
@@ -33,7 +34,7 @@ component::id_type bridge::id() const noexcept {
 static bool extract_config(environment& env, limestone::api::configuration& options) {
     try {
         std::string location{};
-        int recover_param = 0;
+        std::optional<int> recover_param{};
         if(auto ds = env.configuration()->get_section("datastore")) {
             if (auto res = ds->get<std::filesystem::path>("log_location"); res) {
                 if(res->empty()) {
@@ -43,16 +44,14 @@ static bool extract_config(environment& env, limestone::api::configuration& opti
                 }
                 location = res->string();
             }
-            if (auto res = ds->get<int>("recover_max_parallelism"); res) {
-                auto sz = res.value();
-                if(sz > 0) {
-                    recover_param = sz;
-                }
-            }
+            // set the value only when it is given, and pass it as is without checking the range
+            recover_param = ds->get<int>("recover_max_parallelism");
         }
         options = limestone::api::configuration();
         options.set_data_location(location);
-        options.set_recover_max_parallelism(recover_param);
+        if (recover_param) {
+            options.set_recover_max_parallelism(recover_param.value());
+        }
         if (auto configuration = env.resource_repository().find<configuration::configuration_provider>(); configuration) {
             options.set_instance_id(configuration->database_info().instance_id());
         } else {

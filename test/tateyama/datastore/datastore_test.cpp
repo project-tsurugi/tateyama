@@ -167,6 +167,43 @@ TEST_F(datastore_test, resource_log_location_empty_string) {
     cp->shutdown(env);
 }
 
+TEST_F(datastore_test, resource_recover_max_parallelism_empty_string) {
+    // verify the datastore starts with an empty value
+    std::stringstream ss{};
+    ss << "[datastore]\n";
+    ss << "log_location=" << path() << "\n";
+    ss << "recover_max_parallelism=\n";
+    auto cfg = std::make_shared<tateyama::api::configuration::whole>(ss, tateyama::test_utils::default_configuration_for_tests);
+    framework::environment env{framework::boot_mode::database_server, cfg};
+    auto cp = std::make_shared<configuration::resource::configuration_provider_impl>();
+    env.resource_repository().add(cp);
+    auto ds = std::make_shared<datastore::resource::bridge>();
+    ASSERT_TRUE(cp->setup(env));
+    ASSERT_TRUE(ds->setup(env));
+    ASSERT_TRUE(cp->start(env));
+    ASSERT_TRUE(ds->start(env));
+    ASSERT_TRUE(ds->shutdown(env));
+    ASSERT_TRUE(cp->shutdown(env));
+}
+
+TEST_F(datastore_test, resource_recover_max_parallelism_zero) {
+    // verify error with a value less than 1
+    std::stringstream ss{};
+    ss << "[datastore]\n";
+    ss << "log_location=" << path() << "\n";
+    ss << "recover_max_parallelism=0\n";
+    auto cfg = std::make_shared<tateyama::api::configuration::whole>(ss, tateyama::test_utils::default_configuration_for_tests);
+    framework::environment env{framework::boot_mode::database_server, cfg};
+    auto cp = std::make_shared<configuration::resource::configuration_provider_impl>();
+    env.resource_repository().add(cp);
+    auto ds = std::make_shared<datastore::resource::bridge>();
+    ASSERT_TRUE(cp->setup(env));
+    ASSERT_TRUE(ds->setup(env));
+    ASSERT_TRUE(cp->start(env));
+    ASSERT_FALSE(ds->start(env));
+    ASSERT_TRUE(cp->shutdown(env));
+}
+
 TEST_F(datastore_test, resource_error_detection) {
     // root can make directories anywhere
     if (geteuid() == 0) { GTEST_SKIP() << "skip when run by root"; }
