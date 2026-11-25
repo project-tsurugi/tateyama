@@ -18,6 +18,7 @@
 #include <filesystem>
 #include <exception>
 #include <glog/logging.h>
+#include <boost/thread.hpp>
 
 #include <tateyama/datastore/resource/bridge.h>
 #include <tateyama/framework/environment.h>
@@ -60,12 +61,14 @@ static bool extract_config(environment& env, sharksfin::DatabaseOptions& options
                     options.attribute(KEY_WAITING_RESOLVER_THREADS, std::to_string(sz));
                 }
             }
+            // the default, used if the value is empty, is the number of physical cores
+            std::size_t index_restore_threads = boost::thread::physical_concurrency();
             if(auto res = cc->get<std::size_t>("index_restore_threads"); res) {
-                auto sz = res.value();
-                if(sz > 0) {
-                    static constexpr std::string_view KEY_INDEX_RESTORE_THREADS{"index_restore_threads"};
-                    options.attribute(KEY_INDEX_RESTORE_THREADS, std::to_string(sz));
-                }
+                index_restore_threads = res.value();
+            }
+            if(index_restore_threads > 0) {
+                static constexpr std::string_view KEY_INDEX_RESTORE_THREADS{"index_restore_threads"};
+                options.attribute(KEY_INDEX_RESTORE_THREADS, std::to_string(index_restore_threads));
             }
             if(auto res = cc->get<bool>("dev_iterator_based_scan"); res) {
                 auto b = res.value();
