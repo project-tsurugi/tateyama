@@ -217,6 +217,46 @@ Target component
 | fullchain_crt | String | Path to the full chain certificate file. No default value, as this must be set when `secure` is true. | Use only when enabling secure ports for the gRPC server.
 | server_key | String |  The path to the server key file. No default value, as this must be set when `secure` is true. | Use only when enabling secure ports for the gRPC server.
 
+## distributed_query_coordinator section
+
+Section name
+  - distributed_query_coordinator
+
+Target component
+  - SQL service and resource (jogasaki)
+
+| Parameter name | Type | Value | Remarks |
+|---:| :---: | :--- |---|
+| enabled | Boolean(true/false) | Whether to enable the distributed query coordinator. The default value is false. | When true, at least one destination in `distributed_query_client` is required. When false, `distributed_query_client` is neither used nor validated. |
+
+## distributed_query_remote section
+
+Section name
+  - distributed_query_remote
+
+Target component
+  - SQL service and resource (jogasaki)
+  - grpc(tateyama)
+
+| Parameter name | Type | Value | Remarks |
+|---:| :---: | :--- |---|
+| enabled | Boolean(true/false) | Whether to accept catalog retrieval and process execution RPCs as a distributed query worker. The default value is false. | When true, `grpc_server.enabled=true` is required. |
+
+## distributed_query_client section
+
+Section name
+  - distributed_query_client
+
+Target component
+  - SQL service and resource (jogasaki)
+
+| Parameter name | Type | Value | Remarks |
+|---:| :---: | :--- |---|
+| name | String | Remote server name. The default value is an empty string (no destination). | The name specified by `SERVER` in `CREATE FOREIGN CATALOG`. Separate multiple names with `\|`. Names must follow the common identifier rules used throughout Tsurugi. Duplicate names, `local`, and names starting with `__` are not allowed. |
+| uri | String | Destination URI. The default value is an empty string (no destination). | `dns:///host:port` or `unix:///absolute/path`. Separate multiple values with `\|`, matching the number and order of `name`. |
+| secure | String | Whether to use TLS for the connection (`true`/`false`). The default value is false. | When specified, use a `\|`-separated list matching the number and order of `name`. When omitted, the default applies to every destination. For UNIX domain sockets, `false` is required. |
+| root_cert | String | Root certificates used to verify TLS connections. The default value is `grpc_default`. | `grpc_default` uses the gRPC default root certificates. Otherwise, specify a path to a PEM file containing X.509 certificates. Relative paths are resolved from `TSURUGI_HOME`. When specified, use a `\|`-separated list matching the number and order of `name`. When omitted, the default applies to every destination. Not used when `secure=false`. |
+
 ## blob_relay section
 
 Section name
